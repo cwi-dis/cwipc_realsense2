@@ -2,21 +2,11 @@
 
 #include "multiFrame.hpp"
 #include "example.hpp"          // Include short list of convenience functions for rendering
-#include <thread>               // std::thread
-#include <chrono>
-#include <mutex>
-#include <algorithm>            // std::min, std::max
+
+int frameNum;
 
 // Helper functions
 void register_glfw_callbacks(window& app, glfw_state& app_state);
-const int color_width = 1920;
-const int color_height = 1080;
-const int color_fps = 30;
-const int depth_width = 1280;
-const int depth_height = 720;
-const int depth_fps = 30;
-bool capturingactive = false;
-std::mutex frames_mutex;
 
 // Handle the OpenGL calls needed to display one pointcloud
 void drawit(float width, float height, glfw_state& app_state, rs2::points& points)
@@ -67,21 +57,15 @@ void draw_all_pointclouds(float width, float height, glfw_state& app_state, mult
     glRotated(app_state.pitch, 1, 0, 0);
     glRotated(app_state.yaw, 0, 1, 0);
     glTranslatef(0, 0, -0.5f);
-    
-    // exclude thread to work on frames
-    std::lock_guard<std::mutex> guard(frames_mutex);
-    
-    for (int dNum = 0; dNum < m_frame->nframes(); dNum++) {
+        
+    for (int dNum = 0; dNum < m_frame->n_cameras(); dNum++) {
         rs2::video_frame* mf_color = m_frame->pull_color_frame(dNum);
         rs2::points* mf_points = m_frame->pull_frame(dNum);
         if (mf_color != NULL && mf_points != NULL) {
-            std::cout << "pull: n " << dNum << ", c " << mf_color << ", p " << mf_points << '\n';
             // Upload the color frame to OpenGL
             app_state.tex.upload(*mf_color);
             drawit(width, height, app_state, *mf_points);
         }
-        else
-            std::cout << "pull: n " << dNum << ", c " << mf_color << ", p " << mf_points << '\n';
     }
 
     // OpenGL cleanup
@@ -93,53 +77,28 @@ void draw_all_pointclouds(float width, float height, glfw_state& app_state, mult
     glPushMatrix();
 }
 
-// Configure and initialize caputuring of one camera
-void capture_start(const std::string& serial_number, multiFrame* m_frame, int camNum)
+void write_frame(std::vector<pcl::PointXYZRGB> pntcld)
 {
-    std::thread([serial_number, m_frame, camNum]() mutable {
-        
-        std::cout << "starting camera ser no: " << serial_number << '\n';
-        rs2::config cfg;
-        cfg.enable_device(serial_number);
-        cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, color_fps);
-        cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, depth_fps);
-        
-        // Declare RealSense pipeline, encapsulating the actual device and sensors
-        rs2::pipeline pipe;
-        
-        // Start streaming with the configuration just set
-        pipe.start(cfg);
-        
-        // Declare pointcloud object, for calculating pointclouds and texture mappings
-        rs2::pointcloud pc;
-        // We want the points object to be persistent so we can display the last cloud when a frame drops
-        rs2::points points;
-        
-        while (capturingactive) // Application still alive?
-        {
-            // Wait for the next set of frames from the camera
-            auto frames = pipe.wait_for_frames();
-            auto depth = frames.get_depth_frame();
-            auto color = frames.get_color_frame();
-
-            // exclude main to use frames at this time
-            std::lock_guard<std::mutex> guard(frames_mutex);
-            
-            // Generate the pointcloud and texture mappings
-            points = pc.calculate(depth);
-            
-            // Tell pointcloud object to map to this color frame
-            pc.map_to(color);
-            
-            m_frame->push_color_frame(&color, camNum);
-            m_frame->push_frame(&points, camNum);
-        }
-        std::cout << "stopping camera ser no: " << serial_number << '\n';
-        pipe.stop();
+    int size = pntcld.size();
+    if (size <= 0) return;
+    
+    std::ofstream myfile(("frame" + std::to_string(frameNum++) + ".ply").c_str());
+    myfile << "ply\n" << "format ascii 1.0\nelement vertex " << size << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
+    std::cout << "writing to file: frame"<< std::to_string(frameNum) << ".ply" << std::endl;
+    
+    std::ostringstream oss;
+    for (int i = 0; i < size; i++)
+    {
+        oss << (std::to_string(pntcld[i].x) + " " +
+                std::to_string(pntcld[i].y) + " " +
+                std::to_string(pntcld[i].z) + " " +
+                std::to_string(pntcld[i].r) + " " +
+                std::to_string(pntcld[i].g) + " " +
+                std::to_string(pntcld[i].b) + " ").c_str();
     }
-    ).detach();
+    myfile << oss.str();
+    myfile.close();
 }
-
 
 int main(int argc, char * argv[]) try
 {
@@ -150,27 +109,16 @@ int main(int argc, char * argv[]) try
     // register callbacks to allow manipulation of the pointcloud
     register_glfw_callbacks(app, app_state);
     
-    rs2::context ctx;    // Create librealsense context for managing devices
-    
-    auto devs = ctx.query_devices();
+    multiFrame multiframe;
 
-    multiFrame multiframe = *new multiFrame(devs.size());
-    
-    // Start capturing for all connected RealSense devices
-    capturingactive = true;
-
-    for (int dNum = 0; dNum < multiframe.nframes(); dNum++) {
-        std::string serial_number(devs[dNum].get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-        int ret = multiframe.register_camera(serial_number);
-        if (ret >= 0)
-             capture_start(serial_number, &multiframe, dNum);
-    }
-
+    frameNum = 0;
     while (app) {
         // Draw the pointcloud(s)
         draw_all_pointclouds(app.width(), app.height(), app_state, &multiframe);
+        
+        // write a ply file of the pointcloud
+        write_frame(multiframe.pull_pointcloud());
     }
-    capturingactive = false;
     
     return EXIT_SUCCESS;
 }
