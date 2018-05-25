@@ -77,14 +77,15 @@ void draw_all_pointclouds(float width, float height, glfw_state& app_state, mult
     glPushMatrix();
 }
 
-void write_frame(std::vector<pcl::PointXYZRGB> pntcld)
+void write_frame(std::vector<PointT> pntcld)
 {
     int size = pntcld.size();
     if (size <= 0) return;
     
-    std::ofstream myfile(("frame" + std::to_string(frameNum++) + ".ply").c_str());
+    std::ofstream myfile(("vector_frame" + std::to_string(frameNum++) + ".ply").c_str());
     myfile << "ply\n" << "format ascii 1.0\nelement vertex " << size << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
-    std::cout << "writing to file: frame"<< std::to_string(frameNum) << ".ply" << std::endl;
+    
+    //    std::cout << "writing to file: frame"<< std::to_string(frameNum) << ".ply" << std::endl;
     
     std::ostringstream oss;
     for (int i = 0; i < size; i++)
@@ -94,7 +95,31 @@ void write_frame(std::vector<pcl::PointXYZRGB> pntcld)
                 std::to_string(pntcld[i].z) + " " +
                 std::to_string(pntcld[i].r) + " " +
                 std::to_string(pntcld[i].g) + " " +
-                std::to_string(pntcld[i].b) + " ").c_str();
+                std::to_string(pntcld[i].b) + "\n").c_str();
+    }
+    myfile << oss.str();
+    myfile.close();
+}
+
+void write2frame(PointCloudT pntcld)
+{
+    int size = pntcld.size();
+    if (size <= 0) return;
+    
+    std::ofstream myfile(("pcl_frame" + std::to_string(frameNum++) + ".ply").c_str());
+    myfile << "ply\n" << "format ascii 1.0\nelement vertex " << size << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
+    
+    //    std::cout << "writing to file: frame"<< std::to_string(frameNum) << ".ply" << std::endl;
+    
+    std::ostringstream oss;
+    for (int i = 0; i < size; i++)
+    {
+        oss << (std::to_string(pntcld[i].x) + " " +
+                std::to_string(pntcld[i].y) + " " +
+                std::to_string(pntcld[i].z) + " " +
+                std::to_string(pntcld[i].r) + " " +
+                std::to_string(pntcld[i].g) + " " +
+                std::to_string(pntcld[i].b) + "\n").c_str();
     }
     myfile << oss.str();
     myfile.close();
@@ -113,11 +138,15 @@ int main(int argc, char * argv[]) try
 
     frameNum = 0;
     while (app) {
-        // Draw the pointcloud(s)
+        // Draw the live frames
         draw_all_pointclouds(app.width(), app.height(), app_state, &multiframe);
         
         // write a ply file of the pointcloud
-        write_frame(multiframe.pull_pointcloud());
+        std::vector<PointT> option1 = multiframe.pull_pointcloud();
+        write_frame(option1);
+        
+        PointCloudT option2 = multiframe.getPointCloud();
+        write2frame(option2);
     }
     
     return EXIT_SUCCESS;

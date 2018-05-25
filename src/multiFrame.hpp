@@ -8,25 +8,30 @@
 #ifndef multiFrame_hpp
 #define multiFrame_hpp
 
-#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <atomic>
 #include <stdio.h>
 #include <vector>
 #include <map>
 #include <iostream>
 #include <fstream>
-#include <thread>               // std::thread
+#include <thread>
 #include <chrono>
 #include <mutex>
-#include <algorithm>            // std::min, std::max
+#include <algorithm>
+
+#include <librealsense2/rs.hpp>
 
 #include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/common/transforms.h>
 /*
-#include <pcl/io/ply_io.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/console/parse.h>
+#include <pcl/common/transforms.h>
+#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/registration/icp.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/statistical_outlier_removal.h>
-#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/time.h> /**/
 
 struct rs_frame {
@@ -34,11 +39,11 @@ struct rs_frame {
     rs2::points* points;
 };
 
-//typedef pcl::PointXYZRGB pcl::PointXYZRGB;
-//typedef pcl::PointCloud<PointT> PointCloudT;
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> PointCloudT;
 
-const int color_width = 1920;
-const int color_height = 1080;
+const int color_width = 1280;
+const int color_height = 720;
 const int color_fps = 30;
 const int depth_width = 1280;
 const int depth_height = 720;
@@ -69,9 +74,10 @@ public:
         // Start capturing for all connected RealSense devices
         for (int dNum = 0; dNum < numberOfCameras; dNum++) {
             std::string serial_number(devs[dNum].get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+            //if (dNum == 1) serial_number = "802212060048";
+            //if (dNum == 0) serial_number = "746112061432";
             capture_start(serial_number, this, dNum);
         }
-
     }
     
     // Configure and initialize caputuring of one camera
@@ -107,17 +113,20 @@ public:
                 // exclude pushing frames at this time
                 std::lock_guard<std::mutex> guard(m_frame->frames_mutex);
                 
-                // Generate the pointcloud and texture mappings
-                points = pc.calculate(depth);
-                
                 // Tell pointcloud object to map to this color frame
-                pc.map_to(color);
+                pc.map_to(color); // does not seem to work, now handled by setting resolution of cameras
+
+                points = pc.calculate(depth);
+                //std::cout << "timestamp = " << points.get_timestamp() << "\n";
                 
+                // Push the frames for live rendering, not needed to generate pointclouds!
                 m_frame->push_color_frame(&color, camNum);
                 m_frame->push_frame(&points, camNum);
                 
                 // Generate new vertices and color vector
                 auto vertices = points.get_vertices();
+                //points.export_to_ply("frame.ply", color);
+
                 unsigned char *p = (unsigned char*)color.get_data();
 
                 // Calculate the closest point distance
@@ -130,6 +139,7 @@ public:
                 
                 // Make PointCloud
                 m_frame->pointcloud.clear();
+                PointCloudT partial_cloud;
                 for (int i = 0; i < points.size(); i++)
                 {
                     if (min < vertices[i].z && vertices[i].z < max) // Skip background
@@ -143,8 +153,16 @@ public:
                         pt.g = p[pi+1];
                         pt.b = p[pi+2];
                         m_frame->pointcloud.push_back(pt);
+                        partial_cloud.push_back(pt);
                     }
                 }
+                PointCloudT transformed_cloud;
+                Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+                transform.translation() << 0.5, 0.0, 0.0;
+                transform.rotate (Eigen::AngleAxisf (1.4 , Eigen::Vector3f::UnitY()));
+                pcl::transformPointCloud (partial_cloud, transformed_cloud, transform);
+                
+                m_frame->full_cloud = partial_cloud;
             }
             std::cout << "stopping camera ser no: " << serial_number << '\n';
             pipe.stop();
@@ -152,7 +170,7 @@ public:
         ).detach();
     }
     
-    std::vector<pcl::PointXYZRGB> pull_pointcloud()
+    std::vector<PointT> pull_pointcloud()
     {
         // exclude thread to work on frames
  //       std::lock_guard<std::mutex> guard(frames_mutex);
@@ -160,10 +178,15 @@ public:
         return pointcloud;
     }
     
+    PointCloudT getPointCloud()
+    {
+        return full_cloud;
+    }
+    
     void push_frame(rs2::points* points, const int camNum)
     {
         if (camNum < 0 || camNum > numberOfCameras) return;
-        std::cout << "push: p " << points << ", cam " << camNum << "\n";
+//        std::cout << "push: p " << points << ", cam " << camNum << "\n";
         if (points == NULL)  return;
         frame_pool[camNum].points = points;
     }
@@ -182,7 +205,7 @@ public:
     void push_color_frame(rs2::video_frame* color, const int camNum)
     {
         if (camNum < 0 || camNum > numberOfCameras) return;
-        std::cout << "push: c " << color << ", cam " << camNum << "\n";
+//        std::cout << "push: c " << color << ", cam " << camNum << "\n";
         if (color == NULL)  return;
         frame_pool[camNum].color = color;
     }
@@ -204,7 +227,8 @@ public:
        
 private:
     std::vector<rs_frame> frame_pool;
-    std::vector<pcl::PointXYZRGB> pointcloud;
+    std::vector<PointT> pointcloud;
+    PointCloudT full_cloud;
     int numberOfCameras = 0;
 };
 
