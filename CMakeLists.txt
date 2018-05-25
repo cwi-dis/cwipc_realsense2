@@ -17,6 +17,22 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+find_package(PCL REQUIRED COMPONENTS common io)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
+message("Found Eigen3 in: ${EIGEN3_INCLUDE_DIR}")
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
+message("Found Eigen3 in: ${EIGEN3_INCLUDE_DIR}")
+
+# find_package(VTK REQUIRED NO_MODULE)
+# include(${VTK_USE_FILE})
+# include_directories(${VTK_INCLUDE_DIRS})
+
 if(BUILD_GRAPHICAL_EXAMPLES)
     find_package(OpenGL)
     if(NOT OPENGL_FOUND)
