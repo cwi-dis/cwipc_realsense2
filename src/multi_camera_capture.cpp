@@ -101,9 +101,9 @@ void write_frame(std::vector<PointT> pntcld)
     myfile.close();
 }
 
-void write2frame(PointCloudT pntcld)
+void write2frame(PointCloudT &pntcld)
 {
-    int size = pntcld.size();
+    int size = pntcld->size();
     if (size <= 0) return;
     
     std::ofstream myfile(("pcl_frame" + std::to_string(frameNum++) + ".ply").c_str());
@@ -114,12 +114,12 @@ void write2frame(PointCloudT pntcld)
     std::ostringstream oss;
     for (int i = 0; i < size; i++)
     {
-        oss << (std::to_string(pntcld[i].x) + " " +
-                std::to_string(pntcld[i].y) + " " +
-                std::to_string(pntcld[i].z) + " " +
-                std::to_string(pntcld[i].r) + " " +
-                std::to_string(pntcld[i].g) + " " +
-                std::to_string(pntcld[i].b) + "\n").c_str();
+        oss << (std::to_string(pntcld[i]->x) + " " +
+                std::to_string(pntcld[i]->y) + " " +
+                std::to_string(pntcld[i]->z) + " " +
+                std::to_string(pntcld[i]->r) + " " +
+                std::to_string(pntcld[i]->g) + " " +
+                std::to_string(pntcld[i]->b) + "\n").c_str();
     }
     myfile << oss.str();
     myfile.close();
