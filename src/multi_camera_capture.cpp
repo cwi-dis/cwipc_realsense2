@@ -11,70 +11,70 @@ void register_glfw_callbacks(window& app, glfw_state& app_state);
 // Handle the OpenGL calls needed to display one pointcloud
 void drawit(float width, float height, glfw_state& app_state, rs2::points& points)
 {
-    glPointSize(width / 640);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
-    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
-    glBegin(GL_POINTS);
-    
-    /* this segment actually prints the pointcloud */
-    auto vertices = points.get_vertices();              // get vertices
-    auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
-    for (int i = 0; i < points.size(); i++)
-    {
-        if (vertices[i].z)
-        {
-            // upload the point and texture coordinates only for points we have depth data for
-            glVertex3fv(vertices[i]);
-            glTexCoord2fv(tex_coords[i]);
-        }
-    }
+	glPointSize(width / 640);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
+	float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
+	glBegin(GL_POINTS);
+
+	/* this segment actually prints the pointcloud */
+	auto vertices = points.get_vertices();              // get vertices
+	auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
+	for (int i = 0; i < points.size(); i++)
+	{
+		if (vertices[i].z)
+		{
+			// upload the point and texture coordinates only for points we have depth data for
+			glVertex3fv(vertices[i]);
+			glTexCoord2fv(tex_coords[i]);
+		}
+	}
 }
 
 // Handle the OpenGL setup needed to display all pointclouds
 void draw_all_pointclouds(float width, float height, glfw_state& app_state, multiFrame* m_frame)
 {
-    // OpenGL commands that prep screen for the pointcloud
-    glPopMatrix();
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    
-    glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    gluPerspective(60, width / height, 0.01f, 10.0f);
-    
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
-    
-    glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
-    glRotated(app_state.pitch, 1, 0, 0);
-    glRotated(app_state.yaw, 0, 1, 0);
-    glTranslatef(0, 0, -0.5f);
-        
-    for (int dNum = 0; dNum < m_frame->n_cameras(); dNum++) {
-        rs2::video_frame* mf_color = m_frame->pull_color_frame(dNum);
-        rs2::points* mf_points = m_frame->pull_frame(dNum);
-        if (mf_color != NULL && mf_points != NULL) {
-            // Upload the color frame to OpenGL
-            app_state.tex.upload(*mf_color);
-            drawit(width, height, app_state, *mf_points);
-        }
-    }
+	// OpenGL commands that prep screen for the pointcloud
+	glPopMatrix();
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-    // OpenGL cleanup
-    glEnd();
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glPopAttrib();
-    glPushMatrix();
+	glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	gluPerspective(60, width / height, 0.01f, 10.0f);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+
+	glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
+	glRotated(app_state.pitch, 1, 0, 0);
+	glRotated(app_state.yaw, 0, 1, 0);
+	glTranslatef(0, 0, -0.5f);
+
+	for (int dNum = 0; dNum < m_frame->n_cameras(); dNum++) {
+		rs2::video_frame* mf_color = m_frame->pull_color_frame(dNum);
+		rs2::points* mf_points = m_frame->pull_frame(dNum);
+		if (mf_color != NULL && mf_points != NULL) {
+			// Upload the color frame to OpenGL
+			app_state.tex.upload(*mf_color);
+			drawit(width, height, app_state, *mf_points);
+		}
+	}
+
+	// OpenGL cleanup
+	glEnd();
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glPopAttrib();
+	glPushMatrix();
 }
 
 void cloud2file(PointCloudT pntcld)
@@ -97,6 +97,7 @@ void cloud2file(PointCloudT pntcld)
     }
     myfile << oss.str();
     myfile.close();
+
 }
 
 int main(int argc, char * argv[]) try
@@ -124,11 +125,11 @@ int main(int argc, char * argv[]) try
 }
 catch (const rs2::error & e)
 {
-    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+	return EXIT_FAILURE;
 }
 catch (const std::exception & e)
 {
-    std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << e.what() << std::endl;
+	return EXIT_FAILURE;
 }
