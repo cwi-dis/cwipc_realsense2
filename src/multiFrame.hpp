@@ -113,11 +113,11 @@ public:
                 // exclude pushing frames at this time
                 std::lock_guard<std::mutex> guard(m_frame->frames_mutex);
                 
-                // Tell pointcloud object to map to this color frame
-                pc.map_to(color); // does not seem to work, now handled by setting resolution of cameras
+                // Tell points frame to map to this color frame
+                pc.map_to(color); // does not align the frames. That is handled by setting resolution of cameras
 
                 points = pc.calculate(depth);
-                //std::cout << "timestamp = " << points.get_timestamp() << "\n";
+                std::cout << "timestamp = " << points.get_timestamp() << "\n";
                 
                 // Push the frames for live rendering, not needed to generate pointclouds!
                 m_frame->push_color_frame(&color, camNum);
@@ -162,7 +162,7 @@ public:
                 transform.rotate (Eigen::AngleAxisf (1.4 , Eigen::Vector3f::UnitY()));
                 pcl::transformPointCloud (partial_cloud, transformed_cloud, transform);
                 
-                m_frame->full_cloud = partial_cloud;
+                m_frame->full_cloud = transformed_cloud;
             }
             std::cout << "stopping camera ser no: " << serial_number << '\n';
             pipe.stop();
@@ -172,14 +172,14 @@ public:
     
     std::vector<PointT> pull_pointcloud()
     {
-        // exclude thread to work on frames
- //       std::lock_guard<std::mutex> guard(frames_mutex);
+        std::lock_guard<std::mutex> guard(frames_mutex);
 
         return pointcloud;
     }
     
     PointCloudT getPointCloud()
     {
+        std::lock_guard<std::mutex> guard(frames_mutex);
         return full_cloud;
     }
     
