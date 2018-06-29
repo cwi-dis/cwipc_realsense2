@@ -1,5 +1,11 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+# ======================================================
+# Compiled by Fons @ CWI, Amsterdam for VRTogether
+#
+# Copyright (C) 2018 by CWI. All rights reserved.
+# ======================================================
+#
+#  minimum required cmake version: 3.12.0
+cmake_minimum_required(VERSION 3.12.0)
 
 project(Capture-CWI)
 
@@ -7,6 +13,8 @@ project(Capture-CWI)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMakeFiles)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -17,21 +25,20 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
+
+find_package(REALSENSE2 REQUIRED)
+if(REALSENSE2_FOUND)
+	include_directories(${REALSENSE2_INC})
+	link_directories(${REALSENSE2_LIB})
+else()
+	message(FATAL_ERROR "\ncould not find realsense2 library\n")
+endif()
+
 find_package(PCL REQUIRED COMPONENTS common io)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-
-find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
-message("Found Eigen3 in: ${EIGEN3_INCLUDE_DIR}")
-find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
-message("Found Eigen3 in: ${EIGEN3_INCLUDE_DIR}")
-
-# find_package(VTK REQUIRED NO_MODULE)
-# include(${VTK_USE_FILE})
-# include_directories(${VTK_INCLUDE_DIRS})
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     find_package(OpenGL)
@@ -39,10 +46,12 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         message(FATAL_ERROR "\n\n OpenGL package is missing!\n\n")
     endif()
 
-    set(DEPENDENCIES realsense2 ${OPENGL_LIBRARIES})
+	include_directories(D:/Fons/GitHub/librealsense/third-party/glfw/include;D:/Fons/GitHub/librealsense/third-party)
+
+    list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
 
     if(WIN32)
-        list(APPEND DEPENDENCIES glfw3)
+        list(APPEND DEPENDENCIES D:/Fons/GitHub/librealsense/build/third-party/glfw/Debug/glfw3.lib)
     else()
         # Find glfw header
         find_path(GLFW_INCLUDE_DIR NAMES GLFW/glfw3.h
@@ -74,7 +83,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         include_directories(${GLFW_INCLUDE_DIR})
     endif()
 else()
-    set(DEPENDENCIES realsense2)
     if(NOT WIN32)
         list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
     endif()
