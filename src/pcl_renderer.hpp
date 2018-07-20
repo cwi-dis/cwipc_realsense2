@@ -1,7 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#ifndef pcl_renderer_hpp
+#define pcl_renderer_hpp
+
 #pragma once
+#include "multiFrame.hpp"
+using namespace pcl;
+
 
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
@@ -229,62 +235,60 @@ struct glfw_state {
 
 
 // Handles all the OpenGL calls needed to display the point cloud
-void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::points& points)
+
+// Handle the OpenGL setup needed to display all pointclouds
+void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld)
 {
-    if (!points)
-        return;
+	if (pntcld->size() == 0) return;
 
-    // OpenGL commands that prep screen for the pointcloud
-    glPopMatrix();
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
+	// OpenGL commands that prep screen for the pointcloud
+	glPopMatrix();
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-    glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
-    glClear(GL_DEPTH_BUFFER_BIT);
+	glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
+	glClear(GL_DEPTH_BUFFER_BIT);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    gluPerspective(60, width / height, 0.01f, 10.0f);
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	gluPerspective(60, app.width() / app.height(), 0.01f, 10.0f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	/*void gluLookAt(	GLdouble eyeX,
+						GLdouble eyeY,
+						GLdouble eyeZ,
+						GLdouble centerX,
+						GLdouble centerY,
+						GLdouble centerZ,
+						GLdouble upX,
+						GLdouble upY,
+						GLdouble upZ);
+	*///gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+	gluLookAt(2, 0, 0, 0, 0, 0, 1, 1, 0);
 
-    glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
-    glRotated(app_state.pitch, 1, 0, 0);
-    glRotated(app_state.yaw, 0, 1, 0);
-    glTranslatef(0, 0, -0.5f);
+	glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
+	glRotated(app_state.pitch, 1, 0, 0);
+	glRotated(app_state.yaw, 0, 1, 0);
+	glTranslatef(0, 0, -0.5f);
+	glPointSize(app.width() / 640);
+	glEnable(GL_DEPTH_TEST);
+	glBegin(GL_POINTS);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
-    glPointSize(width / 640);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
-    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
-    glBegin(GL_POINTS);
+	for (auto pnt : (*pntcld).points) {
+		float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
+		glColor3fv(col);
+		float vert[] = { pnt.x, pnt.y, pnt.z };
+		glVertex3fv(vert);
+	}
 
-
-    /* this segment actually prints the pointcloud */
-    auto vertices = points.get_vertices();              // get vertices
-    auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
-    for (int i = 0; i < points.size(); i++)
-    {
-        if (vertices[i].z)
-        {
-            // upload the point and texture coordinates only for points we have depth data for
-            glVertex3fv(vertices[i]);
-            glTexCoord2fv(tex_coords[i]);
-        }
-    }
-
-    // OpenGL cleanup
-    glEnd();
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glPopAttrib();
-    glPushMatrix();
+	// OpenGL cleanup
+	glEnd();
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glPopAttrib();
+	glPushMatrix();
 }
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
@@ -324,3 +328,5 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
         }
     };
 }
+
+#endif /* pcl_renderer_hpp */
