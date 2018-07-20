@@ -26,6 +26,7 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
+option(BUILD_SHARED_LIBS "Build shared library" ON)
 
 find_package(REALSENSE2 REQUIRED)
 if(REALSENSE2_FOUND)
