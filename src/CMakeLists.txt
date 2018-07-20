@@ -1,34 +1,49 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+# ======================================================
+# Compiled by Fons @ CWI, Amsterdam for VRTogether
+#
+# Copyright (C) 2018 by CWI. All rights reserved.
+# ======================================================
+#
+#  minimum required cmake version: 3.12.0
+cmake_minimum_required(VERSION 3.12.0)
 
-project(MultiRealSenseCapture)
+add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
+target_sources(pcl_renderer PUBLIC multiFrame.cpp multiFrame.hpp)
+target_link_libraries(pcl_renderer ${REALSENSE2_LIB})
+set_target_properties(pcl_renderer PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
+	ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/lib/MinSizeRel"
+	ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/lib/RelWithDebInfo"
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
+	LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
+	LIBRARY_OUTPUT_DIRECTORY_MINSIZERELG "${CMAKE_BINARY_DIR}/lib/MinSizeRel"
+	LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/lib/RelWithDebInfo"
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug"
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release"
+	RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/bin/MinSizeRel"
+	RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo"
+)
+#get_target_property(PROP_RESULT pcl_renderer RUNTIME_OUTPUT_DIRECTORY_DEBUG)
+#	$<IF$<CONFIG:Debug>,RUNTIME_OUTPUT_DIRECTORY_DEBUG,
+#	$<IF$<CONFIG:Release>,RUNTIME_OUTPUT_DIRECTORY_RELEASE,
+#	$<IF$<CONFIG:MinSizeRel>,RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL,
+#	$<IF$<CONFIG:RelWithDebInfo>,RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO,>>>>
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+message("exec in: $<TARGET_FILE_DIR:pcl_renderer>")
+install(TARGETS pcl_renderer RUNTIME DESTINATION D:/${PROJECT_NAME}/bin)
 
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX D:/${PROJECT_NAME} CACHE PATH "..." FORCE)
 endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(multi_camera_capture multi_camera_capture.cpp example.hpp multiFrame.cpp multiFrame.hpp)
-    target_link_libraries(multi_camera_capture ${DEPENDENCIES})
-    set_target_properties (multi_camera_capture PROPERTIES
-        FOLDER Examples
-    )
-
-    install(
-        TARGETS
-
-        multi_camera_capture
-
-        RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
-    )
+    target_link_libraries(pcl_renderer ${DEPENDENCIES})
 endif()
+
+#add_library(multiFrame SHARED multiFrame.cpp multiFrame.hpp cwi_capture.cpp cwi_capture.hpp)
+add_library(multiFrame SHARED multiFrame.cpp multiFrame.hpp)
+target_link_libraries(multiFrame ${REALSENSE2_LIB})
+
+add_custom_command(TARGET pcl_renderer POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${REALSENSE2_DLL} $<TARGET_FILE_DIR:pcl_renderer>)
