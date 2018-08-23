@@ -42,7 +42,7 @@ int main(int argc, char * argv[]) try
 	frameNum = 0;
 	while (app) {
 
-		long time = 0;
+		uint64_t time = 0;
 		boost::shared_ptr<PointCloud<PointXYZRGB>> captured_pc;
 		void* pc = reinterpret_cast<void *> (&captured_pc);
 
