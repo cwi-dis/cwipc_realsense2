@@ -64,7 +64,7 @@ public:
 		}
 	}
 
-	void get_pointcloud(long *timestamp, void **pointcloud);
+	void get_pointcloud(uint64_t *timestamp, void **pointcloud);
 
 private:
 	std::mutex frames_mutex;
@@ -83,7 +83,7 @@ private:
 class captureIt
 {
 public:
-	void getPointCloud(long *timestamp, void **pointcloud);
+	void getPointCloud(uint64_t *timestamp, void **pointcloud);
 };
 
 #endif /* multiFrame_hpp */

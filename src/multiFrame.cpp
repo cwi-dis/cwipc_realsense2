@@ -3,7 +3,8 @@
 //
 //  Created by Fons Kuijk on 23-04-18.
 //
-
+#include <chrono>
+#include <cstdint>
 #include "multiFrame.hpp"
 
 const int color_width = 1280;
@@ -13,10 +14,11 @@ const int depth_width = 1280;
 const int depth_height = 720;
 const int depth_fps = 30;
 
-void multiFrame::get_pointcloud(long *timestamp, void **pointcloud)
+void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 {
 	std::lock_guard<std::mutex> guard(frames_mutex);
-	*timestamp = time(0);
+	//*timestamp = time(0);
+	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
 	if (numberOfCameras > 0) {
 		*pointcloud = (reinterpret_cast<void *>(&merged_cloud));
@@ -151,12 +153,12 @@ boost::shared_ptr<PointCloud<PointXYZRGB>> multiFrame::merge_views()
 		return NULL;
 }
 
-void captureIt::getPointCloud(long *timestamp, void **pointcloud) {
+void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	static multiFrame mFrame;
 	mFrame.get_pointcloud(timestamp, pointcloud);
 }
 
-extern "C" void __declspec(dllexport) getPointCloud(long *timestamp, void **pointcloud) {
+extern "C" void __declspec(dllexport) getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	captureIt captureit;
 	captureit.getPointCloud(timestamp, pointcloud);
 }
