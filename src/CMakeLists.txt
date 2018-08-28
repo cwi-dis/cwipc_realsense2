@@ -41,7 +41,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     target_link_libraries(pcl_renderer ${DEPENDENCIES})
 endif()
 
-#add_library(multiFrame SHARED multiFrame.cpp multiFrame.hpp cwi_capture.cpp cwi_capture.hpp)
 add_library(multiFrame SHARED multiFrame.cpp multiFrame.hpp)
 target_link_libraries(multiFrame ${REALSENSE2_LIB})
 
