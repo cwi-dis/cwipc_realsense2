@@ -8,7 +8,6 @@
 #include "multiFrame.hpp"
 using namespace pcl;
 
-
 #define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"
 
@@ -24,41 +23,33 @@ public:
     std::function<void(double, double)> on_mouse_move   = [](double, double) {};
     std::function<void(int)>            on_key_release  = [](int) {};
 
-    window(int width, int height, const char* title)
-        : _width(width), _height(height)
+    window(int width, int height, const char* title) : _width(width), _height(height)
     {
         glfwInit();
         win = glfwCreateWindow(width, height, title, nullptr, nullptr);
         if (!win)
             throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
         glfwMakeContextCurrent(win);
-
         glfwSetWindowUserPointer(win, this);
-        glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
-        {
+        glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods) {
             auto s = (window*)glfwGetWindowUserPointer(win);
             if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
         });
 
-        glfwSetScrollCallback(win, [](GLFWwindow * win, double xoffset, double yoffset)
-        {
+        glfwSetScrollCallback(win, [](GLFWwindow * win, double xoffset, double yoffset) {
             auto s = (window*)glfwGetWindowUserPointer(win);
             s->on_mouse_scroll(xoffset, yoffset);
         });
 
-        glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
-        {
+        glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y) {
             auto s = (window*)glfwGetWindowUserPointer(win);
             s->on_mouse_move(x, y);
         });
 
-        glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods)
-        {
+        glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods) {
             auto s = (window*)glfwGetWindowUserPointer(win);
             if (0 == action) // on key release
-            {
                 s->on_key_release(key);
-            }
         });
     }
 
@@ -102,18 +93,15 @@ private:
 
 // Struct for managing rotation of pointcloud view
 struct glfw_state {
-    glfw_state() : yaw(15.0), pitch(15.0), last_x(0.0), last_y(0.0),
-        ml(false), offset_x(2.f), offset_y(2.f) {}
+    glfw_state() : yaw(0.0), pitch(0.0), last_x(0.0), last_y(0.0),
+        ml(false), offset(0.f) {}
     double yaw;
     double pitch;
     double last_x;
     double last_y;
     bool ml;
-    float offset_x;
-    float offset_y;
+    float offset;
 };
-
-// Handles all the OpenGL calls needed to display the point cloud
 
 // Handle the OpenGL setup needed to display all pointclouds
 void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld)
@@ -142,13 +130,14 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 						GLdouble upX,
 						GLdouble upY,
 						GLdouble upZ);
-	*///gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
-	gluLookAt(2, 0, 0, 0, 0, 0, 1, 1, 0);
+	*/
+	//gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+	gluLookAt(0.0, -0.2, 1.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
-	glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
+	glTranslatef(-0.2, -0.2, -1.5f + app_state.offset*0.05f);
 	glRotated(app_state.pitch, 1, 0, 0);
 	glRotated(app_state.yaw, 0, 1, 0);
-	glTranslatef(0, 0, -0.5f);
+	glTranslatef(0.2, 0.2, +1.5f + app_state.offset*0.05f);
 	glPointSize(app.width() / 640);
 	glEnable(GL_DEPTH_TEST);
 	glBegin(GL_POINTS);
@@ -173,22 +162,18 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
 void register_glfw_callbacks(window& app, glfw_state& app_state)
 {
-    app.on_left_mouse = [&](bool pressed)
-    {
+    app.on_left_mouse = [&](bool pressed) {
         app_state.ml = pressed;
     };
 
-    app.on_mouse_scroll = [&](double xoffset, double yoffset)
-    {
-        app_state.offset_x -= static_cast<float>(xoffset);
-        app_state.offset_y -= static_cast<float>(yoffset);
+    app.on_mouse_scroll = [&](double xoffset, double yoffset) {
+        app_state.offset -= static_cast<float>(yoffset);
     };
 
-    app.on_mouse_move = [&](double x, double y)
-    {
+    app.on_mouse_move = [&](double x, double y) {
         if (app_state.ml)
         {
-            app_state.yaw -= (x - app_state.last_x);
+            app_state.yaw += (x - app_state.last_x);
             app_state.yaw = std::max(app_state.yaw, -120.0);
             app_state.yaw = std::min(app_state.yaw, +120.0);
             app_state.pitch += (y - app_state.last_y);
@@ -199,12 +184,9 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
         app_state.last_y = y;
     };
 
-    app.on_key_release = [&](int key)
-    {
-        if (key == 32) // Escape
-        {
-            app_state.yaw = app_state.pitch = 0; app_state.offset_x = app_state.offset_y = 0.0;
-        }
+    app.on_key_release = [&](int key) {
+        if (key == 256) // Escape
+            app_state.yaw = app_state.pitch = 0; app_state.offset = 0.0;
     };
 }
 

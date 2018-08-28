@@ -134,7 +134,6 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
 	if (numberOfCameras > 0) {
-		//*pointcloud = (reinterpret_cast<void *>(&MergedCloud));
 		boost::shared_ptr<PointCloud<PointXYZRGB>> merged = merge_views();
 		if (merged != NULL)
 			*pointcloud = reinterpret_cast<void *> (&merge_views());
