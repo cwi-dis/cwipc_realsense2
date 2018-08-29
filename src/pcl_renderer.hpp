@@ -108,7 +108,7 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 {
 	if (pntcld->size() == 0) return;
 
-	// OpenGL commands that prep screen for the pointcloud
+	// OpenGL commands that prep screen
 	glPopMatrix();
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 
@@ -121,28 +121,18 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	/*void gluLookAt(	GLdouble eyeX,
-						GLdouble eyeY,
-						GLdouble eyeZ,
-						GLdouble centerX,
-						GLdouble centerY,
-						GLdouble centerZ,
-						GLdouble upX,
-						GLdouble upY,
-						GLdouble upZ);
-	*/
-	//gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
-	gluLookAt(0.0, -0.2, 1.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	gluLookAt(0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
-	glTranslatef(-0.2, -0.2, -1.5f + app_state.offset*0.05f);
+	glTranslatef(-0.2f, -0.2f, -2.0f + app_state.offset*0.05f);
 	glRotated(app_state.pitch, 1, 0, 0);
 	glRotated(app_state.yaw, 0, 1, 0);
-	glTranslatef(0.2, 0.2, +1.5f + app_state.offset*0.05f);
+	glTranslatef(0.2f, 0.2f, 2.0f + app_state.offset*0.05f);
 	glPointSize(app.width() / 640);
 	glEnable(GL_DEPTH_TEST);
 	glBegin(GL_POINTS);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
+	// draw the pointcloud
 	for (auto pnt : (*pntcld).points) {
 		float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
 		glColor3fv(col);
@@ -173,12 +163,10 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
     app.on_mouse_move = [&](double x, double y) {
         if (app_state.ml)
         {
-            app_state.yaw += (x - app_state.last_x);
-            app_state.yaw = std::max(app_state.yaw, -120.0);
-            app_state.yaw = std::min(app_state.yaw, +120.0);
-            app_state.pitch += (y - app_state.last_y);
-            app_state.pitch = std::max(app_state.pitch, -80.0);
-            app_state.pitch = std::min(app_state.pitch, +80.0);
+            app_state.yaw += (x - app_state.last_x)/10.0;
+            app_state.pitch += (y - app_state.last_y)/10.0;
+            app_state.pitch = std::max(app_state.pitch, -85.0);
+            app_state.pitch = std::min(app_state.pitch, +85.0);
         }
         app_state.last_x = x;
         app_state.last_y = y;
