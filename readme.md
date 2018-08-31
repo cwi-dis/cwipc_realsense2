@@ -20,6 +20,4 @@ Otherwise, for visual inspection of the result, the project can generate an appl
 ## Installation
 
 The directory `VRTogether-capture` that is maintained by this repository can be put anywhere on your system.
-The CMake setup should be able to find the dependencies needed.``
-
-
+The CMake setup should be able to find the dependencies needed.
