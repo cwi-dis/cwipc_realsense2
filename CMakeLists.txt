@@ -45,6 +45,9 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
     add_subdirectory(third-party/glfw)
 	list(APPEND DEPENDENCIES glfw3)
+
+    include_directories(third-party/tinyXML)
+    include(third-party/tinyXML/CMakeLists.txt)
  
     find_package(OpenGL)
     if(NOT OPENGL_FOUND)

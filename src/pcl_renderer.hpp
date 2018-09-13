@@ -6,6 +6,7 @@
 
 #pragma once
 #include "multiFrame.hpp"
+
 using namespace pcl;
 
 #define GLFW_INCLUDE_GLU
@@ -176,6 +177,29 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
         if (key == 256) // Escape
             app_state.yaw = app_state.pitch = 0; app_state.offset = 0.0;
     };
+}
+
+int frameNum;
+
+void cloud2file(boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld)
+{
+	int size = pntcld->size();
+	if (size <= 0) return;
+
+	std::ofstream myfile(("pcl_frame" + std::to_string(frameNum++) + ".ply").c_str());
+	myfile << "ply\n" << "format ascii 1.0\nelement vertex " << size << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
+
+	std::ostringstream oss;
+	for (int i = 0; i < size; i++) {
+		oss << (std::to_string((*pntcld)[i].x) + " " +
+			std::to_string((*pntcld)[i].y) + " " +
+			std::to_string((*pntcld)[i].z) + " " +
+			std::to_string((*pntcld)[i].r) + " " +
+			std::to_string((*pntcld)[i].g) + " " +
+			std::to_string((*pntcld)[i].b) + "\n").c_str();
+	}
+	myfile << oss.str();
+	myfile.close();
 }
 
 #endif /* pcl_renderer_hpp */

@@ -7,12 +7,21 @@
 #include <cstdint>
 #include "multiFrame.hpp"
 
+/*
 const int color_width = 1280;
 const int color_height = 720;
 const int color_fps = 30;
 const int depth_width = 1280;
 const int depth_height = 720;
 const int depth_fps = 30;
+/**/
+const int color_width = 640;
+const int color_height = 360;
+const int color_fps = 30;
+const int depth_width = 640;
+const int depth_height = 360;
+const int depth_fps = 30;
+/**/
 
 // Configure and initialize caputuring of one camera
 void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_frame, int camNum)
@@ -30,20 +39,18 @@ void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_f
 		pipe.start(cfg);		// Start streaming with the configuration just set
 		std::cout << "started camera ser no: " << serial_number << '\n';
 
-		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-
-		// ================ START TEMP SETTING OF MATRICES ================
-		if (camNum > 0) {
-			transform.translation() << 0.0, 0.0, 0.0;
-			transform.rotate(Eigen::AngleAxisf(camNum*0.7, Eigen::Vector3f::UnitY()));
-		}
-		// ================= END TEMP SETTING OF MATRICES =================
-
-		// store transformation in vector
-		m_frame->MergeTrafos.push_back(transform);
-		// simultaneously prepare storage of camera views
+		// prepare storage space for camera data
+		cameradata cc;
 		boost::shared_ptr<PointCloud<PointXYZRGB>> dummy_pntcld(new PointCloud<PointXYZRGB>());
-		m_frame->PointCloudViews.push_back(dummy_pntcld);
+		cc.serial = serial_number.c_str();
+		cc.trafo = Eigen::Affine3d::Identity();
+
+		// TEMP for test
+		if (camNum > 0) 
+			cc.trafo.rotate(Eigen::AngleAxisd(camNum*0.7, Eigen::Vector3d::UnitY()));
+
+		cc.cloud = dummy_pntcld;
+		m_frame->CameraData.push_back(cc);
 
 		while (true) // Application still alive?
 		{
@@ -51,7 +58,7 @@ void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_f
 			auto frames = pipe.wait_for_frames();
 			auto depth = frames.get_depth_frame();
 			auto color = frames.get_color_frame();
-			float min = 100.f, max;
+			float min = 100.f, max, minx;
 
 			// exclude pushing frames at this time
 			std::lock_guard<std::mutex> guard(m_frame->frames_mutex);
@@ -63,12 +70,14 @@ void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_f
 			// Generate new vertices and color vector
 			auto vertices = points.get_vertices();
 
-			unsigned char *p = (unsigned char*)color.get_data();
+			unsigned char *colors = (unsigned char*)color.get_data();
 
-			// Calculate the closest point distance
+			// Find the nearest point
 			for (int i = 0; i < points.size(); i++)
-				if (vertices[i].z != 0 && min > vertices[i].z)
+				if (vertices[i].z != 0 && min > vertices[i].z) {
 					min = vertices[i].z;
+					minx = vertices[i].x;
+				}
 
 			// Set the maximum distance
 			max = 0.8f + min;
@@ -76,33 +85,28 @@ void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_f
 			// Make PointCloud
 			boost::shared_ptr<PointCloud<PointXYZRGB>> camera_pntcld(new PointCloud<PointXYZRGB>());
 
-			for (int i = 0; i < points.size(); i++)
-				if (min < vertices[i].z && vertices[i].z < max) { // "Background removal"
+			for (int i = 0; i < points.size(); i++) {
+				float x = minx - vertices[i].x; x *= x;
+				float z = vertices[i].z;
+				if (min < z && z < max - x) { // Simple background removal, horizontally parabolic, vertically straight.
 					PointXYZRGB pt;
 					pt.x = vertices[i].x;
 					pt.y = -vertices[i].y;
-					pt.z = -vertices[i].z;
+					pt.z = -z;
 					int pi = i * 3;
-					pt.r = p[pi];
-					pt.g = p[pi + 1];
-					pt.b = p[pi + 2];
+					pt.r = colors[pi];
+					pt.g = colors[pi + 1];
+					pt.b = colors[pi + 2];
 					camera_pntcld->push_back(pt);
 				}
+			}
 			if (camera_pntcld->size() > 0)
-				m_frame->push_pointcloud(camera_pntcld, camNum);
+				*cc.cloud = *camera_pntcld;
 		}
 		std::cout << "stopping camera ser no: " << serial_number << "\n";
 		pipe.stop();
 	}
 	).detach();
-}
-
-// store the pointcloud of a camera in a vector of all individual camera views
-void multiFrame::push_pointcloud(boost::shared_ptr<PointCloud<PointXYZRGB>> pntcld, const int camNum)
-{
-	if (camNum < 0 || camNum >= numberOfCameras) return;
-	if (pntcld == NULL)  return;
-	PointCloudViews[camNum] = pntcld;
 }
 
 boost::shared_ptr<PointCloud<PointXYZRGB>> multiFrame::merge_views()
@@ -113,11 +117,10 @@ boost::shared_ptr<PointCloud<PointXYZRGB>> multiFrame::merge_views()
 		MergedCloud.get()->clear();
 
 	if (numberOfCameras == 1)
-		return PointCloudViews[0];
+		return CameraData.at(0).cloud;
 
-	for (int i = 0; i < numberOfCameras; i++) {
-		Eigen::Affine3f transform = MergeTrafos[i];
-		transformPointCloud(*PointCloudViews[i].get(), *aligned_pntcld, transform);
+	for (cameradata ccfg : CameraData) {
+		transformPointCloud(*ccfg.cloud.get(), *aligned_pntcld, ccfg.trafo);
 		if (aligned_pntcld->size() <= 0) continue;
 		for (PointXYZRGB pnt : *aligned_pntcld)
 			MergedCloud->push_back(pnt);

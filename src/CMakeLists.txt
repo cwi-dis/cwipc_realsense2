@@ -8,7 +8,9 @@
 cmake_minimum_required(VERSION 3.12.0)
 
 add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
-target_sources(pcl_renderer PUBLIC multiFrame.cpp multiFrame.hpp)
+
+target_sources(pcl_renderer PUBLIC multiFrame.cpp multiFrame.hpp PRIVATE ${TINYSRC} )
+
 target_link_libraries(pcl_renderer ${REALSENSE2_LIB})
 set_target_properties(pcl_renderer PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
@@ -30,7 +32,6 @@ set_target_properties(pcl_renderer PROPERTIES
 #	$<IF$<CONFIG:MinSizeRel>,RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL,
 #	$<IF$<CONFIG:RelWithDebInfo>,RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO,>>>>
 
-message("exec in: $<TARGET_FILE_DIR:pcl_renderer>")
 install(TARGETS pcl_renderer RUNTIME DESTINATION D:/${PROJECT_NAME}/bin)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

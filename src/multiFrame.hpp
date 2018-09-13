@@ -28,6 +28,9 @@
 #include <pcl/common/transforms.h>
 #include <pcl/common/common_headers.h>
 #include <pcl/common/transforms.h>
+
+#include "tinyxml.h"
+
 /*
 #include <pcl/io/ply_io.h>
 #include <pcl/console/parse.h>
@@ -40,6 +43,12 @@
 using namespace std;
 using namespace pcl;
 using namespace std::chrono;
+
+struct cameradata {
+	const char* serial;
+	Eigen::Affine3d trafo;
+	boost::shared_ptr<PointCloud<PointXYZRGB>> cloud;
+};
 
 class multiFrame {
 
@@ -62,6 +71,8 @@ public:
 			RotatedPC = generate_pcl();
 			std::cout << "No cameras found, a spinning generated pointcloud of " << MergedCloud->size() << " data points will be offered" << std::endl;
 		}
+		/*config2file();
+		file2config();/**/
 	}
 
 	void get_pointcloud(uint64_t *timestamp, void **pointcloud);
@@ -91,15 +102,118 @@ private:
 		return point_cloud_ptr;
 	}
 
+	// store the current camera transformation setting into a xml ducument
+	void config2file()
+	{
+		TiXmlDocument doc;
+		doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
+
+		TiXmlElement* root = new TiXmlElement("file");
+		doc.LinkEndChild(root);
+
+		TiXmlElement* file = new TiXmlElement("CameraConfig");
+		root->LinkEndChild(file);
+
+		for (cameradata ccfg : CameraData) {
+			TiXmlElement* cam = new TiXmlElement("camera");
+			cam->SetAttribute("serial", ccfg.serial);
+			file->LinkEndChild(cam);
+
+			TiXmlElement* trafo = new TiXmlElement("trafo");
+			cam->LinkEndChild(trafo);
+
+			TiXmlElement* val = new TiXmlElement("values");
+			val->SetDoubleAttribute("v00", ccfg.trafo(0, 0));
+			val->SetDoubleAttribute("v01", ccfg.trafo(0, 1));
+			val->SetDoubleAttribute("v02", ccfg.trafo(0, 2));
+			val->SetDoubleAttribute("v03", ccfg.trafo(0, 3));
+			val->SetDoubleAttribute("v10", ccfg.trafo(1, 0));
+			val->SetDoubleAttribute("v11", ccfg.trafo(1, 1));
+			val->SetDoubleAttribute("v12", ccfg.trafo(1, 2));
+			val->SetDoubleAttribute("v13", ccfg.trafo(1, 3));
+			val->SetDoubleAttribute("v20", ccfg.trafo(2, 0));
+			val->SetDoubleAttribute("v21", ccfg.trafo(2, 1));
+			val->SetDoubleAttribute("v22", ccfg.trafo(2, 2));
+			val->SetDoubleAttribute("v23", ccfg.trafo(2, 3));
+			val->SetDoubleAttribute("v30", ccfg.trafo(3, 0));
+			val->SetDoubleAttribute("v31", ccfg.trafo(3, 1));
+			val->SetDoubleAttribute("v32", ccfg.trafo(3, 2));
+			val->SetDoubleAttribute("v33", ccfg.trafo(3, 3));
+
+			trafo->LinkEndChild(val);
+		}
+
+		doc.SaveFile("cameraconfig.xml");
+	}
+
+	// restore the camera transformation setting as stored in the configuration document
+	void file2config()
+	{
+		TiXmlDocument doc("cameraconfig.xml");
+		bool loadOkay = doc.LoadFile();
+		if (!loadOkay)
+		{
+			std::cout << "Failed to load cameraconfig.xml \n";
+			return;
+		}
+
+		TiXmlHandle docHandle(&doc);
+		TiXmlElement* camConfig = docHandle.FirstChild("file").FirstChild("CameraConfig").FirstChild("camera").ToElement();
+
+		while (camConfig)
+		{
+			std::cout << camConfig->Attribute("serial") << std::endl;
+
+			Eigen::Affine3d transform = Eigen::Affine3d::Identity();
+			TiXmlElement *trafo = camConfig->FirstChildElement("trafo");
+			if (trafo) {
+				TiXmlElement *val = trafo->FirstChildElement("values");
+				val->QueryDoubleAttribute("v00", &transform(0, 0));
+				val->QueryDoubleAttribute("v01", &transform(0, 1));
+				val->QueryDoubleAttribute("v02", &transform(0, 2));
+				val->QueryDoubleAttribute("v03", &transform(0, 3));
+				val->QueryDoubleAttribute("v10", &transform(1, 0));
+				val->QueryDoubleAttribute("v11", &transform(1, 1));
+				val->QueryDoubleAttribute("v12", &transform(1, 2));
+				val->QueryDoubleAttribute("v13", &transform(1, 3));
+				val->QueryDoubleAttribute("v20", &transform(2, 0));
+				val->QueryDoubleAttribute("v21", &transform(2, 1));
+				val->QueryDoubleAttribute("v22", &transform(2, 2));
+				val->QueryDoubleAttribute("v23", &transform(2, 3));
+				val->QueryDoubleAttribute("v30", &transform(3, 0));
+				val->QueryDoubleAttribute("v31", &transform(3, 1));
+				val->QueryDoubleAttribute("v32", &transform(3, 2));
+				val->QueryDoubleAttribute("v33", &transform(3, 3));
+			}
+			camConfig = camConfig->NextSiblingElement("camera");
+		}
+	}
+
+	Eigen::Affine3d *getCameraTransform(const char* serial)
+	{
+		for (cameradata ccfg : CameraData) {
+			if (strcmp(ccfg.serial, serial) == 0)
+				return &ccfg.trafo;
+		}
+		return NULL;
+	}
+
+	boost::shared_ptr<PointCloud<PointXYZRGB>> getCameraCloud(const char * serial)
+	{
+		for (cameradata ccfg : CameraData) {
+			if (strcmp(ccfg.serial, serial) == 0)
+				return ccfg.cloud;
+		}
+		return NULL;
+	}
+
 	std::mutex frames_mutex;
 	void capture_start(const std::string& serial_number, multiFrame* m_frame, int camNum);
-	void push_pointcloud(boost::shared_ptr<PointCloud<PointXYZRGB>> pntcld, const int camNum);
 	boost::shared_ptr<PointCloud<PointXYZRGB>> merge_views();
 	boost::shared_ptr<PointCloud<PointXYZRGB>> MergedCloud;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> RotatedPC;
 
-	std::vector<boost::shared_ptr<PointCloud<PointXYZRGB>>> PointCloudViews;
-	std::vector<Eigen::Affine3f, Eigen::aligned_allocator<Eigen::Vector4f>> MergeTrafos;
+	std::vector<cameradata, Eigen::aligned_allocator<cameradata>> CameraData;
 
 	int numberOfCameras = 0;
 	float angle = 0;
