@@ -17,16 +17,16 @@ const int depth_fps = 30;
 /**/
 const int color_width = 640;
 const int color_height = 360;
-const int color_fps = 30;
+const int color_fps = 15;
 const int depth_width = 640;
 const int depth_height = 360;
-const int depth_fps = 30;
+const int depth_fps = 15;
 /**/
 
 // Configure and initialize caputuring of one camera
-void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_frame, int camNum)
+void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_frame)
 {
-	std::thread([serial_number, m_frame, camNum]() mutable {
+	std::thread([serial_number, m_frame]() mutable {
 		rs2::config cfg;
 		rs2::pipeline pipe;
 		rs2::pointcloud pc;
@@ -39,17 +39,13 @@ void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_f
 		pipe.start(cfg);		// Start streaming with the configuration just set
 		std::cout << "started camera ser no: " << serial_number << '\n';
 
-		// prepare storage space for camera data
+		// prepare storage for camera data
+		boost::shared_ptr<PointCloud<PointXYZRGB>> empty_pntcld(new PointCloud<PointXYZRGB>());
+		Eigen::Affine3d default_trafo = Eigen::Affine3d::Identity();
 		cameradata cc;
-		boost::shared_ptr<PointCloud<PointXYZRGB>> dummy_pntcld(new PointCloud<PointXYZRGB>());
 		cc.serial = serial_number.c_str();
-		cc.trafo = Eigen::Affine3d::Identity();
-
-		// TEMP for test
-		if (camNum > 0) 
-			cc.trafo.rotate(Eigen::AngleAxisd(camNum*0.7, Eigen::Vector3d::UnitY()));
-
-		cc.cloud = dummy_pntcld;
+		cc.cloud = empty_pntcld;
+		cc.trafo = &default_trafo;
 		m_frame->CameraData.push_back(cc);
 
 		while (true) // Application still alive?
@@ -116,11 +112,11 @@ boost::shared_ptr<PointCloud<PointXYZRGB>> multiFrame::merge_views()
 	if (MergedCloud)
 		MergedCloud.get()->clear();
 
-	if (numberOfCameras == 1)
+	if (CameraData.size() == 1)
 		return CameraData.at(0).cloud;
 
 	for (cameradata ccfg : CameraData) {
-		transformPointCloud(*ccfg.cloud.get(), *aligned_pntcld, ccfg.trafo);
+		transformPointCloud(*ccfg.cloud.get(), *aligned_pntcld, *ccfg.trafo);
 		if (aligned_pntcld->size() <= 0) continue;
 		for (PointXYZRGB pnt : *aligned_pntcld)
 			MergedCloud->push_back(pnt);
@@ -136,7 +132,7 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 	std::lock_guard<std::mutex> guard(frames_mutex);
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-	if (numberOfCameras > 0) {
+	if (CameraData.size() > 0) {
 		boost::shared_ptr<PointCloud<PointXYZRGB>> merged = merge_views();
 		if (merged != NULL)
 			*pointcloud = reinterpret_cast<void *> (&merge_views());

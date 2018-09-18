@@ -46,7 +46,7 @@ using namespace std::chrono;
 
 struct cameradata {
 	const char* serial;
-	Eigen::Affine3d trafo;
+	Eigen::Affine3d* trafo;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> cloud;
 };
 
@@ -59,20 +59,20 @@ public:
 		const std::string platform_camera_name = "Platform Camera";
 		MergedCloud = generate_pcl();
 
-		numberOfCameras = 0;
 		for (auto dev : devs) {
 			if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name)
 				// Start capturing for all connected RealSense devices
-				capture_start(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER), this, numberOfCameras++);
+				capture_start(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER), this);
 		}
 
-		if (numberOfCameras == 0) {
+		if (CameraData.size() == 0) {
 			// no cameras connected, then generate a pointcloud instead
 			RotatedPC = generate_pcl();
 			std::cout << "No cameras found, a spinning generated pointcloud of " << MergedCloud->size() << " data points will be offered" << std::endl;
 		}
-		/*config2file();
-		file2config();/**/
+
+		// set the transformation matrices to align all cameras
+		file2config();
 	}
 
 	void get_pointcloud(uint64_t *timestamp, void **pointcloud);
@@ -105,6 +105,8 @@ private:
 	// store the current camera transformation setting into a xml ducument
 	void config2file()
 	{
+		std::lock_guard<std::mutex> guard(frames_mutex);
+
 		TiXmlDocument doc;
 		doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
 
@@ -123,22 +125,22 @@ private:
 			cam->LinkEndChild(trafo);
 
 			TiXmlElement* val = new TiXmlElement("values");
-			val->SetDoubleAttribute("v00", ccfg.trafo(0, 0));
-			val->SetDoubleAttribute("v01", ccfg.trafo(0, 1));
-			val->SetDoubleAttribute("v02", ccfg.trafo(0, 2));
-			val->SetDoubleAttribute("v03", ccfg.trafo(0, 3));
-			val->SetDoubleAttribute("v10", ccfg.trafo(1, 0));
-			val->SetDoubleAttribute("v11", ccfg.trafo(1, 1));
-			val->SetDoubleAttribute("v12", ccfg.trafo(1, 2));
-			val->SetDoubleAttribute("v13", ccfg.trafo(1, 3));
-			val->SetDoubleAttribute("v20", ccfg.trafo(2, 0));
-			val->SetDoubleAttribute("v21", ccfg.trafo(2, 1));
-			val->SetDoubleAttribute("v22", ccfg.trafo(2, 2));
-			val->SetDoubleAttribute("v23", ccfg.trafo(2, 3));
-			val->SetDoubleAttribute("v30", ccfg.trafo(3, 0));
-			val->SetDoubleAttribute("v31", ccfg.trafo(3, 1));
-			val->SetDoubleAttribute("v32", ccfg.trafo(3, 2));
-			val->SetDoubleAttribute("v33", ccfg.trafo(3, 3));
+			val->SetDoubleAttribute("v00", (*ccfg.trafo)(0, 0));
+			val->SetDoubleAttribute("v01", (*ccfg.trafo)(0, 1));
+			val->SetDoubleAttribute("v02", (*ccfg.trafo)(0, 2));
+			val->SetDoubleAttribute("v03", (*ccfg.trafo)(0, 3));
+			val->SetDoubleAttribute("v10", (*ccfg.trafo)(1, 0));
+			val->SetDoubleAttribute("v11", (*ccfg.trafo)(1, 1));
+			val->SetDoubleAttribute("v12", (*ccfg.trafo)(1, 2));
+			val->SetDoubleAttribute("v13", (*ccfg.trafo)(1, 3));
+			val->SetDoubleAttribute("v20", (*ccfg.trafo)(2, 0));
+			val->SetDoubleAttribute("v21", (*ccfg.trafo)(2, 1));
+			val->SetDoubleAttribute("v22", (*ccfg.trafo)(2, 2));
+			val->SetDoubleAttribute("v23", (*ccfg.trafo)(2, 3));
+			val->SetDoubleAttribute("v30", (*ccfg.trafo)(3, 0));
+			val->SetDoubleAttribute("v31", (*ccfg.trafo)(3, 1));
+			val->SetDoubleAttribute("v32", (*ccfg.trafo)(3, 2));
+			val->SetDoubleAttribute("v33", (*ccfg.trafo)(3, 3));
 
 			trafo->LinkEndChild(val);
 		}
@@ -156,34 +158,37 @@ private:
 			std::cout << "Failed to load cameraconfig.xml \n";
 			return;
 		}
+		std::lock_guard<std::mutex> guard(frames_mutex);
 
 		TiXmlHandle docHandle(&doc);
 		TiXmlElement* camConfig = docHandle.FirstChild("file").FirstChild("CameraConfig").FirstChild("camera").ToElement();
 
 		while (camConfig)
 		{
-			std::cout << camConfig->Attribute("serial") << std::endl;
-
-			Eigen::Affine3d transform = Eigen::Affine3d::Identity();
-			TiXmlElement *trafo = camConfig->FirstChildElement("trafo");
-			if (trafo) {
-				TiXmlElement *val = trafo->FirstChildElement("values");
-				val->QueryDoubleAttribute("v00", &transform(0, 0));
-				val->QueryDoubleAttribute("v01", &transform(0, 1));
-				val->QueryDoubleAttribute("v02", &transform(0, 2));
-				val->QueryDoubleAttribute("v03", &transform(0, 3));
-				val->QueryDoubleAttribute("v10", &transform(1, 0));
-				val->QueryDoubleAttribute("v11", &transform(1, 1));
-				val->QueryDoubleAttribute("v12", &transform(1, 2));
-				val->QueryDoubleAttribute("v13", &transform(1, 3));
-				val->QueryDoubleAttribute("v20", &transform(2, 0));
-				val->QueryDoubleAttribute("v21", &transform(2, 1));
-				val->QueryDoubleAttribute("v22", &transform(2, 2));
-				val->QueryDoubleAttribute("v23", &transform(2, 3));
-				val->QueryDoubleAttribute("v30", &transform(3, 0));
-				val->QueryDoubleAttribute("v31", &transform(3, 1));
-				val->QueryDoubleAttribute("v32", &transform(3, 2));
-				val->QueryDoubleAttribute("v33", &transform(3, 3));
+			const char * serial = camConfig->Attribute("serial");
+			for (cameradata ccfg : CameraData) {
+				if (strcmp(ccfg.serial, serial) == 0) {
+					TiXmlElement *trafo = camConfig->FirstChildElement("trafo");
+					if (trafo) {
+						TiXmlElement *val = trafo->FirstChildElement("values");
+						val->QueryDoubleAttribute("v00", &((*ccfg.trafo)(0, 0)));
+						val->QueryDoubleAttribute("v01", &((*ccfg.trafo)(0, 1)));
+						val->QueryDoubleAttribute("v02", &((*ccfg.trafo)(0, 2)));
+						val->QueryDoubleAttribute("v03", &((*ccfg.trafo)(0, 3)));
+						val->QueryDoubleAttribute("v10", &((*ccfg.trafo)(1, 0)));
+						val->QueryDoubleAttribute("v11", &((*ccfg.trafo)(1, 1)));
+						val->QueryDoubleAttribute("v12", &((*ccfg.trafo)(1, 2)));
+						val->QueryDoubleAttribute("v13", &((*ccfg.trafo)(1, 3)));
+						val->QueryDoubleAttribute("v20", &((*ccfg.trafo)(2, 0)));
+						val->QueryDoubleAttribute("v21", &((*ccfg.trafo)(2, 1)));
+						val->QueryDoubleAttribute("v22", &((*ccfg.trafo)(2, 2)));
+						val->QueryDoubleAttribute("v23", &((*ccfg.trafo)(2, 3)));
+						val->QueryDoubleAttribute("v30", &((*ccfg.trafo)(3, 0)));
+						val->QueryDoubleAttribute("v31", &((*ccfg.trafo)(3, 1)));
+						val->QueryDoubleAttribute("v32", &((*ccfg.trafo)(3, 2)));
+						val->QueryDoubleAttribute("v33", &((*ccfg.trafo)(3, 3)));
+					}
+				}
 			}
 			camConfig = camConfig->NextSiblingElement("camera");
 		}
@@ -193,7 +198,7 @@ private:
 	{
 		for (cameradata ccfg : CameraData) {
 			if (strcmp(ccfg.serial, serial) == 0)
-				return &ccfg.trafo;
+				return ccfg.trafo;
 		}
 		return NULL;
 	}
@@ -208,15 +213,17 @@ private:
 	}
 
 	std::mutex frames_mutex;
-	void capture_start(const std::string& serial_number, multiFrame* m_frame, int camNum);
+	void capture_start(const std::string& serial_number, multiFrame* m_frame);
 	boost::shared_ptr<PointCloud<PointXYZRGB>> merge_views();
 	boost::shared_ptr<PointCloud<PointXYZRGB>> MergedCloud;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> RotatedPC;
 
-	std::vector<cameradata, Eigen::aligned_allocator<cameradata>> CameraData;
-
-	int numberOfCameras = 0;
+	// Storage of the per camera data
+	std::vector<cameradata> CameraData;
 	float angle = 0;
+
+	public:
+		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 
