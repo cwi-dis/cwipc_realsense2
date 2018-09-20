@@ -11,14 +11,14 @@ int main(int argc, char * argv[]) try
 	window app(1280, 720, "RealSense Multicamera Capturing");
 	// Construct an object to manage view state
 	glfw_state app_state;
-	// register callbacks to allow manipulation of the PointCloud
-	register_glfw_callbacks(app, app_state);
-
+	// Construct a capturing object
 	multiFrame multiframe;
+
+	// register callbacks to allow manipulation of the PointCloud
+	register_glfw_callbacks(app, app_state, multiframe);
 
 	frameNum = 0;
 	while (app) {
-
 		uint64_t time = 0;
 		boost::shared_ptr<PointCloud<PointXYZRGB>> captured_pc;
 		void* pc = reinterpret_cast<void *> (&captured_pc);

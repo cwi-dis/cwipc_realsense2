@@ -19,89 +19,89 @@ using namespace pcl;
 class window
 {
 public:
-    std::function<void(bool)>           on_left_mouse   = [](bool) {};
-    std::function<void(double, double)> on_mouse_scroll = [](double, double) {};
-    std::function<void(double, double)> on_mouse_move   = [](double, double) {};
-    std::function<void(int)>            on_key_release  = [](int) {};
+	std::function<void(bool)>           on_left_mouse = [](bool) {};
+	std::function<void(double, double)> on_mouse_scroll = [](double, double) {};
+	std::function<void(double, double)> on_mouse_move = [](double, double) {};
+	std::function<void(int)>            on_key_release = [](int) {};
 
-    window(int width, int height, const char* title) : _width(width), _height(height)
-    {
-        glfwInit();
-        win = glfwCreateWindow(width, height, title, nullptr, nullptr);
-        if (!win)
-            throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
-        glfwMakeContextCurrent(win);
-        glfwSetWindowUserPointer(win, this);
-        glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods) {
-            auto s = (window*)glfwGetWindowUserPointer(win);
-            if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
-        });
+	window(int width, int height, const char* title) : _width(width), _height(height)
+	{
+		glfwInit();
+		win = glfwCreateWindow(width, height, title, nullptr, nullptr);
+		if (!win)
+			throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
+		glfwMakeContextCurrent(win);
+		glfwSetWindowUserPointer(win, this);
+		glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods) {
+			auto s = (window*)glfwGetWindowUserPointer(win);
+			if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
+		});
 
-        glfwSetScrollCallback(win, [](GLFWwindow * win, double xoffset, double yoffset) {
-            auto s = (window*)glfwGetWindowUserPointer(win);
-            s->on_mouse_scroll(xoffset, yoffset);
-        });
+		glfwSetScrollCallback(win, [](GLFWwindow * win, double xoffset, double yoffset) {
+			auto s = (window*)glfwGetWindowUserPointer(win);
+			s->on_mouse_scroll(xoffset, yoffset);
+		});
 
-        glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y) {
-            auto s = (window*)glfwGetWindowUserPointer(win);
-            s->on_mouse_move(x, y);
-        });
+		glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y) {
+			auto s = (window*)glfwGetWindowUserPointer(win);
+			s->on_mouse_move(x, y);
+		});
 
-        glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods) {
-            auto s = (window*)glfwGetWindowUserPointer(win);
-            if (0 == action) // on key release
-                s->on_key_release(key);
-        });
-    }
+		glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods) {
+			auto s = (window*)glfwGetWindowUserPointer(win);
+			if (0 == action) // on key release
+				s->on_key_release(key);
+		});
+	}
 
-    float width() const { return float(_width); }
-    float height() const { return float(_height); }
+	float width() const { return float(_width); }
+	float height() const { return float(_height); }
 
-    operator bool()
-    {
-        glPopMatrix();
-        glfwSwapBuffers(win);
+	operator bool()
+	{
+		glPopMatrix();
+		glfwSwapBuffers(win);
 
-        auto res = !glfwWindowShouldClose(win);
+		auto res = !glfwWindowShouldClose(win);
 
-        glfwPollEvents();
-        glfwGetFramebufferSize(win, &_width, &_height);
+		glfwPollEvents();
+		glfwGetFramebufferSize(win, &_width, &_height);
 
-        // Clear the framebuffer
-        glClear(GL_COLOR_BUFFER_BIT);
-        glViewport(0, 0, _width, _height);
+		// Clear the framebuffer
+		glClear(GL_COLOR_BUFFER_BIT);
+		glViewport(0, 0, _width, _height);
 
-        // Draw the images
-        glPushMatrix();
-        glfwGetWindowSize(win, &_width, &_height);
-        glOrtho(0, _width, _height, 0, -1, +1);
+		// Draw the images
+		glPushMatrix();
+		glfwGetWindowSize(win, &_width, &_height);
+		glOrtho(0, _width, _height, 0, -1, +1);
 
-        return res;
-    }
+		return res;
+	}
 
-    ~window()
-    {
-        glfwDestroyWindow(win);
-        glfwTerminate();
-    }
+	~window()
+	{
+		glfwDestroyWindow(win);
+		glfwTerminate();
+	}
 
-    operator GLFWwindow*() { return win; }
+	operator GLFWwindow*() { return win; }
 
 private:
-    GLFWwindow* win;
-    int _width, _height;
+	GLFWwindow* win;
+	int _width, _height;
 };
 
 // Struct for managing rotation of pointcloud view
 struct glfw_state {
-    glfw_state() : yaw(0.0), pitch(0.0), last_x(0.0), last_y(0.0),
-        ml(false), offset(0.f) {}
-    double yaw;
-    double pitch;
-    double last_x;
-    double last_y;
-    bool ml;
-    float offset;
+	glfw_state() : yaw(0.0), pitch(0.0), last_x(0.0), last_y(0.0),
+		ml(false), offset(0.f) {}
+	double yaw;
+	double pitch;
+	double last_x;
+	double last_y;
+	bool ml;
+	float offset;
 };
 
 // Handle the OpenGL setup needed to display all pointclouds
@@ -150,35 +150,70 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 	glPushMatrix();
 }
 
+bool do_align = false;
+bool rotation = true;
+
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
-void register_glfw_callbacks(window& app, glfw_state& app_state)
+void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& multiframe)
 {
-    app.on_left_mouse = [&](bool pressed) {
-        app_state.ml = pressed;
-    };
+	app.on_left_mouse = [&](bool pressed) {
+		app_state.ml = pressed;
+	};
 
-    app.on_mouse_scroll = [&](double xoffset, double yoffset) {
-        app_state.offset -= static_cast<float>(yoffset);
-    };
+	app.on_mouse_scroll = [&](double xoffset, double yoffset) {
+		app_state.offset -= static_cast<float>(yoffset);
+	};
 
-    app.on_mouse_move = [&](double x, double y) {
-        if (app_state.ml)
-        {
-            app_state.yaw += (x - app_state.last_x)/10.0;
-            app_state.pitch += (y - app_state.last_y)/10.0;
-            app_state.pitch = std::max(app_state.pitch, -85.0);
-            app_state.pitch = std::min(app_state.pitch, +85.0);
-        }
-        app_state.last_x = x;
-        app_state.last_y = y;
-    };
+	app.on_mouse_move = [&](double x, double y) {
+		if (app_state.ml) {
+			if (do_align) {
+				Eigen::Affine3d * transform = multiframe.getCameraTransform(0);
+				double dx = (x - app_state.last_x) / 50.0;
+				double dy = -(y - app_state.last_y) / 50.0;
+				if (rotation) {
+					(*transform).rotate(Eigen::AngleAxisd(dx, Eigen::Vector3d::UnitY()));
+					(*transform).rotate(Eigen::AngleAxisd(dy, Eigen::Vector3d::UnitX()));
+				}
+				else {
+					(*transform).translation() << x/50, y/50, 0.0;
+				}
+			}
+			else {
+				app_state.yaw += (x - app_state.last_x) / 10.0;
+				app_state.pitch += (y - app_state.last_y) / 10.0;
+				app_state.pitch = std::max(app_state.pitch, -85.0);
+				app_state.pitch = std::min(app_state.pitch, +85.0);
+			}
+		}
+		app_state.last_x = x;
+		app_state.last_y = y;
+	};
 
-    app.on_key_release = [&](int key) {
-        if (key == 256) // Escape
-            app_state.yaw = app_state.pitch = 0; app_state.offset = 0.0;
-    };
+	app.on_key_release = [&](int key) {
+		std::cout << "key = '" << key << "'\n";
+
+		if (key == 256) { // Escape
+			app_state.yaw = app_state.pitch = 0;
+			app_state.offset = 0.0;
+		}
+		else if (key == 65) {
+			if (do_align) {
+				multiframe.capture_start();
+				do_align = false;
+			}
+			else {
+				multiframe.capture_stop();
+				do_align = true;
+			}
+		}
+		else if (key == 82) {
+			rotation = true;
+		}
+		else if (key == 84) {
+			rotation = false;
+		}
+	};
 }
-
 int frameNum;
 
 void cloud2file(boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld)

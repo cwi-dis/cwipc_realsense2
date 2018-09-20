@@ -24,31 +24,26 @@ const int depth_fps = 15;
 /**/
 
 // Configure and initialize caputuring of one camera
-void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_frame)
+void multiFrame::camera_start(string serialnumber, multiFrame* m_frame)
 {
-	std::thread([serial_number, m_frame]() mutable {
+	std::cout << "starting thread for camera ser no: " << serialnumber << '\n';
+
+	std::thread([serialnumber, m_frame]() mutable {
 		rs2::config cfg;
 		rs2::pipeline pipe;
 		rs2::pointcloud pc;
 		rs2::points points;
 
-		cfg.enable_device(serial_number);
+		cfg.enable_device(serialnumber);
 		cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, color_fps);
 		cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, depth_fps);
 
+		boost::shared_ptr<PointCloud<PointXYZRGB>> cloud = m_frame->getCameraCloud(serialnumber.c_str());
+
 		pipe.start(cfg);		// Start streaming with the configuration just set
-		std::cout << "started camera ser no: " << serial_number << '\n';
+		std::cout << "started camera ser no: " << serialnumber << '\n';
 
-		// prepare storage for camera data
-		boost::shared_ptr<PointCloud<PointXYZRGB>> empty_pntcld(new PointCloud<PointXYZRGB>());
-		Eigen::Affine3d default_trafo = Eigen::Affine3d::Identity();
-		cameradata cc;
-		cc.serial = serial_number.c_str();
-		cc.cloud = empty_pntcld;
-		cc.trafo = &default_trafo;
-		m_frame->CameraData.push_back(cc);
-
-		while (true) // Application still alive?
+		while (m_frame->do_capture) // Application still alive?
 		{
 			// Wait for the next set of frames from the camera
 			auto frames = pipe.wait_for_frames();
@@ -79,7 +74,7 @@ void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_f
 			max = 0.8f + min;
 
 			// Make PointCloud
-			boost::shared_ptr<PointCloud<PointXYZRGB>> camera_pntcld(new PointCloud<PointXYZRGB>());
+			cloud->clear();
 
 			for (int i = 0; i < points.size(); i++) {
 				float x = minx - vertices[i].x; x *= x;
@@ -93,55 +88,48 @@ void multiFrame::capture_start(const std::string& serial_number, multiFrame* m_f
 					pt.r = colors[pi];
 					pt.g = colors[pi + 1];
 					pt.b = colors[pi + 2];
-					camera_pntcld->push_back(pt);
+					cloud->push_back(pt);
 				}
 			}
-			if (camera_pntcld->size() > 0)
-				*cc.cloud = *camera_pntcld;
 		}
-		std::cout << "stopping camera ser no: " << serial_number << "\n";
+		std::cout << "stopping camera ser no: " << serialnumber << "\n";
 		pipe.stop();
 	}
 	).detach();
 }
 
-boost::shared_ptr<PointCloud<PointXYZRGB>> multiFrame::merge_views()
+void multiFrame::merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>> cloud_ptr)
 {
-	PointCloud<PointXYZRGB> *aligned_pntcld = new PointCloud<PointXYZRGB>();
+	PointCloud<PointXYZRGB> *aligned_cld = new PointCloud<PointXYZRGB>();
 
-	if (MergedCloud)
-		MergedCloud.get()->clear();
-
-	if (CameraData.size() == 1)
-		return CameraData.at(0).cloud;
-
+	cloud_ptr->clear();
 	for (cameradata ccfg : CameraData) {
-		transformPointCloud(*ccfg.cloud.get(), *aligned_pntcld, *ccfg.trafo);
-		if (aligned_pntcld->size() <= 0) continue;
-		for (PointXYZRGB pnt : *aligned_pntcld)
-			MergedCloud->push_back(pnt);
+		PointCloud<PointXYZRGB> *cam_cld = ccfg.cloud.get();
+		if (cam_cld->size() > 0) {
+			transformPointCloud(*cam_cld, *aligned_cld, *ccfg.trafo);
+			for (PointXYZRGB pnt : *aligned_cld)
+				cloud_ptr->push_back(pnt);
+		}
 	}
-	aligned_pntcld->clear();
-	delete aligned_pntcld;
-
-	return MergedCloud;
+	aligned_cld->clear();
+	delete aligned_cld;
 }
 
+// API function that returns the merged pointcloud and timestamp
 void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 {
 	std::lock_guard<std::mutex> guard(frames_mutex);
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
 	if (CameraData.size() > 0) {
-		boost::shared_ptr<PointCloud<PointXYZRGB>> merged = merge_views();
-		if (merged != NULL)
-			*pointcloud = reinterpret_cast<void *> (&merge_views());
+		merge_views(MergedCloud);
+		*pointcloud = reinterpret_cast<void *> (&MergedCloud);
 	}
 	else {	// return a spinning generated mathematical pointcloud
 		angle += 0.03;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-		transformPointCloud(*MergedCloud, *RotatedPC, transform);
+		transformPointCloud(*GeneratedPC, *RotatedPC, transform);
 		*pointcloud = (reinterpret_cast<void *>(&RotatedPC));
 	};
 }
