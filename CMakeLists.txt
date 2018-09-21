@@ -40,6 +40,7 @@ find_package(PCL REQUIRED COMPONENTS common io)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
 include(third-party/tinyXML/CMakeLists.txt)
 include_directories(third-party/tinyXML)
 

@@ -127,10 +127,10 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 	}
 	else {	// return a spinning generated mathematical pointcloud
 		angle += 0.03;
-		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
+		Eigen::Affine3d transform = Eigen::Affine3d::Identity();
+		transform.rotate(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY()));
 		transformPointCloud(*GeneratedPC, *RotatedPC, transform);
-		*pointcloud = (reinterpret_cast<void *>(&RotatedPC));
+		*pointcloud = reinterpret_cast<void *> (&RotatedPC);
 	};
 }
 

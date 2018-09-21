@@ -221,7 +221,7 @@ void cloud2file(boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld)
 	int size = pntcld->size();
 	if (size <= 0) return;
 
-	std::ofstream myfile(("pcl_frame" + std::to_string(frameNum++) + ".ply").c_str());
+	std::ofstream myfile(("pcl_frame" + std::to_string(frameNum) + ".ply").c_str());
 	myfile << "ply\n" << "format ascii 1.0\nelement vertex " << size << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
 
 	std::ostringstream oss;

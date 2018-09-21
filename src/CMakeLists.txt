@@ -12,6 +12,7 @@ add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
 target_sources(pcl_renderer PUBLIC multiFrame.cpp multiFrame.hpp PRIVATE ${TINYSRC} )
 
 target_link_libraries(pcl_renderer ${REALSENSE2_LIB})
+#target_link_libraries(pcl_renderer ${MULTIFRAME_LIB})
 set_target_properties(pcl_renderer PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
@@ -42,7 +43,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     target_link_libraries(pcl_renderer ${DEPENDENCIES})
 endif()
 
-add_library(multiFrame SHARED multiFrame.cpp multiFrame.hpp  ${TINYSRC} )
+add_library(multiFrame SHARED multiFrame.cpp multiFrame.hpp ${TINYSRC} )
 target_link_libraries(multiFrame ${REALSENSE2_LIB})
 
 add_custom_command(TARGET pcl_renderer POST_BUILD

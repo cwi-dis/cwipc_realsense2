@@ -84,6 +84,7 @@ public:
 		if (CameraData.size() == 0) {
 			// no cameras connected, then generate a pointcloud instead
 			GeneratedPC = generate_pcl();
+			RotatedPC = generate_pcl();
 			std::cout << "No cameras found, a spinning generated pointcloud of " << GeneratedPC->size() << " data points will be offered" << std::endl;
 		}
 	}

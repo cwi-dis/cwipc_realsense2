@@ -30,6 +30,9 @@ int main(int argc, char * argv[]) try
 
 		if (captured_pc.get() == NULL) continue;
 
+		if (frameNum++ < 20)
+			cout << "pcl with " << captured_pc.get()->size() << " points\n";
+
 		// Write a ply file of the PointCloud
 		//cloud2file(captured_pc);
 
