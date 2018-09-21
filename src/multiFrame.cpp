@@ -123,7 +123,11 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 
 	if (CameraData.size() > 0) {
 		merge_views(MergedCloud);
-		*pointcloud = reinterpret_cast<void *> (&MergedCloud);
+		if (MergedCloud.get()->size() > 0)
+			*pointcloud = reinterpret_cast<void *> (&MergedCloud);
+		else
+			// HACK to make sure the encoder does not get an empty pointcloud //
+			*pointcloud = reinterpret_cast<void *> (&RotatedPC);
 	}
 	else {	// return a spinning generated mathematical pointcloud
 		angle += 0.03;
