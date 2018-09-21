@@ -40,14 +40,13 @@ find_package(PCL REQUIRED COMPONENTS common io)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+include(third-party/tinyXML/CMakeLists.txt)
+include_directories(third-party/tinyXML)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
 
     add_subdirectory(third-party/glfw)
 	list(APPEND DEPENDENCIES glfw3)
-
-    include_directories(third-party/tinyXML)
-    include(third-party/tinyXML/CMakeLists.txt)
  
     find_package(OpenGL)
     if(NOT OPENGL_FOUND)

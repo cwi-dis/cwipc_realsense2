@@ -42,7 +42,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     target_link_libraries(pcl_renderer ${DEPENDENCIES})
 endif()
 
-add_library(multiFrame SHARED multiFrame.cpp multiFrame.hpp)
+add_library(multiFrame SHARED multiFrame.cpp multiFrame.hpp  ${TINYSRC} )
 target_link_libraries(multiFrame ${REALSENSE2_LIB})
 
 add_custom_command(TARGET pcl_renderer POST_BUILD

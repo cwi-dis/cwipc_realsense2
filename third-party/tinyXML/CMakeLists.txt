@@ -7,8 +7,5 @@
 #  minimum required cmake version: 3.12.0
 cmake_minimum_required(VERSION 3.12.0)
 
-if(BUILD_GRAPHICAL_EXAMPLES)
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR} TINYSRC)
 
-    aux_source_directory(${CMAKE_CURRENT_LIST_DIR} TINYSRC)
- 
-endif()
