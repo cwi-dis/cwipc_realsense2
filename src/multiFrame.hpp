@@ -66,7 +66,7 @@ public:
 			if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
 				// prepare storage for camera data
 				boost::shared_ptr<PointCloud<PointXYZRGB>> empty_pntcld(new PointCloud<PointXYZRGB>());
-				//boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d::Identity());
+				boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 				default_trafo->setIdentity();
 				cameradata* cc = new cameradata();
 				cc->serial = string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
