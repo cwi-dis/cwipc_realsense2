@@ -127,15 +127,17 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 			*pointcloud = reinterpret_cast<void *> (&MergedCloud);
 		else
 			// HACK to make sure the encoder does not get an empty pointcloud //
-			*pointcloud = reinterpret_cast<void *> (&RotatedPC);
+			*pointcloud = reinterpret_cast<void *> (&GeneratedPC);
 	}
 	else {	// return a spinning generated mathematical pointcloud
 		angle += 0.03;
-		Eigen::Affine3d transform = Eigen::Affine3d::Identity();
-		transform.rotate(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY()));
+		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
 		transformPointCloud(*GeneratedPC, *RotatedPC, transform);
 		*pointcloud = reinterpret_cast<void *> (&RotatedPC);
-	};
+	}
+	boost::shared_ptr<PointCloud<PointXYZRGB>> captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloud<PointXYZRGB>>*>(*pointcloud);
+	cout << "PC size = " << captured_pc.get()->size() << endl;
 }
 
 

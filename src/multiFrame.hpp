@@ -61,6 +61,8 @@ public:
 
 		const std::string platform_camera_name = "Platform Camera";
 		MergedCloud = generate_pcl();
+		GeneratedPC = generate_pcl();
+
 		do_capture = true;
 		for (auto dev : devs) {
 			if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
@@ -83,9 +85,8 @@ public:
 		}
 		if (CameraData.size() == 0) {
 			// no cameras connected, then generate a pointcloud instead
-			GeneratedPC = generate_pcl();
 			RotatedPC = generate_pcl();
-			std::cout << "No cameras found, a spinning generated pointcloud of " << GeneratedPC->size() << " data points will be offered" << std::endl;
+			std::cout << "No cameras found, a spinning generated pointcloud of " << RotatedPC->size() << " data points will be offered" << std::endl;
 		}
 	}
 
@@ -246,7 +247,7 @@ private:
 
 	std::mutex frames_mutex;
 	void camera_start(string serialnumber, multiFrame* m_frame);
-	void merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>>);
+	void merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>> pcl);
 	boost::shared_ptr<PointCloud<PointXYZRGB>> MergedCloud;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> GeneratedPC;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> RotatedPC;
