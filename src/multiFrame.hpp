@@ -152,7 +152,14 @@ public:
 	// return the transformation matrix of the specified camera
 	Eigen::Affine3d *getCameraTransform(int i)
 	{
-		return CameraData[i].trafo.get();
+		if (i >= 0 && i < CameraData.size())
+			return CameraData[i].trafo.get();
+		else
+			return NULL;
+	}
+
+	int getNumberOfCameras() {
+		return CameraData.size();
 	}
 
 private:

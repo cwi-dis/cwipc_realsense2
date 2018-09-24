@@ -152,6 +152,7 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 
 bool do_align = false;
 bool rotation = true;
+int aligncamera = 0;
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
 void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& multiframe)
@@ -167,7 +168,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 	app.on_mouse_move = [&](double x, double y) {
 		if (app_state.ml) {
 			if (do_align) {
-				Eigen::Affine3d * transform = multiframe.getCameraTransform(0);
+				Eigen::Affine3d *transform = multiframe.getCameraTransform(aligncamera);
 				double dx = (x - app_state.last_x) / 50.0;
 				double dy = -(y - app_state.last_y) / 50.0;
 				if (rotation) {
@@ -193,8 +194,14 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 		std::cout << "key = '" << key << "'\n";
 
 		if (key == 256) { // Escape
-			app_state.yaw = app_state.pitch = 0;
-			app_state.offset = 0.0;
+			if (do_align) {
+				Eigen::Affine3d *transform = multiframe.getCameraTransform(aligncamera);
+				(*transform).setIdentity();
+			}
+			else {
+				app_state.yaw = app_state.pitch = 0;
+				app_state.offset = 0.0;
+			}
 		}
 		else if (key == 65) {
 			if (do_align) {
@@ -211,6 +218,10 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 		}
 		else if (key == 84) {
 			rotation = false;
+		}
+		else if (key > 48 && key < multiframe.getNumberOfCameras() + 49) {
+			aligncamera = key - 49;
+			cout << "aligncam = " << aligncamera << endl;
 		}
 	};
 }

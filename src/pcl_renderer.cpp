@@ -31,6 +31,7 @@ int main(int argc, char * argv[]) try
 		if (captured_pc.get() == NULL) continue;
 
 		// Write a ply file of the PointCloud
+		//
 		//cloud2file(captured_pc);
 
 		// Draw the PointCloud

@@ -130,14 +130,12 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 			*pointcloud = reinterpret_cast<void *> (&GeneratedPC);
 	}
 	else {	// return a spinning generated mathematical pointcloud
-		angle += 0.03;
+		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
 		transformPointCloud(*GeneratedPC, *RotatedPC, transform);
 		*pointcloud = reinterpret_cast<void *> (&RotatedPC);
 	}
-	boost::shared_ptr<PointCloud<PointXYZRGB>> captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloud<PointXYZRGB>>*>(*pointcloud);
-	cout << "PC size = " << captured_pc.get()->size() << endl;
 }
 
 
