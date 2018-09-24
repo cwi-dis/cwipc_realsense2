@@ -15,10 +15,8 @@
 #include <iostream>
 #include <functional>
 #include <fstream>
-#include <thread>
 #include <ctime>
 #include <chrono>
-#include <mutex>
 #include <algorithm>
 
 #include <librealsense2/rs.hpp>
@@ -47,6 +45,7 @@ using namespace std::chrono;
 
 struct cameradata {
 	string serial;
+	rs2::pipeline pipe;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> cloud;
 };
@@ -63,7 +62,6 @@ public:
 		MergedCloud = generate_pcl();
 		GeneratedPC = generate_pcl();
 
-		do_capture = true;
 		for (auto dev : devs) {
 			if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
 				// prepare storage for camera data
@@ -75,9 +73,10 @@ public:
 				cc->cloud = empty_pntcld;
 				cc->trafo = default_trafo;
 				CameraData.push_back(*cc);
-				camera_start(cc->serial, this);
+				camera_start(*cc);
 			}
 		}
+		do_capture = true;
 
 		if (CameraData.size() > 1) {
 			// set the transformation matrices to align all cameras
@@ -93,8 +92,6 @@ public:
 	// store the current camera transformation setting into a xml ducument
 	void config2file()
 	{
-		std::lock_guard<std::mutex> guard(frames_mutex);
-
 		TiXmlDocument doc;
 		doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
 
@@ -139,13 +136,20 @@ public:
 
 	void capture_start()
 	{
-		do_capture = true;
+		if (do_capture)
+			return;
 		for (cameradata ccfg : CameraData) {
-			camera_start(ccfg.serial, this);
+			camera_start(ccfg);
 		}
+		do_capture = true;
 	}
 	void capture_stop()
 	{
+		if (!do_capture)
+			return;
+		for (cameradata ccfg : CameraData) {
+			ccfg.pipe.stop();
+		}
 		do_capture = false;
 	}
 
@@ -207,7 +211,6 @@ private:
 			std::cout << "Failed to load cameraconfig.xml \n";
 			return;
 		}
-		std::lock_guard<std::mutex> guard(frames_mutex);
 
 		TiXmlHandle docHandle(&doc);
 		TiXmlElement* camConfig = docHandle.FirstChild("file").FirstChild("CameraConfig").FirstChild("camera").ToElement();
@@ -243,17 +246,17 @@ private:
 		}
 	}
 
-	boost::shared_ptr<PointCloud<PointXYZRGB>> getCameraCloud(const char * serial)
+	cameradata* getCameraData(const char * serial)
 	{
 		for (cameradata ccfg : CameraData) {
 			if (ccfg.serial == serial)
-				return ccfg.cloud;
+				return &ccfg;
 		}
 		return NULL;
 	}
 
-	std::mutex frames_mutex;
-	void camera_start(string serialnumber, multiFrame* m_frame);
+	void camera_start(cameradata camera_data);
+	void camera_action(cameradata camera_data);
 	void merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>> pcl);
 	boost::shared_ptr<PointCloud<PointXYZRGB>> MergedCloud;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> GeneratedPC;

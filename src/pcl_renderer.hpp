@@ -219,7 +219,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 		else if (key == 84) {
 			rotation = false;
 		}
-		else if (key > 48 && key < multiframe.getNumberOfCameras() + 49) {
+		else if (key >= 49 && key < multiframe.getNumberOfCameras() + 49) {
 			aligncamera = key - 49;
 			cout << "aligncam = " << aligncamera << endl;
 		}

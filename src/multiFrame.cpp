@@ -24,78 +24,69 @@ const int depth_fps = 15;
 /**/
 
 // Configure and initialize caputuring of one camera
-void multiFrame::camera_start(string serialnumber, multiFrame* m_frame)
+void multiFrame::camera_start(cameradata camera_data)
 {
-	std::cout << "starting thread for camera ser no: " << serialnumber << '\n';
+	std::cout << "starting camera ser no: " << camera_data.serial << '\n';
 
-	std::thread([serialnumber, m_frame]() mutable {
 		rs2::config cfg;
-		rs2::pipeline pipe;
-		rs2::pointcloud pc;
-		rs2::points points;
-
-		cfg.enable_device(serialnumber);
+		cfg.enable_device(camera_data.serial);
 		cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, color_fps);
 		cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, depth_fps);
 
-		boost::shared_ptr<PointCloud<PointXYZRGB>> cloud = m_frame->getCameraCloud(serialnumber.c_str());
+		camera_data.pipe.start(cfg);		// Start streaming with the configuration just set
+}
 
-		pipe.start(cfg);		// Start streaming with the configuration just set
-		std::cout << "started camera ser no: " << serialnumber << '\n';
+void multiFrame::camera_action(cameradata camera_data)
+{
+	if (!do_capture)
+		return;
 
-		while (m_frame->do_capture) // Application still alive?
-		{
-			// Wait for the next set of frames from the camera
-			auto frames = pipe.wait_for_frames();
-			auto depth = frames.get_depth_frame();
-			auto color = frames.get_color_frame();
-			float min = 100.f, max, minx;
+	rs2::pointcloud pc;
+	rs2::points points;
 
-			// exclude pushing frames at this time
-			std::lock_guard<std::mutex> guard(m_frame->frames_mutex);
+	// Wait for the next set of frames from the camera
+	auto frames = camera_data.pipe.wait_for_frames();
+	auto depth = frames.get_depth_frame();
+	auto color = frames.get_color_frame();
+	float min = 100.f, max, minx;
 
-			// Tell points frame to map to this color frame
-			pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
-			points = pc.calculate(depth);
+	// Tell points frame to map to this color frame
+	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
+	points = pc.calculate(depth);
 
-			// Generate new vertices and color vector
-			auto vertices = points.get_vertices();
+	// Generate new vertices and color vector
+	auto vertices = points.get_vertices();
 
-			unsigned char *colors = (unsigned char*)color.get_data();
+	unsigned char *colors = (unsigned char*)color.get_data();
 
-			// Find the nearest point
-			for (int i = 0; i < points.size(); i++)
-				if (vertices[i].z != 0 && min > vertices[i].z) {
-					min = vertices[i].z;
-					minx = vertices[i].x;
-				}
-
-			// Set the maximum distance
-			max = 0.8f + min;
-
-			// Make PointCloud
-			cloud->clear();
-
-			for (int i = 0; i < points.size(); i++) {
-				float x = minx - vertices[i].x; x *= x;
-				float z = vertices[i].z;
-				if (min < z && z < max - x) { // Simple background removal, horizontally parabolic, vertically straight.
-					PointXYZRGB pt;
-					pt.x = vertices[i].x;
-					pt.y = -vertices[i].y;
-					pt.z = -z;
-					int pi = i * 3;
-					pt.r = colors[pi];
-					pt.g = colors[pi + 1];
-					pt.b = colors[pi + 2];
-					cloud->push_back(pt);
-				}
-			}
+	// Find the nearest point
+	for (int i = 0; i < points.size(); i++)
+		if (vertices[i].z != 0 && min > vertices[i].z) {
+			min = vertices[i].z;
+			minx = vertices[i].x;
 		}
-		std::cout << "stopping camera ser no: " << serialnumber << "\n";
-		pipe.stop();
+
+	// Set the maximum distance
+	max = 0.8f + min;
+
+	// Make PointCloud
+	camera_data.cloud->clear();
+
+	for (int i = 0; i < points.size(); i++) {
+		float x = minx - vertices[i].x; x *= x;
+		float z = vertices[i].z;
+		if (min < z && z < max - x) { // Simple background removal, horizontally parabolic, vertically straight.
+			PointXYZRGB pt;
+			pt.x = vertices[i].x;
+			pt.y = -vertices[i].y;
+			pt.z = -z;
+			int pi = i * 3;
+			pt.r = colors[pi];
+			pt.g = colors[pi + 1];
+			pt.b = colors[pi + 2];
+			camera_data.cloud->push_back(pt);
+		}
 	}
-	).detach();
 }
 
 void multiFrame::merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>> cloud_ptr)
@@ -118,10 +109,11 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>> cloud_pt
 // API function that returns the merged pointcloud and timestamp
 void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 {
-	std::lock_guard<std::mutex> guard(frames_mutex);
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
 	if (CameraData.size() > 0) {
+		for (cameradata ccfg : CameraData)
+			camera_action(ccfg);
 		merge_views(MergedCloud);
 		if (MergedCloud.get()->size() > 0)
 			*pointcloud = reinterpret_cast<void *> (&MergedCloud);
