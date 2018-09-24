@@ -43,9 +43,11 @@ void multiFrame::camera_action(cameradata camera_data)
 
 	rs2::pointcloud pc;
 	rs2::points points;
+	rs2::frameset frames;
 
 	// Wait for the next set of frames from the camera
-	auto frames = camera_data.pipe.wait_for_frames();
+	if (! camera_data.pipe.poll_for_frames(&frames))
+		return;
 	auto depth = frames.get_depth_frame();
 	auto color = frames.get_color_frame();
 	float min = 100.f, max, minx;
