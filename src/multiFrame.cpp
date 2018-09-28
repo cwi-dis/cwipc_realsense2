@@ -28,12 +28,12 @@ void multiFrame::camera_start(cameradata camera_data)
 {
 	std::cout << "starting camera ser no: " << camera_data.serial << '\n';
 
-		rs2::config cfg;
-		cfg.enable_device(camera_data.serial);
-		cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, color_fps);
-		cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, depth_fps);
+	rs2::config cfg;
+	cfg.enable_device(camera_data.serial);
+	cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, color_fps);
+	cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, depth_fps);
 
-		camera_data.pipe.start(cfg);		// Start streaming with the configuration just set
+	camera_data.pipe.start(cfg);		// Start streaming with the configuration just set
 }
 
 void multiFrame::camera_action(cameradata camera_data)
@@ -45,12 +45,13 @@ void multiFrame::camera_action(cameradata camera_data)
 	rs2::points points;
 	rs2::frameset frames;
 
-	// Wait for the next set of frames from the camera
-	if (! camera_data.pipe.poll_for_frames(&frames))
+	// Poll to find if there is a next set of frames from the camera
+	if (!camera_data.pipe.poll_for_frames(&frames))
 		return;
+
 	auto depth = frames.get_depth_frame();
 	auto color = frames.get_color_frame();
-	float min = 100.f, max, minx;
+	float minz = 100.0f, maxz, minx;
 
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
@@ -61,15 +62,14 @@ void multiFrame::camera_action(cameradata camera_data)
 
 	unsigned char *colors = (unsigned char*)color.get_data();
 
-	// Find the nearest point
-	for (int i = 0; i < points.size(); i++)
-		if (vertices[i].z != 0 && min > vertices[i].z) {
-			min = vertices[i].z;
+	// Set the background removal window
+	for (int i = 0; i < points.size(); i++) {
+		if (vertices[i].z != 0 && minz > vertices[i].z) {
+			minz = vertices[i].z;
 			minx = vertices[i].x;
 		}
-
-	// Set the maximum distance
-	max = 0.8f + min;
+	}
+	maxz = 0.8f + minz;
 
 	// Make PointCloud
 	camera_data.cloud->clear();
@@ -77,7 +77,7 @@ void multiFrame::camera_action(cameradata camera_data)
 	for (int i = 0; i < points.size(); i++) {
 		float x = minx - vertices[i].x; x *= x;
 		float z = vertices[i].z;
-		if (min < z && z < max - x) { // Simple background removal, horizontally parabolic, vertically straight.
+		if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
 			PointXYZRGB pt;
 			pt.x = vertices[i].x;
 			pt.y = -vertices[i].y;

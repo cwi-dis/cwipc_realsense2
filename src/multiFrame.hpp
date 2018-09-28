@@ -162,6 +162,15 @@ public:
 			return NULL;
 	}
 
+	// return the cloud captured by the specified camera
+	PointCloud<PointXYZRGB> *getCameraCloud(int i)
+	{
+		if (i >= 0 && i < CameraData.size())
+			return CameraData[i].cloud.get();
+		else
+			return NULL;
+	}
+
 	int getNumberOfCameras() {
 		return CameraData.size();
 	}
@@ -255,17 +264,20 @@ private:
 		return NULL;
 	}
 
+	// Methods
 	void camera_start(cameradata camera_data);
 	void camera_action(cameradata camera_data);
 	void merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>> pcl);
+
+	// Storage of per camera data
+	std::vector<cameradata> CameraData;
+
+	// Globals
 	boost::shared_ptr<PointCloud<PointXYZRGB>> MergedCloud;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> GeneratedPC;
 	boost::shared_ptr<PointCloud<PointXYZRGB>> RotatedPC;
-
-	// Storage of the per camera data
-	std::vector<cameradata> CameraData;
-	float angle = 0;
-	bool do_capture = false;
+	bool do_capture = false;	// switch for "pause"
+	float angle = 0.0f;			// rotation of generated PC
 };
 
 

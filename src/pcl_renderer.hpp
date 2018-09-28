@@ -94,8 +94,7 @@ private:
 
 // Struct for managing rotation of pointcloud view
 struct glfw_state {
-	glfw_state() : yaw(0.0), pitch(0.0), last_x(0.0), last_y(0.0),
-		ml(false), offset(0.f) {}
+	glfw_state() : yaw(0.0), pitch(0.0), last_x(0.0), last_y(0.0), ml(false), offset(0.f) {}
 	double yaw;
 	double pitch;
 	double last_x;
@@ -103,6 +102,28 @@ struct glfw_state {
 	bool ml;
 	float offset;
 };
+
+bool do_align = false;
+bool rotation = true;
+int aligncamera = 0;
+Eigen::Vector4f mergedcenter;	// needed to automatically center the merged cloud
+Eigen::Vector4f cloudcenter;	// needed to be able to rotate around the cloud's centre of mass
+
+void printhelp() {
+	cout << "\nThe cloud rendered by this application will automatically be centered with the view origin\n";
+	cout << "to examine the pointcloud use the mouse, rightclick and move to rotate, mouse wheel to zoom\n";
+	cout << "\"esc\" to reset the original position\n";
+
+	cout << "\naction keys for alignment of camera clouds:\n";
+	cout << "\"a\" to toggle between \"life\" and \"alignment mode\"\n";
+	cout << "\"1-9\" to select the camera to align\n";
+	cout << "\"r\" to start rotate mode\n";
+	cout << "\"t\" to start translate mode\n";
+	cout << "\"esc\" to reset the transformation\n";
+	cout << "\"s\" to save configuration to file\n";
+	cout << "\"h\" to print this help\n";
+	cout << "\"q\" to quit\n";
+}
 
 // Handle the OpenGL setup needed to display all pointclouds
 void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld)
@@ -124,10 +145,11 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 	glPushMatrix();
 	gluLookAt(0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
-	glTranslatef(-0.2f, -0.2f, -2.0f + app_state.offset*0.05f);
+	glTranslatef(0.0, 0.0, app_state.offset*0.05f);
 	glRotated(app_state.pitch, 1, 0, 0);
 	glRotated(app_state.yaw, 0, 1, 0);
-	glTranslatef(0.2f, 0.2f, 2.0f + app_state.offset*0.05f);
+	glTranslatef(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
+	glPushMatrix();
 	glPointSize(app.width() / 640);
 	glEnable(GL_DEPTH_TEST);
 	glBegin(GL_POINTS);
@@ -144,15 +166,12 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 	// OpenGL cleanup
 	glEnd();
 	glPopMatrix();
+	glPopMatrix();
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 	glPopAttrib();
 	glPushMatrix();
 }
-
-bool do_align = false;
-bool rotation = true;
-int aligncamera = 0;
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
 void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& multiframe)
@@ -162,21 +181,34 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 	};
 
 	app.on_mouse_scroll = [&](double xoffset, double yoffset) {
-		app_state.offset -= static_cast<float>(yoffset);
+		if (do_align) {
+			Eigen::Affine3d *transform = multiframe.getCameraTransform(aligncamera);
+			if (rotation) {
+				(*transform).rotate(Eigen::AngleAxisd(yoffset / 100.0, Eigen::Vector3d::UnitZ()));
+			}
+			else {
+				(*transform).translate(Eigen::Vector3d(0.0, 0.0, -yoffset / 100.0));
+			}
+		}
+		else {
+			app_state.offset -= static_cast<float>(yoffset);
+		}
 	};
 
 	app.on_mouse_move = [&](double x, double y) {
 		if (app_state.ml) {
 			if (do_align) {
 				Eigen::Affine3d *transform = multiframe.getCameraTransform(aligncamera);
-				double dx = (x - app_state.last_x) / 50.0;
-				double dy = -(y - app_state.last_y) / 50.0;
+				double dx = (x - app_state.last_x) / (0.25 * app.width());
+				double dy = -(y - app_state.last_y) / (0.25 * app.width());
 				if (rotation) {
+					(*transform).translate(Eigen::Vector3d(cloudcenter.x(), cloudcenter.y(), cloudcenter.z()));
 					(*transform).rotate(Eigen::AngleAxisd(dx, Eigen::Vector3d::UnitY()));
-					(*transform).rotate(Eigen::AngleAxisd(dy, Eigen::Vector3d::UnitX()));
+					(*transform).rotate(Eigen::AngleAxisd(-dy, Eigen::Vector3d::UnitX()));
+					(*transform).translate(-Eigen::Vector3d(cloudcenter.x(), cloudcenter.y(), cloudcenter.z()));
 				}
 				else {
-					(*transform).translation() << x/50, y/50, 0.0;
+					(*transform).translate(Eigen::Vector3d(dx, dy, 0.0));
 				}
 			}
 			else {
@@ -191,9 +223,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 	};
 
 	app.on_key_release = [&](int key) {
-		std::cout << "key = '" << key << "'\n";
-
-		if (key == 256) { // Escape
+		if (key == 256) { // Escape is interpreted as a reset of the transformation
 			if (do_align) {
 				Eigen::Affine3d *transform = multiframe.getCameraTransform(aligncamera);
 				(*transform).setIdentity();
@@ -203,7 +233,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 				app_state.offset = 0.0;
 			}
 		}
-		else if (key == 65) {
+		else if (key == 65) {	// key = "a": start/stop Alignment
 			if (do_align) {
 				multiframe.capture_start();
 				do_align = false;
@@ -211,28 +241,37 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 			else {
 				multiframe.capture_stop();
 				do_align = true;
+				pcl::compute3DCentroid((*multiframe.getCameraCloud(aligncamera)), cloudcenter);
 			}
 		}
-		else if (key == 82) {
+		else if (key == 72) {	// key =\"h": print help
+			printhelp();
+		}
+		else if (key == 81) {	// key = "q": Quit program
+			exit(0);
+		}
+		else if (key == 82) {	// key = "r": Rotate
 			rotation = true;
 		}
-		else if (key == 84) {
+		else if (key == 83) {	// key = "s": Save config to file
+			multiframe.config2file();
+		}
+		else if (key == 84) {	// key = "t": Translate
 			rotation = false;
 		}
-		else if (key >= 49 && key < multiframe.getNumberOfCameras() + 49) {
+		else if (key >= 49 && key < multiframe.getNumberOfCameras() + 49) {	// key = "1-9": select a camera
 			aligncamera = key - 49;
-			cout << "aligncam = " << aligncamera << endl;
+			pcl::compute3DCentroid((*multiframe.getCameraCloud(aligncamera)), cloudcenter);
 		}
 	};
 }
-int frameNum;
 
-void cloud2file(boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld)
+void cloud2file(boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld, int frameNum)
 {
 	int size = pntcld->size();
 	if (size <= 0) return;
 
-	std::ofstream myfile(("pcl_frame" + std::to_string(frameNum++) + ".ply").c_str());
+	std::ofstream myfile(("pcl_frame" + std::to_string(frameNum) + ".ply").c_str());
 	myfile << "ply\n" << "format ascii 1.0\nelement vertex " << size << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
 
 	std::ostringstream oss;

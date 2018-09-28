@@ -17,9 +17,14 @@ int main(int argc, char * argv[]) try
 	// register callbacks to allow manipulation of the PointCloud
 	register_glfw_callbacks(app, app_state, multiframe);
 
-	frameNum = 0;
+	int frame_num = 0;
+	uint64_t time = 0;
+	Eigen::Vector4f newcenter;
+	Eigen::Vector4f deltacenter;
+
+	printhelp();
+
 	while (app) {
-		uint64_t time = 0;
 		boost::shared_ptr<PointCloud<PointXYZRGB>> captured_pc;
 		void* pc = reinterpret_cast<void *> (&captured_pc);
 
@@ -31,8 +36,15 @@ int main(int argc, char * argv[]) try
 		if (captured_pc.get() == NULL) continue;
 
 		// Write a ply file of the PointCloud
-		//
-		//cloud2file(captured_pc);
+		//cloud2file(captured_pc, frameNum);
+
+		// Automatically centre the cloud
+		if (!(frame_num++ % 100)) {
+			pcl::compute3DCentroid(*captured_pc, newcenter);
+			deltacenter = (newcenter - mergedcenter)/100.0;
+		}
+		if (!do_align)
+			mergedcenter += deltacenter;
 
 		// Draw the PointCloud
 		draw_pointcloud(app, app_state, captured_pc);
