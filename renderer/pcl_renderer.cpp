@@ -4,11 +4,12 @@
 //  Created by Fons Kuijk on 23-06-18.
 //
 #include "pcl_renderer.hpp"
+#define CENTERSTEPS 256
 
 int main(int argc, char * argv[]) try
 {
 	// Create a simple OpenGL window for rendering:
-	window app(1280, 720, "RealSense Multicamera Capturing");
+	window app(2560, 1440, "RealSense Multicamera Capturing");
 	// Construct an object to manage view state
 	glfw_state app_state;
 	// Construct a capturing object
@@ -28,26 +29,21 @@ int main(int argc, char * argv[]) try
 		boost::shared_ptr<PointCloud<PointXYZRGB>> captured_pc;
 		void* pc = reinterpret_cast<void *> (&captured_pc);
 
-		// Here we call the capture software
+		// Here we ask for a pointcloud and thereby trigger the actual capturing
 		multiframe.get_pointcloud(&time, &pc);
 
 		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloud<PointXYZRGB>>*>(pc);
 
 		if (captured_pc.get() == NULL) continue;
 
-		// Write a ply file of the PointCloud
-		//cloud2file(captured_pc, frameNum);
-
 		// Automatically centre the cloud
-		if (!(frame_num++ % 100)) {
+		if (!(frame_num++ % CENTERSTEPS)) {
 			pcl::compute3DCentroid(*captured_pc, newcenter);
-			deltacenter = (newcenter - mergedcenter)/100.0;
+			deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
 		}
 		if (!do_align)
 			mergedcenter += deltacenter;
-
-		// Draw the PointCloud
-		draw_pointcloud(app, app_state, captured_pc);
+		draw_pointcloud(app, app_state, multiframe);
 	}
 	return EXIT_SUCCESS;
 }

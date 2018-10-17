@@ -89,6 +89,13 @@ public:
 		}
 	}
 
+	~multiFrame() {
+		for (cameradata ccfg : CameraData) {
+			ccfg.pipe.stop();
+		}
+		cout << "stopped all camera's\n";
+	}
+
 	// store the current camera transformation setting into a xml ducument
 	void config2file()
 	{
@@ -134,23 +141,34 @@ public:
 	// API function that returns the merged pointcloud and timestamp
 	void get_pointcloud(uint64_t *timestamp, void **pointcloud);
 
-	void capture_start()
+
+	// return the merged cloud 
+	boost::shared_ptr<PointCloud<PointXYZRGB>> getPointCloud()
 	{
-		if (do_capture)
-			return;
-		for (cameradata ccfg : CameraData) {
-			camera_start(ccfg);
-		}
-		do_capture = true;
+		return MergedCloud;
 	}
-	void capture_stop()
+
+	// return the number of connected and recognized cameras
+	int getNumberOfCameras() {
+		return CameraData.size();
+	}
+
+	// return the cloud captured by the specified camera
+	boost::shared_ptr<PointCloud<PointXYZRGB>> getCameraCloud(int i)
 	{
-		if (!do_capture)
-			return;
-		for (cameradata ccfg : CameraData) {
-			ccfg.pipe.stop();
-		}
-		do_capture = false;
+		if (i >= 0 && i < CameraData.size())
+			return CameraData[i].cloud;
+		else
+			return NULL;
+	}
+
+	// return the transformation matrix of the specified camera
+	string getCameraSerial(int i)
+	{
+		if (i >= 0 && i < CameraData.size())
+			return CameraData[i].serial;
+		else
+			return NULL;
 	}
 
 	// return the transformation matrix of the specified camera
@@ -162,17 +180,18 @@ public:
 			return NULL;
 	}
 
-	// return the cloud captured by the specified camera
-	PointCloud<PointXYZRGB> *getCameraCloud(int i)
+	void capture_start()
 	{
-		if (i >= 0 && i < CameraData.size())
-			return CameraData[i].cloud.get();
-		else
-			return NULL;
+		if (do_capture)
+			return;
+		do_capture = true;
 	}
 
-	int getNumberOfCameras() {
-		return CameraData.size();
+	void pauze_capture()
+	{
+		if (!do_capture)
+			return;
+		do_capture = false;
 	}
 
 private:

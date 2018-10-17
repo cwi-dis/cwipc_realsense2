@@ -110,26 +110,46 @@ Eigen::Vector4f mergedcenter;	// needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;	// needed to be able to rotate around the cloud's centre of mass
 
 void printhelp() {
-	cout << "\nThe cloud rendered by this application will automatically be centered with the view origin\n";
-	cout << "to examine the pointcloud use the mouse, rightclick and move to rotate, mouse wheel to zoom\n";
-	cout << "\"esc\" to reset the original position\n";
+	cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
+	cout << "To examine the pointcloud use the mouse, rightclick and move to rotate, mouse wheel to zoom.\n";
+	cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
 
 	cout << "\naction keys for alignment of camera clouds:\n";
-	cout << "\"a\" to toggle between \"life\" and \"alignment mode\"\n";
-	cout << "\"1-9\" to select the camera to align\n";
-	cout << "\"r\" to start rotate mode\n";
-	cout << "\"t\" to start translate mode\n";
-	cout << "\"esc\" to reset the transformation\n";
-	cout << "\"s\" to save configuration to file\n";
-	cout << "\"h\" to print this help\n";
-	cout << "\"q\" to quit\n";
+	cout << "\t\"a\" to toggle between \"life\" and \"alignment mode\"\n";
+	cout << "\t\"1-9\" to select the camera to align\n";
+	cout << "\t\"r\" to start cloud rotate mode\n";
+	cout << "\t\"t\" to start cloud translate mode\n";
+	cout << "\t\"esc\" to reset the cloud transformation of the active camera\n";
+	cout << "\t\"s\" to save configuration to file\n";
+	cout << "\t\"h\" to print this help\n";
+	cout << "\t\"q\" to quit\n";
+}
+
+void cloud2file(boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld, string filename)
+{
+	if (!pntcld) return;
+	int size = pntcld->size();
+	if (size <= 0) return;
+
+	std::ofstream myfile(filename.c_str());
+	myfile << "ply\n" << "format ascii 1.0\nelement vertex " << size << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
+
+	std::ostringstream oss;
+	for (int i = 0; i < size; i++) {
+		oss << (std::to_string((*pntcld)[i].x) + " " +
+			std::to_string((*pntcld)[i].y) + " " +
+			std::to_string((*pntcld)[i].z) + " " +
+			std::to_string((*pntcld)[i].r) + " " +
+			std::to_string((*pntcld)[i].g) + " " +
+			std::to_string((*pntcld)[i].b) + "\n").c_str();
+	}
+	myfile << oss.str();
+	myfile.close();
 }
 
 // Handle the OpenGL setup needed to display all pointclouds
-void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld)
+void draw_pointcloud(window& app, glfw_state& app_state, multiFrame& multiframe)
 {
-	if (pntcld->size() == 0) return;
-
 	// OpenGL commands that prep screen
 	glPopMatrix();
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -155,12 +175,38 @@ void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<Point
 	glBegin(GL_POINTS);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
-	// draw the pointcloud
-	for (auto pnt : (*pntcld).points) {
-		float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
-		glColor3fv(col);
-		float vert[] = { pnt.x, pnt.y, pnt.z };
-		glVertex3fv(vert);
+	// draw the pointcloud(s)
+	if (do_align) {
+		int cams = multiframe.getNumberOfCameras();
+		for (int i = 0; i < cams; i++) {
+			PointCloud<PointXYZRGB>::Ptr pcptr(new PointCloud<PointXYZRGB>);
+
+			transformPointCloud(*(multiframe.getCameraCloud(i).get()), *pcptr, *multiframe.getCameraTransform(i));
+			for (auto pnt : pcptr->points) {
+				float col[3];
+				if (i == aligncamera) {	// highlight the cloud of the selected camerA
+					col[0] = 0.2 + pnt.r / 320.0;
+					col[1] = 0.2 + pnt.g / 320.0;
+					col[2] = 0.2 + pnt.b / 320.0;
+				}
+				else {
+					col[0] = pnt.r / 320.0;
+					col[1] = pnt.g / 320.0;
+					col[2] = pnt.b / 320.0;
+				}
+				glColor3fv(col);
+				float vert[] = { pnt.x, pnt.y, pnt.z };
+				glVertex3fv(vert);
+			}
+		}
+	}
+	else {
+		for (auto pnt : multiframe.getPointCloud()->points) {
+			float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
+			glColor3fv(col);
+			float vert[] = { pnt.x, pnt.y, pnt.z };
+			glVertex3fv(vert);
+		}
 	}
 
 	// OpenGL cleanup
@@ -239,7 +285,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 				do_align = false;
 			}
 			else {
-				multiframe.capture_stop();
+				multiframe.pauze_capture();
 				do_align = true;
 				pcl::compute3DCentroid((*multiframe.getCameraCloud(aligncamera)), cloudcenter);
 			}
@@ -248,6 +294,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 			printhelp();
 		}
 		else if (key == 81) {	// key = "q": Quit program
+			multiframe.~multiFrame();
 			exit(0);
 		}
 		else if (key == 82) {	// key = "r": Rotate
@@ -263,28 +310,19 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 			aligncamera = key - 49;
 			pcl::compute3DCentroid((*multiframe.getCameraCloud(aligncamera)), cloudcenter);
 		}
+		else if (key == 73) {	// key =\"i": dump frames for icp processing
+			int cams = multiframe.getNumberOfCameras();
+			for (int i = 0; i < cams; i++) {
+				PointCloud<PointXYZRGB>::Ptr point_cloud_ptr(new PointCloud<PointXYZRGB>);
+				boost::shared_ptr<PointCloud<PointXYZRGB>> aligned_cld(point_cloud_ptr);
+
+				transformPointCloud(*(multiframe.getCameraCloud(i).get()), *aligned_cld, *multiframe.getCameraTransform(i));
+
+				cloud2file(aligned_cld, "pcl_aligned_" + multiframe.getCameraSerial(i) + ".ply");
+				cloud2file(multiframe.getCameraCloud(i), "pcl_original_" + multiframe.getCameraSerial(i) + ".ply");
+			}
+		}
 	};
-}
-
-void cloud2file(boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld, int frameNum)
-{
-	int size = pntcld->size();
-	if (size <= 0) return;
-
-	std::ofstream myfile(("pcl_frame" + std::to_string(frameNum) + ".ply").c_str());
-	myfile << "ply\n" << "format ascii 1.0\nelement vertex " << size << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
-
-	std::ostringstream oss;
-	for (int i = 0; i < size; i++) {
-		oss << (std::to_string((*pntcld)[i].x) + " " +
-			std::to_string((*pntcld)[i].y) + " " +
-			std::to_string((*pntcld)[i].z) + " " +
-			std::to_string((*pntcld)[i].r) + " " +
-			std::to_string((*pntcld)[i].g) + " " +
-			std::to_string((*pntcld)[i].b) + "\n").c_str();
-	}
-	myfile << oss.str();
-	myfile.close();
 }
 
 #endif /* pcl_renderer_hpp */

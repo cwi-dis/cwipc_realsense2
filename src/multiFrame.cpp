@@ -26,7 +26,7 @@ const int depth_fps = 15;
 // Configure and initialize caputuring of one camera
 void multiFrame::camera_start(cameradata camera_data)
 {
-	std::cout << "starting camera ser no: " << camera_data.serial << '\n';
+	cout << "starting camera ser no: " << camera_data.serial << '\n';
 
 	rs2::config cfg;
 	cfg.enable_device(camera_data.serial);
@@ -36,6 +36,7 @@ void multiFrame::camera_start(cameradata camera_data)
 	camera_data.pipe.start(cfg);		// Start streaming with the configuration just set
 }
 
+// get new frames from the camera and update the pointcloud of the camera's data 
 void multiFrame::camera_action(cameradata camera_data)
 {
 	if (!do_capture)
@@ -108,7 +109,7 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>> cloud_pt
 	delete aligned_cld;
 }
 
-// API function that returns the merged pointcloud and timestamp
+// API function that triggers the capture and returns the merged pointcloud and timestamp
 void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
