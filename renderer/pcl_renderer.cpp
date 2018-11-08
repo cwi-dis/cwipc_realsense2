@@ -26,13 +26,13 @@ int main(int argc, char * argv[]) try
 	printhelp();
 
 	while (app) {
-		boost::shared_ptr<PointCloud<PointXYZRGB>> captured_pc;
+		boost::shared_ptr<PointCloudT> captured_pc;
 		void* pc = reinterpret_cast<void *> (&captured_pc);
 
 		// Here we ask for a pointcloud and thereby trigger the actual capturing
 		multiframe.get_pointcloud(&time, &pc);
 
-		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloud<PointXYZRGB>>*>(pc);
+		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
 
 		if (captured_pc.get() == NULL) continue;
 

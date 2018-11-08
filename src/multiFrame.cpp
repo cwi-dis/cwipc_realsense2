@@ -79,7 +79,7 @@ void multiFrame::camera_action(cameradata camera_data)
 		float x = minx - vertices[i].x; x *= x;
 		float z = vertices[i].z;
 		if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
-			PointXYZRGB pt;
+			PointT pt;
 			pt.x = vertices[i].x;
 			pt.y = -vertices[i].y;
 			pt.z = -z;
@@ -92,16 +92,16 @@ void multiFrame::camera_action(cameradata camera_data)
 	}
 }
 
-void multiFrame::merge_views(boost::shared_ptr<PointCloud<PointXYZRGB>> cloud_ptr)
+void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 {
-	PointCloud<PointXYZRGB> *aligned_cld = new PointCloud<PointXYZRGB>();
+	PointCloudT *aligned_cld = new PointCloudT();
 
 	cloud_ptr->clear();
 	for (cameradata ccfg : CameraData) {
-		PointCloud<PointXYZRGB> *cam_cld = ccfg.cloud.get();
+		PointCloudT *cam_cld = ccfg.cloud.get();
 		if (cam_cld->size() > 0) {
 			transformPointCloud(*cam_cld, *aligned_cld, *ccfg.trafo);
-			for (PointXYZRGB pnt : *aligned_cld)
+			for (PointT pnt : *aligned_cld)
 				cloud_ptr->push_back(pnt);
 		}
 	}
