@@ -120,12 +120,12 @@ void printhelp() {
 	cout << "\t\"r\" to start cloud rotate mode\n";
 	cout << "\t\"t\" to start cloud translate mode\n";
 	cout << "\t\"esc\" to reset the cloud transformation of the active camera\n";
-	cout << "\t\"s\" to save configuration to file\n";
+	cout << "\t\"s\" to save configuration and snapshots of each camera\n";
 	cout << "\t\"h\" to print this help\n";
 	cout << "\t\"q\" to quit\n";
 }
 
-void cloud2file(boost::shared_ptr<PointCloud<PointXYZRGB> > pntcld, string filename)
+void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
 {
 	if (!pntcld) return;
 	int size = pntcld->size();
@@ -179,7 +179,7 @@ void draw_pointcloud(window& app, glfw_state& app_state, multiFrame& multiframe)
 	if (do_align) {
 		int cams = multiframe.getNumberOfCameras();
 		for (int i = 0; i < cams; i++) {
-			PointCloud<PointXYZRGB>::Ptr pcptr(new PointCloud<PointXYZRGB>);
+			PointCloudT::Ptr pcptr(new PointCloudT);
 
 			transformPointCloud(*(multiframe.getCameraCloud(i).get()), *pcptr, *multiframe.getCameraTransform(i));
 			for (auto pnt : pcptr->points) {
@@ -300,8 +300,11 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 		else if (key == 82) {	// key = "r": Rotate
 			rotation = true;
 		}
-		else if (key == 83) {	// key = "s": Save config to file
+		else if (key == 83) {	// key = "s": Save config and snapshots to file
 			multiframe.config2file();
+			int cams = multiframe.getNumberOfCameras();
+			for (int i = 0; i < cams; i++)
+				cloud2file(multiframe.getCameraCloud(i), multiframe.getCameraSerial(i) + ".ply");
 		}
 		else if (key == 84) {	// key = "t": Translate
 			rotation = false;
@@ -313,8 +316,8 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
 			int cams = multiframe.getNumberOfCameras();
 			for (int i = 0; i < cams; i++) {
-				PointCloud<PointXYZRGB>::Ptr point_cloud_ptr(new PointCloud<PointXYZRGB>);
-				boost::shared_ptr<PointCloud<PointXYZRGB>> aligned_cld(point_cloud_ptr);
+				PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
+				boost::shared_ptr<PointCloudT> aligned_cld(point_cloud_ptr);
 
 				transformPointCloud(*(multiframe.getCameraCloud(i).get()), *aligned_cld, *multiframe.getCameraTransform(i));
 
