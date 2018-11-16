@@ -106,7 +106,10 @@ public:
 	// return the merged cloud 
 	boost::shared_ptr<PointCloudT> getPointCloud()
 	{
-		return MergedCloud;
+		if (CameraData.size() > 0)
+			return MergedCloud;
+		else
+			return RotatedPC; 
 	}
 
 	// return the number of connected and recognized cameras
@@ -207,7 +210,7 @@ private:
 		bool loadOkay = doc.LoadFile();
 		if (!loadOkay)
 		{
-			std::cout << "Failed to load cameraconfig.xml \n";
+			std::cout << "WARNING: Failed to load cameraconfig.xml\n\tPointcloud will be a merger of unregistrated camera clouds\n";
 			return;
 		}
 

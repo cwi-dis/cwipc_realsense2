@@ -43,6 +43,8 @@ int main(int argc, char * argv[]) try
 		}
 		if (!do_align)
 			mergedcenter += deltacenter;
+
+		// NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
 		draw_pointcloud(app, app_state, multiframe);
 	}
 	return EXIT_SUCCESS;
