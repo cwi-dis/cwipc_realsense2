@@ -7,6 +7,8 @@
 #include <cstdint>
 #include "multiFrame.hpp"
 
+#define DEBUG
+
 /*
 const int color_width = 1280;
 const int color_height = 720;
@@ -17,10 +19,10 @@ const int depth_fps = 30;
 /**/
 const int color_width = 640;
 const int color_height = 360;
-const int color_fps = 15;
+const int color_fps = 60;
 const int depth_width = 640;
 const int depth_height = 360;
-const int depth_fps = 15;
+const int depth_fps = 60;
 /**/
 
 // Configure and initialize caputuring of one camera
@@ -44,15 +46,22 @@ void multiFrame::camera_action(cameradata camera_data)
 
 	rs2::pointcloud pc;
 	rs2::points points;
-	rs2::frameset frames;
 
+#ifdef POLLING
 	// Poll to find if there is a next set of frames from the camera
+	rs2::frameset frames;
 	if (!camera_data.pipe.poll_for_frames(&frames))
-		return;
+			return;
+#else
+	// Wait to find if there is a next set of frames from the camera
+	auto frames = camera_data.pipe.wait_for_frames();
+#endif
 
 	auto depth = frames.get_depth_frame();
 	auto color = frames.get_color_frame();
 	float minz = 100.0f, maxz, minx;
+
+	camera_data.cloud->clear();
 
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
@@ -118,18 +127,32 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 		for (cameradata ccfg : CameraData)
 			camera_action(ccfg);
 		merge_views(MergedCloud);
-		if (MergedCloud.get()->size() > 0)
-			*pointcloud = reinterpret_cast<void *> (&MergedCloud);
-		else
-			// HACK to make sure the encoder does not get an empty pointcloud //
-			*pointcloud = reinterpret_cast<void *> (&GeneratedPC);
+		if (MergedCloud.get()->size() > 0) {
+#ifdef DEBUG
+			cout << "capturer produced a MergedCloud of " << MergedCloud.get()->size() << " points\n";
+#endif
+			*pointcloud = reinterpret_cast<void *> (copyCloud(*MergedCloud));
+		}
+		else {
+#ifdef DEBUG
+			cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
+#endif
+			// HACK to make sure the encoder does not get an empty pointcloud 
+			PointT point;
+			point.x = 1.0;
+			point.y = 1.0;
+			point.z = 1.0;
+			point.rgb = 0.0;
+			MergedCloud->points.push_back(point);
+			*pointcloud = reinterpret_cast<void *> (copyCloud(*MergedCloud));
+		}
 	}
 	else {	// return a spinning generated mathematical pointcloud
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
 		transformPointCloud(*GeneratedPC, *RotatedPC, transform);
-		*pointcloud = reinterpret_cast<void *> (&RotatedPC);
+		*pointcloud = reinterpret_cast<void *> (copyCloud(*RotatedPC));
 	}
 }
 
@@ -138,9 +161,21 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 // class captureIt stuff //
 ///////////////////////////
 
+
 void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	static multiFrame mFrame;
+
+#ifdef DEBUG
+	cout << "captureIt is asked for a pointcloud\n";
+#endif
+
 	mFrame.get_pointcloud(timestamp, pointcloud);
+
+#ifdef DEBUG
+	PointCloudT *captured_pc;
+	captured_pc = reinterpret_cast<PointCloudT*>(*pointcloud);
+	cout << "captureIt handed over a pointcloud of " << (*captured_pc).size() << " points\n";
+#endif
 }
 
 extern "C" void __declspec(dllexport) getPointCloud(uint64_t *timestamp, void **pointcloud) {

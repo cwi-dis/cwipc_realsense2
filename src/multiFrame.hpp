@@ -260,6 +260,12 @@ private:
 		return NULL;
 	}
 
+	PointCloudT* copyCloud(PointCloudT pcl)
+	{
+		PointCloudT *copiedCloud = new PointCloudT(pcl);
+		return copiedCloud;
+	}
+
 	// generate a mathematical pointcloud
 	PointCloudT::Ptr generate_pcl()
 	{
