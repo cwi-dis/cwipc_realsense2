@@ -7,7 +7,8 @@
 #include <cstdint>
 #include "multiFrame.hpp"
 
-#define DEBUG
+//#define DEBUG
+#undef DEBUG
 
 /*
 const int color_width = 1280;
@@ -82,8 +83,6 @@ void multiFrame::camera_action(cameradata camera_data)
 	maxz = 0.8f + minz;
 
 	// Make PointCloud
-	camera_data.cloud->clear();
-
 	for (int i = 0; i < points.size(); i++) {
 		float x = minx - vertices[i].x; x *= x;
 		float z = vertices[i].z;
@@ -131,7 +130,7 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 #ifdef DEBUG
 			cout << "capturer produced a MergedCloud of " << MergedCloud.get()->size() << " points\n";
 #endif
-			*pointcloud = reinterpret_cast<void *> (copyCloud(*MergedCloud));
+			*pointcloud = reinterpret_cast<void *> (&MergedCloud);
 		}
 		else {
 #ifdef DEBUG
@@ -144,7 +143,7 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 			point.z = 1.0;
 			point.rgb = 0.0;
 			MergedCloud->points.push_back(point);
-			*pointcloud = reinterpret_cast<void *> (copyCloud(*MergedCloud));
+			*pointcloud = reinterpret_cast<void *> (&MergedCloud);
 		}
 	}
 	else {	// return a spinning generated mathematical pointcloud
@@ -152,7 +151,7 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
 		transformPointCloud(*GeneratedPC, *RotatedPC, transform);
-		*pointcloud = reinterpret_cast<void *> (copyCloud(*RotatedPC));
+		*pointcloud = reinterpret_cast<void *> (&RotatedPC);
 	}
 }
 

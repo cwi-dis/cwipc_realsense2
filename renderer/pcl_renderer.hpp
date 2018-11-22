@@ -184,7 +184,7 @@ void draw_pointcloud(window& app, glfw_state& app_state, multiFrame& multiframe)
 			transformPointCloud(*(multiframe.getCameraCloud(i).get()), *pcptr, *multiframe.getCameraTransform(i));
 			for (auto pnt : pcptr->points) {
 				float col[3];
-				if (i == aligncamera) {	// highlight the cloud of the selected camerA
+				if (i == aligncamera) {	// highlight the cloud of the selected camera
 					col[0] = 0.2 + pnt.r / 320.0;
 					col[1] = 0.2 + pnt.g / 320.0;
 					col[2] = 0.2 + pnt.b / 320.0;
