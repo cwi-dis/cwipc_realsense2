@@ -7,9 +7,6 @@
 #include <cstdint>
 #include "multiFrame.hpp"
 
-//#define DEBUG
-#undef DEBUG
-
 /*
 const int color_width = 1280;
 const int color_height = 720;
@@ -125,12 +122,12 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 	if (CameraData.size() > 0) {
 		for (cameradata ccfg : CameraData)
 			camera_action(ccfg);
-		merge_views(MergedCloud);
-		if (MergedCloud.get()->size() > 0) {
+		merge_views(RingBuffer[ring_index]);
+		if (RingBuffer[ring_index].get()->size() > 0) {
 #ifdef DEBUG
-			cout << "capturer produced a MergedCloud of " << MergedCloud.get()->size() << " points\n";
+			cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index <<"\n";
 #endif
-			*pointcloud = reinterpret_cast<void *> (&MergedCloud);
+			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
 		}
 		else {
 #ifdef DEBUG
@@ -142,17 +139,18 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 			point.y = 1.0;
 			point.z = 1.0;
 			point.rgb = 0.0;
-			MergedCloud->points.push_back(point);
-			*pointcloud = reinterpret_cast<void *> (&MergedCloud);
+			RingBuffer[ring_index]->points.push_back(point);
+			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
 		}
 	}
 	else {	// return a spinning generated mathematical pointcloud
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-		transformPointCloud(*GeneratedPC, *RotatedPC, transform);
-		*pointcloud = reinterpret_cast<void *> (&RotatedPC);
+		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
+		*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
 	}
+	ring_index = ring_index < RINGBUFFERSIZE - 1 ? ++ring_index : 0;
 }
 
 
@@ -171,9 +169,10 @@ void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	mFrame.get_pointcloud(timestamp, pointcloud);
 
 #ifdef DEBUG
-	PointCloudT *captured_pc;
-	captured_pc = reinterpret_cast<PointCloudT*>(*pointcloud);
-	cout << "captureIt handed over a pointcloud of " << (*captured_pc).size() << " points\n";
+	boost::shared_ptr<PointCloudT> captured_pc;
+	captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(*pointcloud);
+	cout << "captureIt handed over a pointcloud of " << captured_pc.get()->size() << " points\n";
+	cout.flush();
 #endif
 }
 

@@ -39,6 +39,13 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/console/time.h> /**/
 
+#undef DEBUG
+//#define DEBUG
+#undef POLLING
+//#define POLLING
+
+#define RINGBUFFERSIZE 2
+
 using namespace std;
 using namespace pcl;
 using namespace std::chrono;
@@ -62,8 +69,11 @@ public:
 		auto devs = ctx.query_devices();
 
 		const std::string platform_camera_name = "Platform Camera";
-		MergedCloud = generate_pcl();
 		GeneratedPC = generate_pcl();
+		for (int i = 0; i < RINGBUFFERSIZE; i++) {
+			boost::shared_ptr<PointCloudT> buf(new PointCloudT());
+			RingBuffer.push_back(buf);
+		}
 
 		for (auto dev : devs) {
 			if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
@@ -81,15 +91,11 @@ public:
 		}
 		do_capture = true;
 
-		if (CameraData.size() > 1) {
-			// set the transformation matrices to align all cameras
+		if (CameraData.size() > 1)		// set the transformation matrices to align all cameras
 			file2config();
-		}
-		if (CameraData.size() == 0) {
-			// no cameras connected, then generate a pointcloud instead
-			RotatedPC = generate_pcl();
-			std::cout << "No cameras found, a spinning generated pointcloud of " << RotatedPC->size() << " data points will be offered" << std::endl;
-		}
+
+		if (CameraData.size() == 0)		// no camera connected, so we'll use a generated pointcloud instead
+			std::cout << "No cameras found, a spinning generated pointcloud of " << GeneratedPC->size() << " data points will be offered instead\n" ;
 	}
 
 	~multiFrame() {
@@ -106,10 +112,7 @@ public:
 	// return the merged cloud 
 	boost::shared_ptr<PointCloudT> getPointCloud()
 	{
-		if (CameraData.size() > 0)
-			return MergedCloud;
-		else
-			return RotatedPC; 
+		return RingBuffer[ring_index];
 	}
 
 	// return the number of connected and recognized cameras
@@ -126,13 +129,13 @@ public:
 			return NULL;
 	}
 
-	// return the transformation matrix of the specified camera
+	// return the serialnumber of the specified camera
 	string getCameraSerial(int i)
 	{
 		if (i >= 0 && i < CameraData.size())
 			return CameraData[i].serial;
 		else
-			return NULL;
+			return string("0");
 	}
 
 	// return the transformation matrix of the specified camera
@@ -265,11 +268,11 @@ private:
 	{
 		PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
 		uint8_t r(255), g(15), b(15);
-		for (float z(-1.0); z <= 1.0; z += 0.005) {
-			for (float angle(0.0); angle <= 360.0; angle += 1.0) {
+		for (float z(-1.0f); z <= 1.0f; z += 0.005f) {
+			for (float angle(0.0); angle <= 360.0; angle += 1.0f) {
 				PointT point;
-				point.x = 0.5*cosf(deg2rad(angle))*(1 - z*z);
-				point.y = sinf(deg2rad(angle))*(1 - z*z);
+				point.x = 0.5f*cosf(deg2rad(angle))*(1.0f - z*z);
+				point.y = sinf(deg2rad(angle))*(1.0f - z*z);
 				point.z = z;
 				uint32_t rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
 				point.rgb = *reinterpret_cast<float*>(&rgb);
@@ -297,16 +300,14 @@ private:
 	void camera_action(cameradata camera_data);
 	void merge_views(boost::shared_ptr<PointCloudT> pcl);
 
-	// Storage of per camera data
-	vector<cameradata> CameraData;
-
 	// Globals
-	boost::shared_ptr<PointCloudT> MergedCloud;
-	boost::shared_ptr<PointCloudT> GeneratedPC;
-	boost::shared_ptr<PointCloudT> RotatedPC;
-	bool do_capture = false;	// switch for "pause"
-	float angle = 0.0f;			// rotation of generated PC
-	double spatial_resolution = 0.0;
+	vector<cameradata> CameraData;						// Storage of per camera data
+	vector<boost::shared_ptr<PointCloudT>> RingBuffer;	// Buffer of merged pointclouds
+	boost::shared_ptr<PointCloudT> GeneratedPC;			// Mathematical pointcloud for use without camera
+	float angle = 0.0f;									// Rotation of generated PC
+	bool do_capture = false;								// Switch for "pause"
+	double spatial_resolution = 0.0;						// Resolution of voxelized pointclouds
+	int ring_index = 0;									// counter for ring buffer
 };
 
 
