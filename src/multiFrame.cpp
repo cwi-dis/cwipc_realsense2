@@ -1,20 +1,23 @@
 //
 //  multiFrame.cpp
 //
-//  Created by Fons Kuijk on 23-04-18.
+//  Created by Fons Kuijk on 23-04-18
 //
+
 #include <chrono>
 #include <cstdint>
-#include "multiFrame.hpp"
 
-/*
+#include "multiFrame.hpp"
+#include "utils.h"
+
+/**/
 const int color_width = 1280;
 const int color_height = 720;
 const int color_fps = 30;
 const int depth_width = 1280;
 const int depth_height = 720;
 const int depth_fps = 30;
-/**/
+/*
 const int color_width = 640;
 const int color_height = 360;
 const int color_fps = 60;
@@ -49,7 +52,7 @@ void multiFrame::camera_action(cameradata camera_data)
 	// Poll to find if there is a next set of frames from the camera
 	rs2::frameset frames;
 	if (!camera_data.pipe.poll_for_frames(&frames))
-			return;
+		return;
 #else
 	// Wait to find if there is a next set of frames from the camera
 	auto frames = camera_data.pipe.wait_for_frames();
@@ -92,7 +95,8 @@ void multiFrame::camera_action(cameradata camera_data)
 			pt.r = colors[pi];
 			pt.g = colors[pi + 1];
 			pt.b = colors[pi + 2];
-			camera_data.cloud->push_back(pt);
+			if (!green_screen || noChromaRemoval(&pt)) // chromakey removal
+				camera_data.cloud->push_back(pt);
 		}
 	}
 }
@@ -125,7 +129,7 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 		merge_views(RingBuffer[ring_index]);
 		if (RingBuffer[ring_index].get()->size() > 0) {
 #ifdef DEBUG
-			cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index <<"\n";
+			cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
 			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
 		}
@@ -150,7 +154,7 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
 		*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
 	}
-	ring_index = ring_index < RINGBUFFERSIZE - 1 ? ++ring_index : 0;
+	ring_index = ring_index < ringbuffer_size - 1 ? ++ring_index : 0;
 }
 
 

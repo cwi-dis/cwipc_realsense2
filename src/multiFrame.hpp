@@ -1,7 +1,7 @@
 //
 //  multiFrame.hpp
 //
-//  Created by Fons Kuijk on 23-04-18.
+//  Created by Fons Kuijk on 23-04-18
 //
 
 #ifndef multiFrame_hpp
@@ -22,36 +22,15 @@
 #include <librealsense2/rs.hpp>
 #include <Eigen/StdVector>
 
-#include <pcl/point_types.h>
-#include <pcl/point_cloud.h>
-#include <pcl/common/transforms.h>
-#include <pcl/common/common_headers.h>
-#include <pcl/common/transforms.h>
-
 #include "tinyxml.h"
-
-/*
-#include <pcl/io/ply_io.h>
-#include <pcl/console/parse.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/registration/icp.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/statistical_outlier_removal.h>
-#include <pcl/console/time.h> /**/
+#include "defs.h"
 
 #undef DEBUG
 //#define DEBUG
 #undef POLLING
 //#define POLLING
 
-#define RINGBUFFERSIZE 2
-
-using namespace std;
-using namespace pcl;
 using namespace std::chrono;
-
-typedef PointXYZRGB PointT;
-typedef PointCloud<PointT> PointCloudT;
 
 struct cameradata {
 	string serial;
@@ -70,14 +49,10 @@ public:
 
 		const std::string platform_camera_name = "Platform Camera";
 		GeneratedPC = generate_pcl();
-		for (int i = 0; i < RINGBUFFERSIZE; i++) {
-			boost::shared_ptr<PointCloudT> buf(new PointCloudT());
-			RingBuffer.push_back(buf);
-		}
 
+		// prepare storage for camera data for each connected camera
 		for (auto dev : devs) {
 			if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
-				// prepare storage for camera data
 				boost::shared_ptr<PointCloudT> empty_pntcld(new PointCloudT());
 				boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 				default_trafo->setIdentity();
@@ -89,13 +64,17 @@ public:
 				camera_start(*cc);
 			}
 		}
-		do_capture = true;
-
-		if (CameraData.size() > 1)		// set the transformation matrices to align all cameras
-			file2config();
-
 		if (CameraData.size() == 0)		// no camera connected, so we'll use a generated pointcloud instead
 			std::cout << "No cameras found, a spinning generated pointcloud of " << GeneratedPC->size() << " data points will be offered instead\n" ;
+
+		file2config();		// set the configuratioon (transformation matrices, ringbuffersize, greenscreen option, etc.)
+
+		for (int i = 0; i < ringbuffer_size; i++) {
+			boost::shared_ptr<PointCloudT> buf(new PointCloudT());
+			RingBuffer.push_back(buf);
+		}
+
+		do_capture = true;
 	}
 
 	~multiFrame() {
@@ -173,6 +152,8 @@ public:
 		TiXmlElement* file = new TiXmlElement("CameraConfig");
 		root->LinkEndChild(file);
 		file->SetDoubleAttribute("resolution", spatial_resolution);
+		file->SetAttribute("ringbuffersize", ringbuffer_size);
+		file->SetAttribute("greenscreenremoval", green_screen);
 
 		for (cameradata ccfg : CameraData) {
 			TiXmlElement* cam = new TiXmlElement("camera");
@@ -213,13 +194,18 @@ private:
 		bool loadOkay = doc.LoadFile();
 		if (!loadOkay)
 		{
-			std::cout << "WARNING: Failed to load cameraconfig.xml\n\tPointcloud will be a merger of unregistrated camera clouds\n";
+			std::cout << "WARNING: Failed to load cameraconfig.xml\n";
+			if (CameraData.size() > 1)	
+				std::cout << "\tCaptured pointclouds will be merged based on unregistered camera clouds\n";
 			return;
 		}
 
 		TiXmlHandle docHandle(&doc);
 		TiXmlElement* configElement = docHandle.FirstChild("file").FirstChild("CameraConfig").ToElement();
 		configElement->QueryDoubleAttribute("resolution", &spatial_resolution);
+		configElement->QueryUnsignedAttribute("ringbuffersize", &ringbuffer_size);
+		ringbuffer_size = ringbuffer_size < 1 ? 1 : ringbuffer_size;
+		configElement->QueryBoolAttribute("greenscreenremoval", &green_screen);
 
 		TiXmlElement* cameraElement = configElement->FirstChildElement("camera");
 		while (cameraElement)
@@ -308,6 +294,8 @@ private:
 	bool do_capture = false;								// Switch for "pause"
 	double spatial_resolution = 0.0;						// Resolution of voxelized pointclouds
 	int ring_index = 0;									// counter for ring buffer
+	unsigned int ringbuffer_size = 1;					// Size of the ringbuffer
+	bool green_screen = true;							// If true include greenscreen removal
 };
 
 
