@@ -25,6 +25,7 @@ To examine the pointcloud the user can use the mouse: rightclick and move to rot
 
 *Pcl_align* serves another purpose. It can be used to produce a snapshot of the individual cameras and can be used to manually align the cameras by manipulating the individual transformation settings. When done, it can write out these settings to a file (*cameraconfiguration.xml*).
 Action keys for alignment of camera clouds are:
+
 - "a" to toggle between *life* and *alignment mode*;
 - "1-9" to select the camera to align;
 - "r" to start cloud rotate mode;
@@ -34,7 +35,26 @@ Action keys for alignment of camera clouds are:
 - "h" to print the help;
 - "q" to quit;
 
+## Building
 
+### Windows
+
+- You need Windows 10 64bit.
+- You need Visual Studio 2017, community edition.
+- You need CMake.
+- You need Intel Realsense SDK.
+- You need PCL 1.8.1, get from <https://github.com/PointCloudLibrary/pcl/releases/tag/pcl-1.8.1>, AllInOne win64 installer.
+- Create `build` subdirectory, run *cmake*, point it to your source and build directory, *Configure*.
+	- A number of errors are expected and probably harmless:
+		- *DAVIDSDK* not found
+		- *DSSDK* not found
+		- *ENSENSO* not found
+		- *OPENNI* not found (but note that *OPENNI2* is needed)
+		- *RSSDK* not found
+- Build the resultant Visual Studio solution.
+- The outputs are going to end up in the `build` subdirectory.
+	- More exact locations to be provided...
+	
 ## Installation
 
 The directory `VRTogether-capture` that is maintained by this repository can be put anywhere on your system.
