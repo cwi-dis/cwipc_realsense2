@@ -54,7 +54,18 @@ Action keys for alignment of camera clouds are:
 - Build the resultant Visual Studio solution.
 - The outputs are going to end up in the `build` subdirectory.
 	- More exact locations to be provided...
-	
+
+## MacOS
+
+- You need XCode.
+- First install the Intel RealSense SDK.
+	- Follow build and install instructions there for Mac. This will install *brew* and *cmake* and various other dependencies needed.
+	- I had to manually add the *libusb* search path the the XCode project (*cmake* did something wrong)
+	- **This will fail on OSX 10.14...**
+- In this directory, *VRTogether-capture*, create `build`, go there.
+- Run `cmake ..`.
+- More to be provided...
+
 ## Installation
 
 The directory `VRTogether-capture` that is maintained by this repository can be put anywhere on your system.
