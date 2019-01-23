@@ -66,6 +66,13 @@ Action keys for alignment of camera clouds are:
 - Run `cmake ..`.
 - More to be provided...
 
+## Linux
+
+- You need Ubuntu 16.04 (other linuxes may work too)
+- Install the Intel RealSense SDK following instructions for Linux from <https://github.com/IntelRealSense/librealsense>.
+- Install _cmake_ with `sudo apt install cmake`.
+- 
+
 ## Installation
 
 The directory `VRTogether-capture` that is maintained by this repository can be put anywhere on your system.
