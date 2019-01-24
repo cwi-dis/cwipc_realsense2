@@ -34,7 +34,10 @@ find_package(PkgConfig)
 
 message(STATUS "xxxjack pkgconfig" ${PKG_CONFIG_FOUND})
 
+#
 # Find realsense (either with pkgconfig or otherwise)
+#
+
 if(PKG_CONFIG_FOUND)
     pkg_check_modules(REALSENSE2 realsense2)
     if(REALSENSE2_FOUND)
@@ -55,7 +58,10 @@ if(NOT REALSENSE2_FOUND)
 endif()
 message(STATUS "xxxjack realsense findpackage" ${REALSENSE2_FOUND})
 
+#
 # Find PCL
+#
+
 if(PKG_CONFIG_FOUND)
     pkg_check_modules(PCL pcl_common-1.7 pcl_io-1.7)
     if(PCL_FOUND)
