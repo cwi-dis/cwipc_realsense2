@@ -26,6 +26,12 @@ const int depth_height = 360;
 const int depth_fps = 60;
 /**/
 
+#if defined(WIN32) || defined(_WIN32)
+#define CWI_DLL_EXPORT __declspec(dllexport)
+#else
+#define CWI_DLL_EXPORT 
+#endif
+
 // Configure and initialize caputuring of one camera
 void multiFrame::camera_start(cameradata camera_data)
 {
@@ -180,7 +186,7 @@ void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
 #endif
 }
 
-extern "C" void __declspec(dllexport) getPointCloud(uint64_t *timestamp, void **pointcloud) {
+extern "C" void CWI_DLL_EXPORT getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	captureIt captureit;
 	captureit.getPointCloud(timestamp, pointcloud);
 }
