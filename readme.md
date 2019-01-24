@@ -62,6 +62,13 @@ Action keys for alignment of camera clouds are:
 	- Follow build and install instructions there for Mac. This will install *brew* and *cmake* and various other dependencies needed.
 	- I had to manually add the *libusb* search path the the XCode project (*cmake* did something wrong)
 	- **This will fail on OSX 10.14...**
+	- Alternatively build with makefiles:
+		- `mkdir build-makefiles`
+		- `cd build-makefiles`
+		- `LIBRARY_PATH=/usr/local/lib cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G "Unix Makefiles"`
+		- `LIBRARY_PATH=/usr/local/lib make`
+		- `make install`
+		- Manually edit `/usr/local/lib/pkgconfig/realsense2.pc` and fix `libdir`.
 - In this directory, *VRTogether-capture*, create `build`, go there.
 - Run `cmake ..`.
 - More to be provided...
