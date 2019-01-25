@@ -11,8 +11,9 @@ int main(int argc, char * argv[]) try
 {
 	printhelp();
 
-	HINSTANCE hInstLibrary;
 	GetPointCloudFunction getPointCloud = nullptr;
+#ifdef WIN32
+	HINSTANCE hInstLibrary;
 
 	hInstLibrary = LoadLibrary(TEXT("multiFrame.dll"));
 
@@ -20,6 +21,8 @@ int main(int argc, char * argv[]) try
 		getPointCloud = (GetPointCloudFunction)GetProcAddress(hInstLibrary, "getPointCloud");
 	else
 		cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
+#else
+#endif // WIN32
 
 	if (!getPointCloud)		// the function 'getPointCloud' has been found in the dll file
 		cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
@@ -60,7 +63,9 @@ int main(int argc, char * argv[]) try
 		// NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
 		draw_pointcloud(app, app_state, captured_pc);
 	}
+#ifdef WIN32
 	FreeLibrary(hInstLibrary);
+#endif
 	return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
