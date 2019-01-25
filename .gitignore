@@ -6,6 +6,7 @@ ubuntu-xenial-hwe/
 
 # CMake
 build/
+build-*/
 
 # XCode
 .DS_Store

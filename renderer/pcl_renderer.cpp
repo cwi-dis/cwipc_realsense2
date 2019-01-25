@@ -24,8 +24,10 @@ int main(int argc, char * argv[]) try
 #else
 #endif // WIN32
 
-	if (!getPointCloud)		// the function 'getPointCloud' has been found in the dll file
+	if (!getPointCloud)	{
 		cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
+		return EXIT_FAILURE;
+	}
 
 	// Create a simple OpenGL window for rendering:
 	window app(2560, 1440, "Multicamera Capturing");

@@ -25,4 +25,4 @@ set_target_properties(multiFrame PROPERTIES
 )
 include_directories(.)
 
-target_link_libraries(multiFrame ${REALSENSE2_LIB} ${REALSENSE2_LIBRARIES})
+target_link_libraries(multiFrame ${REALSENSE2_LIB})
