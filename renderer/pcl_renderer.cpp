@@ -11,8 +11,8 @@ int main(int argc, char * argv[]) try
 {
 	printhelp();
 
-	GetPointCloudFunction getPointCloud = nullptr;
 #ifdef WIN32
+	GetPointCloudFunction getPointCloud = nullptr;
 	HINSTANCE hInstLibrary;
 
 	hInstLibrary = LoadLibrary(TEXT("multiFrame.dll"));
@@ -21,13 +21,13 @@ int main(int argc, char * argv[]) try
 		getPointCloud = (GetPointCloudFunction)GetProcAddress(hInstLibrary, "getPointCloud");
 	else
 		cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
-#else
-#endif // WIN32
-
 	if (!getPointCloud)	{
 		cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
 		return EXIT_FAILURE;
 	}
+#else
+#endif // WIN32
+
 
 	// Create a simple OpenGL window for rendering:
 	window app(2560, 1440, "Multicamera Capturing");
@@ -46,7 +46,7 @@ int main(int argc, char * argv[]) try
 	while (app) {
 		boost::shared_ptr<PointCloudT> captured_pc;
 		void* pc = reinterpret_cast<void *> (&captured_pc);
-		long t = 4;
+		uint64_t t = 4;
 		getPointCloud(&t, &pc);
 		std::cout << "got a pointcloud captured at = " << t << std::endl;
 
