@@ -4,8 +4,8 @@
 # Copyright (C) 2018 by CWI. All rights reserved.
 # ======================================================
 #
-#  minimum required cmake version: 3.12.0
-cmake_minimum_required(VERSION 3.12.0)
+#  minimum required cmake version: 3.10.0
+cmake_minimum_required(VERSION 3.10.0)
 
 add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
 set_target_properties(pcl_renderer PROPERTIES

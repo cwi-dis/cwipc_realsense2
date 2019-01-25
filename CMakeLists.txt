@@ -4,8 +4,8 @@
 # Copyright (C) 2018 by CWI. All rights reserved.
 # ======================================================
 #
-#  minimum required cmake version: 3.12.0
-cmake_minimum_required(VERSION 3.12.0)
+#  minimum required cmake version: 3.10.0
+cmake_minimum_required(VERSION 3.10.0)
 
 project(Capture-CWI)
 
