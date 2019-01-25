@@ -60,8 +60,10 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     target_link_libraries(pcl_align ${DEPENDENCIES})
 endif()
 
-add_custom_command(TARGET pcl_renderer POST_BUILD
+if(WIN32)
+	add_custom_command(TARGET pcl_renderer POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${REALSENSE2_DLL} $<TARGET_FILE_DIR:pcl_renderer>)
 
-add_custom_command(TARGET pcl_align POST_BUILD
+	add_custom_command(TARGET pcl_align POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${REALSENSE2_DLL} $<TARGET_FILE_DIR:pcl_align>)
+endif()

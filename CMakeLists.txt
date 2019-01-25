@@ -12,7 +12,7 @@ project(Capture-CWI)
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
-#set(CMAKE_VERBOSE_MAKEFILE on)
+set(CMAKE_VERBOSE_MAKEFILE on)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMakeFiles)
 
@@ -43,6 +43,7 @@ if(PKG_CONFIG_FOUND)
     if(REALSENSE2_FOUND)
         include_directories(${REALSENSE2_INCLUDE_DIRS})
         link_directories(${REALSENSE2_LIBRARY_DIRS})
+        set(REALSENSE2_LIB  ${REALSENSE2_LIBRARIES})
     endif()
 endif()
 message(STATUS "xxxjack realsense pkgconfig" ${REALSENSE2_FOUND})
@@ -90,6 +91,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 			include_directories(${GLFW_INCLUDE_DIRS})
 			link_directories(${GLFW_LIBRARY_DIRS})
 			add_definitions(${GLFW_DEFINITIONS})
+			list(APPEND DEPENDENCIES ${GLFW_LIBRARIES})
 		endif()
 		pkg_check_modules(OPENGL glu gl)
 		if(OPENGL_FOUND)
@@ -109,6 +111,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
     list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
 
+	add_subdirectory(renderer)
 else()
     if(NOT WIN32)
         list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
