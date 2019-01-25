@@ -10,21 +10,30 @@
 #include "multiFrame.hpp"
 #include "utils.h"
 
-/**/
+//
+// Stop-gap by Jack. The normal production settings are not possible over USB2.
+// we should dynamically detect this (and I think we can, with the realsense
+// API), but for now we use a define to lower the quality to something
+// doable.
+//
+#define WITH_USB2
+#ifndef WITH_USB2
+// For USB3 devices we get the maximum possible quality and rate
 const int color_width = 1280;
 const int color_height = 720;
 const int color_fps = 30;
 const int depth_width = 1280;
 const int depth_height = 720;
 const int depth_fps = 30;
-/*
+#else
+// For USB2 we make do with lower quality and framerate
 const int color_width = 640;
-const int color_height = 360;
-const int color_fps = 60;
+const int color_height = 480;
+const int color_fps = 30;
 const int depth_width = 640;
-const int depth_height = 360;
-const int depth_fps = 60;
-/**/
+const int depth_height = 480;
+const int depth_fps = 30;
+#endif // WITH_USB2
 
 #if defined(WIN32) || defined(_WIN32)
 #define CWI_DLL_EXPORT __declspec(dllexport)

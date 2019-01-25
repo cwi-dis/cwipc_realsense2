@@ -54,6 +54,7 @@ Action keys for alignment of camera clouds are:
 - Build the resultant Visual Studio solution.
 - The outputs are going to end up in the `build` subdirectory.
 	- More exact locations to be provided...
+	- TBD: copy the outputs to a known location (for subsequent installing)
 
 ## MacOS
 
@@ -71,14 +72,27 @@ Action keys for alignment of camera clouds are:
 		- Manually edit `/usr/local/lib/pkgconfig/realsense2.pc` and fix `libdir`.
 - In this directory, *VRTogether-capture*, create `build`, go there.
 - Run `cmake ..`.
-- More to be provided...
+	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
+	- More exact locations to be provided...
+	- TBD: copy the outputs to a known location (for subsequent installing)
 
 ## Linux
 
-- You need Ubuntu 16.04 (other linuxes may work too)
+- You need Ubuntu 16.04 (18.04 linuxes may work too)
 - Install the Intel RealSense SDK following instructions for Linux from <https://github.com/IntelRealSense/librealsense>.
-- Install _cmake_ with `sudo apt install cmake`.
-- 
+- Install _cmake_ with `sudo apt-get install cmake`.
+- Install PCL (in the standard repos for 18.04), libusb:
+
+  ```
+  sudo apt-get install libpcl-dev libpcl-common1.8 libpcl-io1.8
+  sudo apt-get install libusb-1.0 libusb-dev
+  sudo apt-get install libglfw3 libglfw3-dev
+  ```
+- In this directory, *VRTogether-capture*, create `build`, go there.
+- Run `cmake ..`.
+	- More exact locations to be provided...
+	- TBD: copy the outputs to a known location (for subsequent installing)
+
 
 ## Installation
 
