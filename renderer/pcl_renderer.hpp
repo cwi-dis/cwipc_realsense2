@@ -18,7 +18,7 @@ extern "C" void getPointCloud(uint64_t *timestamp, void **pointcloud);
 #endif
 #include <librealsense2/rs.hpp>
 
-typedef void(*GetPointCloudFunction)(long *, void **);
+typedef void(*GetPointCloudFunction)(uint64_t *, void **);
 
 class window
 {
