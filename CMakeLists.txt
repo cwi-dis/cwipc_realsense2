@@ -64,7 +64,7 @@ message(STATUS "xxxjack realsense findpackage" ${REALSENSE2_FOUND})
 #
 
 if(PKG_CONFIG_FOUND)
-    pkg_check_modules(PCL pcl_common-1.7 pcl_io-1.7)
+    pkg_check_modules(PCL pcl_common-1.8 pcl_io-1.8)
     if(PCL_FOUND)
         include_directories(${PCL_INCLUDE_DIRS})
         link_directories(${PCL_LIBRARY_DIRS})

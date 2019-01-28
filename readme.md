@@ -82,6 +82,19 @@ Action keys for alignment of camera clouds are:
   ```
   brew install pcl
   ```
+  
+  - This may not work if your brew already uses PCL 1.9.x. Remove the too-new pcl, manually edit the formula and try to re-install again:
+
+	  ```
+	  brew uninstall pcl
+	  cd /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula
+	  git log pcl.rb
+	  # Note the commit of the last 1.8.1 formula, use that in the next line
+	  git checkout baea3606fce5d96720f631f37d62662ea73d7798 -- pcl.rb
+	  cd
+	  brew install pcl
+	  ```
+  
 - Now build our software. In this directory, *VRTogether-capture*, create `build`, go there.
 - Run `cmake ..`.
 	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
