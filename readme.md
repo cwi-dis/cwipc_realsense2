@@ -59,10 +59,18 @@ Action keys for alignment of camera clouds are:
 ## MacOS
 
 - You need XCode.
-- First install the Intel RealSense SDK.
-	- Follow build and install instructions there for Mac. This will install *brew* and *cmake* and various other dependencies needed.
+- Install Homebrew, from <https://brew.sh>
+- Install a few dependencies needed by our software and some of the third party libraries:
+
+  ```
+  brew install cmake
+  brew install homebrew/core/glfw3
+  ```
+  
+- Then install the Intel RealSense SDK.
+	- Look at <https://github.com/IntelRealSense/librealsense> and follow install instructions there for Mac.
 	- I had to manually add the *libusb* search path the the XCode project (*cmake* did something wrong)
-	- **This will fail on OSX 10.14...**
+	- **This may fail on OSX 10.14...**
 	- Alternatively build with makefiles:
 		- `mkdir build-makefiles`
 		- `cd build-makefiles`
@@ -70,7 +78,12 @@ Action keys for alignment of camera clouds are:
 		- `LIBRARY_PATH=/usr/local/lib make`
 		- `make install`
 		- Manually edit `/usr/local/lib/pkgconfig/realsense2.pc` and fix `libdir`.
-- In this directory, *VRTogether-capture*, create `build`, go there.
+- Install the PCL, easiest using brew: 
+
+  ```
+  brew install pcl
+  ```
+- Now build our software. In this directory, *VRTogether-capture*, create `build`, go there.
 - Run `cmake ..`.
 	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
 	- More exact locations to be provided...
@@ -78,7 +91,7 @@ Action keys for alignment of camera clouds are:
 
 ## Linux
 
-- You need Ubuntu 16.04 (18.04 linuxes may work too)
+- You need Ubuntu 18.04 (16.04 linuxes may work too)
 - Install the Intel RealSense SDK following instructions for Linux from <https://github.com/IntelRealSense/librealsense>.
 - Install _cmake_ with `sudo apt-get install cmake`.
 - Install PCL (in the standard repos for 18.04), libusb:
@@ -102,6 +115,7 @@ The CMake setup should be able to find the dependencies needed.
 ## Expected input: *cameraconfig.xml*
 
 The configuration file *cameraconfig.xml* holds information on cloud resolution (in meters), the number of output buffers (an int) and optional greenscreenremoval (0 or 1). Furthermore the file holds information for each camera: the serial number and the transformation for alignment. Below is an example config file.
+
 ```
 <?xml version="1.0" ?>
 <file>
@@ -134,4 +148,5 @@ The configuration file *cameraconfig.xml* holds information on cloud resolution 
             </trafo>
         </camera>
     </CameraConfig>
-</file>```
+</file>
+```
