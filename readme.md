@@ -70,8 +70,7 @@ Action keys for alignment of camera clouds are:
 - Then install the Intel RealSense SDK.
 	- Look at <https://github.com/IntelRealSense/librealsense> and follow install instructions there for Mac.
 	- I had to manually add the *libusb* search path the the XCode project (*cmake* did something wrong)
-	- **This may fail on OSX 10.14...**
-	- Alternatively build with makefiles:
+	- **This may fail on OSX 10.14...**, alternatively build with makefiles:
 		- `mkdir build-makefiles`
 		- `cd build-makefiles`
 		- `LIBRARY_PATH=/usr/local/lib cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G "Unix Makefiles"`
@@ -86,7 +85,7 @@ Action keys for alignment of camera clouds are:
 - Now build our software. In this directory, *VRTogether-capture*, create `build`, go there.
 - Run `cmake ..`.
 	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
-	- More exact locations to be provided...
+	- dynamic library is in _build/src/libmultiFrame.dylib_, test programs are in _build/renderer/pcl\_renderer_ and _pcl\_align_.
 	- TBD: copy the outputs to a known location (for subsequent installing)
 
 ## Linux
