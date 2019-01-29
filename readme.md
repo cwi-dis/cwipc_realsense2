@@ -25,6 +25,7 @@ To examine the pointcloud the user can use the mouse: rightclick and move to rot
 
 *Pcl_align* serves another purpose. It can be used to produce a snapshot of the individual cameras and can be used to manually align the cameras by manipulating the individual transformation settings. When done, it can write out these settings to a file (*cameraconfiguration.xml*).
 Action keys for alignment of camera clouds are:
+
 - "a" to toggle between *life* and *alignment mode*;
 - "1-9" to select the camera to align;
 - "r" to start cloud rotate mode;
@@ -33,6 +34,89 @@ Action keys for alignment of camera clouds are:
 - "s" to save the current configuration in *camaraconfig.xml* and snapshots of each camera in .ply files;
 - "h" to print the help;
 - "q" to quit;
+
+## Building
+
+### Windows
+
+- You need Windows 10 64bit.
+- You need Visual Studio 2017, community edition.
+- You need CMake.
+- You need Intel Realsense SDK.
+- You need PCL 1.8.1, get from <https://github.com/PointCloudLibrary/pcl/releases/tag/pcl-1.8.1>, AllInOne win64 installer.
+- Create `build` subdirectory, run *cmake*, point it to your source and build directory, *Configure*.
+	- A number of errors are expected and probably harmless:
+		- *DAVIDSDK* not found
+		- *DSSDK* not found
+		- *ENSENSO* not found
+		- *OPENNI* not found (but note that *OPENNI2* is needed)
+		- *RSSDK* not found
+- Build the resultant Visual Studio solution.
+- The outputs are going to end up in the `build` subdirectory.
+	- More exact locations to be provided...
+	- TBD: copy the outputs to a known location (for subsequent installing)
+
+## MacOS
+
+- You need XCode.
+- Install Homebrew, from <https://brew.sh>
+- Install a few dependencies needed by our software and some of the third party libraries:
+
+  ```
+  brew install cmake
+  brew install homebrew/core/glfw3
+  ```
+  
+- Then install the Intel RealSense SDK.
+	- Look at <https://github.com/IntelRealSense/librealsense> and follow install instructions there for Mac.
+	- I had to manually add the *libusb* search path the the XCode project (*cmake* did something wrong)
+	- **This may fail on OSX 10.14...**, alternatively build with makefiles:
+		- `mkdir build-makefiles`
+		- `cd build-makefiles`
+		- `LIBRARY_PATH=/usr/local/lib cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G "Unix Makefiles"`
+		- `LIBRARY_PATH=/usr/local/lib make`
+		- `make install`
+		- Manually edit `/usr/local/lib/pkgconfig/realsense2.pc` and fix `libdir`.
+- Install the PCL, easiest using brew: 
+
+  ```
+  brew install pcl
+  ```
+  
+  - This may not work if your brew already uses PCL 1.9.x. Remove the too-new pcl, manually edit the formula and try to re-install again:
+
+	  ```
+	  brew uninstall pcl
+	  cd /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula
+	  git log pcl.rb
+	  # Note the commit of the last 1.8.1 formula, use that in the next line
+	  git checkout baea3606fce5d96720f631f37d62662ea73d7798 -- pcl.rb
+	  cd
+	  brew install pcl
+	  ```
+  
+- Now build our software. In this directory, *VRTogether-capture*, create `build`, go there.
+- Run `cmake ..`.
+	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
+	- dynamic library is in _build/src/libmultiFrame.dylib_, test programs are in _build/renderer/pcl\_renderer_ and _pcl\_align_.
+	- TBD: copy the outputs to a known location (for subsequent installing)
+
+## Linux
+
+- You need Ubuntu 18.04 (16.04 linuxes may work too)
+- Install the Intel RealSense SDK following instructions for Linux from <https://github.com/IntelRealSense/librealsense>.
+- Install _cmake_ with `sudo apt-get install cmake`.
+- Install PCL (in the standard repos for 18.04), libusb:
+
+  ```
+  sudo apt-get install libpcl-dev libpcl-common1.8 libpcl-io1.8
+  sudo apt-get install libusb-1.0 libusb-dev
+  sudo apt-get install libglfw3 libglfw3-dev
+  ```
+- In this directory, *VRTogether-capture*, create `build`, go there.
+- Run `cmake ..`.
+	- More exact locations to be provided...
+	- TBD: copy the outputs to a known location (for subsequent installing)
 
 
 ## Installation
@@ -43,6 +127,7 @@ The CMake setup should be able to find the dependencies needed.
 ## Expected input: *cameraconfig.xml*
 
 The configuration file *cameraconfig.xml* holds information on cloud resolution (in meters), the number of output buffers (an int) and optional greenscreenremoval (0 or 1). Furthermore the file holds information for each camera: the serial number and the transformation for alignment. Below is an example config file.
+
 ```
 <?xml version="1.0" ?>
 <file>
@@ -75,4 +160,5 @@ The configuration file *cameraconfig.xml* holds information on cloud resolution 
             </trafo>
         </camera>
     </CameraConfig>
-</file>```
+</file>
+```

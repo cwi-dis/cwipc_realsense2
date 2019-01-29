@@ -4,15 +4,15 @@
 # Copyright (C) 2018 by CWI. All rights reserved.
 # ======================================================
 #
-#  minimum required cmake version: 3.12.0
-cmake_minimum_required(VERSION 3.12.0)
+#  minimum required cmake version: 3.10.0
+cmake_minimum_required(VERSION 3.10.0)
 
 project(Capture-CWI)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
-#set(CMAKE_VERBOSE_MAKEFILE on)
+set(CMAKE_VERBOSE_MAKEFILE on)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMakeFiles)
 
@@ -28,40 +28,93 @@ endif()
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 
-find_package(REALSENSE2 REQUIRED)
-if(REALSENSE2_FOUND)
-	include_directories(${REALSENSE2_INC})
-	link_directories(${REALSENSE2_LIB})
-else()
-	message(FATAL_ERROR "\ncould not find realsense2 library\n")
-endif()
+# First try locating things with pkg-config.
 
-find_package(PCL REQUIRED COMPONENTS common io visualization filters)
-if(PCL_FOUND)
-	include_directories(${PCL_INCLUDE_DIRS})
-	link_directories(${PCL_LIBRARY_DIRS})
-	add_definitions(${PCL_DEFINITIONS})
-else()
-	message(FATAL_ERROR "\ncould not find PCL library\n")
-endif()
+find_package(PkgConfig)
 
-list(APPEND DEPENDENCIES ${PCL_LIBRARIES})
+message(STATUS "xxxjack pkgconfig" ${PKG_CONFIG_FOUND})
+
+#
+# Find realsense (either with pkgconfig or otherwise)
+#
+
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(REALSENSE2 realsense2)
+    if(REALSENSE2_FOUND)
+        include_directories(${REALSENSE2_INCLUDE_DIRS})
+        link_directories(${REALSENSE2_LIBRARY_DIRS})
+        set(REALSENSE2_LIB  ${REALSENSE2_LIBRARIES})
+    endif()
+endif()
+message(STATUS "xxxjack realsense pkgconfig" ${REALSENSE2_FOUND})
+
+if(NOT REALSENSE2_FOUND)
+    find_package(REALSENSE2 REQUIRED)
+    if(REALSENSE2_FOUND)
+        include_directories(${REALSENSE2_INC})
+        link_directories(${REALSENSE2_LIB})
+    else()
+        message(SEND_ERROR "\ncould not find realsense2 library\n")
+    endif()
+endif()
+message(STATUS "xxxjack realsense findpackage" ${REALSENSE2_FOUND})
+
+#
+# Find PCL
+#
+
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(PCL pcl_common-1.8 pcl_io-1.8)
+    if(NOT PCL_FOUND)
+	    pkg_check_modules(PCL pcl_common-1.7 pcl_io-1.7)
+	endif()
+    if(PCL_FOUND)
+        include_directories(${PCL_INCLUDE_DIRS})
+        link_directories(${PCL_LIBRARY_DIRS})
+        add_definitions(${PCL_DEFINITIONS})
+    endif()
+endif()
+message(STATUS "xxxjack pcl pkgconfig" ${PCL_FOUND})
+if(NOT PCL_FOUND)
+    find_package(PCL REQUIRED COMPONENTS common io)
+    include_directories(${PCL_INCLUDE_DIRS})
+    link_directories(${PCL_LIBRARY_DIRS})
+    add_definitions(${PCL_DEFINITIONS})
+endif()
+message(STATUS "xxxjack pcl pkgconfig" ${PCL_FOUND})
 
 include(third-party/tinyXML/CMakeLists.txt)
 include_directories(third-party/tinyXML)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-
-    add_subdirectory(third-party/glfw)
-	list(APPEND DEPENDENCIES glfw3)
- 
-    find_package(OpenGL)
+	# Find glfw (or use slurped version) and opengl
+	if(PKG_CONFIG_FOUND)
+		pkg_check_modules(GLFW glfw3)
+		if(GLFW_FOUND)
+			include_directories(${GLFW_INCLUDE_DIRS})
+			link_directories(${GLFW_LIBRARY_DIRS})
+			add_definitions(${GLFW_DEFINITIONS})
+			list(APPEND DEPENDENCIES ${GLFW_LIBRARIES})
+		endif()
+		pkg_check_modules(OPENGL glu gl)
+		if(OPENGL_FOUND)
+			add_definitions(-D_GLFW_USE_OPENGL -D_GLFW_X11)
+		endif()
+	endif()
+	if(NOT GLFW_FOUND)
+		add_subdirectory(third-party/glfw)
+		list(APPEND DEPENDENCIES glfw3)
+	endif()
     if(NOT OPENGL_FOUND)
-        message(FATAL_ERROR "\n\n OpenGL package is missing!\n\n")
+		find_package(OpenGL)
+	endif()
+    if(NOT OPENGL_FOUND)
+        message(SEND_ERROR "\n\n OpenGL package is missing!\n\n")
     endif()
 
     list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
 
+	add_subdirectory(renderer)
 else()
     if(NOT WIN32)
         list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
@@ -69,4 +122,3 @@ else()
 endif()
 
 add_subdirectory(src)
-add_subdirectory(renderer)
