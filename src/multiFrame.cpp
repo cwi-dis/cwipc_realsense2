@@ -101,7 +101,8 @@ void multiFrame::camera_action(cameradata camera_data)
 
 void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 {
-	PointCloudT *aligned_cld = new PointCloudT();
+	//PointCloudT *aligned_cld = new PointCloudT();
+	PointCloudT *aligned_cld;
 
 	cloud_ptr->clear();
 	for (cameradata ccfg : CameraData) {
@@ -111,6 +112,9 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 			*cloud_ptr.get() += *aligned_cld;
 		}
 	}
+	//aligned_cld->clear();
+	//delete aligned_cld;
+
  	if (spatial_resolution > 0) {
 #ifdef DEBUG
 		cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
@@ -124,60 +128,7 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 		cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
-	if (tiling && tiling_resolution > 0) {
-		make_tiles(cloud_ptr);
-	}
 }
-
-// Make tiles of the merged pointcloud
-void multiFrame::make_tiles(boost::shared_ptr<PointCloudT> cloud_ptr)
-{
-	boost::shared_ptr<PointCloudT> voxels(new PointCloudT());
-	// Create a (lower resolution) voxelcloud based on the merged cloud
-	pcl::VoxelGrid<PointT> grid;
-	grid.setInputCloud(cloud_ptr);
-	grid.setLeafSize(tiling_resolution, tiling_resolution, tiling_resolution);
-	grid.setSaveLeafLayout(true);
-	grid.filter(*voxels);
-#ifdef DEBUG
-	cout << "Number of voxels " << voxels.get()->size() << endl;
-#endif
-	// Find which camera's contributed to each voxel
-	int maxlbl = 0;
-	for (int i = 0, lbl = 1; i < CameraData.size(); i++, lbl = lbl << 1) {
-		// lbl is the one bit that is assigned to a camera
-		for (auto pnt : CameraData[i].cloud->points) {
-			// getCentroidIndex returns the index of the voxel point in which pnt contributed
-			/*PointTL *p = &voxels->points[grid.getCentroidIndex(pnt)];
-			p->label |= lbl;
-			if (p->label > maxlbl)
-				maxlbl = p->label;/**/
-		}
-	} 
-	/*
-	// Now assign the labels to the points in the merged cloud
-	for (int i = 0; i < cloud_ptr->size(); i++)
-		cloud_ptr->points[i].label = voxels->points[grid.getCentroidIndex(cloud_ptr->points[i])].label;
-
-	// Create individual tiles based on the point labels
-	for (int i = 0; i < maxlbl; i++) {
-		boost::shared_ptr<PointCloudT> tile(new PointCloudT());
-		CloudTiles.push_back(tile);
-	}
-
-	// Assign points to the tiles
-	for (auto pl : cloud_ptr->points) {
-		PointT *p = new PointT();
-		p->x = pl.x;
-		p->y = pl.y;
-		p->z = pl.z;
-		p->r = pl.r;
-		p->g = pl.g;
-		p->b = pl.b;
-		//CloudTiles[pl.label - 1]->push_back(*p);
- 	}/**/
-}
-
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp
 void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)

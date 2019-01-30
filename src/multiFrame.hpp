@@ -29,8 +29,6 @@
 //#define DEBUG
 #undef POLLING
 //#define POLLING
-#undef TILING
-//#define TILING
 
 using namespace std::chrono;
 
@@ -272,12 +270,10 @@ private:
 	void camera_start(cameradata camera_data);
 	void camera_action(cameradata camera_data);
 	void merge_views(boost::shared_ptr<PointCloudT> pcl);
-	void make_tiles(boost::shared_ptr<PointCloudT> cloud_ptr);
 
 	// Globals
 	vector<cameradata> CameraData;						// Storage of per camera data
 	vector<boost::shared_ptr<PointCloudT>> RingBuffer;	// Buffer of merged pointclouds
-	vector<boost::shared_ptr<PointCloudT>> CloudTiles;	// Tiles of merged pointcloud
 	boost::shared_ptr<PointCloudT> GeneratedPC;			// Mathematical pointcloud for use without camera
 	float angle = 0.0f;									// Rotation of generated PC
 	bool do_capture = false;								// Switch for "pause"
