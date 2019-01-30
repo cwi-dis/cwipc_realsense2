@@ -16,6 +16,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <pcl/io/ply_io.h>
 
 class window
 {
@@ -104,11 +105,20 @@ struct glfw_state {
 	float offset;
 };
 
+struct cam_data {
+	string serial;
+	boost::shared_ptr<Eigen::Affine3d> trafo;
+	boost::shared_ptr<PointCloudT> cloud;
+};
+
 bool do_align = false;
 bool rotation = true;
 int aligncamera = 0;
-Eigen::Vector4f mergedcenter;	// needed to automatically center the merged cloud
-Eigen::Vector4f cloudcenter;		// needed to be able to rotate around the cloud's centre of mass
+Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
+Eigen::Vector4f cloudcenter;		// Needed to be able to rotate around the cloud's centre of mass
+vector<cam_data> CamData;		// Storage of per camera data for reloaded camera data
+
+string ext(".ply");
 
 void printhelp() {
 	cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
@@ -121,7 +131,8 @@ void printhelp() {
 	cout << "\t\"r\" to start cloud rotate mode\n";
 	cout << "\t\"t\" to start cloud translate mode\n";
 	cout << "\t\"esc\" to reset the cloud transformation of the active camera\n";
-	cout << "\t\"s\" to save configuration and snapshots of each camera\n";
+	cout << "\t\"s\" to save the configuration and snapshots of each camera to files\n";
+	cout << "\t\"l\" to load a configuration and snapshots of each camera from files to (re)align\n";
 	cout << "\t\"h\" to print this help\n";
 	cout << "\t\"q\" to quit\n";
 }
@@ -146,6 +157,93 @@ void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
 	}
 	myfile << oss.str();
 	myfile.close();
+}
+
+bool load_ply_of_camera(string serial)
+{
+	cam_data* camptr = NULL;
+	int index = 0;
+
+	// Check if the camera is in the administration
+	for (int i = 0; i < CamData.size(); i++)
+		if (CamData[i].serial == serial) {
+			camptr = &CamData[i];
+			index = i;
+			break;
+		}
+
+	if (!camptr) {
+		// There is no entry in the administration for this camera yet.
+		cam_data *cam = new cam_data();
+		cam->serial = serial;
+		boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
+		trafo->setIdentity();
+		cam->trafo = trafo;
+		boost::shared_ptr<PointCloudT> orig(new PointCloudT());
+		cam->cloud = orig;
+		camptr = cam;
+		CamData.push_back(*cam);
+	}
+
+	// Load the cloud and save it into the global list of models
+	if (pcl::io::loadPLYFile<PointT>(serial + ext, *camptr->cloud) == -1)
+	{
+		string msg = "Error loading cloud from file " + serial + ext + "\n";
+		PCL_ERROR(msg.c_str());
+		return false;
+	}
+
+	// Transform for proper merging
+	transformPointCloud(*camptr->cloud, *camptr->cloud, *camptr->trafo);
+	return true;
+}
+
+bool load_config()
+{
+	TiXmlDocument doc("cameraconfig.xml");
+	bool loadOkay = doc.LoadFile();
+	if (!loadOkay)
+	{
+		std::cout << "WARNING: Failed to load cameraconfig.xml\n";
+		if (CamData.size() > 1)
+			std::cout << "\tCaptured pointclouds will be merged based on unregistered camera clouds\n";
+		return false;
+	}
+	CamData.clear();
+
+	TiXmlHandle docHandle(&doc);
+	TiXmlElement* configElement = docHandle.FirstChild("file").FirstChild("CameraConfig").ToElement();
+	TiXmlElement* cameraElement = configElement->FirstChildElement("camera");
+	while (cameraElement)
+	{
+		const char * serial = cameraElement->Attribute("serial");
+		for (cam_data ccfg : CamData) {
+			if (ccfg.serial == serial) {
+				TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
+				if (trafo) {
+					TiXmlElement *val = trafo->FirstChildElement("values");
+					val->QueryDoubleAttribute("v00", &((*ccfg.trafo)(0, 0)));
+					val->QueryDoubleAttribute("v01", &((*ccfg.trafo)(0, 1)));
+					val->QueryDoubleAttribute("v02", &((*ccfg.trafo)(0, 2)));
+					val->QueryDoubleAttribute("v03", &((*ccfg.trafo)(0, 3)));
+					val->QueryDoubleAttribute("v10", &((*ccfg.trafo)(1, 0)));
+					val->QueryDoubleAttribute("v11", &((*ccfg.trafo)(1, 1)));
+					val->QueryDoubleAttribute("v12", &((*ccfg.trafo)(1, 2)));
+					val->QueryDoubleAttribute("v13", &((*ccfg.trafo)(1, 3)));
+					val->QueryDoubleAttribute("v20", &((*ccfg.trafo)(2, 0)));
+					val->QueryDoubleAttribute("v21", &((*ccfg.trafo)(2, 1)));
+					val->QueryDoubleAttribute("v22", &((*ccfg.trafo)(2, 2)));
+					val->QueryDoubleAttribute("v23", &((*ccfg.trafo)(2, 3)));
+					val->QueryDoubleAttribute("v30", &((*ccfg.trafo)(3, 0)));
+					val->QueryDoubleAttribute("v31", &((*ccfg.trafo)(3, 1)));
+					val->QueryDoubleAttribute("v32", &((*ccfg.trafo)(3, 2)));
+					val->QueryDoubleAttribute("v33", &((*ccfg.trafo)(3, 3)));
+				}
+			}
+		}
+		cameraElement = cameraElement->NextSiblingElement("camera");
+	}
+	return true;
 }
 
 // Handle the OpenGL setup needed to display all pointclouds
@@ -178,11 +276,9 @@ void draw_pointcloud(window& app, glfw_state& app_state, multiFrame& multiframe)
 
 	// draw the pointcloud(s)
 	if (do_align) {
-		int cams = multiframe.getNumberOfCameras();
-		for (int i = 0; i < cams; i++) {
+		for (int i = 0; i < CamData.size(); i++) {
 			PointCloudT::Ptr pcptr(new PointCloudT);
-
-			transformPointCloud(*(multiframe.getCameraCloud(i).get()), *pcptr, *multiframe.getCameraTransform(i));
+			transformPointCloud(*(CamData[i].cloud.get()), *pcptr, *CamData[i].trafo);
 			for (auto pnt : pcptr->points) {
 				float col[3];
 				if (i == aligncamera) {	// highlight the cloud of the selected camera
@@ -229,7 +325,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 
 	app.on_mouse_scroll = [&](double xoffset, double yoffset) {
 		if (do_align) {
-			Eigen::Affine3d *transform = multiframe.getCameraTransform(aligncamera);
+			Eigen::Affine3d *transform = CamData[aligncamera].trafo.get();
 			if (rotation) {
 				(*transform).rotate(Eigen::AngleAxisd(yoffset / 100.0, Eigen::Vector3d::UnitZ()));
 			}
@@ -245,7 +341,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 	app.on_mouse_move = [&](double x, double y) {
 		if (app_state.ml) {
 			if (do_align) {
-				Eigen::Affine3d *transform = multiframe.getCameraTransform(aligncamera);
+				Eigen::Affine3d *transform = CamData[aligncamera].trafo.get();
 				double dx = (x - app_state.last_x) / (0.25 * app.width());
 				double dy = -(y - app_state.last_y) / (0.25 * app.width());
 				if (rotation) {
@@ -272,7 +368,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 	app.on_key_release = [&](int key) {
 		if (key == 256) { // Escape is interpreted as a reset of the transformation
 			if (do_align) {
-				Eigen::Affine3d *transform = multiframe.getCameraTransform(aligncamera);
+				Eigen::Affine3d *transform = CamData[aligncamera].trafo.get();
 				(*transform).setIdentity();
 			}
 			else {
@@ -282,17 +378,38 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 		}
 		else if (key == 65) {	// key = "a": start/stop Alignment
 			if (do_align) {
-				multiframe.capture_start();
 				do_align = false;
 			}
 			else {
-				multiframe.pauze_capture();
+				CamData.clear();
+				for (int i = 0; i < multiframe.getNumberOfCameras(); i++) {
+					cam_data *cam = new cam_data();
+					cam->serial = multiframe.getCameraSerial(i);
+					cam->trafo = multiframe.getCameraTransform(i);
+					cam->cloud = multiframe.getCameraCloud(i);
+					CamData.push_back(*cam);
+				}
 				do_align = true;
-				pcl::compute3DCentroid((*multiframe.getCameraCloud(aligncamera)), cloudcenter);
+				if (aligncamera > CamData.size())
+					aligncamera = 0;
+				pcl::compute3DCentroid(*CamData[aligncamera].cloud, cloudcenter);
 			}
 		}
-		else if (key == 72) {	// key =\"h": print help
+		else if (key == 72) {	// key = "h": print help
 			printhelp();
+		}
+		else if (key == 76) {	// key = "l": load previous result
+			if (!load_config())
+				return;
+			for (auto camera : CamData)
+				if (!load_ply_of_camera(camera.serial)) {
+					cerr << "Could not load a .ply file for camera " << camera.serial << " as specified in the configuration file\n";
+					return;
+				}
+			do_align = true;
+			if (aligncamera > CamData.size())
+				aligncamera = 0;
+			pcl::compute3DCentroid(*CamData[aligncamera].cloud, cloudcenter);
 		}
 		else if (key == 81) {	// key = "q": Quit program
 			multiframe.~multiFrame();
@@ -303,27 +420,25 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 		}
 		else if (key == 83) {	// key = "s": Save config and snapshots to file
 			multiframe.config2file();
-			int cams = multiframe.getNumberOfCameras();
-			for (int i = 0; i < cams; i++)
-				cloud2file(multiframe.getCameraCloud(i), multiframe.getCameraSerial(i) + ".ply");
+			for (int i = 0; i < CamData.size(); i++)
+				cloud2file(CamData[i].cloud, CamData[i].serial + ".ply");
 		}
 		else if (key == 84) {	// key = "t": Translate
 			rotation = false;
 		}
 		else if (key >= 49 && key < multiframe.getNumberOfCameras() + 49) {	// key = "1-9": select a camera
 			aligncamera = key - 49;
-			pcl::compute3DCentroid((*multiframe.getCameraCloud(aligncamera)), cloudcenter);
+			pcl::compute3DCentroid(*CamData[aligncamera].cloud, cloudcenter);
 		}
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
-			int cams = multiframe.getNumberOfCameras();
-			for (int i = 0; i < cams; i++) {
+			for (int i = 0; i < CamData.size(); i++) {
 				PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
 				boost::shared_ptr<PointCloudT> aligned_cld(point_cloud_ptr);
 
-				transformPointCloud(*(multiframe.getCameraCloud(i).get()), *aligned_cld, *multiframe.getCameraTransform(i));
+				transformPointCloud(*CamData[i].cloud.get(), *aligned_cld, *CamData[i].trafo);
 
-				cloud2file(aligned_cld, "pcl_aligned_" + multiframe.getCameraSerial(i) + ".ply");
-				cloud2file(multiframe.getCameraCloud(i), "pcl_original_" + multiframe.getCameraSerial(i) + ".ply");
+				cloud2file(aligned_cld, "pcl_aligned_" + CamData[i].serial + ".ply");
+				cloud2file(CamData[i].cloud, "pcl_original_" + CamData[i].serial + ".ply");
 			}
 		}
 	};

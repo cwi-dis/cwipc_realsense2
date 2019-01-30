@@ -65,3 +65,6 @@ add_custom_command(TARGET pcl_renderer POST_BUILD
 
 add_custom_command(TARGET pcl_align POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${REALSENSE2_DLL} $<TARGET_FILE_DIR:pcl_align>)
+
+add_custom_command(TARGET pcl_align POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_if_different "C:/Program Files/OpenNI2/Redist/OpenNI2.dll" $<TARGET_FILE_DIR:pcl_align>)

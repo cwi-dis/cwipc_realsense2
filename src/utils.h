@@ -117,7 +117,8 @@ bool noChromaRemoval(PointT* p)
 	HsvColor hsv = rgbToHsv(p);
 
 	if (hsv.h >= 60 && hsv.h <= 130) {
-		if (hsv.s >= 0.15 && hsv.v >= 0.15) {	//reducegreen
+		if (hsv.s >= 0.15 && hsv.v >= 0.15) {
+			// reducegreen
 			if ((p->r * p->b) != 0 && (p->g * p->g) / (p->r * p->b) > 1.5) {
 				p->r *= 1.4;
 				p->b *= 1.4;

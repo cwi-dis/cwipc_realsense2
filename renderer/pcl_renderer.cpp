@@ -43,7 +43,6 @@ int main(int argc, char * argv[]) try
 		void* pc = reinterpret_cast<void *> (&captured_pc);
 		long t = 4;
 		getPointCloud(&t, &pc);
-		std::cout << "got a pointcloud captured at = " << t << std::endl;
 
 		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
 		

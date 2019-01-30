@@ -29,6 +29,8 @@
 //#define DEBUG
 #undef POLLING
 //#define POLLING
+#undef TILING
+//#define TILING
 
 using namespace std::chrono;
 
@@ -118,10 +120,10 @@ public:
 	}
 
 	// return the transformation matrix of the specified camera
-	Eigen::Affine3d *getCameraTransform(int i)
+	boost::shared_ptr<Eigen::Affine3d> getCameraTransform(int i)
 	{
 		if (i >= 0 && i < CameraData.size())
-			return CameraData[i].trafo.get();
+			return CameraData[i].trafo;
 		else
 			return NULL;
 	}
@@ -154,6 +156,8 @@ public:
 		file->SetDoubleAttribute("resolution", spatial_resolution);
 		file->SetAttribute("ringbuffersize", ringbuffer_size);
 		file->SetAttribute("greenscreenremoval", green_screen);
+		file->SetAttribute("tiling", tiling);
+		file->SetDoubleAttribute("tilingresolution", tiling_resolution);
 
 		for (cameradata ccfg : CameraData) {
 			TiXmlElement* cam = new TiXmlElement("camera");
@@ -206,6 +210,8 @@ private:
 		configElement->QueryUnsignedAttribute("ringbuffersize", &ringbuffer_size);
 		ringbuffer_size = ringbuffer_size < 1 ? 1 : ringbuffer_size;
 		configElement->QueryBoolAttribute("greenscreenremoval", &green_screen);
+		configElement->QueryBoolAttribute("tiling", &tiling);
+		configElement->QueryDoubleAttribute("tilingresolution", &tiling_resolution);
 
 		TiXmlElement* cameraElement = configElement->FirstChildElement("camera");
 		while (cameraElement)
@@ -239,16 +245,6 @@ private:
 		}
 	}
 
-	// return the transformation matrix of the specified camera
-	Eigen::Affine3d *getCameraTransform(const char* serial)
-	{
-		for (cameradata ccfg : CameraData) {
-			if (ccfg.serial == serial)
-				return ccfg.trafo.get();
-		}
-		return NULL;
-	}
-
 	// generate a mathematical pointcloud
 	PointCloudT::Ptr generate_pcl()
 	{
@@ -272,23 +268,16 @@ private:
 		return point_cloud_ptr;
 	}
 
-	cameradata* getCameraData(const char * serial)
-	{
-		for (cameradata ccfg : CameraData) {
-			if (ccfg.serial == serial)
-				return &ccfg;
-		}
-		return NULL;
-	}
-
 	// Methods
 	void camera_start(cameradata camera_data);
 	void camera_action(cameradata camera_data);
 	void merge_views(boost::shared_ptr<PointCloudT> pcl);
+	void make_tiles(boost::shared_ptr<PointCloudT> cloud_ptr);
 
 	// Globals
 	vector<cameradata> CameraData;						// Storage of per camera data
 	vector<boost::shared_ptr<PointCloudT>> RingBuffer;	// Buffer of merged pointclouds
+	vector<boost::shared_ptr<PointCloudT>> CloudTiles;	// Tiles of merged pointcloud
 	boost::shared_ptr<PointCloudT> GeneratedPC;			// Mathematical pointcloud for use without camera
 	float angle = 0.0f;									// Rotation of generated PC
 	bool do_capture = false;								// Switch for "pause"
@@ -296,6 +285,8 @@ private:
 	int ring_index = 0;									// counter for ring buffer
 	unsigned int ringbuffer_size = 1;					// Size of the ringbuffer
 	bool green_screen = true;							// If true include greenscreen removal
+	bool tiling = false;									// If true produce tiled stream
+	double tiling_resolution = 0.01;						// Resolution of tiling process
 };
 
 
