@@ -7,8 +7,8 @@
 #include <chrono>
 #include <cstdint>
 
-#include "multiFrame.hpp"
-#include "utils.h"
+#include "cwipc_realsense/multiFrame.hpp"
+#include "cwipc_realsense/utils.h"
 
 //
 // Stop-gap by Jack. The normal production settings are not possible over USB2.

@@ -8,7 +8,7 @@
 #define pcl_align_hpp
 #pragma once
 
-#include "multiFrame.hpp"
+#include "cwipc_realsense/multiFrame.hpp"
 
 #define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"

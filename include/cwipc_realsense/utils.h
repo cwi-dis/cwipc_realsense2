@@ -4,8 +4,8 @@
 //  Created by Fons Kuijk on 12-12-18.
 //
 
-#ifndef utils_h
-#define utils_h
+#ifndef cwipw_realsense_utils_h
+#define cwipw_realsense_utils_h
 #pragma once
 
 #include "defs.h"
@@ -132,4 +132,4 @@ bool noChromaRemoval(PointT* p)
 	return true;
 }
 
-#endif /* utils_h */
+#endif /* cwipw_realsense_utils_h */

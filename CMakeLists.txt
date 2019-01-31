@@ -7,7 +7,7 @@
 #  minimum required cmake version: 3.10.0
 cmake_minimum_required(VERSION 3.10.0)
 
-project(Capture-CWI)
+project(cwipc_realsense2)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -32,10 +32,8 @@ option(BUILD_SHARED_LIBS "Build shared library" ON)
 
 find_package(PkgConfig)
 
-message(STATUS "xxxjack pkgconfig" ${PKG_CONFIG_FOUND})
-
 #
-# Find realsense (either with pkgconfig or otherwise)
+# Find realsense (either with pkgconfig or with cmake)
 #
 
 if(PKG_CONFIG_FOUND)
@@ -46,21 +44,14 @@ if(PKG_CONFIG_FOUND)
         set(REALSENSE2_LIB  ${REALSENSE2_LIBRARIES})
     endif()
 endif()
-message(STATUS "xxxjack realsense pkgconfig" ${REALSENSE2_FOUND})
-
 if(NOT REALSENSE2_FOUND)
     find_package(REALSENSE2 REQUIRED)
-    if(REALSENSE2_FOUND)
-        include_directories(${REALSENSE2_INC})
-        link_directories(${REALSENSE2_LIB})
-    else()
-        message(SEND_ERROR "\ncould not find realsense2 library\n")
-    endif()
+	include_directories(${REALSENSE2_INC})
+	link_directories(${REALSENSE2_LIB})
 endif()
-message(STATUS "xxxjack realsense findpackage" ${REALSENSE2_FOUND})
 
 #
-# Find PCL
+# Find PCL. Either 1.7 or 1.8 using pkgconfig, or using cmake finder.
 #
 
 if(PKG_CONFIG_FOUND)
@@ -74,51 +65,28 @@ if(PKG_CONFIG_FOUND)
         add_definitions(${PCL_DEFINITIONS})
     endif()
 endif()
-message(STATUS "xxxjack pcl pkgconfig" ${PCL_FOUND})
 if(NOT PCL_FOUND)
     find_package(PCL REQUIRED COMPONENTS common io)
     include_directories(${PCL_INCLUDE_DIRS})
     link_directories(${PCL_LIBRARY_DIRS})
     add_definitions(${PCL_DEFINITIONS})
 endif()
-message(STATUS "xxxjack pcl pkgconfig" ${PCL_FOUND})
 
+# we need the thirdparty tinyXML for the test programs.
 include(third-party/tinyXML/CMakeLists.txt)
 include_directories(third-party/tinyXML)
 
-if(BUILD_GRAPHICAL_EXAMPLES)
-	# Find glfw (or use slurped version) and opengl
-	if(PKG_CONFIG_FOUND)
-		pkg_check_modules(GLFW glfw3)
-		if(GLFW_FOUND)
-			include_directories(${GLFW_INCLUDE_DIRS})
-			link_directories(${GLFW_LIBRARY_DIRS})
-			add_definitions(${GLFW_DEFINITIONS})
-			list(APPEND DEPENDENCIES ${GLFW_LIBRARIES})
-		endif()
-		pkg_check_modules(OPENGL glu gl)
-		if(OPENGL_FOUND)
-			add_definitions(-D_GLFW_USE_OPENGL -D_GLFW_X11)
-		endif()
-	endif()
-	if(NOT GLFW_FOUND)
-		add_subdirectory(third-party/glfw)
-		list(APPEND DEPENDENCIES glfw3)
-	endif()
-    if(NOT OPENGL_FOUND)
-		find_package(OpenGL)
-	endif()
-    if(NOT OPENGL_FOUND)
-        message(SEND_ERROR "\n\n OpenGL package is missing!\n\n")
-    endif()
+# If we're on Linux os MacOS we need libusb
 
-    list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
-
-	add_subdirectory(renderer)
-else()
-    if(NOT WIN32)
-        list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
-    endif()
+if(NOT WIN32)
+	list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
 endif()
+
+
+if(BUILD_GRAPHICAL_EXAMPLES)
+	add_subdirectory(renderer)
+endif()
+
+include_directories(include)
 
 add_subdirectory(src)

@@ -4,8 +4,8 @@
 //  Created by Fons Kuijk on 23-04-18
 //
 
-#ifndef multiFrame_hpp
-#define multiFrame_hpp
+#ifndef cwipw_realsense_multiFrame_hpp
+#define cwipw_realsense_multiFrame_hpp
 #pragma once
 
 #include <atomic>
@@ -309,4 +309,4 @@ public:
 	void getPointCloud(uint64_t *timestamp, void **pointcloud);
 };
 
-#endif /* multiFrame_hpp */
+#endif /* cwipw_realsense_multiFrame_hpp */
