@@ -7,7 +7,7 @@
 #  minimum required cmake version: 3.10.0
 cmake_minimum_required(VERSION 3.10.0)
 
-list(APPEND DEPENDENCIES ${LIBCWIPC_REALSENSE2_LIBRARIES})
+set(DEPENDENCIES cwipc_realsense2)
 include_directories(../include)
 #
 # Find glfw (or use slurped version)
@@ -78,8 +78,8 @@ set_target_properties(pcl_align PROPERTIES
 #target_sources(pcl_renderer PUBLIC ${TINY_SRC} )
 #target_sources(pcl_align PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
 
-target_link_libraries(pcl_renderer ${REALSENSE2_LIB})
-target_link_libraries(pcl_align ${REALSENSE2_LIB})
+target_link_libraries(pcl_renderer ${DEPENDENCIES})
+target_link_libraries(pcl_align ${DEPENDENCIES})
 
 #get_target_property(PROP_RESULT pcl_renderer RUNTIME_OUTPUT_DIRECTORY_DEBUG)
 #	$<IF$<CONFIG:Debug>,RUNTIME_OUTPUT_DIRECTORY_DEBUG,
