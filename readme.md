@@ -98,7 +98,7 @@ Action keys for alignment of camera clouds are:
 - Now build our software. In this directory, *VRTogether-capture*, create `build`, go there.
 - Run `cmake ..`.
 	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
-	- dynamic library is in _build/src/libmultiFrame.dylib_, test programs are in _build/renderer/pcl\_renderer_ and _pcl\_align_.
+	- dynamic library is in _build/src/libcwipc_realsense2.dylib_, test programs are in _build/renderer/pcl\_renderer_ and _pcl\_align_.
 	- TBD: copy the outputs to a known location (for subsequent installing)
 
 ## Linux
