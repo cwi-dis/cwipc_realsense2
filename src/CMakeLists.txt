@@ -10,6 +10,13 @@ cmake_minimum_required(VERSION 3.10.0)
 
 add_library(cwipc_realsense2 SHARED multiFrame.cpp ${TINY_SRC})
 
+target_sources(cwipc_realsense2
+	PRIVATE
+	"../include/cwipc_realsense/defs.h"
+	"../include/cwipc_realsense/multiFrame.hpp"
+	"../include/cwipc_realsense/utils.h"
+)
+
 set_target_properties(cwipc_realsense2 PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
