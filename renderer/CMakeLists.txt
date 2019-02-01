@@ -22,7 +22,6 @@ if(PKG_CONFIG_FOUND)
 	endif()
 endif()
 if(NOT GLFW_FOUND)
-	add_subdirectory(third-party/glfw)
 	list(APPEND DEPENDENCIES glfw3)
 endif()
 
