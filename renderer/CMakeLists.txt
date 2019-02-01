@@ -40,7 +40,7 @@ if(NOT OPENGL_FOUND)
 endif()
 list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
     
-add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp ${TINY_SRC})
+add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
 
 set_target_properties(pcl_renderer PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
@@ -72,11 +72,6 @@ set_target_properties(pcl_align PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/bin/MinSizeRel"
 	RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo"
 )
-
-#aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/../src MULTIFRAME_SRC)
-
-#target_sources(pcl_renderer PUBLIC ${TINY_SRC} )
-#target_sources(pcl_align PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
 
 target_link_libraries(pcl_renderer ${DEPENDENCIES})
 target_link_libraries(pcl_align ${DEPENDENCIES})
