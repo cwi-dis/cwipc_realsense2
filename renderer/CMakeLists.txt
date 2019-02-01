@@ -40,7 +40,6 @@ endif()
 list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
     
 add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
-
 set_target_properties(pcl_renderer PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
@@ -55,6 +54,8 @@ set_target_properties(pcl_renderer PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/bin/MinSizeRel"
 	RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo"
 )
+target_link_libraries(pcl_renderer ${DEPENDENCIES})
+install(TARGETS pcl_renderer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_executable(pcl_align pcl_align.cpp pcl_align.hpp)
 set_target_properties(pcl_align PROPERTIES
@@ -71,21 +72,8 @@ set_target_properties(pcl_align PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/bin/MinSizeRel"
 	RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo"
 )
-
-target_link_libraries(pcl_renderer ${DEPENDENCIES})
 target_link_libraries(pcl_align ${DEPENDENCIES})
-
-#get_target_property(PROP_RESULT pcl_renderer RUNTIME_OUTPUT_DIRECTORY_DEBUG)
-#	$<IF$<CONFIG:Debug>,RUNTIME_OUTPUT_DIRECTORY_DEBUG,
-#	$<IF$<CONFIG:Release>,RUNTIME_OUTPUT_DIRECTORY_RELEASE,
-#	$<IF$<CONFIG:MinSizeRel>,RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL,
-#	$<IF$<CONFIG:RelWithDebInfo>,RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO,>>>>
-
-
-if(BUILD_GRAPHICAL_EXAMPLES)
-    target_link_libraries(pcl_renderer ${DEPENDENCIES})
-    target_link_libraries(pcl_align ${DEPENDENCIES})
-endif()
+install(TARGETS pcl_align RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if(WIN32)
 	add_custom_command(TARGET pcl_renderer POST_BUILD
