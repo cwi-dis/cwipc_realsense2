@@ -101,9 +101,7 @@ void multiFrame::camera_action(cameradata camera_data)
 
 void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 {
-	//PointCloudT *aligned_cld = new PointCloudT();
-	PointCloudT *aligned_cld;
-
+	PointCloudT::Ptr aligned_cld(new PointCloudT);
 	cloud_ptr->clear();
 	for (cameradata ccfg : CameraData) {
 		PointCloudT *cam_cld = ccfg.cloud.get();
@@ -112,8 +110,6 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 			*cloud_ptr.get() += *aligned_cld;
 		}
 	}
-	//aligned_cld->clear();
-	//delete aligned_cld;
 
  	if (spatial_resolution > 0) {
 #ifdef DEBUG

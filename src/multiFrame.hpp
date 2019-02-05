@@ -116,6 +116,25 @@ public:
 		else
 			return string("0");
 	}
+	double getSpatialResolution() {
+		return spatial_resolution;
+	}
+
+	int getRingbufferSize() {
+		return ringbuffer_size;
+	}
+
+	bool getGreenScreen() {
+		return green_screen;
+	}
+
+	bool getTiling() {
+		return tiling;
+	}
+
+	double getTilingResolution() {
+		return tiling_resolution;
+	}
 
 	// return the transformation matrix of the specified camera
 	boost::shared_ptr<Eigen::Affine3d> getCameraTransform(int i)
@@ -138,53 +157,6 @@ public:
 		if (!do_capture)
 			return;
 		do_capture = false;
-	}
-
-	// store the current camera transformation setting into a xml ducument
-	void config2file()
-	{
-		TiXmlDocument doc;
-		doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
-
-		TiXmlElement* root = new TiXmlElement("file");
-		doc.LinkEndChild(root);
-
-		TiXmlElement* file = new TiXmlElement("CameraConfig");
-		root->LinkEndChild(file);
-		file->SetDoubleAttribute("resolution", spatial_resolution);
-		file->SetAttribute("ringbuffersize", ringbuffer_size);
-		file->SetAttribute("greenscreenremoval", green_screen);
-		file->SetAttribute("tiling", tiling);
-		file->SetDoubleAttribute("tilingresolution", tiling_resolution);
-
-		for (cameradata ccfg : CameraData) {
-			TiXmlElement* cam = new TiXmlElement("camera");
-			cam->SetAttribute("serial", ccfg.serial.c_str());
-			file->LinkEndChild(cam);
-
-			TiXmlElement* trafo = new TiXmlElement("trafo");
-			cam->LinkEndChild(trafo);
-
-			TiXmlElement* val = new TiXmlElement("values");
-			val->SetDoubleAttribute("v00", (*ccfg.trafo)(0, 0));
-			val->SetDoubleAttribute("v01", (*ccfg.trafo)(0, 1));
-			val->SetDoubleAttribute("v02", (*ccfg.trafo)(0, 2));
-			val->SetDoubleAttribute("v03", (*ccfg.trafo)(0, 3));
-			val->SetDoubleAttribute("v10", (*ccfg.trafo)(1, 0));
-			val->SetDoubleAttribute("v11", (*ccfg.trafo)(1, 1));
-			val->SetDoubleAttribute("v12", (*ccfg.trafo)(1, 2));
-			val->SetDoubleAttribute("v13", (*ccfg.trafo)(1, 3));
-			val->SetDoubleAttribute("v20", (*ccfg.trafo)(2, 0));
-			val->SetDoubleAttribute("v21", (*ccfg.trafo)(2, 1));
-			val->SetDoubleAttribute("v22", (*ccfg.trafo)(2, 2));
-			val->SetDoubleAttribute("v23", (*ccfg.trafo)(2, 3));
-			val->SetDoubleAttribute("v30", (*ccfg.trafo)(3, 0));
-			val->SetDoubleAttribute("v31", (*ccfg.trafo)(3, 1));
-			val->SetDoubleAttribute("v32", (*ccfg.trafo)(3, 2));
-			val->SetDoubleAttribute("v33", (*ccfg.trafo)(3, 3));
-			trafo->LinkEndChild(val);
-		}
-		doc.SaveFile("cameraconfig.xml");
 	}
 
 private:
@@ -220,22 +192,22 @@ private:
 					TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
 					if (trafo) {
 						TiXmlElement *val = trafo->FirstChildElement("values");
-						val->QueryDoubleAttribute("v00", &((*ccfg.trafo)(0, 0)));
-						val->QueryDoubleAttribute("v01", &((*ccfg.trafo)(0, 1)));
-						val->QueryDoubleAttribute("v02", &((*ccfg.trafo)(0, 2)));
-						val->QueryDoubleAttribute("v03", &((*ccfg.trafo)(0, 3)));
-						val->QueryDoubleAttribute("v10", &((*ccfg.trafo)(1, 0)));
-						val->QueryDoubleAttribute("v11", &((*ccfg.trafo)(1, 1)));
-						val->QueryDoubleAttribute("v12", &((*ccfg.trafo)(1, 2)));
-						val->QueryDoubleAttribute("v13", &((*ccfg.trafo)(1, 3)));
-						val->QueryDoubleAttribute("v20", &((*ccfg.trafo)(2, 0)));
-						val->QueryDoubleAttribute("v21", &((*ccfg.trafo)(2, 1)));
-						val->QueryDoubleAttribute("v22", &((*ccfg.trafo)(2, 2)));
-						val->QueryDoubleAttribute("v23", &((*ccfg.trafo)(2, 3)));
-						val->QueryDoubleAttribute("v30", &((*ccfg.trafo)(3, 0)));
-						val->QueryDoubleAttribute("v31", &((*ccfg.trafo)(3, 1)));
-						val->QueryDoubleAttribute("v32", &((*ccfg.trafo)(3, 2)));
-						val->QueryDoubleAttribute("v33", &((*ccfg.trafo)(3, 3)));
+						val->QueryDoubleAttribute("v00", &(*ccfg.trafo)(0, 0));
+						val->QueryDoubleAttribute("v01", &(*ccfg.trafo)(0, 1));
+						val->QueryDoubleAttribute("v02", &(*ccfg.trafo)(0, 2));
+						val->QueryDoubleAttribute("v03", &(*ccfg.trafo)(0, 3));
+						val->QueryDoubleAttribute("v10", &(*ccfg.trafo)(1, 0));
+						val->QueryDoubleAttribute("v11", &(*ccfg.trafo)(1, 1));
+						val->QueryDoubleAttribute("v12", &(*ccfg.trafo)(1, 2));
+						val->QueryDoubleAttribute("v13", &(*ccfg.trafo)(1, 3));
+						val->QueryDoubleAttribute("v20", &(*ccfg.trafo)(2, 0));
+						val->QueryDoubleAttribute("v21", &(*ccfg.trafo)(2, 1));
+						val->QueryDoubleAttribute("v22", &(*ccfg.trafo)(2, 2));
+						val->QueryDoubleAttribute("v23", &(*ccfg.trafo)(2, 3));
+						val->QueryDoubleAttribute("v30", &(*ccfg.trafo)(3, 0));
+						val->QueryDoubleAttribute("v31", &(*ccfg.trafo)(3, 1));
+						val->QueryDoubleAttribute("v32", &(*ccfg.trafo)(3, 2));
+						val->QueryDoubleAttribute("v33", &(*ccfg.trafo)(3, 3));
 					}
 				}
 			}

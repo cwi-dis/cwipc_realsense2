@@ -137,6 +137,53 @@ void printhelp() {
 	cout << "\t\"q\" to quit\n";
 }
 
+// store the current camera transformation setting into a xml document
+void config2file(multiFrame& multiframe)
+{
+	TiXmlDocument doc;
+	doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
+
+	TiXmlElement* root = new TiXmlElement("file");
+	doc.LinkEndChild(root);
+
+	TiXmlElement* file = new TiXmlElement("CameraConfig");
+	root->LinkEndChild(file);
+	file->SetDoubleAttribute("resolution", multiframe.getSpatialResolution());
+	file->SetAttribute("ringbuffersize", multiframe.getRingbufferSize());
+	file->SetAttribute("greenscreenremoval", multiframe.getGreenScreen());
+	file->SetAttribute("tiling", multiframe.getTiling());
+	file->SetDoubleAttribute("tilingresolution", multiframe.getTilingResolution());
+
+	for (cam_data ccfg : CamData) {
+		TiXmlElement* cam = new TiXmlElement("camera");
+		cam->SetAttribute("serial", ccfg.serial.c_str());
+		file->LinkEndChild(cam);
+
+		TiXmlElement* trafo = new TiXmlElement("trafo");
+		cam->LinkEndChild(trafo);
+
+		TiXmlElement* val = new TiXmlElement("values");
+		val->SetDoubleAttribute("v00", (*ccfg.trafo)(0, 0));
+		val->SetDoubleAttribute("v01", (*ccfg.trafo)(0, 1));
+		val->SetDoubleAttribute("v02", (*ccfg.trafo)(0, 2));
+		val->SetDoubleAttribute("v03", (*ccfg.trafo)(0, 3));
+		val->SetDoubleAttribute("v10", (*ccfg.trafo)(1, 0));
+		val->SetDoubleAttribute("v11", (*ccfg.trafo)(1, 1));
+		val->SetDoubleAttribute("v12", (*ccfg.trafo)(1, 2));
+		val->SetDoubleAttribute("v13", (*ccfg.trafo)(1, 3));
+		val->SetDoubleAttribute("v20", (*ccfg.trafo)(2, 0));
+		val->SetDoubleAttribute("v21", (*ccfg.trafo)(2, 1));
+		val->SetDoubleAttribute("v22", (*ccfg.trafo)(2, 2));
+		val->SetDoubleAttribute("v23", (*ccfg.trafo)(2, 3));
+		val->SetDoubleAttribute("v30", (*ccfg.trafo)(3, 0));
+		val->SetDoubleAttribute("v31", (*ccfg.trafo)(3, 1));
+		val->SetDoubleAttribute("v32", (*ccfg.trafo)(3, 2));
+		val->SetDoubleAttribute("v33", (*ccfg.trafo)(3, 3));
+		trafo->LinkEndChild(val);
+	}
+	doc.SaveFile("cameraconfig.xml");
+}
+
 void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
 {
 	if (!pntcld) return;
@@ -148,7 +195,8 @@ void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
 
 	std::ostringstream oss;
 	for (int i = 0; i < size; i++) {
-		oss << (std::to_string((*pntcld)[i].x) + " " +
+		oss << (
+			std::to_string((*pntcld)[i].x) + " " +
 			std::to_string((*pntcld)[i].y) + " " +
 			std::to_string((*pntcld)[i].z) + " " +
 			std::to_string((*pntcld)[i].r) + " " +
@@ -159,42 +207,15 @@ void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
 	myfile.close();
 }
 
-bool load_ply_of_camera(string serial)
+bool load_ply_of_camera(cam_data camera)
 {
-	cam_data* camptr = NULL;
-	int index = 0;
-
-	// Check if the camera is in the administration
-	for (int i = 0; i < CamData.size(); i++)
-		if (CamData[i].serial == serial) {
-			camptr = &CamData[i];
-			index = i;
-			break;
-		}
-
-	if (!camptr) {
-		// There is no entry in the administration for this camera yet.
-		cam_data *cam = new cam_data();
-		cam->serial = serial;
-		boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
-		trafo->setIdentity();
-		cam->trafo = trafo;
-		boost::shared_ptr<PointCloudT> orig(new PointCloudT());
-		cam->cloud = orig;
-		camptr = cam;
-		CamData.push_back(*cam);
-	}
-
 	// Load the cloud and save it into the global list of models
-	if (pcl::io::loadPLYFile<PointT>(serial + ext, *camptr->cloud) == -1)
+	if (pcl::io::loadPLYFile<PointT>(camera.serial + ext, *camera.cloud) == -1)
 	{
-		string msg = "Error loading cloud from file " + serial + ext + "\n";
+		string msg = "Error loading cloud from file " + camera.serial + ext + "\n";
 		PCL_ERROR(msg.c_str());
 		return false;
 	}
-
-	// Transform for proper merging
-	transformPointCloud(*camptr->cloud, *camptr->cloud, *camptr->trafo);
 	return true;
 }
 
@@ -216,33 +237,47 @@ bool load_config()
 	TiXmlElement* cameraElement = configElement->FirstChildElement("camera");
 	while (cameraElement)
 	{
-		const char * serial = cameraElement->Attribute("serial");
-		for (cam_data ccfg : CamData) {
-			if (ccfg.serial == serial) {
-				TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
-				if (trafo) {
-					TiXmlElement *val = trafo->FirstChildElement("values");
-					val->QueryDoubleAttribute("v00", &((*ccfg.trafo)(0, 0)));
-					val->QueryDoubleAttribute("v01", &((*ccfg.trafo)(0, 1)));
-					val->QueryDoubleAttribute("v02", &((*ccfg.trafo)(0, 2)));
-					val->QueryDoubleAttribute("v03", &((*ccfg.trafo)(0, 3)));
-					val->QueryDoubleAttribute("v10", &((*ccfg.trafo)(1, 0)));
-					val->QueryDoubleAttribute("v11", &((*ccfg.trafo)(1, 1)));
-					val->QueryDoubleAttribute("v12", &((*ccfg.trafo)(1, 2)));
-					val->QueryDoubleAttribute("v13", &((*ccfg.trafo)(1, 3)));
-					val->QueryDoubleAttribute("v20", &((*ccfg.trafo)(2, 0)));
-					val->QueryDoubleAttribute("v21", &((*ccfg.trafo)(2, 1)));
-					val->QueryDoubleAttribute("v22", &((*ccfg.trafo)(2, 2)));
-					val->QueryDoubleAttribute("v23", &((*ccfg.trafo)(2, 3)));
-					val->QueryDoubleAttribute("v30", &((*ccfg.trafo)(3, 0)));
-					val->QueryDoubleAttribute("v31", &((*ccfg.trafo)(3, 1)));
-					val->QueryDoubleAttribute("v32", &((*ccfg.trafo)(3, 2)));
-					val->QueryDoubleAttribute("v33", &((*ccfg.trafo)(3, 3)));
-				}
-			}
+		cam_data* cc = new cam_data();
+		boost::shared_ptr<PointCloudT> empty_pntcld(new PointCloudT());
+		boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
+		cc->serial = cameraElement->Attribute("serial");
+		cc->cloud = empty_pntcld;
+		cc->trafo = trafo;
+
+		TiXmlElement *trafoElement = cameraElement->FirstChildElement("trafo");
+		if (trafoElement) {
+			TiXmlElement *val = trafoElement->FirstChildElement("values");
+			val->QueryDoubleAttribute("v00", &(*cc->trafo)(0, 0));
+			val->QueryDoubleAttribute("v01", &(*cc->trafo)(0, 1));
+			val->QueryDoubleAttribute("v02", &(*cc->trafo)(0, 2));
+			val->QueryDoubleAttribute("v03", &(*cc->trafo)(0, 3));
+			val->QueryDoubleAttribute("v10", &(*cc->trafo)(1, 0));
+			val->QueryDoubleAttribute("v11", &(*cc->trafo)(1, 1));
+			val->QueryDoubleAttribute("v12", &(*cc->trafo)(1, 2));
+			val->QueryDoubleAttribute("v13", &(*cc->trafo)(1, 3));
+			val->QueryDoubleAttribute("v20", &(*cc->trafo)(2, 0));
+			val->QueryDoubleAttribute("v21", &(*cc->trafo)(2, 1));
+			val->QueryDoubleAttribute("v22", &(*cc->trafo)(2, 2));
+			val->QueryDoubleAttribute("v23", &(*cc->trafo)(2, 3));
+			val->QueryDoubleAttribute("v30", &(*cc->trafo)(3, 0));
+			val->QueryDoubleAttribute("v31", &(*cc->trafo)(3, 1));
+			val->QueryDoubleAttribute("v32", &(*cc->trafo)(3, 2));
+			val->QueryDoubleAttribute("v33", &(*cc->trafo)(3, 3));
 		}
+		CamData.push_back(*cc);
 		cameraElement = cameraElement->NextSiblingElement("camera");
 	}
+	return true;
+}
+
+bool load_data() {
+	if (!load_config())
+		return false;
+	for (auto camera : CamData)
+		if (!load_ply_of_camera(camera)) {
+			cerr << "Could not load a .ply file for camera " << camera.serial << " as specified in the configuration file\n";
+			return false;
+		}
 	return true;
 }
 
@@ -298,11 +333,25 @@ void draw_pointcloud(window& app, glfw_state& app_state, multiFrame& multiframe)
 		}
 	}
 	else {
-		for (auto pnt : multiframe.getPointCloud()->points) {
-			float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
-			glColor3fv(col);
-			float vert[] = { pnt.x, pnt.y, pnt.z };
-			glVertex3fv(vert);
+		if (multiframe.getNumberOfCameras() > 0) {
+			for (auto pnt : multiframe.getPointCloud()->points) {
+				float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
+				glColor3fv(col);
+				float vert[] = { pnt.x, pnt.y, pnt.z };
+				glVertex3fv(vert);
+			}
+		}
+		else {
+			for (int i = 0; i < CamData.size(); i++) {
+				PointCloudT::Ptr pcptr(new PointCloudT);
+				transformPointCloud(*(CamData[i].cloud.get()), *pcptr, *CamData[i].trafo);
+				for (auto pnt : pcptr->points) {
+					float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
+					glColor3fv(col);
+					float vert[] = { pnt.x, pnt.y, pnt.z };
+					glVertex3fv(vert);
+				}
+			}
 		}
 	}
 
@@ -381,13 +430,15 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 				do_align = false;
 			}
 			else {
-				CamData.clear();
-				for (int i = 0; i < multiframe.getNumberOfCameras(); i++) {
-					cam_data *cam = new cam_data();
-					cam->serial = multiframe.getCameraSerial(i);
-					cam->trafo = multiframe.getCameraTransform(i);
-					cam->cloud = multiframe.getCameraCloud(i);
-					CamData.push_back(*cam);
+				if (multiframe.getNumberOfCameras() > 0) {
+					CamData.clear();
+					for (int i = 0; i < multiframe.getNumberOfCameras(); i++) {
+						cam_data *cam = new cam_data();
+						cam->serial = multiframe.getCameraSerial(i);
+						cam->trafo = multiframe.getCameraTransform(i);
+						cam->cloud = multiframe.getCameraCloud(i);
+						CamData.push_back(*cam);
+					}
 				}
 				do_align = true;
 				if (aligncamera > CamData.size())
@@ -399,14 +450,12 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 			printhelp();
 		}
 		else if (key == 76) {	// key = "l": load previous result
-			if (!load_config())
+			if (load_data() && CamData.size() > 0)
+				do_align = true;
+			else {
+				cerr << "\nError: Data could not be loaded\n";
 				return;
-			for (auto camera : CamData)
-				if (!load_ply_of_camera(camera.serial)) {
-					cerr << "Could not load a .ply file for camera " << camera.serial << " as specified in the configuration file\n";
-					return;
-				}
-			do_align = true;
+			}
 			if (aligncamera > CamData.size())
 				aligncamera = 0;
 			pcl::compute3DCentroid(*CamData[aligncamera].cloud, cloudcenter);
@@ -419,14 +468,14 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 			rotation = true;
 		}
 		else if (key == 83) {	// key = "s": Save config and snapshots to file
-			multiframe.config2file();
+			config2file(multiframe);
 			for (int i = 0; i < CamData.size(); i++)
 				cloud2file(CamData[i].cloud, CamData[i].serial + ".ply");
 		}
 		else if (key == 84) {	// key = "t": Translate
 			rotation = false;
 		}
-		else if (key >= 49 && key < multiframe.getNumberOfCameras() + 49) {	// key = "1-9": select a camera
+		else if (key >= 49 && key < CamData.size() + 49) {	// key = "1-9": select a camera
 			aligncamera = key - 49;
 			pcl::compute3DCentroid(*CamData[aligncamera].cloud, cloudcenter);
 		}

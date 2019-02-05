@@ -26,6 +26,15 @@ int main(int argc, char * argv[]) try
 
 	printhelp();
 
+	if (multiframe.getNumberOfCameras() < 1) {
+		if (load_data() && CamData.size() > 0)
+			do_align = true;
+		else {
+			cerr << "\nSorry: No cameras connected and no data to load\n\n";
+			return EXIT_FAILURE;
+		}
+	}
+	
 	while (app) {
 		if (!do_align) {
 			boost::shared_ptr<PointCloudT> captured_pc;
@@ -52,7 +61,7 @@ int main(int argc, char * argv[]) try
 }
 catch (const rs2::error & e)
 {
-	std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+	cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::exception & e)
