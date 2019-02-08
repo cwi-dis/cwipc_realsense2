@@ -14,7 +14,7 @@
 #ifdef WITH_WIN32_LOADLIBRARY
 #include <windows.h>
 #else
-extern "C" void getPointCloud(uint64_t *timestamp, void **pointcloud);
+#include "cwipc_realsense/api.h"
 #endif
 #include <librealsense2/rs.hpp>
 

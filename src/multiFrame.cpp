@@ -7,8 +7,15 @@
 #include <chrono>
 #include <cstdint>
 
+// This is the dll source, so define external symbols as dllexport on windows.
+
+#if defined(WIN32) || defined(_WIN32)
+#define CWIPC_DLL_ENTRY __declspec(dllexport)
+#endif
+
 #include "cwipc_realsense/multiFrame.hpp"
 #include "cwipc_realsense/utils.h"
+#include "cwipc_realsense/api.h"
 
 //
 // Stop-gap by Jack. The normal production settings are not possible over USB2.
@@ -34,13 +41,6 @@ const int depth_width = 640;
 const int depth_height = 480;
 const int depth_fps = 30;
 #endif // WITH_USB2
-
-#if defined(WIN32) || defined(_WIN32)
-#define CWI_DLL_EXPORT __declspec(dllexport)
-#else
-#define CWI_DLL_EXPORT 
-#endif
-
 
 // Configure and initialize caputuring of one camera
 void multiFrame::camera_start(cameradata camera_data)
@@ -206,7 +206,9 @@ void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
 #endif
 }
 
-extern "C" void CWI_DLL_EXPORT getPointCloud(uint64_t *timestamp, void **pointcloud) {
+// C-compatible entry point
+
+void  getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	captureIt captureit;
 	captureit.getPointCloud(timestamp, pointcloud);
 }
