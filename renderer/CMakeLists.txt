@@ -7,6 +7,8 @@
 #  minimum required cmake version: 3.10.0
 cmake_minimum_required(VERSION 3.10.0)
 
+find_package(Boost COMPONENTS system REQUIRED)
+
 add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
 set_target_properties(pcl_renderer PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
@@ -46,7 +48,7 @@ target_sources(pcl_renderer PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
 target_sources(pcl_align PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
 
 target_link_libraries(pcl_renderer ${REALSENSE2_LIB} ${PCL_LIBRARIES})
-target_link_libraries(pcl_align ${REALSENSE2_LIB} ${PCL_LIBRARIES})
+target_link_libraries(pcl_align ${REALSENSE2_LIB} ${PCL_LIBRARIES} ${Boost_LIBRARIES})
 
 #get_target_property(PROP_RESULT pcl_renderer RUNTIME_OUTPUT_DIRECTORY_DEBUG)
 #	$<IF$<CONFIG:Debug>,RUNTIME_OUTPUT_DIRECTORY_DEBUG,
