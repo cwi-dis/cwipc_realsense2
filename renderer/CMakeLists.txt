@@ -42,9 +42,10 @@ set_target_properties(pcl_align PROPERTIES
 aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/../src MULTIFRAME_SRC)
 include_directories(../src)
 
+target_sources(pcl_renderer PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
 target_sources(pcl_align PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
 
-target_link_libraries(pcl_renderer ${REALSENSE2_LIB})
+target_link_libraries(pcl_renderer ${REALSENSE2_LIB} ${PCL_LIBRARIES})
 target_link_libraries(pcl_align ${REALSENSE2_LIB} ${PCL_LIBRARIES})
 
 #get_target_property(PROP_RESULT pcl_renderer RUNTIME_OUTPUT_DIRECTORY_DEBUG)
