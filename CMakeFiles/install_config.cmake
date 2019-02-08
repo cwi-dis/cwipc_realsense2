@@ -18,23 +18,15 @@ set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/cwipc_realsense2")
 # configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
 # configure_file(config/librealsense.pc.in config/realsense2.pc @ONLY)
 
-install(TARGETS cwipc_realsense2
-    EXPORT cwipcrsTargets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cwipc_realsense"
-)
-
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/cwipc_realsense
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(EXPORT cwipcrsTargets
-        FILE cwipcrsTargets.cmake
-        NAMESPACE cwipc_realsense2::
-        DESTINATION ${CMAKECONFIG_INSTALL_DIR}
-)
+#install(EXPORT cwipcrsTargets
+#        FILE cwipcrsTargets.cmake
+#        NAMESPACE cwipc_realsense2::
+#        DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+#)
 
 # install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2Config.cmake"
 #         DESTINATION ${CMAKECONFIG_INSTALL_DIR}

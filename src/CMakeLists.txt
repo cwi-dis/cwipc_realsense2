@@ -33,3 +33,12 @@ set_target_properties(cwipc_realsense2 PROPERTIES
 )
 
 target_link_libraries(cwipc_realsense2 ${REALSENSE2_LIB} ${PCL_LIBRARIES})
+
+install(TARGETS cwipc_realsense2
+    EXPORT cwipcrsTargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cwipc_realsense"
+)
+
