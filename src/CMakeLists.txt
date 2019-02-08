@@ -15,6 +15,7 @@ target_sources(cwipc_realsense2
 	"../include/cwipc_realsense/defs.h"
 	"../include/cwipc_realsense/multiFrame.hpp"
 	"../include/cwipc_realsense/utils.h"
+	"../include/cwipc_realsense/api.h"
 )
 
 set_target_properties(cwipc_realsense2 PROPERTIES
