@@ -30,6 +30,14 @@
 #undef POLLING
 //#define POLLING
 
+#ifndef CWIPC_DLL_ENTRY
+#if defined(WIN32) || defined(_WIN32)
+#define CWIPC_DLL_ENTRY __declspec(dllimport)
+#else
+#define CWIPC_DLL_ENTRY 
+#endif
+#endif
+
 using namespace std::chrono;
 
 struct cameradata {
@@ -39,7 +47,7 @@ struct cameradata {
 	boost::shared_ptr<PointCloudT> cloud;
 };
 
-class multiFrame {
+class CWIPC_DLL_ENTRY multiFrame {
 
 public:
 	multiFrame() {
