@@ -11,8 +11,9 @@ int main(int argc, char * argv[]) try
 {
 	printhelp();
 
-	HINSTANCE hInstLibrary;
+#ifdef WIN32
 	GetPointCloudFunction getPointCloud = nullptr;
+	HINSTANCE hInstLibrary;
 
 	hInstLibrary = LoadLibrary(TEXT("multiFrame.dll"));
 
@@ -20,9 +21,13 @@ int main(int argc, char * argv[]) try
 		getPointCloud = (GetPointCloudFunction)GetProcAddress(hInstLibrary, "getPointCloud");
 	else
 		cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
-
-	if (!getPointCloud)		// the function 'getPointCloud' has been found in the dll file
+	if (!getPointCloud)	{
 		cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
+		return EXIT_FAILURE;
+	}
+#else
+#endif // WIN32
+
 
 	// Create a simple OpenGL window for rendering:
 	window app(2560, 1440, "Multicamera Capturing");
@@ -41,7 +46,7 @@ int main(int argc, char * argv[]) try
 	while (app) {
 		boost::shared_ptr<PointCloudT> captured_pc;
 		void* pc = reinterpret_cast<void *> (&captured_pc);
-		long t = 4;
+		uint64_t t = 4;
 		getPointCloud(&t, &pc);
 
 		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
@@ -59,7 +64,9 @@ int main(int argc, char * argv[]) try
 		// NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
 		draw_pointcloud(app, app_state, captured_pc);
 	}
+#ifdef WIN32
 	FreeLibrary(hInstLibrary);
+#endif
 	return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)

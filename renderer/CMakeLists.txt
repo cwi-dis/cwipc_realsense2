@@ -4,8 +4,8 @@
 # Copyright (C) 2018 by CWI. All rights reserved.
 # ======================================================
 #
-#  minimum required cmake version: 3.12.0
-cmake_minimum_required(VERSION 3.12.0)
+#  minimum required cmake version: 3.10.0
+cmake_minimum_required(VERSION 3.10.0)
 
 add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
 set_target_properties(pcl_renderer PROPERTIES
@@ -45,7 +45,7 @@ include_directories(../src)
 target_sources(pcl_align PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
 
 target_link_libraries(pcl_renderer ${REALSENSE2_LIB})
-target_link_libraries(pcl_align ${REALSENSE2_LIB})
+target_link_libraries(pcl_align ${REALSENSE2_LIB} ${PCL_LIBRARIES})
 
 #get_target_property(PROP_RESULT pcl_renderer RUNTIME_OUTPUT_DIRECTORY_DEBUG)
 #	$<IF$<CONFIG:Debug>,RUNTIME_OUTPUT_DIRECTORY_DEBUG,
@@ -58,11 +58,13 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     target_link_libraries(pcl_align ${DEPENDENCIES})
 endif()
 
-add_custom_command(TARGET pcl_renderer POST_BUILD
+if(WIN32)
+	add_custom_command(TARGET pcl_renderer POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${REALSENSE2_DLL} $<TARGET_FILE_DIR:pcl_renderer>)
 
-add_custom_command(TARGET pcl_align POST_BUILD
+	add_custom_command(TARGET pcl_align POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${REALSENSE2_DLL} $<TARGET_FILE_DIR:pcl_align>)
 
 add_custom_command(TARGET pcl_align POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "C:/Program Files/OpenNI2/Redist/OpenNI2.dll" $<TARGET_FILE_DIR:pcl_align>)
+endif()
