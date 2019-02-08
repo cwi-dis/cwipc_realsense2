@@ -41,6 +41,7 @@ const int depth_fps = 30;
 #define CWI_DLL_EXPORT 
 #endif
 
+
 // Configure and initialize caputuring of one camera
 void multiFrame::camera_start(cameradata camera_data)
 {
@@ -118,19 +119,29 @@ void multiFrame::camera_action(cameradata camera_data)
 
 void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 {
-	PointCloudT *aligned_cld = new PointCloudT();
-
+	PointCloudT::Ptr aligned_cld(new PointCloudT);
 	cloud_ptr->clear();
 	for (cameradata ccfg : CameraData) {
 		PointCloudT *cam_cld = ccfg.cloud.get();
 		if (cam_cld->size() > 0) {
 			transformPointCloud(*cam_cld, *aligned_cld, *ccfg.trafo);
-			for (PointT pnt : *aligned_cld)
-				cloud_ptr->push_back(pnt);
+			*cloud_ptr.get() += *aligned_cld;
 		}
 	}
-	aligned_cld->clear();
-	delete aligned_cld;
+
+ 	if (spatial_resolution > 0) {
+#ifdef DEBUG
+		cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
+#endif
+		VoxelGrid<PointT> grd;
+		grd.setInputCloud(cloud_ptr);
+		grd.setLeafSize(spatial_resolution, spatial_resolution, spatial_resolution);
+		grd.setSaveLeafLayout(true);
+		grd.filter(*cloud_ptr);
+#ifdef DEBUG
+		cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
+#endif
+	}
 }
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp

@@ -38,7 +38,10 @@ if(NOT OPENGL_FOUND)
 	find_package(OpenGL REQUIRED)
 endif()
 list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
-    
+
+# Find Boost (only for pcl_align)
+find_package(Boost COMPONENTS system REQUIRED)
+
 add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
 set_target_properties(pcl_renderer PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
@@ -72,7 +75,8 @@ set_target_properties(pcl_align PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/bin/MinSizeRel"
 	RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo"
 )
-target_link_libraries(pcl_align ${DEPENDENCIES})
+
+target_link_libraries(pcl_align ${DEPENDENCIES} ${Boost_LIBRARIES})
 install(TARGETS pcl_align RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if(WIN32)
@@ -81,4 +85,7 @@ if(WIN32)
 
 	add_custom_command(TARGET pcl_align POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${REALSENSE2_DLL} $<TARGET_FILE_DIR:pcl_align>)
+
+add_custom_command(TARGET pcl_align POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_if_different "C:/Program Files/OpenNI2/Redist/OpenNI2.dll" $<TARGET_FILE_DIR:pcl_align>)
 endif()

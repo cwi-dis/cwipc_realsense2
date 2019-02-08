@@ -12,12 +12,13 @@
 #include <pcl/point_cloud.h>
 #include <pcl/common/transforms.h>
 #include <pcl/common/common_headers.h>
+#include <pcl/filters/voxel_grid.h>
+
 /*
 #include <pcl/io/ply_io.h>
 #include <pcl/console/parse.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/registration/icp.h>
-#include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/console/time.h> /**/
 
@@ -26,5 +27,7 @@ using namespace std;
 
 typedef PointXYZRGB PointT;
 typedef PointCloud<PointT> PointCloudT;
+typedef PointXYZRGBL PointTL;
+typedef PointCloud<PointTL> PointCloudTL;
 
 #endif /* cwipw_realsense_defs_h */

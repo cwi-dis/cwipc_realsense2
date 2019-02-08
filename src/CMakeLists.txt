@@ -32,4 +32,4 @@ set_target_properties(cwipc_realsense2 PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo"
 )
 
-target_link_libraries(cwipc_realsense2 ${REALSENSE2_LIB})
+target_link_libraries(cwipc_realsense2 ${REALSENSE2_LIB} ${PCL_LIBRARIES})

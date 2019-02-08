@@ -26,33 +26,42 @@ int main(int argc, char * argv[]) try
 
 	printhelp();
 
-	while (app) {
-		boost::shared_ptr<PointCloudT> captured_pc;
-		void* pc = reinterpret_cast<void *> (&captured_pc);
-
-		// Here we ask for a pointcloud and thereby trigger the actual capturing
-		multiframe.get_pointcloud(&time, &pc);
-
-		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
-
-		if (captured_pc.get() == NULL) continue;
-
-		// Automatically centre the cloud
-		if (!(frame_num++ % CENTERSTEPS)) {
-			pcl::compute3DCentroid(*captured_pc, newcenter);
-			deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
+	if (multiframe.getNumberOfCameras() < 1) {
+		if (load_data() && CamData.size() > 0)
+			do_align = true;
+		else {
+			cerr << "\nSorry: No cameras connected and no data to load\n\n";
+			return EXIT_FAILURE;
 		}
-		if (!do_align)
-			mergedcenter += deltacenter;
+	}
+	
+	while (app) {
+		if (!do_align) {
+			boost::shared_ptr<PointCloudT> captured_pc;
+			void* pc = reinterpret_cast<void *> (&captured_pc);
 
-		// NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
+			// Here we ask for a pointcloud (the merger of all camera's) and thereby trigger the actual capturing
+			multiframe.get_pointcloud(&time, &pc);
+
+			captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
+
+			if (captured_pc.get() == NULL) continue;
+
+			// Automatically centre the cloud
+			if (!(frame_num++ % CENTERSTEPS)) {
+				pcl::compute3DCentroid(*captured_pc, newcenter);
+				deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
+			}
+			mergedcenter += deltacenter;
+		}
+		// NB: draw pointcloud ignores the just obtained pointcloud, as it may want to draw pointclouds of the camera's individually rather than the merged one.
 		draw_pointcloud(app, app_state, multiframe);
 	}
 	return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
 {
-	std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+	cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::exception & e)
