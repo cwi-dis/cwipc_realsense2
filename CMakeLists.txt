@@ -28,8 +28,7 @@ endif()
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 
-
-include(CMakeFiles/install_config.cmake)
+include(GNUInstallDirs)
 
 # First try locating things with pkg-config.
 
@@ -101,3 +100,6 @@ endif()
 include_directories(include)
 
 add_subdirectory(src)
+
+
+include(CMakeFiles/install_config.cmake)

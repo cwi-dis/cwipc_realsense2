@@ -1,5 +1,4 @@
 
-include(GNUInstallDirs)
 
 set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/cwipc_realsense2")
 
