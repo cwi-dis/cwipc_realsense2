@@ -4,8 +4,8 @@
 //  Created by Fons Kuijk on 23-04-18
 //
 
-#ifndef multiFrame_hpp
-#define multiFrame_hpp
+#ifndef cwipw_realsense_multiFrame_hpp
+#define cwipw_realsense_multiFrame_hpp
 #pragma once
 
 #include <atomic>
@@ -30,6 +30,14 @@
 #undef POLLING
 //#define POLLING
 
+#ifndef CWIPC_DLL_ENTRY
+#if defined(WIN32) || defined(_WIN32)
+#define CWIPC_DLL_ENTRY __declspec(dllimport)
+#else
+#define CWIPC_DLL_ENTRY 
+#endif
+#endif
+
 using namespace std::chrono;
 
 struct cameradata {
@@ -39,7 +47,7 @@ struct cameradata {
 	boost::shared_ptr<PointCloudT> cloud;
 };
 
-class multiFrame {
+class CWIPC_DLL_ENTRY multiFrame {
 
 public:
 	multiFrame() {
@@ -268,4 +276,4 @@ public:
 	void getPointCloud(uint64_t *timestamp, void **pointcloud);
 };
 
-#endif /* multiFrame_hpp */
+#endif /* cwipw_realsense_multiFrame_hpp */

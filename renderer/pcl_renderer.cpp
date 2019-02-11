@@ -11,7 +11,7 @@ int main(int argc, char * argv[]) try
 {
 	printhelp();
 
-#ifdef WIN32
+#ifdef WITH_WIN32_LOADLIBRARY
 	GetPointCloudFunction getPointCloud = nullptr;
 	HINSTANCE hInstLibrary;
 
@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) try
 		return EXIT_FAILURE;
 	}
 #else
-#endif // WIN32
+#endif // WITH_WIN32_LOADLIBRARY
 
 
 	// Create a simple OpenGL window for rendering:
@@ -64,7 +64,7 @@ int main(int argc, char * argv[]) try
 		// NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
 		draw_pointcloud(app, app_state, captured_pc);
 	}
-#ifdef WIN32
+#ifdef WITH_WIN32_LOADLIBRARY
 	FreeLibrary(hInstLibrary);
 #endif
 	return EXIT_SUCCESS;

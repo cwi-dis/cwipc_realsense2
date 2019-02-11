@@ -22,6 +22,10 @@ must not be misrepresented as being the original software.
 distribution.
 */
 
+#if defined(WIN32) || defined(_WIN32)
+#define CWIPC_DLL_ENTRY __declspec(dllexport)
+#endif
+
 #include "tinyxml.h"
 
 // The goal of the seperate error file is to make the first

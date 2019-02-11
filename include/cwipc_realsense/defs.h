@@ -4,8 +4,8 @@
 //  Created by Fons Kuijk on 12-12-18.
 //
 
-#ifndef defs_h
-#define defs_h
+#ifndef cwipw_realsense_defs_h
+#define cwipw_realsense_defs_h
 #pragma once
 
 #include <pcl/point_types.h>
@@ -30,4 +30,4 @@ typedef PointCloud<PointT> PointCloudT;
 typedef PointXYZRGBL PointTL;
 typedef PointCloud<PointTL> PointCloudTL;
 
-#endif /* defs.h */
+#endif /* cwipw_realsense_defs_h */

@@ -7,6 +7,39 @@
 #  minimum required cmake version: 3.10.0
 cmake_minimum_required(VERSION 3.10.0)
 
+set(DEPENDENCIES cwipc_realsense2)
+include_directories(../include)
+#
+# Find glfw (or use slurped version)
+#
+if(PKG_CONFIG_FOUND)
+	pkg_check_modules(GLFW glfw3)
+	if(GLFW_FOUND)
+		include_directories(${GLFW_INCLUDE_DIRS})
+		link_directories(${GLFW_LIBRARY_DIRS})
+		add_definitions(${GLFW_DEFINITIONS})
+		list(APPEND DEPENDENCIES ${GLFW_LIBRARIES})
+	endif()
+endif()
+if(NOT GLFW_FOUND)
+	list(APPEND DEPENDENCIES glfw3)
+endif()
+
+#
+# Find gl libraries
+#
+if(PKG_CONFIG_FOUND)
+	pkg_check_modules(OPENGL glu gl)
+	if(OPENGL_FOUND)
+		add_definitions(-D_GLFW_USE_OPENGL -D_GLFW_X11)
+	endif()
+endif()
+if(NOT OPENGL_FOUND)
+	find_package(OpenGL REQUIRED)
+endif()
+list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
+
+# Find Boost (only for pcl_align)
 find_package(Boost COMPONENTS system REQUIRED)
 
 add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
@@ -24,6 +57,8 @@ set_target_properties(pcl_renderer PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/bin/MinSizeRel"
 	RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo"
 )
+target_link_libraries(pcl_renderer ${DEPENDENCIES})
+install(TARGETS pcl_renderer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_executable(pcl_align pcl_align.cpp pcl_align.hpp)
 set_target_properties(pcl_align PROPERTIES
@@ -41,25 +76,8 @@ set_target_properties(pcl_align PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo"
 )
 
-aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/../src MULTIFRAME_SRC)
-include_directories(../src)
-
-target_sources(pcl_renderer PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
-target_sources(pcl_align PUBLIC ${MULTIFRAME_SRC} ${TINY_SRC} )
-
-target_link_libraries(pcl_renderer ${REALSENSE2_LIB} ${PCL_LIBRARIES})
-target_link_libraries(pcl_align ${REALSENSE2_LIB} ${PCL_LIBRARIES} ${Boost_LIBRARIES})
-
-#get_target_property(PROP_RESULT pcl_renderer RUNTIME_OUTPUT_DIRECTORY_DEBUG)
-#	$<IF$<CONFIG:Debug>,RUNTIME_OUTPUT_DIRECTORY_DEBUG,
-#	$<IF$<CONFIG:Release>,RUNTIME_OUTPUT_DIRECTORY_RELEASE,
-#	$<IF$<CONFIG:MinSizeRel>,RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL,
-#	$<IF$<CONFIG:RelWithDebInfo>,RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO,>>>>
-
-if(BUILD_GRAPHICAL_EXAMPLES)
-    target_link_libraries(pcl_renderer ${DEPENDENCIES})
-    target_link_libraries(pcl_align ${DEPENDENCIES})
-endif()
+target_link_libraries(pcl_align ${DEPENDENCIES} ${Boost_LIBRARIES})
+install(TARGETS pcl_align RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if(WIN32)
 	add_custom_command(TARGET pcl_renderer POST_BUILD

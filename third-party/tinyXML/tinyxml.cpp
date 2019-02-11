@@ -28,6 +28,9 @@ distribution.
 #include <sstream>
 #include <iostream>
 #endif
+#if defined(WIN32) || defined(_WIN32)
+#define CWIPC_DLL_ENTRY __declspec(dllexport)
+#endif
 
 #include "tinyxml.h"
 
