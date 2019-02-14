@@ -42,7 +42,7 @@ list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
 # Find Boost (only for pcl_align)
 find_package(Boost COMPONENTS system REQUIRED)
 
-add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp)
+add_executable(pcl_renderer pcl_renderer.cpp pcl_renderer.hpp window_util.hpp)
 set_target_properties(pcl_renderer PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
@@ -60,7 +60,7 @@ set_target_properties(pcl_renderer PROPERTIES
 target_link_libraries(pcl_renderer ${DEPENDENCIES})
 install(TARGETS pcl_renderer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-add_executable(pcl_align pcl_align.cpp pcl_align.hpp)
+add_executable(pcl_align pcl_align.cpp pcl_align.hpp window_util.hpp)
 set_target_properties(pcl_align PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"

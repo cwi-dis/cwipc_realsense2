@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) try
 
 
 	// Create a simple OpenGL window for rendering:
-	window app(2560, 1440, "Multicamera Capturing");
+	window_util app(2560, 1440, "Multicamera Capturing");
 	// Construct an object to manage view state
 	glfw_state app_state;
 
