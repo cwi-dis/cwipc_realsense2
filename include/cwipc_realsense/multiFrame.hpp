@@ -153,20 +153,6 @@ public:
 			return NULL;
 	}
 
-	void capture_start()
-	{
-		if (do_capture)
-			return;
-		do_capture = true;
-	}
-
-	void pauze_capture()
-	{
-		if (!do_capture)
-			return;
-		do_capture = false;
-	}
-
 private:
 
 	// restore the camera transformation setting as stored in the configuration document

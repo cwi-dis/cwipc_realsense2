@@ -1,13 +1,28 @@
 //
-//  window_util.cpp
+//  window_util.hpp
 //
 //  Created by Fons Kuijk on 14-02-19.
 //
+
+#ifndef window_util_hpp
+#define window_util_hpp
+#pragma once
 
 #define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"
 #include <iostream>
 #include <functional>
+
+// Struct for managing rotation of pointcloud view
+struct glfw_state {
+	glfw_state() : yaw(0.0), pitch(0.0), last_x(0.0), last_y(0.0), ml(false), offset(0.f) {}
+	double yaw;
+	double pitch;
+	double last_x;
+	double last_y;
+	bool ml;
+	float offset;
+};
 
 class window_util
 {
@@ -17,70 +32,19 @@ public:
 	std::function<void(double, double)> on_mouse_move = [](double, double) {};
 	std::function<void(int)>            on_key_release = [](int) {};
 
-	window_util(int width, int height, const char* title) : _width(width), _height(height)
-	{
-		glfwInit();
-		win = glfwCreateWindow(width, height, title, nullptr, nullptr);
-		if (!win)
-			throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
-		glfwMakeContextCurrent(win);
-		glfwSetWindowUserPointer(win, this);
-		glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods) {
-			auto s = (window_util*)glfwGetWindowUserPointer(win);
-			if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
-		});
-
-		glfwSetScrollCallback(win, [](GLFWwindow * win, double xoffset, double yoffset) {
-			auto s = (window_util*)glfwGetWindowUserPointer(win);
-			s->on_mouse_scroll(xoffset, yoffset);
-		});
-
-		glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y) {
-			auto s = (window_util*)glfwGetWindowUserPointer(win);
-			s->on_mouse_move(x, y);
-		});
-
-		glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods) {
-			auto s = (window_util*)glfwGetWindowUserPointer(win);
-			if (0 == action) // on key release
-				s->on_key_release(key);
-		});
-	}
-
-	float width() const { return float(_width); }
-	float height() const { return float(_height); }
-
-	operator bool()
-	{
-		glPopMatrix();
-		glfwSwapBuffers(win);
-
-		auto res = !glfwWindowShouldClose(win);
-
-		glfwPollEvents();
-		glfwGetFramebufferSize(win, &_width, &_height);
-
-		// Clear the framebuffer
-		glClear(GL_COLOR_BUFFER_BIT);
-		glViewport(0, 0, _width, _height);
-
-		// Draw the images
-		glPushMatrix();
-		glfwGetWindowSize(win, &_width, &_height);
-		glOrtho(0, _width, _height, 0, -1, +1);
-
-		return res;
-	}
-
-	~window_util()
-	{
-		glfwDestroyWindow(win);
-		glfwTerminate();
-	}
-
-	operator GLFWwindow*() { return win; }
+	window_util(int width, int height, const char* title);
+	~window_util();
+	operator bool();
+	operator GLFWwindow*();
+	glfw_state* app_state();
+	float width() const;
+	float height() const;
+	void prepare_gl(float x, float y, float z);
+	void cleanup_gl();
 
 private:
 	GLFWwindow* win;
+	glfw_state _appstate;
 	int _width, _height;
 };
+#endif //window_util_hpp
