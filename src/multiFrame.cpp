@@ -10,7 +10,7 @@
 // This is the dll source, so define external symbols as dllexport on windows.
 
 #if defined(WIN32) || defined(_WIN32)
-#define CWIPC_DLL_ENTRY __declspec(dllexport)
+#define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
 
 #include "cwipc_realsense2/multiFrame.hpp"
@@ -150,21 +150,21 @@ void multiFrame::merge_views(cwipc_pcl_pointcloud cloud_ptr)
 }
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp
-void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
+cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
+    int entry_to_return = 0;
 	if (CameraData.size() > 0) {
-		for (cameradata ccfg : CameraData)
+		for (cameradata ccfg : CameraData) {
 			camera_action(ccfg);
+        }
 		merge_views(RingBuffer[ring_index]);
 		if (RingBuffer[ring_index].get()->size() > 0) {
 #ifdef DEBUG
             std::cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
-			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
-		}
-		else {
+			entry_to_return = ring_index;
+		} else {
 #ifdef DEBUG
             std::cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
 #endif
@@ -175,45 +175,16 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 			point.z = 1.0;
 			point.rgb = 0.0;
 			RingBuffer[ring_index]->points.push_back(point);
-			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+			entry_to_return = ring_index;
 		}
-	}
-	else {	// return a spinning generated mathematical pointcloud
+	} else {	// return a spinning generated mathematical pointcloud
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
 		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
-		*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+		entry_to_return = ring_index;
 	}
 	ring_index = ring_index < ringbuffer_size - 1 ? ++ring_index : 0;
+	return RingBuffer[entry_to_return];
 }
 
-
-///////////////////////////
-// class captureIt stuff //
-///////////////////////////
-
-
-void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
-	static multiFrame mFrame;
-
-#ifdef DEBUG
-    std::cout << "captureIt is asked for a pointcloud\n";
-#endif
-
-	mFrame.get_pointcloud(timestamp, pointcloud);
-
-#ifdef DEBUG
-	cwipc_pcl_pointcloud captured_pc;
-	captured_pc = *reinterpret_cast<cwipc_pcl_pointcloud*>(*pointcloud);
-    std::cout << "captureIt handed over a pointcloud of " << captured_pc.get()->size() << " points\n";
-    std::cout.flush();
-#endif
-}
-
-// C-compatible entry point
-
-void  getPointCloud(uint64_t *timestamp, void **pointcloud) {
-	captureIt captureit;
-	captureit.getPointCloud(timestamp, pointcloud);
-}

@@ -37,13 +37,8 @@ int main(int argc, char * argv[]) try
 	
 	while (app) {
 		if (!do_align) {
-			cwipc_pcl_pointcloud captured_pc;
-			void* pc = reinterpret_cast<void *> (&captured_pc);
-
 			// Here we ask for a pointcloud (the merger of all camera's) and thereby trigger the actual capturing
-			multiframe.get_pointcloud(&time, &pc);
-
-			captured_pc = *reinterpret_cast<cwipc_pcl_pointcloud*>(pc);
+			cwipc_pcl_pointcloud captured_pc = multiframe.get_pointcloud(&time);
 
 			if (captured_pc.get() == NULL) continue;
 

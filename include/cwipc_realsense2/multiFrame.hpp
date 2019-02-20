@@ -93,7 +93,7 @@ public:
 	}
 
 	// API function that returns the merged pointcloud and timestamp
-	void get_pointcloud(uint64_t *timestamp, void **pointcloud);
+	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp);
 
 
 	// return the merged cloud 
@@ -264,16 +264,4 @@ private:
 	bool tiling = false;									// If true produce tiled stream
 	double tiling_resolution = 0.01;						// Resolution of tiling process
 };
-
-
-///////////////////////////
-// class captureIt stuff //
-///////////////////////////
-
-class captureIt
-{
-public:
-	void getPointCloud(uint64_t *timestamp, void **pointcloud);
-};
-
 #endif /* cwipw_realsense_multiFrame_hpp */

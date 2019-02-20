@@ -4,6 +4,8 @@
 //  Created by Fons Kuijk on 23-06-18.
 //
 
+#include "cwipc_util/api_pcl.h"
+#include "cwipc_realsense2/api.h"
 #include "pcl_renderer.hpp"
 #define CENTERSTEPS 256
 
@@ -42,16 +44,17 @@ int main(int argc, char * argv[]) {
         Eigen::Vector4f newcenter;
         Eigen::Vector4f deltacenter;
 
-
+        char *msg;
+        cwipc_source *src = cwipc_realsense2(&msg);
+        if (src == NULL) {
+            std::cerr << "ERROR: could not instantiate realsense2 grabber: " << msg << std::endl;
+            return EXIT_FAILURE;
+        }
         while (app) {
-            cwipc_pcl_pointcloud captured_pc;
-            void* pc = reinterpret_cast<void *> (&captured_pc);
-            uint64_t t = 4;
-            getPointCloud(&t, &pc);
-
-            captured_pc = *reinterpret_cast<cwipc_pcl_pointcloud*>(pc);
+            cwipc *pc = src->get();
             
-            if (!(captured_pc.get()->size() > 0)) continue;
+            cwipc_pcl_pointcloud captured_pc = pc->access_pcl_pointcloud();
+            if (!(captured_pc->size() > 0)) continue;
 
             // Automatically centre the cloud
             if (!(frame_num++ % CENTERSTEPS)) {
@@ -63,7 +66,11 @@ int main(int argc, char * argv[]) {
 
             // NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
             draw_pointcloud(app, app_state, captured_pc);
+            
+            // Finally free the whole thing
+            pc->free();
         }
+        src->free();
     #ifdef WITH_WIN32_LOADLIBRARY
         FreeLibrary(hInstLibrary);
     #endif
