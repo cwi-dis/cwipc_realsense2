@@ -41,10 +41,10 @@
 using namespace std::chrono;
 
 struct cameradata {
-	string serial;
+    std::string serial;
 	rs2::pipeline pipe;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
-	boost::shared_ptr<PointCloudT> cloud;
+	cwipc_pcl_pointcloud cloud;
 };
 
 class CWIPC_DLL_ENTRY multiFrame {
@@ -61,11 +61,11 @@ public:
 		// prepare storage for camera data for each connected camera
 		for (auto dev : devs) {
 			if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
-				boost::shared_ptr<PointCloudT> empty_pntcld(new PointCloudT());
+				cwipc_pcl_pointcloud empty_pntcld(new_cwipc_pcl_pointcloud());
 				boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 				default_trafo->setIdentity();
 				cameradata* cc = new cameradata();
-				cc->serial = string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+                cc->serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 				cc->cloud = empty_pntcld;
 				cc->trafo = default_trafo;
 				CameraData.push_back(*cc);
@@ -78,7 +78,7 @@ public:
 		file2config();		// set the configuratioon (transformation matrices, ringbuffersize, greenscreen option, etc.)
 
 		for (int i = 0; i < ringbuffer_size; i++) {
-			boost::shared_ptr<PointCloudT> buf(new PointCloudT());
+			cwipc_pcl_pointcloud buf(new_cwipc_pcl_pointcloud());
 			RingBuffer.push_back(buf);
 		}
 
@@ -89,7 +89,7 @@ public:
 		for (cameradata ccfg : CameraData) {
 			ccfg.pipe.stop();
 		}
-		cout << "stopped all camera's\n";
+        std::cout << "stopped all camera's\n";
 	}
 
 	// API function that returns the merged pointcloud and timestamp
@@ -97,7 +97,7 @@ public:
 
 
 	// return the merged cloud 
-	boost::shared_ptr<PointCloudT> getPointCloud()
+	cwipc_pcl_pointcloud getPointCloud()
 	{
 		return RingBuffer[ring_index];
 	}
@@ -108,7 +108,7 @@ public:
 	}
 
 	// return the cloud captured by the specified camera
-	boost::shared_ptr<PointCloudT> getCameraCloud(int i)
+	cwipc_pcl_pointcloud getCameraCloud(int i)
 	{
 		if (i >= 0 && i < CameraData.size())
 			return CameraData[i].cloud;
@@ -117,12 +117,12 @@ public:
 	}
 
 	// return the serialnumber of the specified camera
-	string getCameraSerial(int i)
+	std::string getCameraSerial(int i)
 	{
 		if (i >= 0 && i < CameraData.size())
 			return CameraData[i].serial;
 		else
-			return string("0");
+            return std::string("0");
 	}
 	double getSpatialResolution() {
 		return spatial_resolution;
@@ -224,15 +224,15 @@ private:
 	}
 
 	// generate a mathematical pointcloud
-	PointCloudT::Ptr generate_pcl()
+	cwipc_pcl_pointcloud generate_pcl()
 	{
-		PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
+		cwipc_pcl_pointcloud point_cloud_ptr(new_cwipc_pcl_pointcloud());
 		uint8_t r(255), g(15), b(15);
 		for (float z(-1.0f); z <= 1.0f; z += 0.005f) {
 			for (float angle(0.0); angle <= 360.0; angle += 1.0f) {
-				PointT point;
-				point.x = 0.5f*cosf(deg2rad(angle))*(1.0f - z*z);
-				point.y = sinf(deg2rad(angle))*(1.0f - z*z);
+				cwipc_pcl_point point;
+                point.x = 0.5f*cosf(pcl::deg2rad(angle))*(1.0f - z*z);
+                point.y = sinf(pcl::deg2rad(angle))*(1.0f - z*z);
 				point.z = z;
 				uint32_t rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
 				point.rgb = *reinterpret_cast<float*>(&rgb);
@@ -249,12 +249,12 @@ private:
 	// Methods
 	void camera_start(cameradata camera_data);
 	void camera_action(cameradata camera_data);
-	void merge_views(boost::shared_ptr<PointCloudT> pcl);
+	void merge_views(cwipc_pcl_pointcloud pcl);
 
 	// Globals
-	vector<cameradata> CameraData;						// Storage of per camera data
-	vector<boost::shared_ptr<PointCloudT>> RingBuffer;	// Buffer of merged pointclouds
-	boost::shared_ptr<PointCloudT> GeneratedPC;			// Mathematical pointcloud for use without camera
+	std::vector<cameradata> CameraData;						// Storage of per camera data
+	std::vector<cwipc_pcl_pointcloud> RingBuffer;	// Buffer of merged pointclouds
+	cwipc_pcl_pointcloud GeneratedPC;			// Mathematical pointcloud for use without camera
 	float angle = 0.0f;									// Rotation of generated PC
 	bool do_capture = false;								// Switch for "pause"
 	double spatial_resolution = 0.0;						// Resolution of voxelized pointclouds

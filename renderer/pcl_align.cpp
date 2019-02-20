@@ -30,20 +30,20 @@ int main(int argc, char * argv[]) try
 		if (load_data() && CamData.size() > 0)
 			do_align = true;
 		else {
-			cerr << "\nSorry: No cameras connected and no data to load\n\n";
+            std::cerr << "\nSorry: No cameras connected and no data to load\n\n";
 			return EXIT_FAILURE;
 		}
 	}
 	
 	while (app) {
 		if (!do_align) {
-			boost::shared_ptr<PointCloudT> captured_pc;
+			cwipc_pcl_pointcloud captured_pc;
 			void* pc = reinterpret_cast<void *> (&captured_pc);
 
 			// Here we ask for a pointcloud (the merger of all camera's) and thereby trigger the actual capturing
 			multiframe.get_pointcloud(&time, &pc);
 
-			captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
+			captured_pc = *reinterpret_cast<cwipc_pcl_pointcloud*>(pc);
 
 			if (captured_pc.get() == NULL) continue;
 
@@ -61,7 +61,7 @@ int main(int argc, char * argv[]) try
 }
 catch (const rs2::error & e)
 {
-	cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::exception & e)

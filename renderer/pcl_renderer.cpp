@@ -44,12 +44,12 @@ int main(int argc, char * argv[]) try
 
 
 	while (app) {
-		boost::shared_ptr<PointCloudT> captured_pc;
+		cwipc_pcl_pointcloud captured_pc;
 		void* pc = reinterpret_cast<void *> (&captured_pc);
 		uint64_t t = 4;
 		getPointCloud(&t, &pc);
 
-		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
+		captured_pc = *reinterpret_cast<cwipc_pcl_pointcloud*>(pc);
 		
 		if (!(captured_pc.get()->size() > 0)) continue;
 
@@ -71,11 +71,11 @@ int main(int argc, char * argv[]) try
 }
 catch (const rs2::error & e)
 {
-	cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::exception & e)
 {
-	cerr << e.what() << std::endl;
+    std::cerr << e.what() << std::endl;
 	return EXIT_FAILURE;
 }

@@ -17,7 +17,7 @@ typedef struct HsvColor
 	unsigned char v;
 } HsvColor;
 
-PointT* hsvToRgb(HsvColor hsv, PointT* pnt)
+cwipc_pcl_point* hsvToRgb(HsvColor hsv, cwipc_pcl_point* pnt)
 {
 	unsigned char region, p, q, t;
 	unsigned int h, s, v, remainder;
@@ -79,7 +79,7 @@ PointT* hsvToRgb(HsvColor hsv, PointT* pnt)
 	return pnt;
 }
 
-HsvColor rgbToHsv(PointT* pnt)
+HsvColor rgbToHsv(cwipc_pcl_point* pnt)
 {
 	HsvColor hsv;
 	unsigned char rgbMin, rgbMax;
@@ -112,7 +112,7 @@ HsvColor rgbToHsv(PointT* pnt)
 	return hsv;
 }
 
-bool noChromaRemoval(PointT* p)
+bool noChromaRemoval(cwipc_pcl_point* p)
 {
 	HsvColor hsv = rgbToHsv(p);
 

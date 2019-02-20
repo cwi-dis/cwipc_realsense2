@@ -45,7 +45,7 @@ const int depth_fps = 30;
 // Configure and initialize caputuring of one camera
 void multiFrame::camera_start(cameradata camera_data)
 {
-	cout << "starting camera ser no: " << camera_data.serial << '\n';
+    std::cout << "starting camera ser no: " << camera_data.serial << '\n';
 
 	rs2::config cfg;
 	cfg.enable_device(camera_data.serial);
@@ -103,7 +103,7 @@ void multiFrame::camera_action(cameradata camera_data)
 		float x = minx - vertices[i].x; x *= x;
 		float z = vertices[i].z;
 		if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
-			PointT pt;
+			cwipc_pcl_point pt;
 			pt.x = vertices[i].x;
 			pt.y = -vertices[i].y;
 			pt.z = -z;
@@ -117,12 +117,17 @@ void multiFrame::camera_action(cameradata camera_data)
 	}
 }
 
-void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
+void multiFrame::merge_views(cwipc_pcl_pointcloud cloud_ptr)
 {
-	PointCloudT::Ptr aligned_cld(new PointCloudT);
+	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 	cloud_ptr->clear();
 	for (cameradata ccfg : CameraData) {
-		PointCloudT *cam_cld = ccfg.cloud.get();
+#if 0
+        // xxxjack unsure how to do this...
+        PointCloudT *cam_cld = ccfg.cloud.get();
+#else
+        cwipc_pcl_pointcloud cam_cld(ccfg.cloud);
+#endif
 		if (cam_cld->size() > 0) {
 			transformPointCloud(*cam_cld, *aligned_cld, *ccfg.trafo);
 			*cloud_ptr.get() += *aligned_cld;
@@ -131,15 +136,15 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 
  	if (spatial_resolution > 0) {
 #ifdef DEBUG
-		cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
+        std::cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
-		VoxelGrid<PointT> grd;
+        pcl::VoxelGrid<cwipc_pcl_point> grd;
 		grd.setInputCloud(cloud_ptr);
 		grd.setLeafSize(spatial_resolution, spatial_resolution, spatial_resolution);
 		grd.setSaveLeafLayout(true);
 		grd.filter(*cloud_ptr);
 #ifdef DEBUG
-		cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
+        std::cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
 }
@@ -155,16 +160,16 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 		merge_views(RingBuffer[ring_index]);
 		if (RingBuffer[ring_index].get()->size() > 0) {
 #ifdef DEBUG
-			cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
+            std::cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
 			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
 		}
 		else {
 #ifdef DEBUG
-			cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
+            std::cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
 #endif
 			// HACK to make sure the encoder does not get an empty pointcloud 
-			PointT point;
+			cwipc_pcl_point point;
 			point.x = 1.0;
 			point.y = 1.0;
 			point.z = 1.0;
@@ -193,16 +198,16 @@ void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	static multiFrame mFrame;
 
 #ifdef DEBUG
-	cout << "captureIt is asked for a pointcloud\n";
+    std::cout << "captureIt is asked for a pointcloud\n";
 #endif
 
 	mFrame.get_pointcloud(timestamp, pointcloud);
 
 #ifdef DEBUG
-	boost::shared_ptr<PointCloudT> captured_pc;
-	captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(*pointcloud);
-	cout << "captureIt handed over a pointcloud of " << captured_pc.get()->size() << " points\n";
-	cout.flush();
+	cwipc_pcl_pointcloud captured_pc;
+	captured_pc = *reinterpret_cast<cwipc_pcl_pointcloud*>(*pointcloud);
+    std::cout << "captureIt handed over a pointcloud of " << captured_pc.get()->size() << " points\n";
+    std::cout.flush();
 #endif
 }
 

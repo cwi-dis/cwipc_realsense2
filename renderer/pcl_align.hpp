@@ -10,6 +10,9 @@
 
 #include "cwipc_realsense2/multiFrame.hpp"
 
+// We do not really care about OpenGL deprecation warnings.
+#define GL_SILENCE_DEPRECATION
+
 #define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"
 
@@ -106,9 +109,9 @@ struct glfw_state {
 };
 
 struct cam_data {
-	string serial;
+    std::string serial;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
-	boost::shared_ptr<PointCloudT> cloud;
+	cwipc_pcl_pointcloud cloud;
 };
 
 bool do_align = false;
@@ -116,25 +119,25 @@ bool rotation = true;
 int aligncamera = 0;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;		// Needed to be able to rotate around the cloud's centre of mass
-vector<cam_data> CamData;		// Storage of per camera data for reloaded camera data
+std::vector<cam_data> CamData;		// Storage of per camera data for reloaded camera data
 
-string ext(".ply");
+std::string ext(".ply");
 
 void printhelp() {
-	cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
-	cout << "To examine the pointcloud use the mouse: leftclick and move to rotate, use the mouse wheel to zoom.\n";
-	cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
+    std::cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
+	std::cout << "To examine the pointcloud use the mouse: leftclick and move to rotate, use the mouse wheel to zoom.\n";
+	std::cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
 
-	cout << "\naction keys for alignment of camera clouds:\n";
-	cout << "\t\"a\" to toggle between \"life\" and \"alignment mode\"\n";
-	cout << "\t\"1-9\" to select the camera to align\n";
-	cout << "\t\"r\" to start cloud rotate mode\n";
-	cout << "\t\"t\" to start cloud translate mode\n";
-	cout << "\t\"esc\" to reset the cloud transformation of the active camera\n";
-	cout << "\t\"s\" to save the configuration and snapshots of each camera to files\n";
-	cout << "\t\"l\" to load a configuration and snapshots of each camera from files to (re)align\n";
-	cout << "\t\"h\" to print this help\n";
-	cout << "\t\"q\" to quit\n";
+	std::cout << "\naction keys for alignment of camera clouds:\n";
+	std::cout << "\t\"a\" to toggle between \"life\" and \"alignment mode\"\n";
+	std::cout << "\t\"1-9\" to select the camera to align\n";
+	std::cout << "\t\"r\" to start cloud rotate mode\n";
+	std::cout << "\t\"t\" to start cloud translate mode\n";
+	std::cout << "\t\"esc\" to reset the cloud transformation of the active camera\n";
+	std::cout << "\t\"s\" to save the configuration and snapshots of each camera to files\n";
+	std::cout << "\t\"l\" to load a configuration and snapshots of each camera from files to (re)align\n";
+	std::cout << "\t\"h\" to print this help\n";
+	std::cout << "\t\"q\" to quit\n";
 }
 
 // store the current camera transformation setting into a xml document
@@ -184,7 +187,7 @@ void config2file(multiFrame& multiframe)
 	doc.SaveFile("cameraconfig.xml");
 }
 
-void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
+void cloud2file(cwipc_pcl_pointcloud pntcld, std::string filename)
 {
 	if (!pntcld) return;
 	int size = pntcld->size();
@@ -210,9 +213,9 @@ void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
 bool load_ply_of_camera(cam_data camera)
 {
 	// Load the cloud and save it into the global list of models
-	if (pcl::io::loadPLYFile<PointT>(camera.serial + ext, *camera.cloud) == -1)
+	if (pcl::io::loadPLYFile<cwipc_pcl_point>(camera.serial + ext, *camera.cloud) == -1)
 	{
-		string msg = "Error loading cloud from file " + camera.serial + ext + "\n";
+		std::string msg = "Error loading cloud from file " + camera.serial + ext + "\n";
 		PCL_ERROR(msg.c_str());
 		return false;
 	}
@@ -238,7 +241,7 @@ bool load_config()
 	while (cameraElement)
 	{
 		cam_data* cc = new cam_data();
-		boost::shared_ptr<PointCloudT> empty_pntcld(new PointCloudT());
+		cwipc_pcl_pointcloud empty_pntcld(new_cwipc_pcl_pointcloud());
 		boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
 		cc->serial = cameraElement->Attribute("serial");
 		cc->cloud = empty_pntcld;
@@ -275,7 +278,7 @@ bool load_data() {
 		return false;
 	for (auto camera : CamData)
 		if (!load_ply_of_camera(camera)) {
-			cerr << "Could not load a .ply file for camera " << camera.serial << " as specified in the configuration file\n";
+            std::cerr << "Could not load a .ply file for camera " << camera.serial << " as specified in the configuration file\n";
 			return false;
 		}
 	return true;
@@ -312,7 +315,7 @@ void draw_pointcloud(window& app, glfw_state& app_state, multiFrame& multiframe)
 	// draw the pointcloud(s)
 	if (do_align) {
 		for (int i = 0; i < CamData.size(); i++) {
-			PointCloudT::Ptr pcptr(new PointCloudT);
+			cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
 			transformPointCloud(*(CamData[i].cloud.get()), *pcptr, *CamData[i].trafo);
 			for (auto pnt : pcptr->points) {
 				float col[3];
@@ -343,7 +346,7 @@ void draw_pointcloud(window& app, glfw_state& app_state, multiFrame& multiframe)
 		}
 		else {
 			for (int i = 0; i < CamData.size(); i++) {
-				PointCloudT::Ptr pcptr(new PointCloudT);
+				cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
 				transformPointCloud(*(CamData[i].cloud.get()), *pcptr, *CamData[i].trafo);
 				for (auto pnt : pcptr->points) {
 					float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
@@ -453,7 +456,7 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 			if (load_data() && CamData.size() > 0)
 				do_align = true;
 			else {
-				cerr << "\nError: Data could not be loaded\n";
+                std::cerr << "\nError: Data could not be loaded\n";
 				return;
 			}
 			if (aligncamera > CamData.size())
@@ -481,9 +484,14 @@ void register_glfw_callbacks(window& app, glfw_state& app_state, multiFrame& mul
 		}
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
 			for (int i = 0; i < CamData.size(); i++) {
-				PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
+#if 0
+                // xxxjack not quite sure how this needs to be done...
+                PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
 				boost::shared_ptr<PointCloudT> aligned_cld(point_cloud_ptr);
-
+#else
+                cwipc_pcl_pointcloud point_cloud_ptr(new_cwipc_pcl_pointcloud());
+                cwipc_pcl_pointcloud aligned_cld(point_cloud_ptr);
+#endif
 				transformPointCloud(*CamData[i].cloud.get(), *aligned_cld, *CamData[i].trafo);
 
 				cloud2file(aligned_cld, "pcl_aligned_" + CamData[i].serial + ".ply");

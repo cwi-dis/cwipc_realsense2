@@ -8,6 +8,8 @@
 #define pcl_renderer_hpp
 #pragma once
 
+// We are not interested in OpenGL warning
+#define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"
 #include "cwipc_realsense2/defs.h"
@@ -114,15 +116,15 @@ Eigen::Vector4f mergedcenter;	// needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;		// needed to be able to rotate around the cloud's centre of mass
 
 void printhelp() {
-	cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
-	cout << "To examine the pointcloud use the mouse: leftclick and move to rotate, use the mouse wheel to zoom.\n";
-	cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
-	cout << "Use \"q\" to quit\n";
+    std::cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
+	std::cout << "To examine the pointcloud use the mouse: leftclick and move to rotate, use the mouse wheel to zoom.\n";
+	std::cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
+	std::cout << "Use \"q\" to quit\n";
 }
 
 
 // Handle the OpenGL setup needed to display all pointclouds
-void draw_pointcloud(window& app, glfw_state& app_state, boost::shared_ptr<PointCloudT> point_cloud)
+void draw_pointcloud(window& app, glfw_state& app_state, cwipc_pcl_pointcloud point_cloud)
 {
 	// OpenGL commands that prep screen
 	glPopMatrix();
