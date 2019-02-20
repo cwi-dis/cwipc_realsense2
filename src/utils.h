@@ -8,8 +8,6 @@
 #define cwipw_realsense_utils_h
 #pragma once
 
-#include "defs.h"
-
 typedef struct HsvColor
 {
 	unsigned char h;

@@ -14,8 +14,8 @@
 #endif
 
 #include "cwipc_realsense2/multiFrame.hpp"
-#include "cwipc_realsense2/utils.h"
 #include "cwipc_realsense2/api.h"
+#include "utils.h"
 
 //
 // Stop-gap by Jack. The normal production settings are not possible over USB2.
