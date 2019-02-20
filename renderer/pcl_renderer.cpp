@@ -7,74 +7,76 @@
 #include "pcl_renderer.hpp"
 #define CENTERSTEPS 256
 
-int main(int argc, char * argv[]) try
-{
-	printhelp();
+int main(int argc, char * argv[]) {
+    try
+    {
+        printhelp();
 
-#ifdef WITH_WIN32_LOADLIBRARY
-	GetPointCloudFunction getPointCloud = nullptr;
-	HINSTANCE hInstLibrary;
+    #ifdef WITH_WIN32_LOADLIBRARY
+        GetPointCloudFunction getPointCloud = nullptr;
+        HINSTANCE hInstLibrary;
 
-	hInstLibrary = LoadLibrary(TEXT("multiFrame.dll"));
+        hInstLibrary = LoadLibrary(TEXT("multiFrame.dll"));
 
-	if (hInstLibrary)		// the function dll file has been found and is loaded
-		getPointCloud = (GetPointCloudFunction)GetProcAddress(hInstLibrary, "getPointCloud");
-	else
-		cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
-	if (!getPointCloud)	{
-		cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
-		return EXIT_FAILURE;
-	}
-#else
-#endif // WITH_WIN32_LOADLIBRARY
-
-
-	// Create a simple OpenGL window for rendering:
-	window app(2560, 1440, "Multicamera Capturing");
-	// Construct an object to manage view state
-	glfw_state app_state;
-
-	// register callbacks to allow manipulation of the PointCloud
-	register_glfw_callbacks(app, app_state);
-
-	int frame_num = 0;
-	Eigen::Vector4f newcenter;
-	Eigen::Vector4f deltacenter;
+        if (hInstLibrary)		// the function dll file has been found and is loaded
+            getPointCloud = (GetPointCloudFunction)GetProcAddress(hInstLibrary, "getPointCloud");
+        else
+            cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
+        if (!getPointCloud)	{
+            cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
+            return EXIT_FAILURE;
+        }
+    #else
+    #endif // WITH_WIN32_LOADLIBRARY
 
 
-	while (app) {
-		cwipc_pcl_pointcloud captured_pc;
-		void* pc = reinterpret_cast<void *> (&captured_pc);
-		uint64_t t = 4;
-		getPointCloud(&t, &pc);
+        // Create a simple OpenGL window for rendering:
+        window app(2560, 1440, "Multicamera Capturing");
+        // Construct an object to manage view state
+        glfw_state app_state;
 
-		captured_pc = *reinterpret_cast<cwipc_pcl_pointcloud*>(pc);
-		
-		if (!(captured_pc.get()->size() > 0)) continue;
+        // register callbacks to allow manipulation of the PointCloud
+        register_glfw_callbacks(app, app_state);
 
-		// Automatically centre the cloud
-		if (!(frame_num++ % CENTERSTEPS)) {
-			pcl::compute3DCentroid(*captured_pc, newcenter);
-			deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
-		}
-		if (!do_align)
-			mergedcenter += deltacenter;
+        int frame_num = 0;
+        Eigen::Vector4f newcenter;
+        Eigen::Vector4f deltacenter;
 
-		// NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
-		draw_pointcloud(app, app_state, captured_pc);
-	}
-#ifdef WITH_WIN32_LOADLIBRARY
-	FreeLibrary(hInstLibrary);
-#endif
-	return EXIT_SUCCESS;
-}
-catch (const rs2::error & e)
-{
-    std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const std::exception & e)
-{
-    std::cerr << e.what() << std::endl;
-	return EXIT_FAILURE;
+
+        while (app) {
+            cwipc_pcl_pointcloud captured_pc;
+            void* pc = reinterpret_cast<void *> (&captured_pc);
+            uint64_t t = 4;
+            getPointCloud(&t, &pc);
+
+            captured_pc = *reinterpret_cast<cwipc_pcl_pointcloud*>(pc);
+            
+            if (!(captured_pc.get()->size() > 0)) continue;
+
+            // Automatically centre the cloud
+            if (!(frame_num++ % CENTERSTEPS)) {
+                pcl::compute3DCentroid(*captured_pc, newcenter);
+                deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
+            }
+            if (!do_align)
+                mergedcenter += deltacenter;
+
+            // NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
+            draw_pointcloud(app, app_state, captured_pc);
+        }
+    #ifdef WITH_WIN32_LOADLIBRARY
+        FreeLibrary(hInstLibrary);
+    #endif
+        return EXIT_SUCCESS;
+    }
+    catch (const rs2::error & e)
+    {
+        std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch (const std::exception & e)
+    {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 }
