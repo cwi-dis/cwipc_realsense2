@@ -38,7 +38,6 @@ int main(int argc, char * argv[]) try
 	register_glfw_callbacks(app, app_state);
 
 	int frame_num = 0;
-	uint64_t time = 0;
 	Eigen::Vector4f newcenter;
 	Eigen::Vector4f deltacenter;
 
