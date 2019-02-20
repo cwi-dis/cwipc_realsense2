@@ -10,11 +10,11 @@
 
 #define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"
-#include "cwipc_realsense/defs.h"
+#include "cwipc_realsense2/defs.h"
 #ifdef WITH_WIN32_LOADLIBRARY
 #include <windows.h>
 #else
-#include "cwipc_realsense/api.h"
+#include "cwipc_realsense2/api.h"
 #endif
 #include <librealsense2/rs.hpp>
 

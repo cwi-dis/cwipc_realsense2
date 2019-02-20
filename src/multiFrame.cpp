@@ -13,9 +13,9 @@
 #define CWIPC_DLL_ENTRY __declspec(dllexport)
 #endif
 
-#include "cwipc_realsense/multiFrame.hpp"
-#include "cwipc_realsense/utils.h"
-#include "cwipc_realsense/api.h"
+#include "cwipc_realsense2/multiFrame.hpp"
+#include "cwipc_realsense2/utils.h"
+#include "cwipc_realsense2/api.h"
 
 //
 // Stop-gap by Jack. The normal production settings are not possible over USB2.

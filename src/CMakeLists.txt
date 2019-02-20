@@ -12,10 +12,10 @@ add_library(cwipc_realsense2 SHARED multiFrame.cpp ${TINY_SRC})
 
 target_sources(cwipc_realsense2
 	PRIVATE
-	"../include/cwipc_realsense/defs.h"
-	"../include/cwipc_realsense/multiFrame.hpp"
-	"../include/cwipc_realsense/utils.h"
-	"../include/cwipc_realsense/api.h"
+	"../include/cwipc_realsense2/defs.h"
+	"../include/cwipc_realsense2/multiFrame.hpp"
+	"../include/cwipc_realsense2/utils.h"
+	"../include/cwipc_realsense2/api.h"
 )
 
 set_target_properties(cwipc_realsense2 PROPERTIES
@@ -36,10 +36,22 @@ set_target_properties(cwipc_realsense2 PROPERTIES
 target_link_libraries(cwipc_realsense2 ${REALSENSE2_LIB} ${PCL_LIBRARIES})
 
 install(TARGETS cwipc_realsense2
-    EXPORT cwipcrsTargets
+    EXPORT cwipc_realsense2
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cwipc_realsense"
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cwipc_realsense2"
 )
 
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/cwipc_realsense2
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(FILES ${PROJECT_SOURCE_DIR}/CMakeFiles/cwipc_realsense2-config.cmake DESTINATION lib/cmake/cwipc_realsense2)
+
+install(EXPORT cwipc_realsense2 DESTINATION lib/cmake/cwipc_realsense2)
+
+# Set library pkgconfig file for facilitating 3rd party integration
+# install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/cwipc_realsense.pc"
+#         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+# )

@@ -100,6 +100,3 @@ endif()
 include_directories(include)
 
 add_subdirectory(src)
-
-
-include(CMakeFiles/install_config.cmake)
