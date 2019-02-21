@@ -42,43 +42,184 @@ const int depth_height = 480;
 const int depth_fps = 30;
 #endif // WITH_USB2
 
-// Configure and initialize caputuring of one camera
-void multiFrame::camera_start(cameradata camera_data)
+multiFrame::multiFrame() {
+	// Create librealsense context for managing all connected RealSense devices
+	rs2::context ctx;
+	auto devs = ctx.query_devices();
+
+	const std::string platform_camera_name = "Platform Camera";
+
+	// prepare ringbuffer
+	for (int i = 0; i < Configuration.ringbuffer_size; i++) {
+		boost::shared_ptr<PointCloudT> buf(new PointCloudT());
+		RingBuffer.push_back(buf);
+	}
+
+	// prepare storage for camera data for each connected camera
+	for (auto dev : devs) {
+		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
+			boost::shared_ptr<PointCloudT> empty_pntcld(new PointCloudT());
+			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
+			default_trafo->setIdentity();
+			cameradata* cc = new cameradata();
+			cc->serial = string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+			cc->cloud = empty_pntcld;
+			cc->trafo = default_trafo;
+			Configuration.camera_data.push_back(*cc);
+			camera_start(*cc);
+		}
+	}
+	if (Configuration.camera_data.size() == 0) {
+		// no camera connected, so we'll use a generated pointcloud instead
+		GeneratedPC = generate_pcl();
+		cout << "No cameras found, a spinning generated pointcloud of " << GeneratedPC->size() << " data points will be offered instead\n";
+	}
+	else {
+		// Read the configuration (N.B. be aware pcl_align should be reading the same file!)
+		if (!file2config("cameraconfig.xml", Configuration.camera_data, &Configuration.spatial_resolution, &Configuration.ringbuffer_size, &Configuration.green_screen, &Configuration.tiling, &Configuration.tiling_resolution))
+			; // configuration is not OK, special action needed??
+	}
+}
+
+multiFrame::~multiFrame() {
+	for (cameradata cd : Configuration.camera_data) {
+		cd.pipe.stop();
+	}
+	cout << "stopped all camera's\n";
+}
+
+// API function that triggers the capture and returns the merged pointcloud and timestamp
+void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 {
-	cout << "starting camera ser no: " << camera_data.serial << '\n';
+	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+	if (Configuration.camera_data.size() > 0) {
+		for (cameradata cd : Configuration.camera_data)
+			camera_action(cd);
+		if (RingBuffer[ring_index].get()->size() > 0) {
+		merge_views(RingBuffer[ring_index]);
+		if (RingBuffer[ring_index].get()->size() > 0) {
+#ifdef DEBUG
+			cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
+#endif
+			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+		}
+		else {
+#ifdef DEBUG
+			cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
+#endif
+			// HACK to make sure the encoder does not get an empty pointcloud 
+			PointT point;
+			point.x = 1.0;
+			point.y = 1.0;
+			point.z = 1.0;
+			point.rgb = 0.0;
+			RingBuffer[ring_index]->points.push_back(point);
+			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+		}
+	}
+	else {	// return a spinning generated mathematical pointcloud
+		static float angle;
+		angle += 0.031415;
+		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
+		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
+		*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+	}
+	ring_index = ring_index < Configuration.ringbuffer_size - 1 ? ++ring_index : 0;
+}
+
+// return the merged cloud 
+boost::shared_ptr<PointCloudT> multiFrame::getPointCloud()
+{
+	return RingBuffer[ring_index];
+}
+
+// return the number of connected and recognized cameras
+int multiFrame::getNumberOfCameras() {
+	return Configuration.camera_data.size();
+}
+
+// return the cloud captured by the specified camera
+boost::shared_ptr<PointCloudT> multiFrame::getCameraCloud(int i)
+{
+	if (i >= 0 && i < Configuration.camera_data.size())
+		return Configuration.camera_data[i].cloud;
+	else
+		return NULL;
+}
+
+// return the serialnumber of the specified camera
+string multiFrame::getCameraSerial(int i)
+{
+	if (i >= 0 && i < Configuration.camera_data.size())
+		return Configuration.camera_data[i].serial;
+	else
+		return string("0");
+}
+double multiFrame::getSpatialResolution() {
+	return spatial_resolution;
+}
+
+int multiFrame::getRingbufferSize() {
+	return ringbuffer_size;
+}
+
+bool multiFrame::getGreenScreen() {
+	return green_screen;
+}
+
+bool multiFrame::getTiling() {
+	return tiling;
+}
+
+double multiFrame::getTilingResolution() {
+	return tiling_resolution;
+}
+
+// return the transformation matrix of the specified camera
+boost::shared_ptr<Eigen::Affine3d> multiFrame::getCameraTransform(int i)
+{
+	if (i >= 0 && i < Configuration.camera_data.size())
+		return Configuration.camera_data[i].trafo;
+	else
+		return NULL;
+}
+
+// Configure and initialize caputuring of one camera
+void multiFrame::camera_start(cameradata cd)
+{
+	cout << "starting camera ser no: " << cd.serial << '\n';
 
 	rs2::config cfg;
-	cfg.enable_device(camera_data.serial);
+	cfg.enable_device(cd.serial);
 	cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, color_fps);
 	cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, depth_fps);
 
-	camera_data.pipe.start(cfg);		// Start streaming with the configuration just set
+	cd.pipe.start(cfg);		// Start streaming with the configuration just set
 }
 
 // get new frames from the camera and update the pointcloud of the camera's data 
-void multiFrame::camera_action(cameradata camera_data)
+void multiFrame::camera_action(cameradata cd)
 {
-	if (!do_capture)
-		return;
-
 	rs2::pointcloud pc;
 	rs2::points points;
 
 #ifdef POLLING
 	// Poll to find if there is a next set of frames from the camera
 	rs2::frameset frames;
-	if (!camera_data.pipe.poll_for_frames(&frames))
+	if (!cd.pipe.poll_for_frames(&frames))
 		return;
 #else
 	// Wait to find if there is a next set of frames from the camera
-	auto frames = camera_data.pipe.wait_for_frames();
+	auto frames = cd.pipe.wait_for_frames();
 #endif
 
 	auto depth = frames.get_depth_frame();
 	auto color = frames.get_color_frame();
 	float minz = 100.0f, maxz, minx;
 
-	camera_data.cloud->clear();
+	cd.cloud->clear();
 
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
@@ -111,8 +252,8 @@ void multiFrame::camera_action(cameradata camera_data)
 			pt.r = colors[pi];
 			pt.g = colors[pi + 1];
 			pt.b = colors[pi + 2];
-			if (!green_screen || noChromaRemoval(&pt)) // chromakey removal
-				camera_data.cloud->push_back(pt);
+			if (!Configuration.green_screen || noChromaRemoval(&pt)) // chromakey removal
+				cd.cloud->push_back(pt);
 		}
 	}
 }
@@ -121,21 +262,21 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 {
 	PointCloudT::Ptr aligned_cld(new PointCloudT);
 	cloud_ptr->clear();
-	for (cameradata ccfg : CameraData) {
-		PointCloudT *cam_cld = ccfg.cloud.get();
+	for (cameradata cd : Configuration.camera_data) {
+		PointCloudT *cam_cld = cd.cloud.get();
 		if (cam_cld->size() > 0) {
-			transformPointCloud(*cam_cld, *aligned_cld, *ccfg.trafo);
+			transformPointCloud(*cam_cld, *aligned_cld, *cd.trafo);
 			*cloud_ptr.get() += *aligned_cld;
 		}
 	}
 
- 	if (spatial_resolution > 0) {
+	if (Configuration.spatial_resolution > 0) {
 #ifdef DEBUG
 		cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 		VoxelGrid<PointT> grd;
 		grd.setInputCloud(cloud_ptr);
-		grd.setLeafSize(spatial_resolution, spatial_resolution, spatial_resolution);
+		grd.setLeafSize(Configuration.spatial_resolution, Configuration.spatial_resolution, Configuration.spatial_resolution);
 		grd.setSaveLeafLayout(true);
 		grd.filter(*cloud_ptr);
 #ifdef DEBUG
@@ -144,50 +285,33 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 	}
 }
 
-// API function that triggers the capture and returns the merged pointcloud and timestamp
-void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
+// generate a mathematical pointcloud
+PointCloudT::Ptr multiFrame::generate_pcl()
 {
-	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-	if (CameraData.size() > 0) {
-		for (cameradata ccfg : CameraData)
-			camera_action(ccfg);
-		merge_views(RingBuffer[ring_index]);
-		if (RingBuffer[ring_index].get()->size() > 0) {
-#ifdef DEBUG
-			cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
-#endif
-			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
-		}
-		else {
-#ifdef DEBUG
-			cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
-#endif
-			// HACK to make sure the encoder does not get an empty pointcloud 
+	PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
+	uint8_t r(255), g(15), b(15);
+	for (float z(-1.0f); z <= 1.0f; z += 0.005f) {
+		for (float angle(0.0); angle <= 360.0; angle += 1.0f) {
 			PointT point;
-			point.x = 1.0;
-			point.y = 1.0;
-			point.z = 1.0;
-			point.rgb = 0.0;
-			RingBuffer[ring_index]->points.push_back(point);
-			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+			point.x = 0.5f*cosf(deg2rad(angle))*(1.0f - z * z);
+			point.y = sinf(deg2rad(angle))*(1.0f - z * z);
+			point.z = z;
+			uint32_t rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
+			point.rgb = *reinterpret_cast<float*>(&rgb);
+			point_cloud_ptr->points.push_back(point);
 		}
+		if (z < 0.0) { r -= 1; g += 1; }
+		else { g -= 1; b += 1; }
 	}
-	else {	// return a spinning generated mathematical pointcloud
-		angle += 0.031415;
-		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
-		*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
-	}
-	ring_index = ring_index < ringbuffer_size - 1 ? ++ring_index : 0;
+	point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+	point_cloud_ptr->height = 1;
+	return point_cloud_ptr;
 }
 
 
 ///////////////////////////
 // class captureIt stuff //
 ///////////////////////////
-
 
 void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	static multiFrame mFrame;

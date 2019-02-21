@@ -4,8 +4,9 @@
 //  Created by Fons Kuijk on 23-06-18.
 //
 
-#include "window_util.hpp"
+#include "cwipc_realsense/window_util.hpp"
 #include "cwipc_realsense/multiFrame.hpp"
+#include "cwipc_realsense/utils.h"
 
 #include <string>
 #include <sstream>
@@ -13,18 +14,18 @@
 
 #define CENTERSTEPS 256
 
-struct cam_data {
-	string serial;
-	boost::shared_ptr<Eigen::Affine3d> trafo;
-	boost::shared_ptr<PointCloudT> cloud;
-};
-
 bool do_align = false;
 bool rotation = true;
 int aligncamera = 0;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;		// Needed to be able to rotate around the cloud's centre of mass
-vector<cam_data> CamData;		// Storage of per camera data for reloaded camera data
+vector<cameradata> CamData;		// Storage of per camera data for reloaded camera data
+double spatial_resolution = 0.0;						// Resolution of voxelized pointclouds
+int ring_index = 0;									// counter for ring buffer
+unsigned int ringbuffer_size = 1;					// Size of the ringbuffer
+bool green_screen = true;							// If true include greenscreen removal
+bool tiling = false;									// If true produce tiled stream
+double tiling_resolution = 0.01;						// Resolution of tiling process
 
 string ext(".ply");
 
@@ -43,53 +44,6 @@ void printhelp() {
 	cout << "\t\"l\" to load a configuration and snapshots of each camera from files to (re)align\n";
 	cout << "\t\"h\" to print this help\n";
 	cout << "\t\"q\" to quit\n";
-}
-
-// store the current camera transformation setting into a xml document
-void config2file(multiFrame& multiframe)
-{
-	TiXmlDocument doc;
-	doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
-
-	TiXmlElement* root = new TiXmlElement("file");
-	doc.LinkEndChild(root);
-
-	TiXmlElement* file = new TiXmlElement("CameraConfig");
-	root->LinkEndChild(file);
-	file->SetDoubleAttribute("resolution", multiframe.getSpatialResolution());
-	file->SetAttribute("ringbuffersize", multiframe.getRingbufferSize());
-	file->SetAttribute("greenscreenremoval", multiframe.getGreenScreen());
-	file->SetAttribute("tiling", multiframe.getTiling());
-	file->SetDoubleAttribute("tilingresolution", multiframe.getTilingResolution());
-
-	for (cam_data ccfg : CamData) {
-		TiXmlElement* cam = new TiXmlElement("camera");
-		cam->SetAttribute("serial", ccfg.serial.c_str());
-		file->LinkEndChild(cam);
-
-		TiXmlElement* trafo = new TiXmlElement("trafo");
-		cam->LinkEndChild(trafo);
-
-		TiXmlElement* val = new TiXmlElement("values");
-		val->SetDoubleAttribute("v00", (*ccfg.trafo)(0, 0));
-		val->SetDoubleAttribute("v01", (*ccfg.trafo)(0, 1));
-		val->SetDoubleAttribute("v02", (*ccfg.trafo)(0, 2));
-		val->SetDoubleAttribute("v03", (*ccfg.trafo)(0, 3));
-		val->SetDoubleAttribute("v10", (*ccfg.trafo)(1, 0));
-		val->SetDoubleAttribute("v11", (*ccfg.trafo)(1, 1));
-		val->SetDoubleAttribute("v12", (*ccfg.trafo)(1, 2));
-		val->SetDoubleAttribute("v13", (*ccfg.trafo)(1, 3));
-		val->SetDoubleAttribute("v20", (*ccfg.trafo)(2, 0));
-		val->SetDoubleAttribute("v21", (*ccfg.trafo)(2, 1));
-		val->SetDoubleAttribute("v22", (*ccfg.trafo)(2, 2));
-		val->SetDoubleAttribute("v23", (*ccfg.trafo)(2, 3));
-		val->SetDoubleAttribute("v30", (*ccfg.trafo)(3, 0));
-		val->SetDoubleAttribute("v31", (*ccfg.trafo)(3, 1));
-		val->SetDoubleAttribute("v32", (*ccfg.trafo)(3, 2));
-		val->SetDoubleAttribute("v33", (*ccfg.trafo)(3, 3));
-		trafo->LinkEndChild(val);
-	}
-	doc.SaveFile("cameraconfig.xml");
 }
 
 void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
@@ -115,7 +69,7 @@ void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
 	myfile.close();
 }
 
-bool load_ply_of_camera(cam_data camera)
+bool load_ply_of_camera(cameradata camera)
 {
 	// Load the cloud and save it into the global list of models
 	if (pcl::io::loadPLYFile<PointT>(camera.serial + ext, *camera.cloud) == -1)
@@ -127,60 +81,9 @@ bool load_ply_of_camera(cam_data camera)
 	return true;
 }
 
-bool load_config()
-{
-	TiXmlDocument doc("cameraconfig.xml");
-	bool loadOkay = doc.LoadFile();
-	if (!loadOkay)
-	{
-		std::cout << "WARNING: Failed to load cameraconfig.xml\n";
-		if (CamData.size() > 1)
-			std::cout << "\tCaptured pointclouds will be merged based on unregistered camera clouds\n";
-		return false;
-	}
-	CamData.clear();
-
-	TiXmlHandle docHandle(&doc);
-	TiXmlElement* configElement = docHandle.FirstChild("file").FirstChild("CameraConfig").ToElement();
-	TiXmlElement* cameraElement = configElement->FirstChildElement("camera");
-	while (cameraElement)
-	{
-		cam_data* cc = new cam_data();
-		boost::shared_ptr<PointCloudT> empty_pntcld(new PointCloudT());
-		boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
-		cc->serial = cameraElement->Attribute("serial");
-		cc->cloud = empty_pntcld;
-		cc->trafo = trafo;
-
-		TiXmlElement *trafoElement = cameraElement->FirstChildElement("trafo");
-		if (trafoElement) {
-			TiXmlElement *val = trafoElement->FirstChildElement("values");
-			val->QueryDoubleAttribute("v00", &(*cc->trafo)(0, 0));
-			val->QueryDoubleAttribute("v01", &(*cc->trafo)(0, 1));
-			val->QueryDoubleAttribute("v02", &(*cc->trafo)(0, 2));
-			val->QueryDoubleAttribute("v03", &(*cc->trafo)(0, 3));
-			val->QueryDoubleAttribute("v10", &(*cc->trafo)(1, 0));
-			val->QueryDoubleAttribute("v11", &(*cc->trafo)(1, 1));
-			val->QueryDoubleAttribute("v12", &(*cc->trafo)(1, 2));
-			val->QueryDoubleAttribute("v13", &(*cc->trafo)(1, 3));
-			val->QueryDoubleAttribute("v20", &(*cc->trafo)(2, 0));
-			val->QueryDoubleAttribute("v21", &(*cc->trafo)(2, 1));
-			val->QueryDoubleAttribute("v22", &(*cc->trafo)(2, 2));
-			val->QueryDoubleAttribute("v23", &(*cc->trafo)(2, 3));
-			val->QueryDoubleAttribute("v30", &(*cc->trafo)(3, 0));
-			val->QueryDoubleAttribute("v31", &(*cc->trafo)(3, 1));
-			val->QueryDoubleAttribute("v32", &(*cc->trafo)(3, 2));
-			val->QueryDoubleAttribute("v33", &(*cc->trafo)(3, 3));
-		}
-		CamData.push_back(*cc);
-		cameraElement = cameraElement->NextSiblingElement("camera");
-	}
-	return true;
-}
-
 // Ignore camera's that may be active, load a configuration and captured frames from file
 bool load_data() {
-	if (!load_config())
+	if (!file2config("cameraconfig.xml", CamData, &spatial_resolution, &ringbuffer_size, &green_screen, &tiling, &tiling_resolution))
 		return false;
 	for (auto camera : CamData)
 		if (!load_ply_of_camera(camera)) {
@@ -312,7 +215,7 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 				if (multiframe.getNumberOfCameras() > 0) {
 					CamData.clear();
 					for (int i = 0; i < multiframe.getNumberOfCameras(); i++) {
-						cam_data *cam = new cam_data();
+						cameradata *cam = new cameradata();
 						cam->serial = multiframe.getCameraSerial(i);
 						cam->trafo = multiframe.getCameraTransform(i);
 						cam->cloud = multiframe.getCameraCloud(i);
@@ -347,7 +250,7 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 			rotation = true;
 		}
 		else if (key == 83) {	// key = "s": Save config and snapshots to file
-			config2file(multiframe);
+			config2file("cameraconfig.xml", CamData, spatial_resolution, ringbuffer_size, green_screen, tiling, tiling_resolution);
 			for (int i = 0; i < CamData.size(); i++)
 				cloud2file(CamData[i].cloud, CamData[i].serial + ".ply");
 		}
@@ -398,7 +301,9 @@ int main(int argc, char * argv[]) try
 			return EXIT_FAILURE;
 		}
 	}
-	
+	else // read the same configuration file as read by multiFrame.cpp
+		file2config("cameraconfig.xml", CamData, &spatial_resolution, &ringbuffer_size, &green_screen, &tiling, &tiling_resolution);
+
 	while (app) {
 		if (!do_align) {
 			boost::shared_ptr<PointCloudT> captured_pc;
@@ -420,7 +325,6 @@ int main(int argc, char * argv[]) try
 		}
 		// NB: draw pointcloud ignores the just obtained pointcloud, as it may want to draw pointclouds of the camera's individually rather than the merged one.
 		draw_pointcloud(&app, multiframe);
-
 	}
 	return EXIT_SUCCESS;
 }

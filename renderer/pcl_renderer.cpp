@@ -4,7 +4,7 @@
 //  Created by Fons Kuijk on 23-06-18.
 //
 
-#include "window_util.hpp"
+#include "cwipc_realsense/window_util.hpp"
 #include "cwipc_realsense/defs.h"
 #include <librealsense2/rs.hpp>
 
