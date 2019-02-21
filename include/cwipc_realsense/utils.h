@@ -12,15 +12,15 @@
 #include "tinyxml.h"
 
 // read and restore the camera transformation setting as stored in the configuration document
-bool file2config(char* filename, vector<cameradata> cameras, double* spatial_resolution, unsigned int* ringbuffer_size, bool* green_screen, bool* tiling, double* tiling_resolution)
+bool file2config(char* filename, configdata* config)
 {
 	TiXmlDocument doc(filename);
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
-		std::cout << "WARNING: Failed to load cameraconfig.xml\n";
-		if (cameras.size() > 1)
-			std::cout << "\tCaptured pointclouds will be merged based on unregistered cameras\n";
+		std::cout << "\nWARNING: Failed to load cameraconfig.xml\n";
+		if (config->camera_data.size() > 1)
+			std::cout << "\t Captured pointclouds will be merged based on unregistered cameras\n";
 		return false;
 	}
 
@@ -28,14 +28,15 @@ bool file2config(char* filename, vector<cameradata> cameras, double* spatial_res
 	TiXmlElement* configElement = docHandle.FirstChild("file").FirstChild("CameraConfig").ToElement();
 
 	// first get the global information
-	configElement->QueryDoubleAttribute("resolution", spatial_resolution);
-	configElement->QueryUnsignedAttribute("ringbuffersize", ringbuffer_size);
-	*ringbuffer_size = *ringbuffer_size < 1 ? 1 : *ringbuffer_size;
-	configElement->QueryBoolAttribute("greenscreenremoval", green_screen);
-	configElement->QueryBoolAttribute("tiling", tiling);
-	configElement->QueryDoubleAttribute("tilingresolution", tiling_resolution);
+	configElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
+	configElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
+	configElement->QueryBoolAttribute("tiling", &(config->tiling));
+	configElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
+	configElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
+	configElement->QueryUnsignedAttribute("ringbuffersize", &(config->ringbuffer_size));
+	config->ringbuffer_size = config->ringbuffer_size < 1 ? 1 : config->ringbuffer_size;
 
-	bool allnewcameras = cameras.size() == 0; // calling from pcl_align means we have to set up a new administration
+	bool allnewcameras = config->camera_data.size() == 0; // calling from pcl_align means we have to set up a new administration
 	int registeredcameras = 0;
 
 	// now get the per camera info
@@ -46,14 +47,14 @@ bool file2config(char* filename, vector<cameradata> cameras, double* spatial_res
 		cameradata* cd;
 
 		int i = 0;
-		while (i < cameras.size()) {
-			if (cameras[i].serial == serial) {
-				cd = &cameras[i];
+		while (i < config->camera_data.size()) {
+			if (config->camera_data[i].serial == serial) {
+				cd = &config->camera_data[i];
 				break;
 			}
 			i++;
 		}
-		if (i == cameras.size()) {
+		if (i == config->camera_data.size()) {
 			// this camera was not in the admin yet
 			if (!allnewcameras)
 				loadOkay = false;
@@ -64,8 +65,8 @@ bool file2config(char* filename, vector<cameradata> cameras, double* spatial_res
 			cd->serial = cameraElement->Attribute("serial");
 			cd->cloud = empty_pntcld;
 			cd->trafo = trafo;
-			cameras.push_back(*cd);
-			cd = &cameras.back();
+			config->camera_data.push_back(*cd);
+			cd = &config->camera_data.back();
 		}
 
 		TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
@@ -94,17 +95,17 @@ bool file2config(char* filename, vector<cameradata> cameras, double* spatial_res
 		registeredcameras++;
 		cameraElement = cameraElement->NextSiblingElement("camera");
 	}
-	if (cameras.size() != registeredcameras)
+	if (config->camera_data.size() != registeredcameras)
 		loadOkay = false;
 
 	if (!loadOkay)
-		cout << "\nWARNING: the configuration file did not correspond to the current setup: re-alignment is needed!!\n";
+		cout << "\nWARNING: the configuration file did not correspond to the current setup: re-alignment may be needed!!\n";
 
 	return loadOkay;
 }
 
 // store the current camera transformation setting into a xml document
-void config2file(char* filename, vector<cameradata> cameras, double spatial_resolution, unsigned int ringbuffer_size, bool green_screen, bool tiling, double tiling_resolution)
+void config2file(char* filename, configdata* config)
 {
 	TiXmlDocument doc;
 	doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
@@ -112,15 +113,16 @@ void config2file(char* filename, vector<cameradata> cameras, double spatial_reso
 	TiXmlElement* root = new TiXmlElement("file");
 	doc.LinkEndChild(root);
 
-	TiXmlElement* file = new TiXmlElement(filename);
+	TiXmlElement* file = new TiXmlElement("CameraConfig");
 	root->LinkEndChild(file);
-	file->SetDoubleAttribute("resolution", spatial_resolution);
-	file->SetAttribute("ringbuffersize", ringbuffer_size);
-	file->SetAttribute("greenscreenremoval", green_screen);
-	file->SetAttribute("tiling", tiling);
-	file->SetDoubleAttribute("tilingresolution", tiling_resolution);
+	file->SetAttribute("backgroundremoval", config->background_removal);
+	file->SetAttribute("greenscreenremoval", config->greenscreen_removal);
+	file->SetAttribute("tiling", config->tiling);
+	file->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
+	file->SetDoubleAttribute("tileresolution", config->tile_resolution);
+	file->SetAttribute("ringbuffersize", config->ringbuffer_size);
 
-	for (cameradata cd : cameras) {
+	for (cameradata cd : config->camera_data) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
 		file->LinkEndChild(cam);

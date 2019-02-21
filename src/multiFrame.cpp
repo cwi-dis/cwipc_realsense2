@@ -49,12 +49,6 @@ multiFrame::multiFrame() {
 
 	const std::string platform_camera_name = "Platform Camera";
 
-	// prepare ringbuffer
-	for (int i = 0; i < Configuration.ringbuffer_size; i++) {
-		boost::shared_ptr<PointCloudT> buf(new PointCloudT());
-		RingBuffer.push_back(buf);
-	}
-
 	// prepare storage for camera data for each connected camera
 	for (auto dev : devs) {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
@@ -72,12 +66,33 @@ multiFrame::multiFrame() {
 	if (Configuration.camera_data.size() == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
 		GeneratedPC = generate_pcl();
-		cout << "No cameras found, a spinning generated pointcloud of " << GeneratedPC->size() << " data points will be offered instead\n";
+		cout << "No cameras found, default production is a spinning generated pointcloud of " << GeneratedPC->size() << " data points\n";
 	}
 	else {
-		// Read the configuration (N.B. be aware pcl_align should be reading the same file!)
-		if (!file2config("cameraconfig.xml", Configuration.camera_data, &Configuration.spatial_resolution, &Configuration.ringbuffer_size, &Configuration.green_screen, &Configuration.tiling, &Configuration.tiling_resolution))
-			; // configuration is not OK, special action needed??
+		// Read the configuration
+		if (!file2config("cameraconfig.xml", &Configuration)) {
+			// check and remove cameras that are not connected
+			vector<string> serials;
+			for (auto dev : devs) {
+				if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
+					serials.push_back(string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
+				}
+			}
+			vector<cameradata> realcams;
+			for (cameradata cd : Configuration.camera_data) {
+				if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
+					realcams.push_back(cd);
+				else
+					cout << "\tcamera " << cd.serial << " is not connected\n";
+			}
+			Configuration.camera_data = realcams;
+		}
+	}
+
+	// prepare ringbuffer
+	for (int i = 0; i < Configuration.ringbuffer_size; i++) {
+		boost::shared_ptr<PointCloudT> buf(new PointCloudT());
+		RingBuffer.push_back(buf);
 	}
 }
 
@@ -96,16 +111,16 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 	if (Configuration.camera_data.size() > 0) {
 		for (cameradata cd : Configuration.camera_data)
 			camera_action(cd);
-		if (RingBuffer[ring_index].get()->size() > 0) {
 		merge_views(RingBuffer[ring_index]);
+
 		if (RingBuffer[ring_index].get()->size() > 0) {
-#ifdef DEBUG
+#ifdef CWIPC_DEBUG
 			cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
 			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
 		}
 		else {
-#ifdef DEBUG
+#ifdef CWIPC_DEBUG
 			cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
 #endif
 			// HACK to make sure the encoder does not get an empty pointcloud 
@@ -157,25 +172,6 @@ string multiFrame::getCameraSerial(int i)
 	else
 		return string("0");
 }
-double multiFrame::getSpatialResolution() {
-	return spatial_resolution;
-}
-
-int multiFrame::getRingbufferSize() {
-	return ringbuffer_size;
-}
-
-bool multiFrame::getGreenScreen() {
-	return green_screen;
-}
-
-bool multiFrame::getTiling() {
-	return tiling;
-}
-
-double multiFrame::getTilingResolution() {
-	return tiling_resolution;
-}
 
 // return the transformation matrix of the specified camera
 boost::shared_ptr<Eigen::Affine3d> multiFrame::getCameraTransform(int i)
@@ -217,7 +213,6 @@ void multiFrame::camera_action(cameradata cd)
 
 	auto depth = frames.get_depth_frame();
 	auto color = frames.get_color_frame();
-	float minz = 100.0f, maxz, minx;
 
 	cd.cloud->clear();
 
@@ -230,29 +225,48 @@ void multiFrame::camera_action(cameradata cd)
 
 	unsigned char *colors = (unsigned char*)color.get_data();
 
-	// Set the background removal window
-	for (int i = 0; i < points.size(); i++) {
-		if (vertices[i].z != 0 && minz > vertices[i].z) {
-			minz = vertices[i].z;
-			minx = vertices[i].x;
+	if (Configuration.background_removal) {
+		float minz = 100.0f, maxz, minx;
+
+		// Set the background removal window
+		for (int i = 0; i < points.size(); i++) {
+			if (vertices[i].z != 0 && minz > vertices[i].z) {
+				minz = vertices[i].z;
+				minx = vertices[i].x;
+			}
+		}
+		maxz = 0.8f + minz;
+
+		// Make PointCloud
+		for (int i = 0; i < points.size(); i++) {
+			float x = minx - vertices[i].x; x *= x;
+			float z = vertices[i].z;
+			if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
+				PointT pt;
+				pt.x = vertices[i].x;
+				pt.y = -vertices[i].y;
+				pt.z = -z;
+				int pi = i * 3;
+				pt.r = colors[pi];
+				pt.g = colors[pi + 1];
+				pt.b = colors[pi + 2];
+				if (!Configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
+					cd.cloud->push_back(pt);
+			}
 		}
 	}
-	maxz = 0.8f + minz;
-
-	// Make PointCloud
-	for (int i = 0; i < points.size(); i++) {
-		float x = minx - vertices[i].x; x *= x;
-		float z = vertices[i].z;
-		if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
+	else {
+		// Make PointCloud
+		for (int i = 0; i < points.size(); i++) {
 			PointT pt;
 			pt.x = vertices[i].x;
 			pt.y = -vertices[i].y;
-			pt.z = -z;
+			pt.z = -vertices[i].z;
 			int pi = i * 3;
 			pt.r = colors[pi];
 			pt.g = colors[pi + 1];
 			pt.b = colors[pi + 2];
-			if (!Configuration.green_screen || noChromaRemoval(&pt)) // chromakey removal
+			if (!Configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
 				cd.cloud->push_back(pt);
 		}
 	}
@@ -270,16 +284,16 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 		}
 	}
 
-	if (Configuration.spatial_resolution > 0) {
-#ifdef DEBUG
+	if (Configuration.cloud_resolution > 0) {
+#ifdef CWIPC_DEBUG
 		cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 		VoxelGrid<PointT> grd;
 		grd.setInputCloud(cloud_ptr);
-		grd.setLeafSize(Configuration.spatial_resolution, Configuration.spatial_resolution, Configuration.spatial_resolution);
+		grd.setLeafSize(Configuration.cloud_resolution, Configuration.cloud_resolution, Configuration.cloud_resolution);
 		grd.setSaveLeafLayout(true);
 		grd.filter(*cloud_ptr);
-#ifdef DEBUG
+#ifdef CWIPC_DEBUG
 		cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
@@ -316,13 +330,13 @@ PointCloudT::Ptr multiFrame::generate_pcl()
 void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
 	static multiFrame mFrame;
 
-#ifdef DEBUG
+#ifdef CWIPC_DEBUG
 	cout << "captureIt is asked for a pointcloud\n";
 #endif
 
 	mFrame.get_pointcloud(timestamp, pointcloud);
 
-#ifdef DEBUG
+#ifdef CWIPC_DEBUG
 	boost::shared_ptr<PointCloudT> captured_pc;
 	captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(*pointcloud);
 	cout << "captureIt handed over a pointcloud of " << captured_pc.get()->size() << " points\n";

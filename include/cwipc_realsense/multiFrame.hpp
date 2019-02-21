@@ -24,8 +24,8 @@
 
 #include "defs.h"
 
-#undef DEBUG
-//#define DEBUG
+#undef CWIPC_DEBUG
+//#define CWIPC_DEBUG
 #undef POLLING
 //#define POLLING
 
@@ -47,12 +47,13 @@ struct cameradata {
 };
 
 struct configdata {
-	double spatial_resolution = 0.0;						// Resolution of voxelized pointclouds
-	unsigned int ringbuffer_size = 1;					// Size of the ringbuffer
-	bool green_screen = true;							// If true include greenscreen removal
-	bool tiling = false;									// If true produce tiled stream
-	double tiling_resolution = 0.01;						// Resolution of tiling process
-	vector<cameradata> camera_data;						// Storage of per camera data
+	bool background_removal = true;		// If true reduces pointcloud to forground object 
+	bool greenscreen_removal = true;		// If true include greenscreen removal
+	bool tiling = false;					// If true produce tiled stream
+	double cloud_resolution = 0.0;		// Resolution of voxelized pointclouds
+	double tile_resolution = 0.01;		// Resolution of tiling process
+	unsigned int ringbuffer_size = 1;	// Size of the ringbuffer
+	vector<cameradata> camera_data;		// Storage of per camera data
 };
 
 class CWIPC_DLL_ENTRY multiFrame {
@@ -76,22 +77,16 @@ public:
 	// return the serialnumber of the specified camera
 	string getCameraSerial(int i);
 
-	double getSpatialResolution();
-	int getRingbufferSize();
-	bool getGreenScreen();
-	bool getTiling();
-	double getTilingResolution();
-
 	// return the transformation matrix of the specified camera
 	boost::shared_ptr<Eigen::Affine3d> getCameraTransform(int i);
+
+private:
 
 	// Configure and initialize caputuring of one camera
 	void camera_start(cameradata camera_data);
 
 	// get new frames from the camera and update the pointcloud of the camera's data 
 	void camera_action(cameradata camera_data);
-
-private:
 
 	void merge_views(boost::shared_ptr<PointCloudT> cloud_ptr);
 

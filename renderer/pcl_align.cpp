@@ -19,14 +19,7 @@ bool rotation = true;
 int aligncamera = 0;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;		// Needed to be able to rotate around the cloud's centre of mass
-vector<cameradata> CamData;		// Storage of per camera data for reloaded camera data
-double spatial_resolution = 0.0;						// Resolution of voxelized pointclouds
-int ring_index = 0;									// counter for ring buffer
-unsigned int ringbuffer_size = 1;					// Size of the ringbuffer
-bool green_screen = true;							// If true include greenscreen removal
-bool tiling = false;									// If true produce tiled stream
-double tiling_resolution = 0.01;						// Resolution of tiling process
-
+configdata ConfigCopy;			// Copy of the configuration data of multiFrame
 string ext(".ply");
 
 void printhelp() {
@@ -83,9 +76,9 @@ bool load_ply_of_camera(cameradata camera)
 
 // Ignore camera's that may be active, load a configuration and captured frames from file
 bool load_data() {
-	if (!file2config("cameraconfig.xml", CamData, &spatial_resolution, &ringbuffer_size, &green_screen, &tiling, &tiling_resolution))
+	if (!file2config("cameraconfig.xml", &ConfigCopy))
 		return false;
-	for (auto camera : CamData)
+	for (auto camera : ConfigCopy.camera_data)
 		if (!load_ply_of_camera(camera)) {
 			cerr << "Could not load a .ply file for camera " << camera.serial << " as specified in the configuration file\n";
 			return false;
@@ -100,9 +93,9 @@ void draw_pointcloud(window_util* app, multiFrame& multiframe)
 
 	// draw the pointcloud(s)
 	if (do_align) {
-		for (int i = 0; i < CamData.size(); i++) {
+		for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 			PointCloudT::Ptr pcptr(new PointCloudT);
-			transformPointCloud(*(CamData[i].cloud.get()), *pcptr, *CamData[i].trafo);
+			transformPointCloud(*(ConfigCopy.camera_data[i].cloud.get()), *pcptr, *ConfigCopy.camera_data[i].trafo);
 			for (auto pnt : pcptr->points) {
 				float col[3];
 				if (i == aligncamera) {	// highlight the cloud of the selected camera
@@ -131,9 +124,9 @@ void draw_pointcloud(window_util* app, multiFrame& multiframe)
 			}
 		}
 		else {
-			for (int i = 0; i < CamData.size(); i++) {
+			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 				PointCloudT::Ptr pcptr(new PointCloudT);
-				transformPointCloud(*(CamData[i].cloud.get()), *pcptr, *CamData[i].trafo);
+				transformPointCloud(*(ConfigCopy.camera_data[i].cloud.get()), *pcptr, *ConfigCopy.camera_data[i].trafo);
 				for (auto pnt : pcptr->points) {
 					float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
 					glColor3fv(col);
@@ -156,7 +149,7 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 
 	app.on_mouse_scroll = [&](double xoffset, double yoffset) {
 		if (do_align) {
-			Eigen::Affine3d *transform = CamData[aligncamera].trafo.get();
+			Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
 			if (rotation) {
 				(*transform).rotate(Eigen::AngleAxisd(yoffset / 100.0, Eigen::Vector3d::UnitZ()));
 			}
@@ -172,7 +165,7 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 	app.on_mouse_move = [&](double x, double y) {
 		if (app.app_state()->ml) {
 			if (do_align) {
-				Eigen::Affine3d *transform = CamData[aligncamera].trafo.get();
+				Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
 				double dx = (x - app.app_state()->last_x) / (0.25 * app.width());
 				double dy = -(y - app.app_state()->last_y) / (0.25 * app.width());
 				if (rotation) {
@@ -199,7 +192,7 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 	app.on_key_release = [&](int key) {
 		if (key == 256) { // Escape is interpreted as a reset of the transformation
 			if (do_align) {
-				Eigen::Affine3d *transform = CamData[aligncamera].trafo.get();
+				Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
 				(*transform).setIdentity();
 			}
 			else {
@@ -213,34 +206,34 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 			}
 			else {
 				if (multiframe.getNumberOfCameras() > 0) {
-					CamData.clear();
+					ConfigCopy.camera_data.clear();
 					for (int i = 0; i < multiframe.getNumberOfCameras(); i++) {
 						cameradata *cam = new cameradata();
 						cam->serial = multiframe.getCameraSerial(i);
 						cam->trafo = multiframe.getCameraTransform(i);
 						cam->cloud = multiframe.getCameraCloud(i);
-						CamData.push_back(*cam);
+						ConfigCopy.camera_data.push_back(*cam);
 					}
 				}
 				do_align = true;
-				if (aligncamera > CamData.size())
+				if (aligncamera > ConfigCopy.camera_data.size())
 					aligncamera = 0;
-				pcl::compute3DCentroid(*CamData[aligncamera].cloud, cloudcenter);
+				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 			}
 		}
 		else if (key == 72) {	// key = "h": print help
 			printhelp();
 		}
 		else if (key == 76) {	// key = "l": load previous result
-			if (load_data() && CamData.size() > 0)
+			if (load_data() && ConfigCopy.camera_data.size() > 0)
 				do_align = true;
 			else {
 				cerr << "\nError: Data could not be loaded\n";
 				return;
 			}
-			if (aligncamera > CamData.size())
+			if (aligncamera > ConfigCopy.camera_data.size())
 				aligncamera = 0;
-			pcl::compute3DCentroid(*CamData[aligncamera].cloud, cloudcenter);
+			pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 		}
 		else if (key == 81) {	// key = "q": Quit program
 			multiframe.~multiFrame();
@@ -250,26 +243,26 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 			rotation = true;
 		}
 		else if (key == 83) {	// key = "s": Save config and snapshots to file
-			config2file("cameraconfig.xml", CamData, spatial_resolution, ringbuffer_size, green_screen, tiling, tiling_resolution);
-			for (int i = 0; i < CamData.size(); i++)
-				cloud2file(CamData[i].cloud, CamData[i].serial + ".ply");
+			config2file("cameraconfig.xml", &ConfigCopy);
+			for (int i = 0; i < ConfigCopy.camera_data.size(); i++)
+				cloud2file(ConfigCopy.camera_data[i].cloud, ConfigCopy.camera_data[i].serial + ".ply");
 		}
 		else if (key == 84) {	// key = "t": Translate
 			rotation = false;
 		}
-		else if (key >= 49 && key < CamData.size() + 49) {	// key = "1-9": select a camera
+		else if (key >= 49 && key < ConfigCopy.camera_data.size() + 49) {	// key = "1-9": select a camera
 			aligncamera = key - 49;
-			pcl::compute3DCentroid(*CamData[aligncamera].cloud, cloudcenter);
+			pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 		}
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
-			for (int i = 0; i < CamData.size(); i++) {
+			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 				PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
 				boost::shared_ptr<PointCloudT> aligned_cld(point_cloud_ptr);
 
-				transformPointCloud(*CamData[i].cloud.get(), *aligned_cld, *CamData[i].trafo);
+				transformPointCloud(*ConfigCopy.camera_data[i].cloud.get(), *aligned_cld, *ConfigCopy.camera_data[i].trafo);
 
-				cloud2file(aligned_cld, "pcl_aligned_" + CamData[i].serial + ".ply");
-				cloud2file(CamData[i].cloud, "pcl_original_" + CamData[i].serial + ".ply");
+				cloud2file(aligned_cld, "pcl_aligned_" + ConfigCopy.camera_data[i].serial + ".ply");
+				cloud2file(ConfigCopy.camera_data[i].cloud, "pcl_original_" + ConfigCopy.camera_data[i].serial + ".ply");
 			}
 		}
 	};
@@ -294,7 +287,7 @@ int main(int argc, char * argv[]) try
 	printhelp();
 
 	if (multiframe.getNumberOfCameras() < 1) {
-		if (load_data() && CamData.size() > 0)
+		if (load_data() && ConfigCopy.camera_data.size() > 0)
 			do_align = true;
 		else {
 			cerr << "\nSorry: No cameras connected and no data to load\n\n";
@@ -302,7 +295,7 @@ int main(int argc, char * argv[]) try
 		}
 	}
 	else // read the same configuration file as read by multiFrame.cpp
-		file2config("cameraconfig.xml", CamData, &spatial_resolution, &ringbuffer_size, &green_screen, &tiling, &tiling_resolution);
+		file2config("cameraconfig.xml", &ConfigCopy);
 
 	while (app) {
 		if (!do_align) {
