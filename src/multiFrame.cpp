@@ -150,38 +150,6 @@ boost::shared_ptr<PointCloudT> multiFrame::getPointCloud()
 	return RingBuffer[ring_index];
 }
 
-// return the number of connected and recognized cameras
-int multiFrame::getNumberOfCameras() {
-	return Configuration.camera_data.size();
-}
-
-// return the cloud captured by the specified camera
-boost::shared_ptr<PointCloudT> multiFrame::getCameraCloud(int i)
-{
-	if (i >= 0 && i < Configuration.camera_data.size())
-		return Configuration.camera_data[i].cloud;
-	else
-		return NULL;
-}
-
-// return the serialnumber of the specified camera
-string multiFrame::getCameraSerial(int i)
-{
-	if (i >= 0 && i < Configuration.camera_data.size())
-		return Configuration.camera_data[i].serial;
-	else
-		return string("0");
-}
-
-// return the transformation matrix of the specified camera
-boost::shared_ptr<Eigen::Affine3d> multiFrame::getCameraTransform(int i)
-{
-	if (i >= 0 && i < Configuration.camera_data.size())
-		return Configuration.camera_data[i].trafo;
-	else
-		return NULL;
-}
-
 // Configure and initialize caputuring of one camera
 void multiFrame::camera_start(cameradata cd)
 {

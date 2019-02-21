@@ -68,17 +68,7 @@ public:
 	// return the merged cloud 
 	boost::shared_ptr<PointCloudT> getPointCloud();
 
-	// return the number of connected and recognized cameras
-	int getNumberOfCameras();
-
-	// return the cloud captured by the specified camera
-	boost::shared_ptr<PointCloudT> getCameraCloud(int i);
-
-	// return the serialnumber of the specified camera
-	string getCameraSerial(int i);
-
-	// return the transformation matrix of the specified camera
-	boost::shared_ptr<Eigen::Affine3d> getCameraTransform(int i);
+	configdata Configuration;
 
 private:
 
@@ -97,7 +87,6 @@ private:
 	vector<boost::shared_ptr<PointCloudT>> RingBuffer;	// Buffer of merged pointclouds
 	boost::shared_ptr<PointCloudT> GeneratedPC;			// Mathematical pointcloud for use without camera
 	int ring_index = 0;									// counter for ring buffer
-	configdata Configuration;
 };
 
 

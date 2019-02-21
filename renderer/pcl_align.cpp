@@ -15,11 +15,12 @@
 #define CENTERSTEPS 256
 
 bool do_align = false;
+bool loaded_mode = false;
 bool rotation = true;
 int aligncamera = 0;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;		// Needed to be able to rotate around the cloud's centre of mass
-configdata ConfigCopy;			// Copy of the configuration data of multiFrame
+configdata ConfigCopy;			// Still copy of the configuration data of multiFrame
 string ext(".ply");
 
 void printhelp() {
@@ -27,16 +28,16 @@ void printhelp() {
 	cout << "To examine the pointcloud use the mouse: leftclick and move to rotate, use the mouse wheel to zoom.\n";
 	cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
 
-	cout << "\naction keys for alignment of camera clouds:\n";
-	cout << "\t\"a\" to toggle between \"life\" and \"alignment mode\"\n";
-	cout << "\t\"1-9\" to select the camera to align\n";
-	cout << "\t\"r\" to start cloud rotate mode\n";
-	cout << "\t\"t\" to start cloud translate mode\n";
-	cout << "\t\"esc\" to reset the cloud transformation of the active camera\n";
-	cout << "\t\"s\" to save the configuration and snapshots of each camera to files\n";
-	cout << "\t\"l\" to load a configuration and snapshots of each camera from files to (re)align\n";
-	cout << "\t\"h\" to print this help\n";
-	cout << "\t\"q\" to quit\n";
+	cout << "\nAction keys for alignment of camera clouds:\n";
+	cout << "\t\"a\": toggle between 'life' and 'alignment mode'\n";
+	cout << "\t\"1-9\": select the camera to align\n";
+	cout << "\t\"r\": start cloud rotate mode\n";
+	cout << "\t\"t\": start cloud translate mode\n";
+	cout << "\t\"esc\": reset the cloud transformation of the active camera\n";
+	cout << "\t\"s\": save the configuration and snapshots of each camera to files\n";
+	cout << "\t\"l\": toggle between 'life' and a 'loaded' configuration and snapshots to (re)align\n";
+	cout << "\t\"h\": print this help\n";
+	cout << "\t\"q\": quit program\n";
 }
 
 void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
@@ -60,6 +61,11 @@ void cloud2file(boost::shared_ptr<PointCloudT> pntcld, string filename)
 	}
 	myfile << oss.str();
 	myfile.close();
+}
+
+void makeFreezeCopy(configdata* conf)
+{
+	ConfigCopy = *conf;
 }
 
 bool load_ply_of_camera(cameradata camera)
@@ -93,6 +99,7 @@ void draw_pointcloud(window_util* app, multiFrame& multiframe)
 
 	// draw the pointcloud(s)
 	if (do_align) {
+		// draw the individual pointclouds of the still
 		for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 			PointCloudT::Ptr pcptr(new PointCloudT);
 			transformPointCloud(*(ConfigCopy.camera_data[i].cloud.get()), *pcptr, *ConfigCopy.camera_data[i].trafo);
@@ -115,7 +122,9 @@ void draw_pointcloud(window_util* app, multiFrame& multiframe)
 		}
 	}
 	else {
-		if (multiframe.getNumberOfCameras() > 0) {
+		// 'life' mode action
+		if (!loaded_mode && multiframe.Configuration.camera_data.size() > 0) {
+			// this is the real 'life' rendering
 			for (auto pnt : multiframe.getPointCloud()->points) {
 				float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
 				glColor3fv(col);
@@ -124,6 +133,7 @@ void draw_pointcloud(window_util* app, multiFrame& multiframe)
 			}
 		}
 		else {
+			// this is the stilled 'life' rendering (loaded mode)
 			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 				PointCloudT::Ptr pcptr(new PointCloudT);
 				transformPointCloud(*(ConfigCopy.camera_data[i].cloud.get()), *pcptr, *ConfigCopy.camera_data[i].trafo);
@@ -201,39 +211,47 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 			}
 		}
 		else if (key == 65) {	// key = "a": start/stop Alignment
-			if (do_align) {
+			if (do_align) {	// switch to 'life'
+				//if (!loaded_mode && multiframe.Configuration.camera_data.size() > 0)
+				//	multiframe.Configuration = ConfigCopy; // set possible new transforms
 				do_align = false;
 			}
-			else {
-				if (multiframe.getNumberOfCameras() > 0) {
-					ConfigCopy.camera_data.clear();
-					for (int i = 0; i < multiframe.getNumberOfCameras(); i++) {
-						cameradata *cam = new cameradata();
-						cam->serial = multiframe.getCameraSerial(i);
-						cam->trafo = multiframe.getCameraTransform(i);
-						cam->cloud = multiframe.getCameraCloud(i);
-						ConfigCopy.camera_data.push_back(*cam);
-					}
-				}
-				do_align = true;
+			else {			// switch to 'align'
+				if (!loaded_mode && multiframe.Configuration.camera_data.size() > 0)
+					makeFreezeCopy(&multiframe.Configuration); // make a still copy of multiFrame's configuration
 				if (aligncamera > ConfigCopy.camera_data.size())
 					aligncamera = 0;
 				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
+				do_align = true;
 			}
 		}
 		else if (key == 72) {	// key = "h": print help
 			printhelp();
 		}
 		else if (key == 76) {	// key = "l": load previous result
-			if (load_data() && ConfigCopy.camera_data.size() > 0)
-				do_align = true;
-			else {
-				cerr << "\nError: Data could not be loaded\n";
-				return;
+			if (loaded_mode) {
+				// leaving loaded mode
+				if (multiframe.Configuration.camera_data.size() > 0) {
+					makeFreezeCopy(&multiframe.Configuration); // make a still copy of multiFrame's configuration
+					do_align = false; // that is the to be expected mode
+				}
+				loaded_mode = false;
+				cout << "loaded mode switched off\n";
 			}
-			if (aligncamera > ConfigCopy.camera_data.size())
-				aligncamera = 0;
-			pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
+			else {
+				// starting loaded mode
+				if (load_data() && ConfigCopy.camera_data.size() > 0)
+					do_align = true; // that is the to be expected mode
+				else {
+					cerr << "\nError: Data could not be loaded\n";
+					return;
+				}
+				if (aligncamera > ConfigCopy.camera_data.size())
+					aligncamera = 0;
+				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
+				loaded_mode = true;
+				cout << "loaded mode switched on\n";
+			}
 		}
 		else if (key == 81) {	// key = "q": Quit program
 			multiframe.~multiFrame();
@@ -286,7 +304,7 @@ int main(int argc, char * argv[]) try
 
 	printhelp();
 
-	if (multiframe.getNumberOfCameras() < 1) {
+	if (multiframe.Configuration.camera_data.size() < 1) {
 		if (load_data() && ConfigCopy.camera_data.size() > 0)
 			do_align = true;
 		else {
@@ -294,11 +312,11 @@ int main(int argc, char * argv[]) try
 			return EXIT_FAILURE;
 		}
 	}
-	else // read the same configuration file as read by multiFrame.cpp
-		file2config("cameraconfig.xml", &ConfigCopy);
+	else
+		makeFreezeCopy(&multiframe.Configuration); // make a still copy of multiFrame's configuration
 
 	while (app) {
-		if (!do_align) {
+		if (!(do_align || loaded_mode)) {
 			boost::shared_ptr<PointCloudT> captured_pc;
 			void* pc = reinterpret_cast<void *> (&captured_pc);
 
