@@ -30,50 +30,27 @@ option(BUILD_SHARED_LIBS "Build shared library" ON)
 
 include(GNUInstallDirs)
 
-# First try locating things with pkg-config.
-
-find_package(PkgConfig)
+#
+# Find cwipc_util
+#
+find_package(cwipc_util REQUIRED)
+include_directories(${cwipc_util_INCLUDE_DIRS})
+link_directories(${cwipc_util_LIBRARY_DIRS})
 
 #
 # Find realsense (either with pkgconfig or with cmake)
 #
-
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(REALSENSE2 realsense2)
-    if(REALSENSE2_FOUND)
-        include_directories(${REALSENSE2_INCLUDE_DIRS})
-        link_directories(${REALSENSE2_LIBRARY_DIRS})
-        set(REALSENSE2_LIB  ${REALSENSE2_LIBRARIES})
-    endif()
-endif()
-if(NOT REALSENSE2_FOUND)
-    find_package(REALSENSE2 REQUIRED)
-	include_directories(${REALSENSE2_INC})
-	link_directories(${REALSENSE2_LIB})
-endif()
+find_package(REALSENSE2 REQUIRED)
+include_directories(${REALSENSE2_INCLUDE_DIRS})
+link_directories(${REALSENSE2_LIBRARY_DIRS})
 
 #
 # Find PCL. Either 1.7 or 1.8 using pkgconfig, or using cmake finder.
 #
-
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(PCL pcl_common-1.8 pcl_io-1.8 pcl_visualization-1.8 pcl_filters-1.8)
-    if(NOT PCL_FOUND)
-	    pkg_check_modules(PCL pcl_common-1.7 pcl_io-1.7 pcl_visualization-1.7 pcl_filters-1.7
-		)
-	endif()
-    if(PCL_FOUND)
-        include_directories(${PCL_INCLUDE_DIRS})
-        link_directories(${PCL_LIBRARY_DIRS})
-        add_definitions(${PCL_DEFINITIONS})
-    endif()
-endif()
-if(NOT PCL_FOUND)
-    find_package(PCL REQUIRED COMPONENTS common io visualization filters) 
-    include_directories(${PCL_INCLUDE_DIRS})
-    link_directories(${PCL_LIBRARY_DIRS})
-    add_definitions(${PCL_DEFINITIONS})
-endif()
+find_package(PCL REQUIRED COMPONENTS common io visualization filters) 
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 # we need the thirdparty tinyXML for the test programs.
 include(third-party/tinyXML/CMakeLists.txt)
@@ -100,6 +77,3 @@ endif()
 include_directories(include)
 
 add_subdirectory(src)
-
-
-include(CMakeFiles/install_config.cmake)

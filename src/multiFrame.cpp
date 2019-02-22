@@ -10,12 +10,12 @@
 // This is the dll source, so define external symbols as dllexport on windows.
 
 #if defined(WIN32) || defined(_WIN32)
-#define CWIPC_DLL_ENTRY __declspec(dllexport)
+#define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
 
-#include "cwipc_realsense/multiFrame.hpp"
-#include "cwipc_realsense/utils.h"
-#include "cwipc_realsense/api.h"
+#include "cwipc_realsense2/multiFrame.hpp"
+#include "cwipc_realsense2/api.h"
+#include "utils.h"
 
 //
 // Stop-gap by Jack. The normal production settings are not possible over USB2.
@@ -153,7 +153,8 @@ boost::shared_ptr<PointCloudT> multiFrame::getPointCloud()
 // Configure and initialize caputuring of one camera
 void multiFrame::camera_start(cameradata cd)
 {
-	cout << "starting camera ser no: " << cd.serial << '\n';
+	std::cout << "starting camera ser no: " << cd.serial << '\n';
+
 
 	rs2::config cfg;
 	cfg.enable_device(cd.serial);
@@ -227,6 +228,7 @@ void multiFrame::camera_action(cameradata cd)
 		// Make PointCloud
 		for (int i = 0; i < points.size(); i++) {
 			PointT pt;
+
 			pt.x = vertices[i].x;
 			pt.y = -vertices[i].y;
 			pt.z = -vertices[i].z;
@@ -240,12 +242,13 @@ void multiFrame::camera_action(cameradata cd)
 	}
 }
 
-void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
+void multiFrame::merge_views(cwipc_pcl_pointcloud cloud_ptr)
 {
-	PointCloudT::Ptr aligned_cld(new PointCloudT);
+	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 	cloud_ptr->clear();
 	for (cameradata cd : Configuration.camera_data) {
 		PointCloudT *cam_cld = cd.cloud.get();
+
 		if (cam_cld->size() > 0) {
 			transformPointCloud(*cam_cld, *aligned_cld, *cd.trafo);
 			*cloud_ptr.get() += *aligned_cld;
@@ -254,67 +257,57 @@ void multiFrame::merge_views(boost::shared_ptr<PointCloudT> cloud_ptr)
 
 	if (Configuration.cloud_resolution > 0) {
 #ifdef CWIPC_DEBUG
-		cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
+		std::cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
-		VoxelGrid<PointT> grd;
+        pcl::VoxelGrid<cwipc_pcl_point> grd;
 		grd.setInputCloud(cloud_ptr);
 		grd.setLeafSize(Configuration.cloud_resolution, Configuration.cloud_resolution, Configuration.cloud_resolution);
 		grd.setSaveLeafLayout(true);
 		grd.filter(*cloud_ptr);
-#ifdef CWIPC_DEBUG
-		cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
+
+#ifdef DEBUG
+        std::cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
 }
 
-// generate a mathematical pointcloud
-PointCloudT::Ptr multiFrame::generate_pcl()
+
+// API function that triggers the capture and returns the merged pointcloud and timestamp
+cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 {
-	PointCloudT::Ptr point_cloud_ptr(new PointCloudT);
-	uint8_t r(255), g(15), b(15);
-	for (float z(-1.0f); z <= 1.0f; z += 0.005f) {
-		for (float angle(0.0); angle <= 360.0; angle += 1.0f) {
-			PointT point;
-			point.x = 0.5f*cosf(deg2rad(angle))*(1.0f - z * z);
-			point.y = sinf(deg2rad(angle))*(1.0f - z * z);
-			point.z = z;
-			uint32_t rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
-			point.rgb = *reinterpret_cast<float*>(&rgb);
-			point_cloud_ptr->points.push_back(point);
+	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int entry_to_return = 0;
+	if (CameraData.size() > 0) {
+		for (cameradata ccfg : CameraData) {
+			camera_action(ccfg);
+        }
+		merge_views(RingBuffer[ring_index]);
+		if (RingBuffer[ring_index].get()->size() > 0) {
+#ifdef DEBUG
+            std::cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
+#endif
+			entry_to_return = ring_index;
+		} else {
+#ifdef DEBUG
+            std::cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
+#endif
+			// HACK to make sure the encoder does not get an empty pointcloud 
+			cwipc_pcl_point point;
+			point.x = 1.0;
+			point.y = 1.0;
+			point.z = 1.0;
+			point.rgb = 0.0;
+			RingBuffer[ring_index]->points.push_back(point);
+			entry_to_return = ring_index;
 		}
-		if (z < 0.0) { r -= 1; g += 1; }
-		else { g -= 1; b += 1; }
+	} else {	// return a spinning generated mathematical pointcloud
+		angle += 0.031415;
+		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
+		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
+		entry_to_return = ring_index;
 	}
-	point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
-	point_cloud_ptr->height = 1;
-	return point_cloud_ptr;
+	ring_index = ring_index < ringbuffer_size - 1 ? ++ring_index : 0;
+	return RingBuffer[entry_to_return];
 }
 
-
-///////////////////////////
-// class captureIt stuff //
-///////////////////////////
-
-void captureIt::getPointCloud(uint64_t *timestamp, void **pointcloud) {
-	static multiFrame mFrame;
-
-#ifdef CWIPC_DEBUG
-	cout << "captureIt is asked for a pointcloud\n";
-#endif
-
-	mFrame.get_pointcloud(timestamp, pointcloud);
-
-#ifdef CWIPC_DEBUG
-	boost::shared_ptr<PointCloudT> captured_pc;
-	captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(*pointcloud);
-	cout << "captureIt handed over a pointcloud of " << captured_pc.get()->size() << " points\n";
-	cout.flush();
-#endif
-}
-
-// C-compatible entry point
-
-void  getPointCloud(uint64_t *timestamp, void **pointcloud) {
-	captureIt captureit;
-	captureit.getPointCloud(timestamp, pointcloud);
-}

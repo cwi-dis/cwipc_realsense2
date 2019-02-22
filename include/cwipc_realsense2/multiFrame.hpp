@@ -40,10 +40,10 @@
 using namespace std::chrono;
 
 struct cameradata {
-	string serial;
+	std::string serial;
 	rs2::pipeline pipe;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
-	boost::shared_ptr<PointCloudT> cloud;
+	cwipc_pcl_pointcloud cloud;
 };
 
 struct configdata {
@@ -63,10 +63,11 @@ public:
 	~multiFrame();
 
 	// API function that returns the merged pointcloud and timestamp
-	void get_pointcloud(uint64_t *timestamp, void **pointcloud);
+	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp);
 
 	// return the merged cloud 
 	boost::shared_ptr<PointCloudT> getPointCloud();
+
 
 	configdata Configuration;
 
@@ -86,18 +87,7 @@ private:
 	// Globals
 	vector<boost::shared_ptr<PointCloudT>> RingBuffer;	// Buffer of merged pointclouds
 	boost::shared_ptr<PointCloudT> GeneratedPC;			// Mathematical pointcloud for use without camera
+
 	int ring_index = 0;									// counter for ring buffer
 };
-
-
-///////////////////////////
-// class captureIt stuff //
-///////////////////////////
-
-class captureIt
-{
-public:
-	void getPointCloud(uint64_t *timestamp, void **pointcloud);
-};
-
 #endif /* cwipw_realsense_multiFrame_hpp */

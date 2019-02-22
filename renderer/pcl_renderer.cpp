@@ -95,13 +95,12 @@ int main(int argc, char * argv[]) try
 		getPointCloud = (GetPointCloudFunction)GetProcAddress(hInstLibrary, "getPointCloud");
 	else
 		cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
-	if (!getPointCloud)	{
+	if (!getPointCloud) {
 		cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
 		return EXIT_FAILURE;
 	}
 #else
 #endif // WITH_WIN32_LOADLIBRARY
-
 
 	// Create a simple OpenGL window for rendering:
 	window_util app(2560, 1440, "Multicamera Capturing");
@@ -109,20 +108,33 @@ int main(int argc, char * argv[]) try
 	// register callbacks to allow manipulation of the PointCloud
 	register_glfw_callbacks(app);
 
+
 	int frame_num = 0;
-	uint64_t time = 0;
 	Eigen::Vector4f newcenter;
 	Eigen::Vector4f deltacenter;
 
-
+	char *msg;
+	cwipc_source *src = cwipc_realsense2(&msg);
+	if (src == NULL) {
+		std::cerr << "ERROR: could not instantiate realsense2 grabber: " << msg << std::endl;
+		return EXIT_FAILURE;
+	}
 	while (app) {
-		boost::shared_ptr<PointCloudT> captured_pc;
-		void* pc = reinterpret_cast<void *> (&captured_pc);
-		uint64_t t = 4;
-		getPointCloud(&t, &pc);
+		cwipc *pc = src->get();
+
+		cwipc_pcl_pointcloud captured_pc = pc->access_pcl_pointcloud();
+		if (!(captured_pc->size() > 0)) continue;
+
+		// Automatically centre the cloud
+		if (!(frame_num++ % CENTERSTEPS)) {
+			pcl::compute3DCentroid(*captured_pc, newcenter);
+			deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
+		}
+		if (!do_align)
+			mergedcenter += deltacenter;
 
 		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
-		
+
 		if (!(captured_pc.get()->size() > 0)) continue;
 
 		// Automatically centre the cloud
