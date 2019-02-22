@@ -4,7 +4,7 @@
 //  Created by Fons Kuijk on 14-02-19.
 //
 
-#include "cwipc_realsense/window_util.hpp"
+#include "cwipc_realsense2/window_util.hpp"
 
 window_util::window_util(int width, int height, const char* title) : _width(width), _height(height)
 {

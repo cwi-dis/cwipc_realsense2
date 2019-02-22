@@ -1,18 +1,19 @@
 //
-//  utils.h
+//  utils.cpp
 //
 //  Created by Fons Kuijk on 12-12-18.
 //
+#if defined(WIN32) || defined(_WIN32)
+#define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
+#endif
+#include "cwipc_realsense2/defs.h"
+#include "cwipc_realsense2/utils.h"
+#include "cwipc_realsense2/multiFrame.hpp"
 
-#ifndef cwipw_realsense_utils_h
-#define cwipw_realsense_utils_h
-#pragma once
-
-#include "defs.h"
 #include "tinyxml.h"
 
 // read and restore the camera transformation setting as stored in the configuration document
-bool file2config(char* filename, configdata* config)
+bool file2config(const char* filename, configdata* config)
 {
 	TiXmlDocument doc(filename);
 	bool loadOkay = doc.LoadFile();
@@ -60,7 +61,7 @@ bool file2config(char* filename, configdata* config)
 				loadOkay = false;
 
 			cd = new cameradata();
-			boost::shared_ptr<PointCloudT> empty_pntcld(new PointCloudT());
+			cwipc_pcl_pointcloud empty_pntcld(new_cwipc_pcl_pointcloud());
 			boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
 			cd->serial = cameraElement->Attribute("serial");
 			cd->cloud = empty_pntcld;
@@ -99,7 +100,7 @@ bool file2config(char* filename, configdata* config)
 		loadOkay = false;
 
 	if (!loadOkay)
-		cout << "\nWARNING: the configuration file did not correspond to the current setup: re-alignment may be needed!!\n";
+		std::cout << "\nWARNING: the configuration file did not correspond to the current setup: re-alignment may be needed!!\n";
 
 	return loadOkay;
 }
@@ -151,13 +152,6 @@ void config2file(char* filename, configdata* config)
 	}
 	doc.SaveFile(filename);
 }
-
-typedef struct HsvColor
-{
-	unsigned char h;
-	unsigned char s;
-	unsigned char v;
-} HsvColor;
 
 cwipc_pcl_point* hsvToRgb(HsvColor hsv, cwipc_pcl_point* pnt)
 {
@@ -274,5 +268,3 @@ bool noChromaRemoval(cwipc_pcl_point* p)
 	}
 	return true;
 }
-
-#endif /* cwipw_realsense_utils_h */

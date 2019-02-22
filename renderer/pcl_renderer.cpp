@@ -4,14 +4,14 @@
 //  Created by Fons Kuijk on 23-06-18.
 //
 
-#include "cwipc_realsense/window_util.hpp"
-#include "cwipc_realsense/defs.h"
+#include "cwipc_realsense2/window_util.hpp"
+#include "cwipc_realsense2/defs.h"
 #include <librealsense2/rs.hpp>
 
 #ifdef WITH_WIN32_LOADLIBRARY
 #include <windows.h>
 #else
-#include "cwipc_realsense/api.h"
+#include "cwipc_realsense2/api.h"
 #endif
 
 typedef void(*GetPointCloudFunction)(uint64_t *, void **);
@@ -24,14 +24,14 @@ int aligncamera = 0;
 Eigen::Vector4f mergedcenter;	// needed to automatically center the merged cloud
 
 void printhelp() {
-	cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
-	cout << "To examine the pointcloud use the mouse: leftclick and move to rotate, use the mouse wheel to zoom.\n";
-	cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
-	cout << "Use \"q\" to quit\n";
+	std::cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
+	std::cout << "To examine the pointcloud use the mouse: leftclick and move to rotate, use the mouse wheel to zoom.\n";
+	std::cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
+	std::cout << "Use \"q\" to quit\n";
 }
 
 // Handle the OpenGL setup needed to display all pointclouds
-void draw_pointcloud(window_util* app, boost::shared_ptr<PointCloudT> point_cloud)
+void draw_pointcloud(window_util* app, cwipc_pcl_pointcloud point_cloud)
 {
 	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
 
@@ -94,9 +94,9 @@ int main(int argc, char * argv[]) try
 	if (hInstLibrary)		// the function dll file has been found and is loaded
 		getPointCloud = (GetPointCloudFunction)GetProcAddress(hInstLibrary, "getPointCloud");
 	else
-		cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
+		std::cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
 	if (!getPointCloud) {
-		cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
+		std::cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
 		return EXIT_FAILURE;
 	}
 #else
@@ -133,8 +133,6 @@ int main(int argc, char * argv[]) try
 		if (!do_align)
 			mergedcenter += deltacenter;
 
-		captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloudT>*>(pc);
-
 		if (!(captured_pc.get()->size() > 0)) continue;
 
 		// Automatically centre the cloud
@@ -155,11 +153,11 @@ int main(int argc, char * argv[]) try
 }
 catch (const rs2::error & e)
 {
-	cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+	std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::exception & e)
 {
-	cerr << e.what() << std::endl;
+	std::cerr << e.what() << std::endl;
 	return EXIT_FAILURE;
 }

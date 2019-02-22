@@ -8,13 +8,14 @@
 cmake_minimum_required(VERSION 3.10.0)
 
 
-add_library(cwipc_realsense2 SHARED cwipc_realsense2.cpp multiFrame.cpp ${TINY_SRC})
+add_library(cwipc_realsense2 SHARED cwipc_realsense2.cpp multiFrame.cpp utils.cpp ${TINY_SRC})
 
 target_sources(cwipc_realsense2
 	PRIVATE
-	"utils.h"
 	"../include/cwipc_realsense2/defs.h"
+	"../include/cwipc_realsense2/utils.h"
 	"../include/cwipc_realsense2/multiFrame.hpp"
+	"../include/cwipc_realsense2/window_util.hpp"
 	"../include/cwipc_realsense2/api.h"
 )
 
