@@ -44,13 +44,21 @@ Action keys for alignment of camera clouds are:
 - You need CMake.
 - You need Intel Realsense SDK.
 - You need PCL 1.8.1, get from <https://github.com/PointCloudLibrary/pcl/releases/tag/pcl-1.8.1>, AllInOne win64 installer.
+- You need cwipc_util
+	- for example from <https://github.com/cwi-dis/cwipc_util> 
+	- ... or <https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_util>
+	- Use cmake and Visual Studio to build according to instructions there
+	- ... or use a prebuilt installer if available.
+	- Anyway, remember the installation directory. Suggested is `.../DIR/installed` where `DIR` is the directory where you have cloned all the repos.
 - Create `build` subdirectory, run *cmake*, point it to your source and build directory, *Configure*.
-	- A number of errors are expected and probably harmless:
+	- A number of errors are expected and harmless:
 		- *DAVIDSDK* not found
 		- *DSSDK* not found
 		- *ENSENSO* not found
-		- *OPENNI* not found (but note that *OPENNI2* is needed)
+		- *OPENNI* not found
 		- *RSSDK* not found
+	- Set `CMAKE_INSTALL_PREFIX` to the installation directory (the `.../DIR/installed` from above).
+	- Configure again. There should be no more errors.
 - Build the resultant Visual Studio solution.
 - The outputs are going to end up in the `build` subdirectory.
 	- More exact locations to be provided...
