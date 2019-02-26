@@ -40,14 +40,3 @@ cwipc_source* cwipc_realsense2(char **errorMessage)
 {
     return new cwipc_source_realsense2_impl();
 }
-
-cwipc* cwipc_source_get(cwipc_source *src)
-{
-    return src->get();
-}
-
-void cwipc_source_free(cwipc_source *src)
-{
-    src->free();
-}
-
