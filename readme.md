@@ -44,6 +44,7 @@ Action keys for alignment of camera clouds are:
 - You need CMake.
 - You need Intel Realsense SDK.
 - You need PCL 1.8.1, get from <https://github.com/PointCloudLibrary/pcl/releases/tag/pcl-1.8.1>, AllInOne win64 installer.
+	- **Note**: there may be build issues if *OpenNI2* is included (apparently one of its dlls is added to the libraries list). So exclude OpenNI2.
 - You need cwipc_util
 	- for example from <https://github.com/cwi-dis/cwipc_util> 
 	- ... or <https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_util>
