@@ -71,7 +71,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 		add_subdirectory(third-party/glfw)
 	endif()
 	
-	add_subdirectory(renderer)
+	add_subdirectory(apps/pcl_renderer)
+	add_subdirectory(apps/pcl_align)
 endif()
 
 include_directories(include)
