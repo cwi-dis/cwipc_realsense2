@@ -44,19 +44,20 @@ include_directories(${cwipc_util_INCLUDE_DIRS})
 link_directories(${cwipc_util_LIBRARY_DIRS})
 
 #
-# Find realsense (either with pkgconfig or with cmake)
-#
-find_package(REALSENSE2 REQUIRED)
-include_directories(${REALSENSE2_INCLUDE_DIRS})
-link_directories(${REALSENSE2_LIBRARY_DIRS})
-
-#
 # Find PCL. Either 1.7 or 1.8 using pkgconfig, or using cmake finder.
 #
 find_package(PCL REQUIRED COMPONENTS common io visualization filters) 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
+
+#
+# Find realsense (either with pkgconfig or with cmake)
+#
+find_package(REALSENSE2 REQUIRED)
+include_directories(${REALSENSE2_INCLUDE_DIRS})
+link_directories(${REALSENSE2_LIBRARY_DIRS})
 
 # we need the thirdparty tinyXML for the test programs.
 include(third-party/tinyXML/CMakeLists.txt)
