@@ -31,15 +31,18 @@ multiFrame::multiFrame(const char *_configFilename)
 	// Create librealsense context for managing all connected RealSense devices
 	rs2::context ctx;
 	auto devs = ctx.query_devices();
-
 	const std::string platform_camera_name = "Platform Camera";
-
+	//Sync messages to assign master and slave
+	std::vector<uint8_t> sync_default{ 0x14,0x0,0xAB,0xCD,0x64,0x0,0x0,0x0,0x00,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 };
+	std::vector<uint8_t> sync_master{ 0x14,0x0,0xAB,0xCD,0x64,0x0,0x0,0x0,0x01,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 };
+	std::vector<uint8_t> sync_slave{ 0x14,0x0,0xAB,0xCD,0x64,0x0,0x0,0x0,0x02,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 };
+	bool master_set = false;
+	rs2_error* e = nullptr;
 	// prepare storage for camera data for each connected camera
 	for (auto dev : devs) {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
 			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 			default_trafo->setIdentity();
-
 			cameradata cd;
 			cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 			cd.trafo = default_trafo;
@@ -52,6 +55,14 @@ multiFrame::multiFrame(const char *_configFilename)
 			rsd.serial = cd.serial;
 			rsd.usb = std::string(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
 			realsense_data.push_back(rsd);
+			//Send sync messages
+			if (!master_set)
+			{
+				rs2_send_and_receive_raw_data((rs2_device*)&dev, (void*)&sync_master, (uint32_t)24, &e);
+				master_set = true;
+			}
+			else
+				rs2_send_and_receive_raw_data((rs2_device*)&dev, (void*)&sync_slave, (uint32_t)24, &e);
 		}
 	}
 
