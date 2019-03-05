@@ -44,5 +44,5 @@ find_package(Boost COMPONENTS system REQUIRED)
 
 add_executable(pcl_align pcl_align.cpp  window_util.cpp)
 
-target_link_libraries(pcl_align ${DEPENDENCIES} ${Boost_LIBRARIES})
+target_link_libraries(pcl_align ${DEPENDENCIES} ${PCL_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS pcl_align RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
