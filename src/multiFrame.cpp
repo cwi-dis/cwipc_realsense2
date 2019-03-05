@@ -52,15 +52,14 @@ multiFrame::multiFrame() {
 	// prepare storage for camera data for each connected camera
 	for (auto dev : devs) {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
-			cwipc_pcl_pointcloud empty_pntcld(new_cwipc_pcl_pointcloud());
 			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 			default_trafo->setIdentity();
-			cameradata* cc = new cameradata();
-			cc->serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-			cc->cloud = empty_pntcld;
-			cc->trafo = default_trafo;
-			Configuration.camera_data.push_back(*cc);
-			camera_start(*cc);
+			cameradata cc;
+			cc.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+			cc.cloud = new_cwipc_pcl_pointcloud();
+			cc.trafo = default_trafo;
+			Configuration.camera_data.push_back(cc);
+			camera_start(&cc);
 		}
 	}
 	if (Configuration.camera_data.size() == 0) {
@@ -194,17 +193,17 @@ cwipc_pcl_pointcloud multiFrame::getPointCloud()
 }
 
 // Configure and initialize caputuring of one camera
-void multiFrame::camera_start(cameradata cd)
+void multiFrame::camera_start(cameradata* cd)
 {
-	std::cout << "starting camera ser no: " << cd.serial << '\n';
+	std::cout << "starting camera ser no: " << cd->serial << '\n';
 
 
 	rs2::config cfg;
-	cfg.enable_device(cd.serial);
+	cfg.enable_device(cd->serial);
 	cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, color_fps);
 	cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, depth_fps);
 
-	cd.pipe.start(cfg);		// Start streaming with the configuration just set
+	cd->pipe.start(cfg);		// Start streaming with the configuration just set
 }
 
 // get new frames from the camera and update the pointcloud of the camera's data 

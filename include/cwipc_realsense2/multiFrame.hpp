@@ -74,7 +74,7 @@ public:
 private:
 
 	// Configure and initialize caputuring of one camera
-	void camera_start(cameradata camera_data);
+	void camera_start(cameradata* camera_data);
 
 	// get new frames from the camera and update the pointcloud of the camera's data 
 	void camera_action(cameradata camera_data);
