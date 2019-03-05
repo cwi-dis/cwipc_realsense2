@@ -19,7 +19,8 @@ target_sources(cwipc_realsense2
 	"../include/cwipc_realsense2/api.h"
 )
 
-target_link_libraries(cwipc_realsense2 cwipc_util realsense2 ${PCL_LIBRARIES})
+target_link_libraries(cwipc_realsense2 PUBLIC cwipc_util)
+target_link_libraries(cwipc_realsense2 PRIVATE realsense2 ${PCL_LIBRARIES})
 
 install(TARGETS cwipc_realsense2
     EXPORT cwipc_realsense2
