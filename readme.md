@@ -1,57 +1,35 @@
 # VRTogether-capture
-A CMake project generating software for capturing point clouds using RealSense cameras.
+
+This project has software for capturing point clouds using RealSense cameras. The software turns RealSense depth- and colorframes into a PCL pointcloud. It goes with apps to visualize the 3D pointcloud captured. The software runs with zero one or more RealSense cameras. If no cameras are found, pointclouds will be generated. If more depth cameras are connected, a configuration file named *cameraconfig.xml* to specify the merge conditions is expected (for details see: *Expected input*).
 
 [TOC]
 
-## Overview
 
-This CMake project produces software to turn RealSense frames (of one or more RealSense cameras) into a PCL pointcloud. It goes with two apps to visualize the 3D pointcloud captured.
-If the system has more depth cameras connected, a configuration file named *cameraconfig.xml* is expected (for details see below).
+## Installations & Building
 
-## Expected Output: DLL and Applications
-
-#### 1) The dll file: *multiFrame.dll*
-
-This project produces a dll named `multiFrame.dll` that gives access to the PCL formatted pointcloud. The function to get a pointcloud together with a timestamp can be found in the .dll is `getPointCloud(long * timestamp, void ** pointcloud)`
-
-For those interested, a pointcloud in PCL format can be obtained from the `void** pointcloud` by casting: `captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloud<PointXYZRGB>>*>(pointcloud)`
-
-#### 2) The applications: *pcl_renderer* and *pcl_align*
-
-For visual inspection of the result, the project generates two applications *pcl_renderer* and  *pcl_align* that both open a window showing the pointcloud.
-
-*Pcl_renderer* serves as an example on how to make use of the dll and also is a means to test the capturing software. For this it accesses the capturing software using the public API only (using the function `getPointCloud(long * timestamp, void ** pointcloud)`). The pointcloud rendered by this application will automatically be centered with the view origin.
-To examine the pointcloud the user can use the mouse: rightclick and move to rotate the pointcloud, and use the mouse wheel to zoom. The *esc* button will reset the position of the (fused) pointcloud.
-
-*Pcl_align* serves another purpose. It can be used to produce a snapshot of the individual cameras and can be used to manually align the cameras by manipulating the individual transformation settings. When done, it can write out these settings to a file (*cameraconfiguration.xml*).
-Action keys for alignment of camera clouds are:
-
-- "a" to toggle between *life* and *alignment mode*;
-- "1-9" to select the camera to align;
-- "r" to start cloud rotate mode;
-- "t" to start cloud translate mode;
-- "esc" to reset the cloud transformation of the active camera";
-- "s" to save the current configuration in *camaraconfig.xml* and snapshots of each camera in .ply files;
-- "h" to print the help;
-- "q" to quit;
-
-## Building
+The directory `VRTogether-capture` that is the root of this repository should be put on your system where you cloned all other repos. The CMake setup should be able to find all dependencies needed.
 
 ### Windows
+
+#### Required installs:
 
 - You need Windows 10 64bit.
 - You need Visual Studio 2017, community edition.
 - You need CMake.
-- You need Intel Realsense SDK.
-- You need PCL 1.8.1, get from <https://github.com/PointCloudLibrary/pcl/releases/tag/pcl-1.8.1>, AllInOne win64 installer.
+- You need Intel Realsense SDK. Add the location of its 64 bit dll (e.g. `C:\Program Files (x86)\Intel RealSense SDK 2.0\bin\x64`) to your `PATH`
+- You need PCL 1.8.1, as can be found on <https://github.com/PointCloudLibrary/pcl/releases/tag/pcl-1.8.1>, use the AllInOne win64 installer.
 - You need cwipc_util
-	- for example from <https://github.com/cwi-dis/cwipc_util> 
-	- ... or <https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_util>
-	- Use cmake and Visual Studio to build according to instructions there
+	- for example from <https://github.com/cwi-dis/cwipc_util> ...
+	- ... or from <https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_util>
+	- Use CMake and Visual Studio to build according to instructions there. (Set `CMAKE_INSTALL_PREFIX` to the installation directory. Suggested is `.../DIR/installed` where `DIR` is the directory where you have cloned all the repos.) ...
 	- ... or use a prebuilt installer if available.
-	- Anyway, remember the installation directory. Suggested is `.../DIR/installed` where `DIR` is the directory where you have cloned all the repos.
+	- Anyway, remember the installation directory (the suggested `.../DIR/installed`). 
 	- And remember to add that directory to your system environment variable `PATH`.
-- Create `build` subdirectory, run *cmake*, point it to your source and build directory, *Configure*.
+
+#### Building:
+
+- Create a `build` subdirectory (suggested is `.../DIR/VRTogether-capture/build` where `DIR` is the directory where you have cloned all the repos).
+Start *CMake*, point it to your source and build directory, and run *CMake->Configure*.
 	- A number of errors are expected and harmless:
 		- *DAVIDSDK* not found
 		- *DSSDK* not found
@@ -59,13 +37,17 @@ Action keys for alignment of camera clouds are:
 		- *OPENNI* not found
 		- *RSSDK* not found
 	- Set `CMAKE_INSTALL_PREFIX` to the installation directory (the `.../DIR/installed` from above).
-	- Configure again. There should be no more errors.
+	- Run *CMake->Configure* again. There should be no more errors.
+	- Next run *CMake->Generate* and *CMake->Open Project*.
+
 - Build the resultant Visual Studio solution.
-- The outputs are going to end up in the `build` subdirectory.
+- The outputs are going to end up in the `build/bin` subdirectory.
 	- More exact locations to be provided...
 	- TBD: copy the outputs to a known location (for subsequent installing)
 
-## MacOS
+### MacOS
+
+#### Required installs:
 
 - You need XCode.
 - Install Homebrew, from <https://brew.sh>
@@ -104,13 +86,18 @@ Action keys for alignment of camera clouds are:
 	  brew install pcl
 	  ```
   
+
+#### Building:
+
 - Now build our software. In this directory, *VRTogether-capture*, create `build`, go there.
 - Run `cmake ..`.
 	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
 	- dynamic library is in _build/src/libcwipc_realsense2.dylib_, test programs are in _build/renderer/pcl\_renderer_ and _pcl\_align_.
 	- TBD: copy the outputs to a known location (for subsequent installing)
 
-## Linux
+### Linux
+
+#### Required installs:
 
 - You need Ubuntu 18.04 (16.04 linuxes may work too)
 - Install the Intel RealSense SDK following instructions for Linux from <https://github.com/IntelRealSense/librealsense>.
@@ -122,25 +109,50 @@ Action keys for alignment of camera clouds are:
   sudo apt-get install libusb-1.0 libusb-dev
   sudo apt-get install libglfw3 libglfw3-dev
   ```
-- In this directory, *VRTogether-capture*, create `build`, go there.
+  
+
+#### Building:
+
+- - In this directory, *VRTogether-capture*, create `build`, go there.
 - Run `cmake ..`.
 	- More exact locations to be provided...
 	- TBD: copy the outputs to a known location (for subsequent installing)
 
 
-## Installation
+## Expected output: DLL and Apps
 
-The directory `VRTogether-capture` that is maintained by this repository can be put anywhere on your system.
-The CMake setup should be able to find the dependencies needed.
+#### 1) The dll file: *cwipc_realsense2.dll*
+
+This project produces a dll named `cwipc_realsense2.dll` that gives access to the PCL formatted pointcloud. The function to get a pointcloud together with a timestamp can be found in the .dll is `getPointCloud(long * timestamp, void ** pointcloud)`
+
+For those interested, a pointcloud in PCL format can be obtained from the `void** pointcloud` by casting: `captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloud<PointXYZRGB>>*>(pointcloud)`
+
+#### 2) The apps: *pcl_renderer* and *pcl_align*
+
+For visual inspection of the result, the project generates two applications *pcl_renderer* and  *pcl_align* that both open a window showing the pointcloud.
+
+*Pcl_renderer* serves as an example on how to make use of the dll and also is a means to test the capturing software. For this it accesses the capturing software using the public API only (using the function `getPointCloud(long * timestamp, void ** pointcloud)`). The pointcloud rendered by this application will automatically be centered with the view origin.
+To examine the pointcloud the user can use the mouse: rightclick and move to rotate the pointcloud, and use the mouse wheel to zoom. The *esc* button will reset the position of the (fused) pointcloud.
+
+*Pcl_align* serves another purpose. It can be used to produce a snapshot of the individual cameras and can be used to manually align the cameras by manipulating the individual transformation settings. When done, it can write out these settings to a file (*cameraconfiguration.xml*).
+Action keys for alignment of camera clouds are:
+
+- "a" to toggle between *life* and *alignment mode*;
+- "1-9" to select the camera to align;
+- "r" to start cloud rotate mode;
+- "t" to start cloud translate mode;
+- "esc" to reset the cloud transformation (in *alignment mode* of the active camera)";
+- "s" to save the current configuration in *camaraconfig.xml* and snapshots of each camera in .ply files;
+- "h" to print the help;
+- "q" to quit;
 
 ## Expected input: *cameraconfig.xml*
 
-The configuration file *cameraconfig.xml* holds information on cloud resolution (in meters), the number of output buffers (an int) and optional greenscreenremoval (0 or 1). Furthermore the file holds information for each camera: the serial number and the transformation for alignment. Below is an example config file.
-
+The configuration file *cameraconfig.xml* specifies backgroundremoval (0 or 1), greenscreenremoval (0 or 1), cloud resolution (in meters), tile resolution (in meters) and the number of output buffers (an int). Furthermore the file holds information for each camera: the serial number and the transformation for alignment. Below is an example config file.
 ```
 <?xml version="1.0" ?>
 <file>
-    <CameraConfig resolution="0" ringbuffersize="1" greenscreenremoval="1">
+    <CameraConfig backgroundremoval="1" greenscreenremoval="1" tiling="0" cloudresolution="0" tileresolution="0.01" ringbuffersize="1">
         <camera serial="802212060048">
             <trafo>
                 <values 
