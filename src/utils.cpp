@@ -106,7 +106,7 @@ bool file2config(const char* filename, configdata* config)
 }
 
 // store the current camera transformation setting into a xml document
-void config2file(char* filename, configdata* config)
+void config2file(const char* filename, configdata* config)
 {
 	TiXmlDocument doc;
 	doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
