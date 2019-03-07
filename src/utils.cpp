@@ -134,13 +134,13 @@ void config2file(const char* filename, configdata* config)
 	root->LinkEndChild(cameraconfig);
 
 	TiXmlElement* system = new TiXmlElement("system");
-	system->SetAttribute("ringbuffersize", config->ringbuffer_size);
 	system->SetAttribute("usb2width", config->usb2_width);
 	system->SetAttribute("usb2height", config->usb2_height);
 	system->SetAttribute("usb2fps", config->usb2_fps);
 	system->SetAttribute("usb3width", config->usb3_width);
 	system->SetAttribute("usb3height", config->usb3_height);
 	system->SetAttribute("usb3fps", config->usb3_fps);
+	system->SetAttribute("ringbuffersize", config->ringbuffer_size);
 	cameraconfig->LinkEndChild(system);
 
 	TiXmlElement* processing = new TiXmlElement("processing");
