@@ -28,16 +28,30 @@ bool file2config(const char* filename, configdata* config)
 	TiXmlHandle docHandle(&doc);
 	TiXmlElement* configElement = docHandle.FirstChild("file").FirstChild("CameraConfig").ToElement();
 
-	// first get the global information
-	configElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
-	configElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
-	configElement->QueryBoolAttribute("tiling", &(config->tiling));
-	configElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
-	configElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
-	configElement->QueryUnsignedAttribute("ringbuffersize", &(config->ringbuffer_size));
-	config->ringbuffer_size = config->ringbuffer_size < 1 ? 1 : config->ringbuffer_size;
+	// get the system related information
+	TiXmlElement* systemElement = configElement->FirstChildElement("system");
+	if (systemElement) {
+		systemElement->QueryIntAttribute("usb2width", &(config->usb2_width));
+		systemElement->QueryIntAttribute("usb2height", &(config->usb2_height));
+		systemElement->QueryIntAttribute("usb2fps", &(config->usb2_fps));
+		systemElement->QueryIntAttribute("usb3width", &(config->usb3_width));
+		systemElement->QueryIntAttribute("usb3height", &(config->usb3_height));
+		systemElement->QueryIntAttribute("usb3fps", &(config->usb3_fps));
+		systemElement->QueryUnsignedAttribute("ringbuffersize", &(config->ringbuffer_size));
+		config->ringbuffer_size = config->ringbuffer_size < 1 ? 1 : config->ringbuffer_size;
+	}
 
-	bool allnewcameras = config->camera_data.size() == 0; // calling from pcl_align means we have to set up a new administration
+	// get the processing related information
+	TiXmlElement* processingElement = configElement->FirstChildElement("processing");
+	if (processingElement) {
+		processingElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
+		processingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
+		processingElement->QueryBoolAttribute("tiling", &(config->tiling));
+		processingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
+		processingElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
+	}
+
+	bool allnewcameras = config->camera_data.size() == 0; // we have to set up a new administration
 	int registeredcameras = 0;
 
 	// now get the per camera info
@@ -100,7 +114,9 @@ bool file2config(const char* filename, configdata* config)
 		loadOkay = false;
 
 	if (!loadOkay)
-		std::cout << "\nWARNING: the configuration file did not correspond to the current setup: re-alignment may be needed!!\n";
+		std::cout << "\nWARNING: the configuration file specifying " << registeredcameras
+		<< " cameras did not correspond to the setup of " << config->camera_data.size()
+		<< " cameras\n\tre-alignment may be needed!!\n";
 
 	return loadOkay;
 }
@@ -114,19 +130,31 @@ void config2file(char* filename, configdata* config)
 	TiXmlElement* root = new TiXmlElement("file");
 	doc.LinkEndChild(root);
 
-	TiXmlElement* file = new TiXmlElement("CameraConfig");
-	root->LinkEndChild(file);
-	file->SetAttribute("backgroundremoval", config->background_removal);
-	file->SetAttribute("greenscreenremoval", config->greenscreen_removal);
-	file->SetAttribute("tiling", config->tiling);
-	file->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
-	file->SetDoubleAttribute("tileresolution", config->tile_resolution);
-	file->SetAttribute("ringbuffersize", config->ringbuffer_size);
+	TiXmlElement* cameraconfig = new TiXmlElement("CameraConfig");
+	root->LinkEndChild(cameraconfig);
+
+	TiXmlElement* system = new TiXmlElement("system");
+	system->SetAttribute("ringbuffersize", config->ringbuffer_size);
+	system->SetAttribute("usb2width", config->usb2_width);
+	system->SetAttribute("usb2height", config->usb2_height);
+	system->SetAttribute("usb2fps", config->usb2_fps);
+	system->SetAttribute("usb3width", config->usb3_width);
+	system->SetAttribute("usb3height", config->usb3_height);
+	system->SetAttribute("usb3fps", config->usb3_fps);
+	cameraconfig->LinkEndChild(system);
+
+	TiXmlElement* processing = new TiXmlElement("processing");
+	processing->SetAttribute("backgroundremoval", config->background_removal);
+	processing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
+	processing->SetAttribute("tiling", config->tiling);
+	processing->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
+	processing->SetDoubleAttribute("tileresolution", config->tile_resolution);
+	cameraconfig->LinkEndChild(processing);
 
 	for (cameradata cd : config->camera_data) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
-		file->LinkEndChild(cam);
+		cameraconfig->LinkEndChild(cam);
 
 		TiXmlElement* trafo = new TiXmlElement("trafo");
 		cam->LinkEndChild(trafo);

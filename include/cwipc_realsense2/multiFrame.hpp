@@ -41,6 +41,7 @@ using namespace std::chrono;
 
 struct cameradata {
 	std::string serial;
+	std::string usb;
 	rs2::pipeline pipe;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
 	cwipc_pcl_pointcloud cloud;
@@ -48,8 +49,14 @@ struct cameradata {
 
 struct configdata {
 	bool background_removal = true;		// If true reduces pointcloud to forground object 
-	bool greenscreen_removal = true;	// If true include greenscreen removal
-	bool tiling = false;				// If true produce tiled stream
+	bool greenscreen_removal = true;		// If true include greenscreen removal
+	int usb3_width = 1280;
+	int usb3_height = 720;
+	int usb3_fps = 30;
+	int usb2_width = 640;
+	int usb2_height = 480;
+	int usb2_fps = 15;
+	bool tiling = false;					// If true produce tiled stream
 	double cloud_resolution = 0.0;		// Resolution of voxelized pointclouds
 	double tile_resolution = 0.01;		// Resolution of tiling process
 	unsigned int ringbuffer_size = 1;	// Size of the ringbuffer

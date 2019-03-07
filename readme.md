@@ -148,11 +148,18 @@ Action keys for alignment of camera clouds are:
 
 ## Expected input: *cameraconfig.xml*
 
-The configuration file *cameraconfig.xml* specifies backgroundremoval (0 or 1), greenscreenremoval (0 or 1), cloud resolution (in meters), tile resolution (in meters) and the number of output buffers (an int). Furthermore the file holds information for each camera: the serial number and the transformation for alignment. Below is an example config file.
+The configuration file *cameraconfig.xml* specifies system parameters type of processing and camera data.
+- The system parameters are width, heigth and framerate for usb2 and usb3 connections and the number of output buffers (an int).
+- The type of processing is backgroundremoval (0 or 1), greenscreenremoval (0 or 1), cloud resolution (in meters), and tile resolution (in meters).
+- The information for each camera is the serial number and the transformation for alignment.
+
+Below is an example config file.
 ```
 <?xml version="1.0" ?>
 <file>
-    <CameraConfig backgroundremoval="1" greenscreenremoval="1" tiling="0" cloudresolution="0" tileresolution="0.01" ringbuffersize="1">
+    <CameraConfig>
+        <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" ringbuffersize="1" />
+        <processing backgroundremoval="1" greenscreenremoval="1" tiling="0" cloudresolution="0" tileresolution="0.01" />
         <camera serial="802212060048">
             <trafo>
                 <values 

@@ -17,31 +17,6 @@
 #include "cwipc_realsense2/api.h"
 #include "cwipc_realsense2/utils.h"
 
-//
-// Stop-gap by Jack. The normal production settings are not possible over USB2.
-// we should dynamically detect this (and I think we can, with the realsense
-// API), but for now we use a define to lower the quality to something
-// doable.
-//
-#define WITH_USB2
-#ifndef WITH_USB2
-// For USB3 devices we get the maximum possible quality and rate
-const int color_width = 1280;
-const int color_height = 720;
-const int color_fps = 30;
-const int depth_width = 1280;
-const int depth_height = 720;
-const int depth_fps = 30;
-#else
-// For USB2 we make do with lower quality and framerate
-const int color_width = 640;
-const int color_height = 480;
-const int color_fps = 30;
-const int depth_width = 640;
-const int depth_height = 480;
-const int depth_fps = 30;
-#endif // WITH_USB2
-
 multiFrame::multiFrame() {
 	// Create librealsense context for managing all connected RealSense devices
 	rs2::context ctx;
@@ -54,14 +29,15 @@ multiFrame::multiFrame() {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
 			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 			default_trafo->setIdentity();
-			cameradata cc;
-			cc.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-			cc.cloud = new_cwipc_pcl_pointcloud();
-			cc.trafo = default_trafo;
-			Configuration.camera_data.push_back(cc);
-			camera_start(&cc);
+			cameradata cd;
+			cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+			cd.usb = std::string(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+			cd.cloud = new_cwipc_pcl_pointcloud();
+			cd.trafo = default_trafo;
+			Configuration.camera_data.push_back(cd);
 		}
 	}
+
 	if (Configuration.camera_data.size() == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
 		GeneratedPC = generate_pcl();
@@ -70,20 +46,26 @@ multiFrame::multiFrame() {
 	else {
 		// Read the configuration
 		if (!file2config("cameraconfig.xml", &Configuration)) {
-			// check and remove cameras that are not connected
+
+			// the configuration file did not fully match the current situation so we have to update the admin
 			std::vector<std::string> serials;
+			std::vector<cameradata> realcams;
+
+			// collect serial numbers of all connected cameras
 			for (auto dev : devs) {
 				if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
 					serials.push_back(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
 				}
 			}
-			std::vector<cameradata> realcams;
+			
+			// collect all camera's in the config that are connected
 			for (cameradata cd : Configuration.camera_data) {
 				if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 					realcams.push_back(cd);
 				else
-					std::cout << "\tcamera " << cd.serial << " is not connected\n";
+					std::cout << "WARNING: camera " << cd.serial << " is not connected\n";
 			}
+			// Reduce the active configuration to cameras that are connected
 			Configuration.camera_data = realcams;
 		}
 	}
@@ -93,6 +75,10 @@ multiFrame::multiFrame() {
 		cwipc_pcl_pointcloud buf(new_cwipc_pcl_pointcloud());
 		RingBuffer.push_back(buf);
 	}
+
+	// start the cameras
+	for (int i = 0; i < Configuration.camera_data.size(); i++)
+		camera_start(&(Configuration.camera_data[i]));
 }
 
 multiFrame::~multiFrame() {
@@ -148,20 +134,21 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    int entry_to_return = 0;
+	int entry_to_return = 0;
 	if (Configuration.camera_data.size() > 0) {
 		for (cameradata ccfg : Configuration.camera_data) {
 			camera_action(ccfg);
-        }
+		}
 		merge_views(RingBuffer[ring_index]);
 		if (RingBuffer[ring_index].get()->size() > 0) {
 #ifdef DEBUG
-            std::cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
+			std::cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
 			entry_to_return = ring_index;
-		} else {
+		}
+		else {
 #ifdef DEBUG
-            std::cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
+			std::cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
 #endif
 			// HACK to make sure the encoder does not get an empty pointcloud 
 			cwipc_pcl_point point;
@@ -172,7 +159,8 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 			RingBuffer[ring_index]->points.push_back(point);
 			entry_to_return = ring_index;
 		}
-	} else {	// return a spinning generated mathematical pointcloud
+	}
+	else {	// return a spinning generated mathematical pointcloud
 		static float angle;
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
@@ -195,14 +183,19 @@ cwipc_pcl_pointcloud multiFrame::getPointCloud()
 // Configure and initialize caputuring of one camera
 void multiFrame::camera_start(cameradata* cd)
 {
-	std::cout << "starting camera ser no: " << cd->serial << '\n';
-
-
 	rs2::config cfg;
-	cfg.enable_device(cd->serial);
-	cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, color_fps);
-	cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, depth_fps);
-
+	if (cd->usb[0] == '3') {
+		std::cout << "starting camera ser no: " << cd->serial << " in usb3 mode\n";
+		cfg.enable_device(cd->serial);
+		cfg.enable_stream(RS2_STREAM_COLOR, Configuration.usb3_width, Configuration.usb3_height, RS2_FORMAT_RGB8, Configuration.usb3_fps);
+		cfg.enable_stream(RS2_STREAM_DEPTH, Configuration.usb3_width, Configuration.usb3_height, RS2_FORMAT_Z16, Configuration.usb3_fps);
+	}
+	else {
+		std::cout << "starting camera ser no: " << cd->serial << " in usb2 mode\n";
+		cfg.enable_device(cd->serial);
+		cfg.enable_stream(RS2_STREAM_COLOR, Configuration.usb2_width, Configuration.usb2_height, RS2_FORMAT_RGB8, Configuration.usb2_fps);
+		cfg.enable_stream(RS2_STREAM_DEPTH, Configuration.usb2_width, Configuration.usb2_height, RS2_FORMAT_Z16, Configuration.usb2_fps);
+	}
 	cd->pipe.start(cfg);		// Start streaming with the configuration just set
 }
 
@@ -301,14 +294,14 @@ void multiFrame::merge_views(cwipc_pcl_pointcloud cloud_ptr)
 #ifdef CWIPC_DEBUG
 		std::cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
-        pcl::VoxelGrid<cwipc_pcl_point> grd;
+		pcl::VoxelGrid<cwipc_pcl_point> grd;
 		grd.setInputCloud(cloud_ptr);
 		grd.setLeafSize(Configuration.cloud_resolution, Configuration.cloud_resolution, Configuration.cloud_resolution);
 		grd.setSaveLeafLayout(true);
 		grd.filter(*cloud_ptr);
 
 #ifdef DEBUG
-        std::cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
+		std::cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
 }
@@ -322,8 +315,8 @@ multiFrame::generate_pcl()
 	for (float z(-1.0f); z <= 1.0f; z += 0.005f) {
 		for (float angle(0.0); angle <= 360.0; angle += 1.0f) {
 			cwipc_pcl_point point;
-			point.x = 0.5f*cosf(pcl::deg2rad(angle))*(1.0f - z*z);
-			point.y = sinf(pcl::deg2rad(angle))*(1.0f - z*z);
+			point.x = 0.5f*cosf(pcl::deg2rad(angle))*(1.0f - z * z);
+			point.y = sinf(pcl::deg2rad(angle))*(1.0f - z * z);
 			point.z = z;
 			uint32_t rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
 			point.rgb = *reinterpret_cast<float*>(&rgb);
