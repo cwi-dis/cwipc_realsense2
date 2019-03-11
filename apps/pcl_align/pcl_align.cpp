@@ -19,7 +19,7 @@ bool loaded_mode = false;
 bool rotation = true;
 int aligncamera = 0;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
-Eigen::Vector4f cloudcenter;		// Needed to be able to rotate around the cloud's centre of mass
+Eigen::Vector4f cloudcenter;	// Needed to be able to rotate around the cloud's centre of mass
 configdata ConfigCopy;			// Still copy of the configuration data of multiFrame
 std::string ext(".ply");
 
@@ -82,6 +82,7 @@ bool load_ply_of_camera(cameradata camera)
 
 // Ignore camera's that may be active, load a configuration and captured frames from file
 bool load_data() {
+    ConfigCopy.camera_data.clear();
 	if (!file2config("cameraconfig.xml", &ConfigCopy))
 		return false;
 	for (auto camera : ConfigCopy.camera_data)
@@ -93,13 +94,13 @@ bool load_data() {
 }
 
 // Handle the OpenGL setup needed to display all pointclouds
-void draw_pointcloud(window_util* app, multiFrame& multiframe)
+void draw_pointcloud(window_util* app, multiFrame* multiframe)
 {
 	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
 
 	// draw the pointcloud(s)
 	if (do_align) {
-		// draw the individual pointclouds of the still
+        // 'align' mode action: draw the individual pointclouds of the still
 		for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 			cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
 			transformPointCloud(*(ConfigCopy.camera_data[i].cloud.get()), *pcptr, *ConfigCopy.camera_data[i].trafo);
@@ -123,9 +124,9 @@ void draw_pointcloud(window_util* app, multiFrame& multiframe)
 	}
 	else {
 		// 'life' mode action
-		if (!loaded_mode && multiframe.Configuration.camera_data.size() > 0) {
-			// this is the real 'life' rendering
-			for (auto pnt : multiframe.getPointCloud()->points) {
+        if (!loaded_mode && multiframe->configuration.camera_data.size() > 0) {
+			// this is the real 'life' rendering of the merged cloud
+            for (auto pnt : multiframe->getPointCloud()->points) {
 				float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
 				glColor3fv(col);
 				float vert[] = { pnt.x, pnt.y, pnt.z };
@@ -133,7 +134,7 @@ void draw_pointcloud(window_util* app, multiFrame& multiframe)
 			}
 		}
 		else {
-			// this is the stilled 'life' rendering (loaded mode)
+            // this is the stilled 'life' rendering (loaded mode): rendering all individual pointclouds
 			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 				cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
 				transformPointCloud(*(ConfigCopy.camera_data[i].cloud.get()), *pcptr, *ConfigCopy.camera_data[i].trafo);
@@ -151,13 +152,13 @@ void draw_pointcloud(window_util* app, multiFrame& multiframe)
 }
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
-void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
+void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 {
-	app.on_left_mouse = [&](bool pressed) {
-		app.app_state()->ml = pressed;
+	app->on_left_mouse = [&](bool pressed) {
+		app->app_state()->ml = pressed;
 	};
 
-	app.on_mouse_scroll = [&](double xoffset, double yoffset) {
+	app->on_mouse_scroll = [&](double xoffset, double yoffset) {
 		if (do_align) {
 			Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
 			if (rotation) {
@@ -168,16 +169,16 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 			}
 		}
 		else {
-			app.app_state()->offset -= static_cast<float>(yoffset);
+			app->app_state()->offset -= static_cast<float>(yoffset);
 		}
 	};
 
-	app.on_mouse_move = [&](double x, double y) {
-		if (app.app_state()->ml) {
+	app->on_mouse_move = [&](double x, double y) {
+		if (app->app_state()->ml) {
 			if (do_align) {
 				Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
-				double dx = (x - app.app_state()->last_x) / (0.25 * app.width());
-				double dy = -(y - app.app_state()->last_y) / (0.25 * app.width());
+				double dx = (x - app->app_state()->last_x) / (0.25 * app->width());
+				double dy = -(y - app->app_state()->last_y) / (0.25 * app->width());
 				if (rotation) {
 					(*transform).translate(Eigen::Vector3d(cloudcenter.x(), cloudcenter.y(), cloudcenter.z()));
 					(*transform).rotate(Eigen::AngleAxisd(dx, Eigen::Vector3d::UnitY()));
@@ -189,36 +190,38 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 				}
 			}
 			else {
-				app.app_state()->yaw += (x - app.app_state()->last_x) / 10.0;
-				app.app_state()->pitch += (y - app.app_state()->last_y) / 10.0;
-				app.app_state()->pitch = std::max(app.app_state()->pitch, -85.0);
-				app.app_state()->pitch = std::min(app.app_state()->pitch, +85.0);
+				app->app_state()->yaw += (x - app->app_state()->last_x) / 10.0;
+				app->app_state()->pitch += (y - app->app_state()->last_y) / 10.0;
+				app->app_state()->pitch = std::max(app->app_state()->pitch, -85.0);
+				app->app_state()->pitch = std::min(app->app_state()->pitch, +85.0);
 			}
 		}
-		app.app_state()->last_x = x;
-		app.app_state()->last_y = y;
+		app->app_state()->last_x = x;
+		app->app_state()->last_y = y;
 	};
 
-	app.on_key_release = [&](int key) {
+	app->on_key_release = [&](int key) {
 		if (key == 256) { // Escape is interpreted as a reset of the transformation
 			if (do_align) {
 				Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
 				(*transform).setIdentity();
 			}
 			else {
-				app.app_state()->yaw = app.app_state()->pitch = 0;
-				app.app_state()->offset = 0.0;
+				app->app_state()->yaw = app->app_state()->pitch = 0;
+				app->app_state()->offset = 0.0;
 			}
 		}
 		else if (key == 65) {	// key = "a": start/stop Alignment
-			if (do_align) {	// switch to 'life'
-				//if (!loaded_mode && multiframe.Configuration.camera_data.size() > 0)
-				//	multiframe.Configuration = ConfigCopy; // set possible new transforms
+			if (do_align) {
+                // switch to 'life'
+                if (!loaded_mode && multiframe.configuration.camera_data.size() > 0)
+					multiframe.configuration = ConfigCopy; // set possible new transforms
 				do_align = false;
 			}
-			else {			// switch to 'align'
-				if (!loaded_mode && multiframe.Configuration.camera_data.size() > 0)
-					makeFreezeCopy(&multiframe.Configuration); // make a still copy of multiFrame's configuration
+			else {
+                // switch to 'align'
+                if (!loaded_mode && multiframe.configuration.camera_data.size() > 0)
+                    makeFreezeCopy(&multiframe.configuration); // make a still copy of multiFrame's configuration
 				if (aligncamera > ConfigCopy.camera_data.size())
 					aligncamera = 0;
 				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
@@ -231,8 +234,8 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 		else if (key == 76) {	// key = "l": load previous result
 			if (loaded_mode) {
 				// leaving loaded mode
-				if (multiframe.Configuration.camera_data.size() > 0) {
-					makeFreezeCopy(&multiframe.Configuration); // make a still copy of multiFrame's configuration
+                if (multiframe.configuration.camera_data.size() > 0) {
+                    makeFreezeCopy(&multiframe.configuration); // make a still copy of multiFrame's configuration
 					do_align = false; // that is the to be expected mode
 				}
 				loaded_mode = false;
@@ -254,7 +257,7 @@ void register_glfw_callbacks(window_util& app, multiFrame& multiframe)
 			}
 		}
 		else if (key == 81) {	// key = "q": Quit program
-			multiframe.~multiFrame();
+            multiframe.~multiFrame();
 			exit(0);
 		}
 		else if (key == 82) {	// key = "r": Rotate
@@ -294,7 +297,7 @@ int main(int argc, char * argv[]) try
 	multiFrame multiframe;
 
 	// register callbacks to allow manipulation of the PointCloud
-	register_glfw_callbacks(app, multiframe);
+    register_glfw_callbacks(&app, multiframe);
 
 	int frame_num = 0;
 	uint64_t time = 0;
@@ -303,16 +306,19 @@ int main(int argc, char * argv[]) try
 
 	printhelp();
 
-	if (multiframe.Configuration.camera_data.size() < 1) {
-		if (load_data() && ConfigCopy.camera_data.size() > 0)
-			do_align = true;
+    if (multiframe.configuration.camera_data.size() < 1) {
+        // no camera connected
+        if (load_data() && ConfigCopy.camera_data.size() > 0) {
+            loaded_mode = true;
+            do_align = true;
+        }
 		else {
 			std::cerr << "\nSorry: No cameras connected and no data to load\n\n";
 			return EXIT_FAILURE;
 		}
 	}
 	else
-		makeFreezeCopy(&multiframe.Configuration); // make a still copy of multiFrame's configuration
+            makeFreezeCopy(&multiframe.configuration); // make a still copy of multiFrame's configuration
 
 	while (app) {
 		if (!(do_align || loaded_mode)) {
@@ -329,7 +335,7 @@ int main(int argc, char * argv[]) try
 			mergedcenter += deltacenter;
 		}
 		// NB: draw pointcloud ignores the just obtained pointcloud, as it may want to draw pointclouds of the camera's individually rather than the merged one.
-		draw_pointcloud(&app, multiframe);
+		draw_pointcloud(&app, &multiframe);
 	}
 	return EXIT_SUCCESS;
 }

@@ -47,33 +47,33 @@ void draw_pointcloud(window_util* app, cwipc_pcl_pointcloud point_cloud)
 }
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
-void register_glfw_callbacks(window_util& app)
+void register_glfw_callbacks(window_util* app)
 {
-	app.on_left_mouse = [&](bool pressed) {
-		app.app_state()->ml = pressed;
+	app->on_left_mouse = [&](bool pressed) {
+        app->app_state()->ml = pressed;
 	};
 
-	app.on_mouse_scroll = [&](double xoffset, double yoffset) {
-		app.app_state()->offset -= static_cast<float>(yoffset);
+    app->on_mouse_scroll = [&](double xoffset, double yoffset) {
+		app->app_state()->offset -= static_cast<float>(yoffset);
 	};
 
-	app.on_mouse_move = [&](double x, double y) {
-		if (app.app_state()->ml) {
+	app->on_mouse_move = [&](double x, double y) {
+		if (app->app_state()->ml) {
 
-			app.app_state()->yaw += (x - app.app_state()->last_x) / 10.0;
-			app.app_state()->pitch += (y - app.app_state()->last_y) / 10.0;
-			app.app_state()->pitch = std::max(app.app_state()->pitch, -85.0);
-			app.app_state()->pitch = std::min(app.app_state()->pitch, +85.0);
+			app->app_state()->yaw += (x - app->app_state()->last_x) / 10.0;
+			app->app_state()->pitch += (y - app->app_state()->last_y) / 10.0;
+			app->app_state()->pitch = std::max(app->app_state()->pitch, -85.0);
+			app->app_state()->pitch = std::min(app->app_state()->pitch, +85.0);
 		}
-		app.app_state()->last_x = x;
-		app.app_state()->last_y = y;
+		app->app_state()->last_x = x;
+		app->app_state()->last_y = y;
 	};
 
-	app.on_key_release = [&](int key) {
+	app->on_key_release = [&](int key) {
 		if (key == 256) { // Escape is interpreted as a reset of the transformation
 
-			app.app_state()->yaw = app.app_state()->pitch = 0;
-			app.app_state()->offset = 0.0;
+			app->app_state()->yaw = app->app_state()->pitch = 0;
+			app->app_state()->offset = 0.0;
 		}
 		else if (key == 81) {	// key = "q": Quit program
 			exit(0);
@@ -106,7 +106,7 @@ int main(int argc, char * argv[]) try
 	window_util app(2560, 1440, "Multicamera Capturing");
 
 	// register callbacks to allow manipulation of the PointCloud
-	register_glfw_callbacks(app);
+	register_glfw_callbacks(&app);
 
 
 	int frame_num = 0;

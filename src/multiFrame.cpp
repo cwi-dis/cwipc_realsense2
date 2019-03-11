@@ -34,18 +34,18 @@ multiFrame::multiFrame() {
 			cd.usb = std::string(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
 			cd.cloud = new_cwipc_pcl_pointcloud();
 			cd.trafo = default_trafo;
-			Configuration.camera_data.push_back(cd);
+			configuration.camera_data.push_back(cd);
 		}
 	}
 
-	if (Configuration.camera_data.size() == 0) {
+	if (configuration.camera_data.size() == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
 		GeneratedPC = generate_pcl();
 		std::cout << "No cameras found, default production is a spinning generated pointcloud of " << GeneratedPC->size() << " data points\n";
 	}
 	else {
 		// Read the configuration
-		if (!file2config("cameraconfig.xml", &Configuration)) {
+		if (!file2config("cameraconfig.xml", &configuration)) {
 
 			// the configuration file did not fully match the current situation so we have to update the admin
 			std::vector<std::string> serials;
@@ -59,30 +59,30 @@ multiFrame::multiFrame() {
 			}
 			
 			// collect all camera's in the config that are connected
-			for (cameradata cd : Configuration.camera_data) {
+			for (cameradata cd : configuration.camera_data) {
 				if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 					realcams.push_back(cd);
 				else
 					std::cout << "WARNING: camera " << cd.serial << " is not connected\n";
 			}
 			// Reduce the active configuration to cameras that are connected
-			Configuration.camera_data = realcams;
+			configuration.camera_data = realcams;
 		}
 	}
 
 	// prepare ringbuffer
-	for (int i = 0; i < Configuration.ringbuffer_size; i++) {
+	for (int i = 0; i < configuration.ringbuffer_size; i++) {
 		cwipc_pcl_pointcloud buf(new_cwipc_pcl_pointcloud());
 		RingBuffer.push_back(buf);
 	}
 
 	// start the cameras
-	for (int i = 0; i < Configuration.camera_data.size(); i++)
-		camera_start(&(Configuration.camera_data[i]));
+	for (int i = 0; i < configuration.camera_data.size(); i++)
+		camera_start(&(configuration.camera_data[i]));
 }
 
 multiFrame::~multiFrame() {
-	for (cameradata cd : Configuration.camera_data) {
+	for (cameradata cd : configuration.camera_data) {
 		cd.pipe.stop();
 	}
 	std::cout << "stopped all camera's\n";
@@ -135,8 +135,8 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	int entry_to_return = 0;
-	if (Configuration.camera_data.size() > 0) {
-		for (cameradata ccfg : Configuration.camera_data) {
+	if (configuration.camera_data.size() > 0) {
+		for (cameradata ccfg : configuration.camera_data) {
 			camera_action(ccfg);
 		}
 		merge_views(RingBuffer[ring_index]);
@@ -168,7 +168,7 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
 		entry_to_return = ring_index;
 	}
-	ring_index = ring_index < Configuration.ringbuffer_size - 1 ? ++ring_index : 0;
+	ring_index = ring_index < configuration.ringbuffer_size - 1 ? ++ring_index : 0;
 	return RingBuffer[entry_to_return];
 }
 
@@ -187,14 +187,14 @@ void multiFrame::camera_start(cameradata* cd)
 	if (cd->usb[0] == '3') {
 		std::cout << "starting camera ser no: " << cd->serial << " in usb3 mode\n";
 		cfg.enable_device(cd->serial);
-		cfg.enable_stream(RS2_STREAM_COLOR, Configuration.usb3_width, Configuration.usb3_height, RS2_FORMAT_RGB8, Configuration.usb3_fps);
-		cfg.enable_stream(RS2_STREAM_DEPTH, Configuration.usb3_width, Configuration.usb3_height, RS2_FORMAT_Z16, Configuration.usb3_fps);
+		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_RGB8, configuration.usb3_fps);
+		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_Z16, configuration.usb3_fps);
 	}
 	else {
 		std::cout << "starting camera ser no: " << cd->serial << " in usb2 mode\n";
 		cfg.enable_device(cd->serial);
-		cfg.enable_stream(RS2_STREAM_COLOR, Configuration.usb2_width, Configuration.usb2_height, RS2_FORMAT_RGB8, Configuration.usb2_fps);
-		cfg.enable_stream(RS2_STREAM_DEPTH, Configuration.usb2_width, Configuration.usb2_height, RS2_FORMAT_Z16, Configuration.usb2_fps);
+		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_RGB8, configuration.usb2_fps);
+		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_Z16, configuration.usb2_fps);
 	}
 	cd->pipe.start(cfg);		// Start streaming with the configuration just set
 }
@@ -229,7 +229,7 @@ void multiFrame::camera_action(cameradata cd)
 
 	unsigned char *colors = (unsigned char*)color.get_data();
 
-	if (Configuration.background_removal) {
+	if (configuration.background_removal) {
 		float minz = 100.0f, maxz, minx;
 
 		// Set the background removal window
@@ -254,7 +254,7 @@ void multiFrame::camera_action(cameradata cd)
 				pt.r = colors[pi];
 				pt.g = colors[pi + 1];
 				pt.b = colors[pi + 2];
-				if (!Configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
+				if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
 					cd.cloud->push_back(pt);
 			}
 		}
@@ -271,7 +271,7 @@ void multiFrame::camera_action(cameradata cd)
 			pt.r = colors[pi];
 			pt.g = colors[pi + 1];
 			pt.b = colors[pi + 2];
-			if (!Configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
+			if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
 				cd.cloud->push_back(pt);
 		}
 	}
@@ -281,7 +281,7 @@ void multiFrame::merge_views(cwipc_pcl_pointcloud cloud_ptr)
 {
 	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 	cloud_ptr->clear();
-	for (cameradata cd : Configuration.camera_data) {
+	for (cameradata cd : configuration.camera_data) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 
 		if (cam_cld->size() > 0) {
@@ -290,13 +290,13 @@ void multiFrame::merge_views(cwipc_pcl_pointcloud cloud_ptr)
 		}
 	}
 
-	if (Configuration.cloud_resolution > 0) {
+	if (configuration.cloud_resolution > 0) {
 #ifdef CWIPC_DEBUG
 		std::cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 		pcl::VoxelGrid<cwipc_pcl_point> grd;
 		grd.setInputCloud(cloud_ptr);
-		grd.setLeafSize(Configuration.cloud_resolution, Configuration.cloud_resolution, Configuration.cloud_resolution);
+		grd.setLeafSize(configuration.cloud_resolution, configuration.cloud_resolution, configuration.cloud_resolution);
 		grd.setSaveLeafLayout(true);
 		grd.filter(*cloud_ptr);
 
