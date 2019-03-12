@@ -222,7 +222,7 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
                 // switch to 'align'
                 if (!loaded_mode && multiframe.configuration.camera_data.size() > 0)
                     makeFreezeCopy(&multiframe.configuration); // make a still copy of multiFrame's configuration
-				if (aligncamera > ConfigCopy.camera_data.size())
+				if (aligncamera >= ConfigCopy.camera_data.size())
 					aligncamera = 0;
 				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 				do_align = true;
@@ -249,7 +249,7 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 					std::cerr << "\nError: Data could not be loaded\n";
 					return;
 				}
-				if (aligncamera > ConfigCopy.camera_data.size())
+				if (aligncamera >= ConfigCopy.camera_data.size())
 					aligncamera = 0;
 				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 				loaded_mode = true;
