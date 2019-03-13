@@ -108,7 +108,6 @@ int main(int argc, char * argv[]) try
 	// register callbacks to allow manipulation of the PointCloud
 	register_glfw_callbacks(&app);
 
-
 	int frame_num = 0;
 	Eigen::Vector4f newcenter;
 	Eigen::Vector4f deltacenter;
@@ -133,17 +132,6 @@ int main(int argc, char * argv[]) try
 		if (!do_align)
 			mergedcenter += deltacenter;
 
-		if (!(captured_pc.get()->size() > 0)) continue;
-
-		// Automatically centre the cloud
-		if (!(frame_num++ % CENTERSTEPS)) {
-			pcl::compute3DCentroid(*captured_pc, newcenter);
-			deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
-		}
-		if (!do_align)
-			mergedcenter += deltacenter;
-
-		// NB: draw pointcloud ignores the obtained pointcloud, as it may want to draw individual pointclouds rather than the merged one.
 		draw_pointcloud(&app, captured_pc);
 	}
 #ifdef WITH_WIN32_LOADLIBRARY
