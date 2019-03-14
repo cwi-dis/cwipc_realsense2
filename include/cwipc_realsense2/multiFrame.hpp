@@ -48,52 +48,55 @@ struct cameradata {
 };
 
 struct configdata {
-	bool background_removal = true;		// If true reduces pointcloud to forground object 
-	bool greenscreen_removal = true;	// If true include greenscreen removal
+	// system data
 	int usb3_width = 1280;
 	int usb3_height = 720;
 	int usb3_fps = 30;
 	int usb2_width = 640;
 	int usb2_height = 480;
 	int usb2_fps = 15;
-	bool tiling = false;				// If true produce tiled stream
-	double cloud_resolution = 0.0;		// Resolution of voxelized pointclouds
-	double tile_resolution = 0.01;		// Resolution of tiling process
 	unsigned int ringbuffer_size = 1;	// Size of the ringbuffer
-	std::vector<cameradata> camera_data;// Storage of per camera data
+
+	// processing data
+	bool background_removal = true;		// If true reduces pointcloud to forground object 
+	bool greenscreen_removal = true;		// If true include greenscreen removal
+	bool depth_filtering = false;			// If true perform post filtering on depth frame
+	double cloud_resolution = 0.0;		// Resolution of voxelized pointclouds
+	bool tiling = false;					// If true produce tiled stream
+	double tile_resolution = 0.01;		// Resolution of tiling process
+
+	// per camera data
+	std::vector<cameradata> camera_data;
 };
+
 
 class CWIPC_DLL_ENTRY multiFrame {
 
 public:
+	// methods
 	multiFrame();
 	~multiFrame();
-
-	// API function that returns the merged pointcloud and timestamp
-	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp);
-
-	// return the merged cloud 
-	cwipc_pcl_pointcloud getPointCloud();
-
+	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp);	// API function that returns the merged pointcloud and timestamp
+	cwipc_pcl_pointcloud getPointCloud();				// return the merged cloud
+	
+	// variables
     configdata configuration;
 
 private:
+	// methods
+	void camera_start(cameradata* camera_data);			// Configure and initialize caputuring of one camera
+	void camera_action(cameradata camera_data);			// get new frames and update the camera's pointcloud
+	void merge_views(cwipc_pcl_pointcloud cloud_ptr);	// merge all camera's pointclouds into one
+	cwipc_pcl_pointcloud generate_pcl();					// generate a mathematical pointcloud
 
-	// Configure and initialize caputuring of one camera
-	void camera_start(cameradata* camera_data);
-
-	// get new frames from the camera and update the pointcloud of the camera's data 
-	void camera_action(cameradata camera_data);
-
-	void merge_views(cwipc_pcl_pointcloud cloud_ptr);
-
-	// generate a mathematical pointcloud
-	cwipc_pcl_pointcloud generate_pcl();
-
-	// Globals
-	std::vector<cwipc_pcl_pointcloud> RingBuffer;	// Buffer of merged pointclouds
-	cwipc_pcl_pointcloud GeneratedPC;				// Mathematical pointcloud for use without camera
-
-	int ring_index = 0;								// counter for ring buffer
+	// variables
+	std::vector<cwipc_pcl_pointcloud> RingBuffer;		// Buffer of merged pointclouds
+	cwipc_pcl_pointcloud GeneratedPC;					// Mathematical pointcloud for use without camera
+	int ring_index = 0;									// counter for ring buffer
+	rs2::decimation_filter dec_filter;					// Decimation - reduces depth frame density
+	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
+	rs2::spatial_filter spat_filter;						// Spatial    - edge-preserving spatial smoothing
+	rs2::temporal_filter temp_filter;					// Temporal   - reduces temporal noise
+	rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
 };
 #endif /* cwipw_realsense_multiFrame_hpp */

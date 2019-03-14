@@ -212,17 +212,30 @@ void multiFrame::camera_action(cameradata cd)
 		return;
 #else
 	// Wait to find if there is a next set of frames from the camera
-	auto frames = cd.pipe.wait_for_frames();
+	rs2::frameset frames = cd.pipe.wait_for_frames();
 #endif
 
-	auto depth = frames.get_depth_frame();
-	auto color = frames.get_color_frame();
+	rs2::depth_frame depth = frames.get_depth_frame();
+	rs2::video_frame color = frames.get_color_frame();
 
+	//std::cout << "size " << depth.get_height() << ", " << depth.get_width();
+	
+	//std::cout << " disp " << depth.get_height() << ", " << depth.get_width() << "\n";
 	cd.cloud->clear();
 
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
-	points = pc.calculate(depth);
+	if (configuration.depth_filtering) {
+		// Apply filters
+		//depth = dec_filter.process(depth);			// decimation filter
+		depth = depth_to_disparity.process(depth);	// transform into disparity domain
+		depth = spat_filter.process(depth);			// spatial filter
+		depth = temp_filter.process(depth);			// temporal filter
+		rs2::depth_frame filtered = disparity_to_depth.process(depth);	// revert back to depth domain
+		points = pc.calculate(filtered);
+	}
+	else
+		points = pc.calculate(depth);
 
 	// Generate new vertices and color vector
 	auto vertices = points.get_vertices();

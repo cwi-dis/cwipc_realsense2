@@ -44,6 +44,7 @@ bool file2config(const char* filename, configdata* config)
 	// get the processing related information
 	TiXmlElement* processingElement = configElement->FirstChildElement("processing");
 	if (processingElement) {
+		processingElement->QueryBoolAttribute("depthfiltering", &(config->depth_filtering));
 		processingElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
 		processingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
 		processingElement->QueryBoolAttribute("tiling", &(config->tiling));
@@ -144,6 +145,7 @@ void config2file(const char* filename, configdata* config)
 	cameraconfig->LinkEndChild(system);
 
 	TiXmlElement* processing = new TiXmlElement("processing");
+	processing->SetAttribute("depthfiltering", config->depth_filtering);
 	processing->SetAttribute("backgroundremoval", config->background_removal);
 	processing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
 	processing->SetAttribute("tiling", config->tiling);
