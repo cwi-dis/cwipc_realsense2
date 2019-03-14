@@ -15,6 +15,7 @@
 #define CENTERSTEPS 256
 
 bool do_align = false;
+bool life_align = false;
 bool loaded_mode = false;
 bool rotation = true;
 int aligncamera = 0;
@@ -228,6 +229,19 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 				do_align = true;
 			}
 		}
+		else if (key == 67) {	// key = "c": toggle still or life alignment
+			if (life_align)
+				life_align = false;
+			else
+				life_align = true;
+		}
+		else if (key == 70) {	// key = "f": toggle depth filter
+			if (multiframe.configuration.depth_filtering)
+				multiframe.configuration.depth_filtering = false;
+			else
+				multiframe.configuration.depth_filtering = true;
+		}
+
 		else if (key == 72) {	// key = "h": print help
 			printhelp();
 		}
@@ -321,7 +335,7 @@ int main(int argc, char * argv[]) try
             makeFreezeCopy(&multiframe.configuration); // make a still copy of multiFrame's configuration
 
 	while (app) {
-		if (!(do_align || loaded_mode)) {
+		if (!(do_align || loaded_mode) || life_align) {
 			// Here we ask for a pointcloud (the merger of all camera's) and thereby trigger the actual capturing
 			cwipc_pcl_pointcloud captured_pc = multiframe.get_pointcloud(&time);
 
