@@ -37,8 +37,6 @@ bool file2config(const char* filename, configdata* config)
 		systemElement->QueryIntAttribute("usb3width", &(config->usb3_width));
 		systemElement->QueryIntAttribute("usb3height", &(config->usb3_height));
 		systemElement->QueryIntAttribute("usb3fps", &(config->usb3_fps));
-		systemElement->QueryUnsignedAttribute("ringbuffersize", &(config->ringbuffer_size));
-		config->ringbuffer_size = config->ringbuffer_size < 1 ? 1 : config->ringbuffer_size;
 	}
 
 	// get the processing related information
@@ -144,7 +142,6 @@ void config2file(const char* filename, configdata* config)
 	system->SetAttribute("usb3width", config->usb3_width);
 	system->SetAttribute("usb3height", config->usb3_height);
 	system->SetAttribute("usb3fps", config->usb3_fps);
-	system->SetAttribute("ringbuffersize", config->ringbuffer_size);
 	cameraconfig->LinkEndChild(system);
 
 	TiXmlElement* processing = new TiXmlElement("processing");

@@ -61,7 +61,6 @@ struct configdata {
 	int usb2_width = 640;
 	int usb2_height = 480;
 	int usb2_fps = 15;
-	unsigned int ringbuffer_size = 1;	// Size of the ringbuffer
 
 	// processing data
 	bool background_removal = true;		// If true reduces pointcloud to forground object
@@ -92,13 +91,12 @@ private:
 	// methods
 	void camera_start(cameradata* camera_data);			// Configure and initialize caputuring of one camera
 	void camera_action(cameradata* camera_data);			// get new frames and update the camera's pointcloud
-	void merge_views(cwipc_pcl_pointcloud cloud_ptr);	// merge all camera's pointclouds into one
+	cwipc_pcl_pointcloud merge_views();					// merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();					// generate a mathematical pointcloud
 
 	// variables
-	std::vector<cwipc_pcl_pointcloud> RingBuffer;		// Buffer of merged pointclouds
+	cwipc_pcl_pointcloud MergedPC ;						// Merged pointcloud
 	cwipc_pcl_pointcloud GeneratedPC;					// Mathematical pointcloud for use without camera
-	int ring_index = 0;									// counter for ring buffer
 	rs2::decimation_filter dec_filter;					// Decimation - reduces depth frame density
 	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
 	rs2::spatial_filter spat_filter;						// Spatial    - edge-preserving spatial smoothing

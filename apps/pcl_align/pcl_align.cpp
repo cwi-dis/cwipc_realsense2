@@ -41,7 +41,7 @@ void printhelp() {
 	std::cout << "\t\"l\": toggle between 'life' and a 'loaded' configuration and snapshots to (re)align\n";
     std::cout << "\t\"f\": toggle depth filter\n";
     std::cout << "\t\"b\": toggle background removal\n";
-    std::cout << "\t\"<\" and \">\": move background removal plane\n";
+    std::cout << "\t\"arrows\": to move background removal plane\n";
     std::cout << "\t\"z\": return to active background removal\n";
     std::cout << "\t\"d\": toggle visualization depthplane\n";
     std::cout << "\t\"h\": print this help\n";

@@ -69,12 +69,7 @@ multiFrame::multiFrame() {
 			configuration.camera_data = realcams;
 		}
 	}
-
-	// prepare ringbuffer
-	for (int i = 0; i < configuration.ringbuffer_size; i++) {
-		cwipc_pcl_pointcloud buf(new_cwipc_pcl_pointcloud());
-		RingBuffer.push_back(buf);
-	}
+	MergedPC = new_cwipc_pcl_pointcloud();
 
 	// start the cameras
 	for (int i = 0; i < configuration.camera_data.size(); i++)
@@ -97,13 +92,13 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 	if (Configuration.camera_data.size() > 0) {
 		for (cameradata cd : Configuration.camera_data)
 			camera_action(cd);
-		merge_views(RingBuffer[ring_index]);
+		merge_views();
 
-		if (RingBuffer[ring_index].get()->size() > 0) {
+		if (MergedPC.get()->size() > 0) {
 #ifdef CWIPC_DEBUG
-			std::cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
+			std::cout << "capturer produced a merged cloud of " << MergedPC->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
-			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+			*pointcloud = reinterpret_cast<void *> (&(MergedPC));
 		}
 		else {
 #ifdef CWIPC_DEBUG
@@ -115,8 +110,8 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 			point.y = 1.0;
 			point.z = 1.0;
 			point.rgb = 0.0;
-			RingBuffer[ring_index]->points.push_back(point);
-			*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+			MergedPC->points.push_back(point);
+			*pointcloud = reinterpret_cast<void *> (&(MergedPC));
 		}
 	}
 	else {	// return a spinning generated mathematical pointcloud
@@ -124,8 +119,8 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
-		*pointcloud = reinterpret_cast<void *> (&(RingBuffer[ring_index]));
+		transformPointCloud(*GeneratedPC, *MergedPC, transform);
+		*pointcloud = reinterpret_cast<void *> (&(MergedPC));
 	}
 	ring_index = ring_index < Configuration.ringbuffer_size - 1 ? ++ring_index : 0;
 }
@@ -134,17 +129,15 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	int entry_to_return = 0;
 	if (configuration.camera_data.size() > 0) {
 		for (int i = 0; i < configuration.camera_data.size(); i++) {
 			camera_action(&configuration.camera_data[i]);
 		}
-		merge_views(RingBuffer[ring_index]);
-		if (RingBuffer[ring_index].get()->size() > 0) {
+
+		if (merge_views()->size() > 0) {
 #ifdef DEBUG
-			std::cout << "capturer produced a merged cloud of " << RingBuffer[ring_index].get()->size() << " points in ringbuffer " << ring_index << "\n";
+			std::cout << "capturer produced a merged cloud of " << MergedPC->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
-			entry_to_return = ring_index;
 		}
 		else {
 #ifdef DEBUG
@@ -156,8 +149,7 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 			point.y = 1.0;
 			point.z = 1.0;
 			point.rgb = 0.0;
-			RingBuffer[ring_index]->points.push_back(point);
-			entry_to_return = ring_index;
+			MergedPC->points.push_back(point);
 		}
 	}
 	else {	// return a spinning generated mathematical pointcloud
@@ -165,11 +157,9 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-		transformPointCloud(*GeneratedPC, *RingBuffer[ring_index], transform);
-		entry_to_return = ring_index;
+		transformPointCloud(*GeneratedPC, *MergedPC, transform);
 	}
-	ring_index = ring_index < configuration.ringbuffer_size - 1 ? ++ring_index : 0;
-	return RingBuffer[entry_to_return];
+	return MergedPC;
 }
 
 #endif
@@ -177,7 +167,7 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 // return the merged cloud 
 cwipc_pcl_pointcloud multiFrame::getPointCloud()
 {
-	return RingBuffer[ring_index];
+	return MergedPC;
 }
 
 // Configure and initialize caputuring of one camera
@@ -306,16 +296,16 @@ void multiFrame::camera_action(cameradata* cd)
 	}
 }
 
-void multiFrame::merge_views(cwipc_pcl_pointcloud cloud_ptr)
+cwipc_pcl_pointcloud multiFrame::merge_views()
 {
 	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
-	cloud_ptr->clear();
+	MergedPC->clear();
 	for (cameradata cd : configuration.camera_data) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 
 		if (cam_cld->size() > 0) {
 			transformPointCloud(*cam_cld, *aligned_cld, *cd.trafo);
-			*cloud_ptr.get() += *aligned_cld;
+			*MergedPC += *aligned_cld;
 		}
 	}
 
@@ -324,15 +314,16 @@ void multiFrame::merge_views(cwipc_pcl_pointcloud cloud_ptr)
 		std::cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 		pcl::VoxelGrid<cwipc_pcl_point> grd;
-		grd.setInputCloud(cloud_ptr);
+		grd.setInputCloud(MergedPC);
 		grd.setLeafSize(configuration.cloud_resolution, configuration.cloud_resolution, configuration.cloud_resolution);
 		grd.setSaveLeafLayout(true);
-		grd.filter(*cloud_ptr);
+		grd.filter(*MergedPC);
 
 #ifdef DEBUG
 		std::cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
+	return MergedPC;
 }
 
 // generate a mathematical pointcloud
