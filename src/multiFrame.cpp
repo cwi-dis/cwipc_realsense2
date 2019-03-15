@@ -225,17 +225,15 @@ void multiFrame::camera_action(cameradata cd)
 
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
-	if (configuration.depth_filtering) {
-		// Apply filters
+    
+	if (configuration.depth_filtering) {    // Apply filters
 		//depth = dec_filter.process(depth);			// decimation filter
 		depth = depth_to_disparity.process(depth);	// transform into disparity domain
 		depth = spat_filter.process(depth);			// spatial filter
 		depth = temp_filter.process(depth);			// temporal filter
-		rs2::depth_frame filtered = disparity_to_depth.process(depth);	// revert back to depth domain
-		points = pc.calculate(filtered);
+		depth = disparity_to_depth.process(depth);	// revert back to depth domain
 	}
-	else
-		points = pc.calculate(depth);
+	points = pc.calculate(depth);
 
 	// Generate new vertices and color vector
 	auto vertices = points.get_vertices();
@@ -243,21 +241,26 @@ void multiFrame::camera_action(cameradata cd)
 	unsigned char *colors = (unsigned char*)color.get_data();
 
 	if (configuration.background_removal) {
-		float minz = 100.0f, maxz, minx;
+		double minz = 100.0, maxz, minx;
 
 		// Set the background removal window
-		for (int i = 0; i < points.size(); i++) {
-			if (vertices[i].z != 0 && minz > vertices[i].z) {
-				minz = vertices[i].z;
-				minx = vertices[i].x;
-			}
-		}
-		maxz = 0.8f + minz;
+        for (int i = 0; i < points.size(); i++) {
+            if (vertices[i].z != 0 && minz > vertices[i].z) {
+                minz = vertices[i].z;
+                minx = vertices[i].x;
+            }
+        }
+        maxz = 0.8f + minz;
+        
+        if (configuration.background > 0.0) {
+            maxz = configuration.background;
+            minz = 0.0;
+        }
 
 		// Make PointCloud
 		for (int i = 0; i < points.size(); i++) {
-			float x = minx - vertices[i].x; x *= x;
-			float z = vertices[i].z;
+			double x = minx - vertices[i].x; x *= x;
+			double z = vertices[i].z;
 			if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
 				cwipc_pcl_point pt;
 				pt.x = vertices[i].x;
@@ -271,6 +274,24 @@ void multiFrame::camera_action(cameradata cd)
 					cd.cloud->push_back(pt);
 			}
 		}
+        if (configuration.debug) {
+            for (double x = minx - 2*maxz; x < minx + 2*maxz; x += maxz/20) {
+                for (double y = minx - 2*maxz; y < minx + 2*maxz; y += maxz/20) {
+                    //for (double x = xl; x < xh; x += (xh -xl)/100) {
+                    //for (double y = yl; y < yh; y += (yh -yl)/100) {
+                    double zx = minx - x; zx *= zx;
+                    cwipc_pcl_point pt;
+                    pt.x = x;
+                    pt.y = -y;
+                    pt.z = zx - maxz;
+                    pt.r = 0;
+                    pt.g = 222;
+                    pt.b = 0;
+                    cd.cloud->push_back(pt);
+                }
+            }
+        }
+
 	}
 	else {
 		// Make PointCloud

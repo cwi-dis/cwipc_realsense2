@@ -30,14 +30,20 @@ void printhelp() {
 	std::cout << "Use \"esc\" to reset the position of the (fused) cloud.\n";
 
 	std::cout << "\nAction keys for alignment of camera clouds:\n";
-	std::cout << "\t\"a\": toggle between 'life' and 'alignment mode'\n";
+    std::cout << "\t\"a\": toggle between 'life' and 'alignment mode'\n";
+    std::cout << "\t\"c\": toggle between 'still' and 'continuous'alignment'\n";
 	std::cout << "\t\"1-9\": select the camera to align\n";
 	std::cout << "\t\"r\": start cloud rotate mode\n";
 	std::cout << "\t\"t\": start cloud translate mode\n";
 	std::cout << "\t\"esc\": reset the cloud transformation of the active camera\n";
 	std::cout << "\t\"s\": save the configuration and snapshots of each camera to files\n";
 	std::cout << "\t\"l\": toggle between 'life' and a 'loaded' configuration and snapshots to (re)align\n";
-	std::cout << "\t\"h\": print this help\n";
+    std::cout << "\t\"f\": toggle depth filter\n";
+    std::cout << "\t\"b\": toggle background removal\n";
+    std::cout << "\t\"<\" and \">\": move background removal plane\n";
+    std::cout << "\t\"z\": return to active background removal\n";
+    std::cout << "\t\"d\": toggle debug visualization\n";
+    std::cout << "\t\"h\": print this help\n";
 	std::cout << "\t\"q\": quit program\n";
 }
 
@@ -229,12 +235,24 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 				do_align = true;
 			}
 		}
+        else if (key == 66) {    // key = "b": toggle background removal
+            if (multiframe.configuration.background_removal)
+                multiframe.configuration.background_removal = false;
+            else
+                multiframe.configuration.background_removal = true;
+        }
 		else if (key == 67) {	// key = "c": toggle still or life alignment
 			if (life_align)
 				life_align = false;
 			else
 				life_align = true;
 		}
+        else if (key == 68) {    // key = "d": toggle debug mode
+            if (multiframe.configuration.debug)
+                multiframe.configuration.debug = false;
+            else
+                multiframe.configuration.debug = true;
+        }
 		else if (key == 70) {	// key = "f": toggle depth filter
 			if (multiframe.configuration.depth_filtering)
 				multiframe.configuration.depth_filtering = false;
@@ -289,6 +307,19 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 			aligncamera = key - 49;
 			pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 		}
+        else if (key == 46) {   // key = "<" shift fixed background
+            if (multiframe.configuration.background == 0.0)
+                multiframe.configuration.background = 0.8;
+            multiframe.configuration.background *= 1.25;
+        }
+        else if (key == 44) {   // key = ">" shift fixed background
+            if (multiframe.configuration.background == 0.0)
+                multiframe.configuration.background = 0.8;
+            multiframe.configuration.background *= 0.8;
+        }
+        else if (key == 90) {   // key = "z" return to adaptive background
+            multiframe.configuration.background = 0.0;
+        }
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
 			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 				cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
@@ -299,6 +330,7 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 				cloud2file(ConfigCopy.camera_data[i].cloud, "pcl_original_" + ConfigCopy.camera_data[i].serial + ".ply");
 			}
 		}
+        else std::cout << key << std::endl;
 	};
 }
 
@@ -346,7 +378,7 @@ int main(int argc, char * argv[]) try
 				pcl::compute3DCentroid(*captured_pc, newcenter);
 				deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
 			}
-			mergedcenter += deltacenter;
+			//mergedcenter += deltacenter;
 		}
 		// NB: draw pointcloud ignores the just obtained pointcloud, as it may want to draw pointclouds of the camera's individually rather than the merged one.
 		draw_pointcloud(&app, &multiframe);

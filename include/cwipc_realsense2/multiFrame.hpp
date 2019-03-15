@@ -58,7 +58,9 @@ struct configdata {
 	unsigned int ringbuffer_size = 1;	// Size of the ringbuffer
 
 	// processing data
-	bool background_removal = true;		// If true reduces pointcloud to forground object 
+	bool background_removal = true;		// If true reduces pointcloud to forground object
+    double background = 0.0;
+
 	bool greenscreen_removal = true;		// If true include greenscreen removal
 	bool depth_filtering = false;			// If true perform post filtering on depth frame
 	double cloud_resolution = 0.0;		// Resolution of voxelized pointclouds
@@ -67,6 +69,8 @@ struct configdata {
 
 	// per camera data
 	std::vector<cameradata> camera_data;
+    
+    bool debug = false;
 };
 
 
