@@ -44,6 +44,12 @@ struct cameradata {
 	std::string usb;
 	rs2::pipeline pipe;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
+	double background_x = 0.0;
+	double background_y = 0.0;
+	double background_z = 0.0;
+	double minx;
+	double minz;
+	double maxz;
 	cwipc_pcl_pointcloud cloud;
 };
 
@@ -59,18 +65,14 @@ struct configdata {
 
 	// processing data
 	bool background_removal = true;		// If true reduces pointcloud to forground object
-    double background = 0.0;
-
 	bool greenscreen_removal = true;		// If true include greenscreen removal
-	bool depth_filtering = false;			// If true perform post filtering on depth frame
+	bool depth_filtering = false;		// If true perform post filtering on depth frame
 	double cloud_resolution = 0.0;		// Resolution of voxelized pointclouds
 	bool tiling = false;					// If true produce tiled stream
 	double tile_resolution = 0.01;		// Resolution of tiling process
 
 	// per camera data
 	std::vector<cameradata> camera_data;
-    
-    bool debug = false;
 };
 
 
@@ -89,7 +91,7 @@ public:
 private:
 	// methods
 	void camera_start(cameradata* camera_data);			// Configure and initialize caputuring of one camera
-	void camera_action(cameradata camera_data);			// get new frames and update the camera's pointcloud
+	void camera_action(cameradata* camera_data);			// get new frames and update the camera's pointcloud
 	void merge_views(cwipc_pcl_pointcloud cloud_ptr);	// merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();					// generate a mathematical pointcloud
 

@@ -136,8 +136,8 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	int entry_to_return = 0;
 	if (configuration.camera_data.size() > 0) {
-		for (cameradata ccfg : configuration.camera_data) {
-			camera_action(ccfg);
+		for (int i = 0; i < configuration.camera_data.size(); i++) {
+			camera_action(&configuration.camera_data[i]);
 		}
 		merge_views(RingBuffer[ring_index]);
 		if (RingBuffer[ring_index].get()->size() > 0) {
@@ -200,7 +200,7 @@ void multiFrame::camera_start(cameradata* cd)
 }
 
 // get new frames from the camera and update the pointcloud of the camera's data 
-void multiFrame::camera_action(cameradata cd)
+void multiFrame::camera_action(cameradata* cd)
 {
 	rs2::pointcloud pc;
 	rs2::points points;
@@ -208,11 +208,11 @@ void multiFrame::camera_action(cameradata cd)
 #ifdef POLLING
 	// Poll to find if there is a next set of frames from the camera
 	rs2::frameset frames;
-	if (!cd.pipe.poll_for_frames(&frames))
+	if (!cd->pipe.poll_for_frames(&frames))
 		return;
 #else
 	// Wait to find if there is a next set of frames from the camera
-	rs2::frameset frames = cd.pipe.wait_for_frames();
+	rs2::frameset frames = cd->pipe.wait_for_frames();
 #endif
 
 	rs2::depth_frame depth = frames.get_depth_frame();
@@ -221,7 +221,7 @@ void multiFrame::camera_action(cameradata cd)
 	//std::cout << "size " << depth.get_height() << ", " << depth.get_width();
 	
 	//std::cout << " disp " << depth.get_height() << ", " << depth.get_width() << "\n";
-	cd.cloud->clear();
+	cd->cloud->clear();
 
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
@@ -241,27 +241,40 @@ void multiFrame::camera_action(cameradata cd)
 	unsigned char *colors = (unsigned char*)color.get_data();
 
 	if (configuration.background_removal) {
-		double minz = 100.0, maxz, minx;
 
 		// Set the background removal window
-        for (int i = 0; i < points.size(); i++) {
-            if (vertices[i].z != 0 && minz > vertices[i].z) {
-                minz = vertices[i].z;
-                minx = vertices[i].x;
-            }
+        if (cd->background_z > 0.0) {
+            cd->maxz = cd->background_z;
+            cd->minz = 0.0;
+			if (cd->background_x != 0.0) {
+				cd->minx = cd->background_x;
+			}
+			else {
+				for (int i = 0; i < points.size(); i++) {
+					double minz = 100;
+					if (vertices[i].z != 0 && minz > vertices[i].z) {
+						minz = vertices[i].z;
+						cd->minx = vertices[i].x;
+					}
+				}
+			}
         }
-        maxz = 0.8f + minz;
-        
-        if (configuration.background > 0.0) {
-            maxz = configuration.background;
-            minz = 0.0;
-        }
+		else {
+			cd->minz = 100.0;
+			for (int i = 0; i < points.size(); i++) {
+				if (vertices[i].z != 0 && cd->minz > vertices[i].z) {
+					cd->minz = vertices[i].z;
+					cd->minx = vertices[i].x;
+				}
+			}
+			cd->maxz = 0.8f + cd->minz;
+		}
 
 		// Make PointCloud
 		for (int i = 0; i < points.size(); i++) {
-			double x = minx - vertices[i].x; x *= x;
+			double x = cd->minx - vertices[i].x; x *= x;
 			double z = vertices[i].z;
-			if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
+			if (cd->minz < z && z < cd->maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
 				cwipc_pcl_point pt;
 				pt.x = vertices[i].x;
 				pt.y = -vertices[i].y;
@@ -271,27 +284,9 @@ void multiFrame::camera_action(cameradata cd)
 				pt.g = colors[pi + 1];
 				pt.b = colors[pi + 2];
 				if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
-					cd.cloud->push_back(pt);
+					cd->cloud->push_back(pt);
 			}
 		}
-        if (configuration.debug) {
-            for (double x = minx - 2*maxz; x < minx + 2*maxz; x += maxz/20) {
-                for (double y = minx - 2*maxz; y < minx + 2*maxz; y += maxz/20) {
-                    //for (double x = xl; x < xh; x += (xh -xl)/100) {
-                    //for (double y = yl; y < yh; y += (yh -yl)/100) {
-                    double zx = minx - x; zx *= zx;
-                    cwipc_pcl_point pt;
-                    pt.x = x;
-                    pt.y = -y;
-                    pt.z = zx - maxz;
-                    pt.r = 0;
-                    pt.g = 222;
-                    pt.b = 0;
-                    cd.cloud->push_back(pt);
-                }
-            }
-        }
-
 	}
 	else {
 		// Make PointCloud
@@ -306,7 +301,7 @@ void multiFrame::camera_action(cameradata cd)
 			pt.g = colors[pi + 1];
 			pt.b = colors[pi + 2];
 			if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
-				cd.cloud->push_back(pt);
+				cd->cloud->push_back(pt);
 		}
 	}
 }

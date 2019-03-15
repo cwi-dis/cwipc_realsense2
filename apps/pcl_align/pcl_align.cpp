@@ -18,6 +18,7 @@ bool do_align = false;
 bool life_align = false;
 bool loaded_mode = false;
 bool rotation = true;
+bool depth_plane = false;
 int aligncamera = 0;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;	// Needed to be able to rotate around the cloud's centre of mass
@@ -32,7 +33,7 @@ void printhelp() {
 	std::cout << "\nAction keys for alignment of camera clouds:\n";
     std::cout << "\t\"a\": toggle between 'life' and 'alignment mode'\n";
     std::cout << "\t\"c\": toggle between 'still' and 'continuous'alignment'\n";
-	std::cout << "\t\"1-9\": select the camera to align\n";
+	std::cout << "\t\"1-9\": select the camera to manipulate (align or background)\n";
 	std::cout << "\t\"r\": start cloud rotate mode\n";
 	std::cout << "\t\"t\": start cloud translate mode\n";
 	std::cout << "\t\"esc\": reset the cloud transformation of the active camera\n";
@@ -42,7 +43,7 @@ void printhelp() {
     std::cout << "\t\"b\": toggle background removal\n";
     std::cout << "\t\"<\" and \">\": move background removal plane\n";
     std::cout << "\t\"z\": return to active background removal\n";
-    std::cout << "\t\"d\": toggle debug visualization\n";
+    std::cout << "\t\"d\": toggle visualization depthplane\n";
     std::cout << "\t\"h\": print this help\n";
 	std::cout << "\t\"q\": quit program\n";
 }
@@ -100,11 +101,47 @@ bool load_data() {
 	return true;
 }
 
+void draw_background_planes(window_util* app, multiFrame* multiframe) {
+	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
+	for (int i = 0; i < multiframe->configuration.camera_data.size(); i++) {
+		cameradata cd = multiframe->configuration.camera_data[i];
+		cwipc_pcl_pointcloud bgcld(new_cwipc_pcl_pointcloud());
+		for (double x = cd.minx - 2 * cd.maxz; x < cd.minx + 2 * cd.maxz; x += cd.maxz / 20) {
+			for (double y = cd.minx - 2 * cd.maxz; y < cd.minx + 2 * cd.maxz; y += cd.maxz / 20) {
+				double zx = cd.minx - x; zx *= zx;
+				cwipc_pcl_point pt;
+				pt.x = x;
+				pt.y = -y;
+				pt.z = zx - cd.maxz;
+				bgcld->push_back(pt);
+			}
+		}
+		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
+		transformPointCloud(*bgcld, *pcptr, *multiframe->configuration.camera_data[i].trafo);
+		for (auto pnt : pcptr->points) {
+			float col[3];
+			if (i == aligncamera) {	// highlight the cloud of the selected camera
+				col[0] = 0;
+				col[1] = 0.9;
+				col[2] = 0;
+			}
+			else {
+				col[0] = 0;
+				col[1] = 0.6;
+				col[2] = 0;
+			}
+			glColor3fv(col);
+			float vert[] = { pnt.x, pnt.y, pnt.z };
+			glVertex3fv(vert);
+		}
+	}
+	app->cleanup_gl();
+}
+
 // Handle the OpenGL setup needed to display all pointclouds
-void draw_pointcloud(window_util* app, multiFrame* multiframe)
+void draw_pointclouds(window_util* app, multiFrame* multiframe)
 {
 	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
-
 	// draw the pointcloud(s)
 	if (do_align) {
         // 'align' mode action: draw the individual pointclouds of the still
@@ -154,7 +191,6 @@ void draw_pointcloud(window_util* app, multiFrame* multiframe)
 			}
 		}
 	}
-
 	app->cleanup_gl();
 }
 
@@ -247,11 +283,11 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 			else
 				life_align = true;
 		}
-        else if (key == 68) {    // key = "d": toggle debug mode
-            if (multiframe.configuration.debug)
-                multiframe.configuration.debug = false;
+        else if (key == 68) {    // key = "d": toggle show depth plane
+            if (depth_plane)
+				depth_plane = false;
             else
-                multiframe.configuration.debug = true;
+				depth_plane = true;
         }
 		else if (key == 70) {	// key = "f": toggle depth filter
 			if (multiframe.configuration.depth_filtering)
@@ -259,7 +295,6 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 			else
 				multiframe.configuration.depth_filtering = true;
 		}
-
 		else if (key == 72) {	// key = "h": print help
 			printhelp();
 		}
@@ -296,9 +331,13 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 			rotation = true;
 		}
 		else if (key == 83) {	// key = "s": Save config and snapshots to file
-			config2file("cameraconfig.xml", &ConfigCopy);
-			for (int i = 0; i < ConfigCopy.camera_data.size(); i++)
-				cloud2file(ConfigCopy.camera_data[i].cloud, ConfigCopy.camera_data[i].serial + ".ply");
+			configdata* cfg = &ConfigCopy;
+			if (!loaded_mode && multiframe.configuration.camera_data.size() > 0) {
+				cfg = &multiframe.configuration;
+			}
+			config2file("cameraconfig.xml", cfg);
+			for (int i = 0; i < cfg->camera_data.size(); i++)
+				cloud2file(cfg->camera_data[i].cloud, cfg->camera_data[i].serial + ".ply");
 		}
 		else if (key == 84) {	// key = "t": Translate
 			rotation = false;
@@ -307,19 +346,35 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 			aligncamera = key - 49;
 			pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 		}
-        else if (key == 46) {   // key = "<" shift fixed background
-            if (multiframe.configuration.background == 0.0)
-                multiframe.configuration.background = 0.8;
-            multiframe.configuration.background *= 1.25;
-        }
-        else if (key == 44) {   // key = ">" shift fixed background
-            if (multiframe.configuration.background == 0.0)
-                multiframe.configuration.background = 0.8;
-            multiframe.configuration.background *= 0.8;
-        }
-        else if (key == 90) {   // key = "z" return to adaptive background
-            multiframe.configuration.background = 0.0;
-        }
+		else if (key == 265) {   // key = "arrow up" shift fixed background
+			if (multiframe.configuration.camera_data[aligncamera].background_z == 0.0)
+				multiframe.configuration.camera_data[aligncamera].background_z = multiframe.configuration.camera_data[aligncamera].maxz * 1.25;
+			multiframe.configuration.camera_data[aligncamera].background_z *= 1.25;
+		}
+		else if (key == 264) {   // key = "arrow down" shift fixed background
+			if (multiframe.configuration.camera_data[aligncamera].background_z == 0.0)
+				multiframe.configuration.camera_data[aligncamera].background_z = multiframe.configuration.camera_data[aligncamera].maxz * 0.8;
+			multiframe.configuration.camera_data[aligncamera].background_z *= 0.8;
+		}
+		else if (key == 263) {   // key = "arrow left" shift fixed background
+			if (multiframe.configuration.camera_data[aligncamera].background_z != 0.0) {
+				if (multiframe.configuration.camera_data[aligncamera].background_x == 0.0)
+					multiframe.configuration.camera_data[aligncamera].background_x = multiframe.configuration.camera_data[aligncamera].minx - 0.1;
+				multiframe.configuration.camera_data[aligncamera].background_x -= 0.1;
+			}
+		}
+		else if (key == 262) {   // key = "arrow right" shift fixed background
+			if (multiframe.configuration.camera_data[aligncamera].background_z != 0.0) {
+				if (multiframe.configuration.camera_data[aligncamera].background_x == 0.0)
+					multiframe.configuration.camera_data[aligncamera].background_x = multiframe.configuration.camera_data[aligncamera].minx + 0.1;
+				multiframe.configuration.camera_data[aligncamera].background_x += 0.1;
+			}
+		}
+		else if (key == 90) {   // key = "z" return to adaptive background
+			multiframe.configuration.camera_data[aligncamera].background_x = 0.0;
+			multiframe.configuration.camera_data[aligncamera].background_y = 0.0;
+			multiframe.configuration.camera_data[aligncamera].background_z = 0.0;
+		}
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
 			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 				cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
@@ -380,8 +435,11 @@ int main(int argc, char * argv[]) try
 			}
 			//mergedcenter += deltacenter;
 		}
+		if (depth_plane)
+			draw_background_planes(&app, &multiframe);
+
 		// NB: draw pointcloud ignores the just obtained pointcloud, as it may want to draw pointclouds of the camera's individually rather than the merged one.
-		draw_pointcloud(&app, &multiframe);
+		draw_pointclouds(&app, &multiframe);
 	}
 	return EXIT_SUCCESS;
 }

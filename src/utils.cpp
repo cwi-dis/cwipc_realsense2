@@ -84,6 +84,9 @@ bool file2config(const char* filename, configdata* config)
 			config->camera_data.push_back(*cd);
 			cd = &config->camera_data.back();
 		}
+		cameraElement->QueryDoubleAttribute("backgroundx", &(cd->background_x));
+		cameraElement->QueryDoubleAttribute("backgroundy", &(cd->background_y));
+		cameraElement->QueryDoubleAttribute("backgroundz", &(cd->background_z));
 
 		TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
 		if (trafo) {
@@ -156,6 +159,9 @@ void config2file(const char* filename, configdata* config)
 	for (cameradata cd : config->camera_data) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
+		cam->SetDoubleAttribute("backgroundx", cd.background_x);
+		cam->SetDoubleAttribute("backgroundy", cd.background_y);
+		cam->SetDoubleAttribute("backgroundz", cd.background_z);
 		cameraconfig->LinkEndChild(cam);
 
 		TiXmlElement* trafo = new TiXmlElement("trafo");
