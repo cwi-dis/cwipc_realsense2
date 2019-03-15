@@ -38,6 +38,18 @@ multiFrame::multiFrame() {
 		}
 	}
 
+	// also see filter code in librealsense/src/proc 
+	dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);
+
+	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.8);		// val between 0.25 and 1.0
+	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, 25);		// val between 1 and 50
+	spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);			// val between 1 and 5
+	spat_filter.set_option(RS2_OPTION_HOLES_FILL, 2);				// val between 1 and 6
+
+	temp_filter.set_option(RS2_OPTION_HOLES_FILL, 8);				// val between 0 and 8
+	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.3);		// val between 0 and 1
+	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, 50);		// val between 1 and 100
+
 	if (configuration.camera_data.size() == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
 		GeneratedPC = generate_pcl();
@@ -215,7 +227,7 @@ void multiFrame::camera_action(cameradata* cd)
 
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
-    
+	
 	if (configuration.depth_filtering) {    // Apply filters
 		//depth = dec_filter.process(depth);			// decimation filter
 		depth = depth_to_disparity.process(depth);	// transform into disparity domain
