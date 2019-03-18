@@ -39,27 +39,29 @@ bool file2config(const char* filename, configdata* config)
 		systemElement->QueryIntAttribute("usb3fps", &(config->usb3_fps));
 	}
 
-	// get the processing related information
-	TiXmlElement* processingElement = configElement->FirstChildElement("processing");
-	if (processingElement) {
-		processingElement->QueryBoolAttribute("depthfiltering", &(config->depth_filtering));
-		processingElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
-		processingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
-		processingElement->QueryBoolAttribute("tiling", &(config->tiling));
-		processingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
-		processingElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
-	}
-
-	TiXmlElement* filteringElement = processingElement->FirstChildElement("filtering");
-	filteringElement->QueryIntAttribute("decimation_value", &(config->decimation_value));
-	filteringElement->QueryIntAttribute("spatial_iterations", &(config->spatial_iterations));
-	filteringElement->QueryDoubleAttribute("spatial_alpha", &(config->spatial_alpha));
-	filteringElement->QueryIntAttribute("spatial_delta", &(config->spatial_delta));
-	filteringElement->QueryIntAttribute("spatial_filling", &(config->spatial_filling));
-	filteringElement->QueryDoubleAttribute("temporal_alpha", &(config->temporal_alpha));
-	filteringElement->QueryIntAttribute("temporal_delta", &(config->temporal_delta));
-	filteringElement->QueryIntAttribute("temporal_percistency", &(config->temporal_percistency));
-
+    // get the processing related information
+    TiXmlElement* processingElement = configElement->FirstChildElement("processing");
+    if (processingElement) {
+        processingElement->QueryBoolAttribute("depthfiltering", &(config->depth_filtering));
+        processingElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
+        processingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
+        processingElement->QueryBoolAttribute("tiling", &(config->tiling));
+        processingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
+        processingElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
+        
+        TiXmlElement* filteringElement = processingElement->FirstChildElement("filtering");
+        if (filteringElement) {
+            filteringElement->QueryIntAttribute("decimation_value", &(config->decimation_value));
+            filteringElement->QueryIntAttribute("spatial_iterations", &(config->spatial_iterations));
+            filteringElement->QueryDoubleAttribute("spatial_alpha", &(config->spatial_alpha));
+            filteringElement->QueryIntAttribute("spatial_delta", &(config->spatial_delta));
+            filteringElement->QueryIntAttribute("spatial_filling", &(config->spatial_filling));
+            filteringElement->QueryDoubleAttribute("temporal_alpha", &(config->temporal_alpha));
+            filteringElement->QueryIntAttribute("temporal_delta", &(config->temporal_delta));
+            filteringElement->QueryIntAttribute("temporal_percistency", &(config->temporal_percistency));
+        }
+    }
+    
 	bool allnewcameras = config->camera_data.size() == 0; // if empty we have to set up a new administration
 	int registeredcameras = 0;
 
