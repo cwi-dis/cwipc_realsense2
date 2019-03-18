@@ -63,12 +63,22 @@ struct configdata {
 	int usb2_fps = 15;
 
 	// processing data
-	bool background_removal = true;		// If true reduces pointcloud to forground object
-	bool greenscreen_removal = true;		// If true include greenscreen removal
-	bool depth_filtering = false;		// If true perform post filtering on depth frame
-	double cloud_resolution = 0.0;		// Resolution of voxelized pointclouds
-	bool tiling = false;					// If true produce tiled stream
-	double tile_resolution = 0.01;		// Resolution of tiling process
+	bool background_removal = true;     // If true reduces pointcloud to forground object
+	bool greenscreen_removal = true;	    // If true include greenscreen removal
+	bool depth_filtering = false;       // If true perform post filtering on depth frame
+	double cloud_resolution = 0.0;      // Resolution of voxelized pointclouds
+	bool tiling = false;	                // If true produce tiled stream
+	double tile_resolution = 0.01;      // Resolution of tiling process
+
+	// post processing filtering
+	int decimation_value = 2;           // int value between 2 and 8
+	int spatial_iterations = 2;         // int val between 1 and 5
+	double spatial_alpha = 0.5;         // val between 0.25 and 1.0
+	int spatial_delta = 20;             // int val between 1 and 50
+	int spatial_filling = 0;	            // int val between 0 and 6
+	double temporal_alpha = 0.4;	        // val between 0 and 1
+	int temporal_delta = 20;	            // val between 1 and 100
+	int temporal_percistency = 3;       // val between 0 and 8
 
 	// per camera data
 	std::vector<cameradata> camera_data;
@@ -81,27 +91,28 @@ public:
 	// methods
 	multiFrame();
 	~multiFrame();
-	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp);	// API function that returns the merged pointcloud and timestamp
-	cwipc_pcl_pointcloud getPointCloud();				// return the merged cloud
+	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
+	cwipc_pcl_pointcloud getPointCloud();                     // return the merged cloud
 	
 	// variables
     configdata configuration;
 
 private:
 	// methods
-	void camera_start(cameradata* camera_data);			// Configure and initialize caputuring of one camera
-	void camera_action(cameradata* camera_data);			// get new frames and update the camera's pointcloud
-	cwipc_pcl_pointcloud merge_views();					// merge all camera's pointclouds into one
-	cwipc_pcl_pointcloud generate_pcl();					// generate a mathematical pointcloud
+	void camera_start(cameradata* camera_data);               // Configure and initialize caputuring of one camera
+	void camera_action(cameradata* camera_data);	              // get new frames and update the camera's pointcloud
+	cwipc_pcl_pointcloud merge_views();                       // merge all camera's pointclouds into one
+	cwipc_pcl_pointcloud generate_pcl();	                      // generate a mathematical pointcloud
 
 	// variables
-	cwipc_pcl_pointcloud MergedPC ;						// Merged pointcloud
-	cwipc_pcl_pointcloud GeneratedPC;					// Mathematical pointcloud for use without camera
+	cwipc_pcl_pointcloud MergedPC;                            // Merged pointcloud
+	cwipc_pcl_pointcloud GeneratedPC;                         // Mathematical pointcloud for use without camera
 
-	rs2::decimation_filter dec_filter;					// Decimation - reduces depth frame density
+	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc 
+	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
 	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
-	rs2::spatial_filter spat_filter;						// Spatial    - edge-preserving spatial smoothing
-	rs2::temporal_filter temp_filter;					// Temporal   - reduces temporal noise
+	rs2::spatial_filter spat_filter;	                          // Spatial    - edge-preserving spatial smoothing
+	rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
 	rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
 };
 #endif /* cwipw_realsense_multiFrame_hpp */

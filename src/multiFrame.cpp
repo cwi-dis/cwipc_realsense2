@@ -38,18 +38,6 @@ multiFrame::multiFrame() {
 		}
 	}
 
-	// also see filter code in librealsense/src/proc 
-	dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);
-
-	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.8);		// val between 0.25 and 1.0
-	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, 25);		// val between 1 and 50
-	spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);			// val between 1 and 5
-	spat_filter.set_option(RS2_OPTION_HOLES_FILL, 2);				// val between 1 and 6
-
-	temp_filter.set_option(RS2_OPTION_HOLES_FILL, 8);				// val between 0 and 8
-	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.3);		// val between 0 and 1
-	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, 50);		// val between 1 and 100
-
 	if (configuration.camera_data.size() == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
 		GeneratedPC = generate_pcl();
@@ -82,6 +70,18 @@ multiFrame::multiFrame() {
 		}
 	}
 	MergedPC = new_cwipc_pcl_pointcloud();
+
+	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc 
+	dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
+
+	spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.spatial_iterations);
+	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.spatial_alpha);
+	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.spatial_delta);
+	spat_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.spatial_filling);
+
+	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.temporal_alpha);
+	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.temporal_delta);
+	temp_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.temporal_percistency);
 
 	// start the cameras
 	for (int i = 0; i < configuration.camera_data.size(); i++)

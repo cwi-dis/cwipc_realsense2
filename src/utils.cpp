@@ -50,7 +50,17 @@ bool file2config(const char* filename, configdata* config)
 		processingElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
 	}
 
-	bool allnewcameras = config->camera_data.size() == 0; // we have to set up a new administration
+	TiXmlElement* filteringElement = processingElement->FirstChildElement("filtering");
+	filteringElement->QueryIntAttribute("decimation_value", &(config->decimation_value));
+	filteringElement->QueryIntAttribute("spatial_iterations", &(config->spatial_iterations));
+	filteringElement->QueryDoubleAttribute("spatial_alpha", &(config->spatial_alpha));
+	filteringElement->QueryIntAttribute("spatial_delta", &(config->spatial_delta));
+	filteringElement->QueryIntAttribute("spatial_filling", &(config->spatial_filling));
+	filteringElement->QueryDoubleAttribute("temporal_alpha", &(config->temporal_alpha));
+	filteringElement->QueryIntAttribute("temporal_delta", &(config->temporal_delta));
+	filteringElement->QueryIntAttribute("temporal_percistency", &(config->temporal_percistency));
+
+	bool allnewcameras = config->camera_data.size() == 0; // if empty we have to set up a new administration
 	int registeredcameras = 0;
 
 	// now get the per camera info
@@ -152,6 +162,27 @@ void config2file(const char* filename, configdata* config)
 	processing->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
 	processing->SetDoubleAttribute("tileresolution", config->tile_resolution);
 	cameraconfig->LinkEndChild(processing);
+
+	processing->LinkEndChild(new TiXmlComment("Information on post processing filtering can be found in librealsense/doc/post-processing-filters.md"));
+	processing->LinkEndChild(new TiXmlComment("\tdecimation_value is an int between 2 and 8"));
+	processing->LinkEndChild(new TiXmlComment("\tspatial_iterations is an int between 1 and 5"));
+	processing->LinkEndChild(new TiXmlComment("\tspatial_alpha is is a float between 0.25 and 1.0"));
+	processing->LinkEndChild(new TiXmlComment("\tspatial_delta is an int between 1 and 50"));
+	processing->LinkEndChild(new TiXmlComment("\tspatial_filling is an int between 0 and 6"));
+	processing->LinkEndChild(new TiXmlComment("\ttemporal_alpha is is a float between 0 and 1"));
+	processing->LinkEndChild(new TiXmlComment("\ttemporal_delta is is an int between 1 and 100"));
+	processing->LinkEndChild(new TiXmlComment("\ttemporal_percistency is a float between 0 and 8"));
+
+	TiXmlElement* filtering = new TiXmlElement("filtering");
+	filtering->SetAttribute("decimation_value", config->decimation_value);
+	filtering->SetAttribute("spatial_iterations", config->spatial_iterations);
+	filtering->SetDoubleAttribute("spatial_alpha", config->spatial_alpha);
+	filtering->SetAttribute("spatial_delta", config->spatial_delta);
+	filtering->SetAttribute("spatial_filling", config->spatial_filling);
+	filtering->SetDoubleAttribute("temporal_alpha", config->temporal_alpha);
+	filtering->SetAttribute("temporal_delta", config->temporal_delta);
+	filtering->SetAttribute("temporal_percistency", config->temporal_percistency);
+	processing->LinkEndChild(filtering);
 
 	for (cameradata cd : config->camera_data) {
 		TiXmlElement* cam = new TiXmlElement("camera");
