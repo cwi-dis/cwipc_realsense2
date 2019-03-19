@@ -148,19 +148,33 @@ Action keys for alignment of camera clouds are:
 
 ## Expected input: *cameraconfig.xml*
 
-The configuration file *cameraconfig.xml* specifies system parameters type of processing and camera data.
-- The system parameters are width, heigth and framerate for usb2 and usb3 connections and the number of output buffers (an int).
-- The type of processing is backgroundremoval (0 or 1), greenscreenremoval (0 or 1), cloud resolution (in meters), and tile resolution (in meters).
-- The information for each camera is the serial number and the transformation for alignment.
+The configuration file *cameraconfig.xml* specifies system parameters type of processing, parameters for depth filtering and camera data.
+- System parameters are width, heigth and framerate for usb2 and usb3 connections and the number of output buffers (an int).
+- The processing that can be switched on/of is depthfiltering (for denoising depth values), backgroundremoval, greenscreenremoval and tiling (not available yet) this goes with parameter `tileresolution`. The parameter `cloudresolution` if not 0 can be used to reduce cloudsize.
+- Parameters for depth filtering.
+- Information for each camera is the serial number, the position of the background plane and the transformation for alignment.
 
 Below is an example config file.
 ```
 <?xml version="1.0" ?>
 <file>
     <CameraConfig>
-        <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" ringbuffersize="1" />
-        <processing backgroundremoval="1" greenscreenremoval="1" tiling="0" cloudresolution="0" tileresolution="0.01" />
-        <camera serial="802212060048">
+        <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
+        <!-- 'cloudresolution' and 'tileresolution' are specified in meters -->
+        <postprocessing depthfiltering="1" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tileresolution="0.01">
+            <!-- For information on depth filtering parameters see librealsense/doc/post-processing-filters.md -->
+            <!--	decimation_value is an int between 2 and 8 -->
+            <!--	spatial_iterations is an int between 1 and 5 -->
+            <!--	spatial_alpha is is a float between 0.25 and 1.0 -->
+            <!--	spatial_delta is an int between 1 and 50 -->
+            <!--	spatial_filling is an int between 0 and 6 -->
+            <!--	temporal_alpha is is a float between 0 and 1 -->
+            <!--	temporal_delta is is an int between 1 and 100 -->
+            <!--	temporal_percistency is a float between 0 and 8 -->
+            <depthfilterparameters decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+        </postprocessing>
+        <!-- backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane -->
+        <camera serial="802212060048" backgroundx="0.733779" backgroundy="0" backgroundz="2.18281">
             <trafo>
                 <values 
                 v00="0.278341" v01="0.0725892" v02="-0.957736" v03="-0.794437"
@@ -169,7 +183,7 @@ Below is an example config file.
                 v30="0" v31="0" v32="0" v33="1" />
             </trafo>
         </camera>
-        <camera serial="746112061997">
+        <camera serial="746112061997" backgroundx="0.0" backgroundy="0.0" backgroundz="0.0">
             <trafo>
                 <values 
                 v00="1" v01="0" v02="0" v03="0"
@@ -178,7 +192,7 @@ Below is an example config file.
                 v30="0" v31="0" v32="0" v33="1" />
             </trafo>
         </camera>
-        <camera serial="746112060605">
+        <camera serial="746112060605" backgroundx="0.0" backgroundy="0.0" backgroundz="0.0">
             <trafo>
                 <values 
                 v00="0.731788" v01="-0.0250268" v02="0.681072" v03="0.670926"

@@ -40,25 +40,25 @@ bool file2config(const char* filename, configdata* config)
 	}
 
     // get the processing related information
-    TiXmlElement* processingElement = configElement->FirstChildElement("processing");
-    if (processingElement) {
-        processingElement->QueryBoolAttribute("depthfiltering", &(config->depth_filtering));
-        processingElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
-        processingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
-        processingElement->QueryBoolAttribute("tiling", &(config->tiling));
-        processingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
-        processingElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
+    TiXmlElement* postprocessingElement = configElement->FirstChildElement("postprocessing");
+    if (postprocessingElement) {
+		postprocessingElement->QueryBoolAttribute("depthfiltering", &(config->depth_filtering));
+		postprocessingElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
+		postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
+		postprocessingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
+		postprocessingElement->QueryBoolAttribute("tiling", &(config->tiling));
+		postprocessingElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
         
-        TiXmlElement* filteringElement = processingElement->FirstChildElement("filtering");
-        if (filteringElement) {
-            filteringElement->QueryIntAttribute("decimation_value", &(config->decimation_value));
-            filteringElement->QueryIntAttribute("spatial_iterations", &(config->spatial_iterations));
-            filteringElement->QueryDoubleAttribute("spatial_alpha", &(config->spatial_alpha));
-            filteringElement->QueryIntAttribute("spatial_delta", &(config->spatial_delta));
-            filteringElement->QueryIntAttribute("spatial_filling", &(config->spatial_filling));
-            filteringElement->QueryDoubleAttribute("temporal_alpha", &(config->temporal_alpha));
-            filteringElement->QueryIntAttribute("temporal_delta", &(config->temporal_delta));
-            filteringElement->QueryIntAttribute("temporal_percistency", &(config->temporal_percistency));
+        TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
+        if (parameterElement) {
+			parameterElement->QueryIntAttribute("decimation_value", &(config->decimation_value));
+			parameterElement->QueryIntAttribute("spatial_iterations", &(config->spatial_iterations));
+			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->spatial_alpha));
+			parameterElement->QueryIntAttribute("spatial_delta", &(config->spatial_delta));
+			parameterElement->QueryIntAttribute("spatial_filling", &(config->spatial_filling));
+			parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->temporal_alpha));
+			parameterElement->QueryIntAttribute("temporal_delta", &(config->temporal_delta));
+			parameterElement->QueryIntAttribute("temporal_percistency", &(config->temporal_percistency));
         }
     }
     
@@ -156,36 +156,38 @@ void config2file(const char* filename, configdata* config)
 	system->SetAttribute("usb3fps", config->usb3_fps);
 	cameraconfig->LinkEndChild(system);
 
-	TiXmlElement* processing = new TiXmlElement("processing");
-	processing->SetAttribute("depthfiltering", config->depth_filtering);
-	processing->SetAttribute("backgroundremoval", config->background_removal);
-	processing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
-	processing->SetAttribute("tiling", config->tiling);
-	processing->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
-	processing->SetDoubleAttribute("tileresolution", config->tile_resolution);
-	cameraconfig->LinkEndChild(processing);
+	cameraconfig->LinkEndChild(new TiXmlComment(" 'cloudresolution' and 'tileresolution' are specified in meters "));
+	TiXmlElement* postprocessing = new TiXmlElement("postprocessing");
+	postprocessing->SetAttribute("depthfiltering", config->depth_filtering);
+	postprocessing->SetAttribute("backgroundremoval", config->background_removal);
+	postprocessing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
+	postprocessing->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
+	postprocessing->SetAttribute("tiling", config->tiling);
+	postprocessing->SetDoubleAttribute("tileresolution", config->tile_resolution);
+	cameraconfig->LinkEndChild(postprocessing);
 
-	processing->LinkEndChild(new TiXmlComment("Information on post processing filtering can be found in librealsense/doc/post-processing-filters.md"));
-	processing->LinkEndChild(new TiXmlComment("\tdecimation_value is an int between 2 and 8"));
-	processing->LinkEndChild(new TiXmlComment("\tspatial_iterations is an int between 1 and 5"));
-	processing->LinkEndChild(new TiXmlComment("\tspatial_alpha is is a float between 0.25 and 1.0"));
-	processing->LinkEndChild(new TiXmlComment("\tspatial_delta is an int between 1 and 50"));
-	processing->LinkEndChild(new TiXmlComment("\tspatial_filling is an int between 0 and 6"));
-	processing->LinkEndChild(new TiXmlComment("\ttemporal_alpha is is a float between 0 and 1"));
-	processing->LinkEndChild(new TiXmlComment("\ttemporal_delta is is an int between 1 and 100"));
-	processing->LinkEndChild(new TiXmlComment("\ttemporal_percistency is a float between 0 and 8"));
+	postprocessing->LinkEndChild(new TiXmlComment(" For information on depth filtering parameters see librealsense/doc/post-processing-filters.md "));
+	postprocessing->LinkEndChild(new TiXmlComment("\tdecimation_value is an int between 2 and 8 "));
+	postprocessing->LinkEndChild(new TiXmlComment("\tspatial_iterations is an int between 1 and 5 "));
+	postprocessing->LinkEndChild(new TiXmlComment("\tspatial_alpha is is a float between 0.25 and 1.0 "));
+	postprocessing->LinkEndChild(new TiXmlComment("\tspatial_delta is an int between 1 and 50 "));
+	postprocessing->LinkEndChild(new TiXmlComment("\tspatial_filling is an int between 0 and 6 "));
+	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_alpha is is a float between 0 and 1 "));
+	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_delta is is an int between 1 and 100 "));
+	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_percistency is a float between 0 and 8 "));
 
-	TiXmlElement* filtering = new TiXmlElement("filtering");
-	filtering->SetAttribute("decimation_value", config->decimation_value);
-	filtering->SetAttribute("spatial_iterations", config->spatial_iterations);
-	filtering->SetDoubleAttribute("spatial_alpha", config->spatial_alpha);
-	filtering->SetAttribute("spatial_delta", config->spatial_delta);
-	filtering->SetAttribute("spatial_filling", config->spatial_filling);
-	filtering->SetDoubleAttribute("temporal_alpha", config->temporal_alpha);
-	filtering->SetAttribute("temporal_delta", config->temporal_delta);
-	filtering->SetAttribute("temporal_percistency", config->temporal_percistency);
-	processing->LinkEndChild(filtering);
+	TiXmlElement* parameters = new TiXmlElement("depthfilterparameters");
+	parameters->SetAttribute("decimation_value", config->decimation_value);
+	parameters->SetAttribute("spatial_iterations", config->spatial_iterations);
+	parameters->SetDoubleAttribute("spatial_alpha", config->spatial_alpha);
+	parameters->SetAttribute("spatial_delta", config->spatial_delta);
+	parameters->SetAttribute("spatial_filling", config->spatial_filling);
+	parameters->SetDoubleAttribute("temporal_alpha", config->temporal_alpha);
+	parameters->SetAttribute("temporal_delta", config->temporal_delta);
+	parameters->SetAttribute("temporal_percistency", config->temporal_percistency);
+	postprocessing->LinkEndChild(parameters);
 
+	cameraconfig->LinkEndChild(new TiXmlComment(" backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane "));
 	for (cameradata cd : config->camera_data) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
