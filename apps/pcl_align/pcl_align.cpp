@@ -19,7 +19,7 @@ bool life_align = false;
 bool loaded_mode = false;
 bool rotation = true;
 bool depth_plane = false;
-int aligncamera = 0;
+int aligncamera = -1;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;	// Needed to be able to rotate around the cloud's centre of mass
 configdata ConfigCopy;			// Still copy of the configuration data of multiFrame
@@ -33,7 +33,7 @@ void printhelp() {
 	std::cout << "\nAction keys for alignment of camera clouds:\n";
     std::cout << "\t\"a\": toggle between 'life' and 'alignment mode'\n";
     std::cout << "\t\"c\": toggle between 'still' and 'continuous'alignment'\n";
-	std::cout << "\t\"1-9\": select the camera to manipulate (align or background)\n";
+	std::cout << "\t\"0-9\": select the camera to manipulate (for align or background, '0' = none\n";
 	std::cout << "\t\"r\": start cloud rotate mode\n";
 	std::cout << "\t\"t\": start cloud translate mode\n";
 	std::cout << "\t\"esc\": reset the cloud transformation of the active camera\n";
@@ -168,7 +168,7 @@ void draw_pointclouds(window_util* app, multiFrame* multiframe)
 	}
 	else {
 		// 'life' mode action
-        if (!loaded_mode && multiframe->configuration.camera_data.size() > 0) {
+        if (aligncamera < 0 && !loaded_mode && multiframe->configuration.camera_data.size() > 0) {
 			// this is the real 'life' rendering of the merged cloud
             for (auto pnt : multiframe->getPointCloud()->points) {
 				float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
@@ -179,14 +179,18 @@ void draw_pointclouds(window_util* app, multiFrame* multiframe)
 		}
 		else {
             // this is the stilled 'life' rendering (loaded mode): rendering all individual pointclouds
-			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
-				cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
-				transformPointCloud(*(ConfigCopy.camera_data[i].cloud.get()), *pcptr, *ConfigCopy.camera_data[i].trafo);
-				for (auto pnt : pcptr->points) {
-					float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
-					glColor3fv(col);
-					float vert[] = { pnt.x, pnt.y, pnt.z };
-					glVertex3fv(vert);
+			if (aligncamera >= 0) {
+				for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
+					if (i == aligncamera) {
+						cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
+						transformPointCloud(*(ConfigCopy.camera_data[i].cloud.get()), *pcptr, *ConfigCopy.camera_data[i].trafo);
+						for (auto pnt : pcptr->points) {
+							float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
+							glColor3fv(col);
+							float vert[] = { pnt.x, pnt.y, pnt.z };
+							glVertex3fv(vert);
+						}
+					}
 				}
 			}
 		}
@@ -202,42 +206,42 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 	};
 
 	app->on_mouse_scroll = [&](double xoffset, double yoffset) {
-		if (do_align) {
-			Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
-			if (rotation) {
-				(*transform).rotate(Eigen::AngleAxisd(yoffset / 100.0, Eigen::Vector3d::UnitZ()));
+			if (do_align) {
+				Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
+				if (rotation) {
+					(*transform).rotate(Eigen::AngleAxisd(yoffset / 100.0, Eigen::Vector3d::UnitZ()));
+				}
+				else {
+					(*transform).translate(Eigen::Vector3d(0.0, 0.0, -yoffset / 100.0));
+				}
 			}
 			else {
-				(*transform).translate(Eigen::Vector3d(0.0, 0.0, -yoffset / 100.0));
+				app->app_state()->offset -= static_cast<float>(yoffset);
 			}
-		}
-		else {
-			app->app_state()->offset -= static_cast<float>(yoffset);
-		}
 	};
 
 	app->on_mouse_move = [&](double x, double y) {
 		if (app->app_state()->ml) {
-			if (do_align) {
-				Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
-				double dx = (x - app->app_state()->last_x) / (0.25 * app->width());
-				double dy = -(y - app->app_state()->last_y) / (0.25 * app->width());
-				if (rotation) {
-					(*transform).translate(Eigen::Vector3d(cloudcenter.x(), cloudcenter.y(), cloudcenter.z()));
-					(*transform).rotate(Eigen::AngleAxisd(dx, Eigen::Vector3d::UnitY()));
-					(*transform).rotate(Eigen::AngleAxisd(-dy, Eigen::Vector3d::UnitX()));
-					(*transform).translate(-Eigen::Vector3d(cloudcenter.x(), cloudcenter.y(), cloudcenter.z()));
+				if (do_align) {
+					Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
+					double dx = (x - app->app_state()->last_x) / (0.25 * app->width());
+					double dy = -(y - app->app_state()->last_y) / (0.25 * app->width());
+					if (rotation) {
+						(*transform).translate(Eigen::Vector3d(cloudcenter.x(), cloudcenter.y(), cloudcenter.z()));
+						(*transform).rotate(Eigen::AngleAxisd(dx, Eigen::Vector3d::UnitY()));
+						(*transform).rotate(Eigen::AngleAxisd(-dy, Eigen::Vector3d::UnitX()));
+						(*transform).translate(-Eigen::Vector3d(cloudcenter.x(), cloudcenter.y(), cloudcenter.z()));
+					}
+					else {
+						(*transform).translate(Eigen::Vector3d(dx, dy, 0.0));
+					}
 				}
 				else {
-					(*transform).translate(Eigen::Vector3d(dx, dy, 0.0));
+					app->app_state()->yaw += (x - app->app_state()->last_x) / 10.0;
+					app->app_state()->pitch += (y - app->app_state()->last_y) / 10.0;
+					app->app_state()->pitch = std::max(app->app_state()->pitch, -85.0);
+					app->app_state()->pitch = std::min(app->app_state()->pitch, +85.0);
 				}
-			}
-			else {
-				app->app_state()->yaw += (x - app->app_state()->last_x) / 10.0;
-				app->app_state()->pitch += (y - app->app_state()->last_y) / 10.0;
-				app->app_state()->pitch = std::max(app->app_state()->pitch, -85.0);
-				app->app_state()->pitch = std::min(app->app_state()->pitch, +85.0);
-			}
 		}
 		app->app_state()->last_x = x;
 		app->app_state()->last_y = y;
@@ -245,14 +249,14 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 
 	app->on_key_release = [&](int key) {
 		if (key == 256) { // Escape is interpreted as a reset of the transformation
-			if (do_align) {
-				Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
-				(*transform).setIdentity();
-			}
-			else {
-				app->app_state()->yaw = app->app_state()->pitch = 0;
-				app->app_state()->offset = 0.0;
-			}
+				if (do_align) {
+					Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
+					(*transform).setIdentity();
+				}
+				else {
+					app->app_state()->yaw = app->app_state()->pitch = 0;
+					app->app_state()->offset = 0.0;
+				}
 		}
 		else if (key == 65) {	// key = "a": start/stop Alignment
 			if (do_align) {
@@ -260,12 +264,13 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
                 if (!loaded_mode && multiframe.configuration.camera_data.size() > 0)
 					multiframe.configuration = ConfigCopy; // set possible new transforms
 				do_align = false;
+				aligncamera = -1;
 			}
 			else {
                 // switch to 'align'
                 if (!loaded_mode && multiframe.configuration.camera_data.size() > 0)
                     makeFreezeCopy(&multiframe.configuration); // make a still copy of multiFrame's configuration
-				if (aligncamera >= ConfigCopy.camera_data.size())
+				if (aligncamera < 0 || aligncamera >= ConfigCopy.camera_data.size())
 					aligncamera = 0;
 				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 				do_align = true;
@@ -304,6 +309,7 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
                 if (multiframe.configuration.camera_data.size() > 0) {
                     makeFreezeCopy(&multiframe.configuration); // make a still copy of multiFrame's configuration
 					do_align = false; // that is the to be expected mode
+					aligncamera = -1;
 				}
 				loaded_mode = false;
 				std::cout << "loaded mode switched off\n";
@@ -316,7 +322,7 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 					std::cerr << "\nError: Data could not be loaded\n";
 					return;
 				}
-				if (aligncamera >= ConfigCopy.camera_data.size())
+				if (aligncamera < 0 || aligncamera >= ConfigCopy.camera_data.size())
 					aligncamera = 0;
 				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 				loaded_mode = true;
@@ -342,38 +348,50 @@ void register_glfw_callbacks(window_util* app, multiFrame& multiframe)
 		else if (key == 84) {	// key = "t": Translate
 			rotation = false;
 		}
-		else if (key >= 49 && key < ConfigCopy.camera_data.size() + 49) {	// key = "1-9": select a camera
-			aligncamera = key - 49;
-			pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
+		else if (key >= 48 && key < ConfigCopy.camera_data.size() + 49) {	// key = "0-9": select a camera ("0" = none)
+			if (!do_align || key > 48)
+				aligncamera = key - 49;
+			if (aligncamera >= 0)
+				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
 		}
 		else if (key == 265) {   // key = "arrow up" shift fixed background
-			if (multiframe.configuration.camera_data[aligncamera].background_z == 0.0)
-				multiframe.configuration.camera_data[aligncamera].background_z = multiframe.configuration.camera_data[aligncamera].maxz * 1.25;
-			multiframe.configuration.camera_data[aligncamera].background_z *= 1.25;
+			if (aligncamera >= 0) {
+				if (multiframe.configuration.camera_data[aligncamera].background_z == 0.0)
+					multiframe.configuration.camera_data[aligncamera].background_z = multiframe.configuration.camera_data[aligncamera].maxz * 1.25;
+				multiframe.configuration.camera_data[aligncamera].background_z *= 1.25;
+			}
 		}
 		else if (key == 264) {   // key = "arrow down" shift fixed background
-			if (multiframe.configuration.camera_data[aligncamera].background_z == 0.0)
-				multiframe.configuration.camera_data[aligncamera].background_z = multiframe.configuration.camera_data[aligncamera].maxz * 0.8;
-			multiframe.configuration.camera_data[aligncamera].background_z *= 0.8;
+			if (aligncamera >= 0) {
+				if (multiframe.configuration.camera_data[aligncamera].background_z == 0.0)
+					multiframe.configuration.camera_data[aligncamera].background_z = multiframe.configuration.camera_data[aligncamera].maxz * 0.8;
+				multiframe.configuration.camera_data[aligncamera].background_z *= 0.8;
+			}
 		}
 		else if (key == 263) {   // key = "arrow left" shift fixed background
-			if (multiframe.configuration.camera_data[aligncamera].background_z != 0.0) {
-				if (multiframe.configuration.camera_data[aligncamera].background_x == 0.0)
-					multiframe.configuration.camera_data[aligncamera].background_x = multiframe.configuration.camera_data[aligncamera].minx - 0.1;
-				multiframe.configuration.camera_data[aligncamera].background_x -= 0.1;
+			if (aligncamera >= 0) {
+				if (multiframe.configuration.camera_data[aligncamera].background_z != 0.0) {
+					if (multiframe.configuration.camera_data[aligncamera].background_x == 0.0)
+						multiframe.configuration.camera_data[aligncamera].background_x = multiframe.configuration.camera_data[aligncamera].minx - 0.1;
+					multiframe.configuration.camera_data[aligncamera].background_x -= 0.1;
+				}
 			}
 		}
 		else if (key == 262) {   // key = "arrow right" shift fixed background
-			if (multiframe.configuration.camera_data[aligncamera].background_z != 0.0) {
-				if (multiframe.configuration.camera_data[aligncamera].background_x == 0.0)
-					multiframe.configuration.camera_data[aligncamera].background_x = multiframe.configuration.camera_data[aligncamera].minx + 0.1;
-				multiframe.configuration.camera_data[aligncamera].background_x += 0.1;
+			if (aligncamera >= 0) {
+				if (multiframe.configuration.camera_data[aligncamera].background_z != 0.0) {
+					if (multiframe.configuration.camera_data[aligncamera].background_x == 0.0)
+						multiframe.configuration.camera_data[aligncamera].background_x = multiframe.configuration.camera_data[aligncamera].minx + 0.1;
+					multiframe.configuration.camera_data[aligncamera].background_x += 0.1;
+				}
 			}
 		}
 		else if (key == 90) {   // key = "z" return to adaptive background
-			multiframe.configuration.camera_data[aligncamera].background_x = 0.0;
-			multiframe.configuration.camera_data[aligncamera].background_y = 0.0;
-			multiframe.configuration.camera_data[aligncamera].background_z = 0.0;
+			if (aligncamera >= 0) {
+				multiframe.configuration.camera_data[aligncamera].background_x = 0.0;
+				multiframe.configuration.camera_data[aligncamera].background_y = 0.0;
+				multiframe.configuration.camera_data[aligncamera].background_z = 0.0;
+			}
 		}
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
 			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
@@ -433,7 +451,7 @@ int main(int argc, char * argv[]) try
 				pcl::compute3DCentroid(*captured_pc, newcenter);
 				deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
 			}
-			//mergedcenter += deltacenter;
+			mergedcenter += deltacenter;
 		}
 		if (depth_plane)
 			draw_background_planes(&app, &multiframe);
