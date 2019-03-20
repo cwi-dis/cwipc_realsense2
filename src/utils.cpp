@@ -8,9 +8,15 @@
 #endif
 #include "cwipc_realsense2/defs.h"
 #include "cwipc_realsense2/utils.h"
-#include "cwipc_realsense2/multiFrame.hpp"
 
 #include "tinyxml.h"
+
+typedef struct HsvColor
+{
+	unsigned char h;
+	unsigned char s;
+	unsigned char v;
+} HsvColor;
 
 // read and restore the camera transformation setting as stored in the configuration document
 bool file2config(const char* filename, configdata* config)

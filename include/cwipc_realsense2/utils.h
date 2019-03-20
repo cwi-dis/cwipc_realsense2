@@ -23,17 +23,6 @@ _CWIPC_REALSENSE2_EXPORT bool file2config(const char* filename, configdata* conf
 // store the current camera transformation setting into a xml document
 _CWIPC_REALSENSE2_EXPORT void config2file(const char* filename, configdata* config);
 
-typedef struct HsvColor
-{
-	unsigned char h;
-	unsigned char s;
-	unsigned char v;
-} HsvColor;
-
-_CWIPC_REALSENSE2_EXPORT cwipc_pcl_point* hsvToRgb(HsvColor hsv, cwipc_pcl_point* pnt);
-
-_CWIPC_REALSENSE2_EXPORT HsvColor rgbToHsv(cwipc_pcl_point* pnt);
-
 _CWIPC_REALSENSE2_EXPORT bool noChromaRemoval(cwipc_pcl_point* p);
 
 #endif /* cwipw_realsense_utils_h */
