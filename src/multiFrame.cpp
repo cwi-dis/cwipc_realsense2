@@ -344,7 +344,7 @@ multiFrame::generate_pcl()
 {
 	cwipc_pcl_pointcloud point_cloud_ptr(new_cwipc_pcl_pointcloud());
 	uint8_t r(255), g(15), b(15);
-	for (float z(-1.0f); z <= 1.0f; z += 0.005f) {
+	for (float z(-0.095f); z <= 0.095f; z += 0.005f) {
 		for (float angle(0.0); angle <= 360.0; angle += 1.0f) {
 			cwipc_pcl_point point;
 			point.x = 0.5f*cosf(pcl::deg2rad(angle))*(1.0f - z * z);
