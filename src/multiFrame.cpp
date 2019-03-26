@@ -344,36 +344,25 @@ multiFrame::generate_pcl()
 {
 	cwipc_pcl_pointcloud point_cloud_ptr(new_cwipc_pcl_pointcloud());
 	uint8_t r(255), g(15), b(15);
-    
-    cwipc_pcl_point pmin;
-    pmin.x = 0.0f;
-    pmin.y = 0.0f;
-    pmin.z = -1.0f;
-    uint32_t rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
-    pmin.rgb = *reinterpret_cast<float*>(&rgb);
-    point_cloud_ptr->points.push_back(pmin);
 
-	for (float z(-0.995f); z <= 0.995f; z += 0.005f) {
-		for (float angle(0.0); angle <= 360.0; angle += 1.0f) {
+	for (float z(-1.0f); z <= 1.0f; z += 0.005f) {
+        float angle(0.0);
+		while (angle <= 360.0) {
 			cwipc_pcl_point point;
 			point.x = 0.5f*cosf(pcl::deg2rad(angle))*(1.0f - z * z);
 			point.y = sinf(pcl::deg2rad(angle))*(1.0f - z * z);
 			point.z = z;
-            rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
+            uint32_t rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
 			point.rgb = *reinterpret_cast<float*>(&rgb);
 			point_cloud_ptr->points.push_back(point);
+            float r = sqrt(point.x*point.x + point.y*point.y);
+            if (r > 0.0)
+                angle += 0.18/r;
+            else break;
 		}
 		if (z < 0.0) { r -= 1; g += 1; }
 		else { g -= 1; b += 1; }
 	}
-    cwipc_pcl_point pmax;
-    pmax.x = 0.0f;
-    pmax.y = 0.0f;
-    pmax.z = 1.0f;
-    rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
-    pmax.rgb = *reinterpret_cast<float*>(&rgb);
-    point_cloud_ptr->points.push_back(pmax);
-
 	point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
 	point_cloud_ptr->height = 1;
 	return point_cloud_ptr;
