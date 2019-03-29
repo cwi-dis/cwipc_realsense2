@@ -1,13 +1,59 @@
-# VRTogether-capture
+# cwipc_realsense2
 
 This project has software for capturing point clouds using RealSense cameras. The software turns RealSense depth- and colorframes into a PCL pointcloud. It goes with apps to visualize the 3D pointcloud captured. The software runs with zero one or more RealSense cameras. If no cameras are found, pointclouds will be generated. If more depth cameras are connected, a configuration file named *cameraconfig.xml* to specify the merge conditions is expected (for details see: *Expected input*).
 
 [TOC]
 
 
-## Installations & Building
+## Installing
 
-The directory `VRTogether-capture` that is the root of this repository should be put on your system where you cloned all other repos. The CMake setup should be able to find all dependencies needed.
+For use within VRtogether you can get pre-built zipfiles (or tgzfiles for Mac/Linux) from <https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_realsense2/releases>. Download the most recent release with a normal v_X_._Y_._Z_ name. You will also need the accompanying _cwipc\_util_ installer from 
+<https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_util/releases>.
+
+### Windows
+
+- Install PCL 1.8 from <https://github.com/PointCloudLibrary/pcl/releases/download/pcl-1.8.1/PCL-1.8.1-AllInOne-msvc2017-win64.exe>. Make sure you select the "add to %PATH% for all users" option.
+- Install _librealsense2_ from <https://github.com/IntelRealSense/librealsense/releases>. Get the most recent _Intel.RealSense.SDK.exe_. Make sure you select the "add to %PATH% for all users" option.
+- Create a folder where you will install _all_ VRtogether DLLs and EXEs, for example `C:\vrtogether`.
+- Extract the `cwipc_util_win1064_vX.Y.zip` file into this folder. This will create `bin`, `lib` and `include` folders inside the `C:\vrtogether` folder.
+- Extract the `cwipc_realsense2_win1064_vX.Y.zip` file into this folder. This will put extra files in the `bin`, `lib` and `include` folders inside the `C:\vrtogether` folder and it should not remove the _util_ stuff from the previous step.
+- Add the `c:\vrtogether\bin` folder to the `%PATH%` system environment variable.
+
+### OSX
+
+- Install _brew_, and then
+
+  ```
+  brew install pcl
+  brew install homebrew/core/glfw3
+  brew install librealsense
+  ```
+
+- Extract both gzip files in the root directory, `/`. This will put the actual contents into `/usr/local`:
+
+  ```
+  cd /
+  [sudo] tar xfv .../cwipc_util_osx1012_vX.Y.tgz
+  [sudo] tar xfv .../cwipc_realsense2_osx1012_vX.Y.tgz
+  ```
+  
+### Ubuntu 18.04
+
+- Install _PCL_ with `apt-get install libpcl-dev`.
+- Install _librealsense_ following instructions at <https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md> for Ubuntu 18.04.
+- Extract the gzip files in the root directory, `/`. This will put the actual contents into `/usr/local`:
+
+  ```
+  cd /
+  [sudo] tar xfv .../cwipc_util_osx1012_vX.Y.tgz
+  [sudo] tar xfv .../cwipc_realsense2_osx1012_vX.Y.tgz
+  ```
+
+
+
+## Building
+
+The directory `cwipc_realsense2` that is the root of this repository should be put on your system where you cloned all other repos. The CMake setup should be able to find all dependencies needed.
 
 ### Windows
 
@@ -28,7 +74,7 @@ The directory `VRTogether-capture` that is the root of this repository should be
 
 #### Building:
 
-- Create a `build` subdirectory (suggested is `.../DIR/VRTogether-capture/build` where `DIR` is the directory where you have cloned all the repos).
+- Create a `build` subdirectory (suggested is `.../DIR/cwipc_realsense2/build` where `DIR` is the directory where you have cloned all the repos).
 Start *CMake*, point it to your source and build directory, and run *CMake->Configure*.
 	- A number of errors are expected and harmless:
 		- *DAVIDSDK* not found
@@ -89,7 +135,7 @@ Start *CMake*, point it to your source and build directory, and run *CMake->Conf
 
 #### Building:
 
-- Now build our software. In this directory, *VRTogether-capture*, create `build`, go there.
+- Now build our software. In this directory, *cwipc_realsense2*, create `build`, go there.
 - Run `cmake ..`.
 	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
 	- dynamic library is in _build/src/libcwipc_realsense2.dylib_, test programs are in _build/renderer/pcl\_renderer_ and _pcl\_align_.
@@ -113,7 +159,7 @@ Start *CMake*, point it to your source and build directory, and run *CMake->Conf
 
 #### Building:
 
-- - In this directory, *VRTogether-capture*, create `build`, go there.
+- - In this directory, *cwipc_realsense2*, create `build`, go there.
 - Run `cmake ..`.
 	- More exact locations to be provided...
 	- TBD: copy the outputs to a known location (for subsequent installing)
