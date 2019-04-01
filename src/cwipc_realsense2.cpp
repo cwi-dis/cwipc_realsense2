@@ -23,6 +23,14 @@ public:
         delete m_grabber;
     }
 
+    bool eof() {
+    	return false;
+    }
+
+    bool available(bool wait) {
+    	return m_grabber != NULL;
+    }
+
     cwipc* get() {
         if (m_grabber == NULL) return NULL;
         uint64_t timestamp;

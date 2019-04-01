@@ -20,6 +20,13 @@
 extern "C" {
 #endif
 
+/** \brief Capture pointclouds from realsense2 cameras.
+ *
+ * This function returns a cwipc_source that captures pointclouds from realsense
+ * cameras. If no camera is connected it will return "watermelon" pointclouds
+ * similar to the `cwipc_synthetic()` source.
+ */
+
 _CWIPC_REALSENSE2_EXPORT cwipc_source* cwipc_realsense2(char **errorMessage);
 
 #ifdef __cplusplus
