@@ -53,7 +53,9 @@ bool file2config(const char* filename, configdata* config)
 		postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
 		postprocessingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
 		postprocessingElement->QueryBoolAttribute("tiling", &(config->tiling));
-		postprocessingElement->QueryDoubleAttribute("tileresolution", &(config->tile_resolution));
+		postprocessingElement->QueryDoubleAttribute("tilingresolution", &(config->tiling_resolution));
+		const char* method = postprocessingElement->Attribute("tilingmethod");
+		if (method) config->tiling_method.assign(method);
         
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
@@ -169,7 +171,8 @@ void config2file(const char* filename, configdata* config)
 	postprocessing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
 	postprocessing->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
 	postprocessing->SetAttribute("tiling", config->tiling);
-	postprocessing->SetDoubleAttribute("tileresolution", config->tile_resolution);
+	postprocessing->SetDoubleAttribute("tilingresolution", config->tiling_resolution);
+	postprocessing->SetAttribute("tilingmethod", config->tiling_method.c_str());
 	cameraconfig->LinkEndChild(postprocessing);
 
 	postprocessing->LinkEndChild(new TiXmlComment(" For information on depth filtering parameters see librealsense/doc/post-processing-filters.md "));
