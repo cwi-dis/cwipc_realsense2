@@ -68,7 +68,8 @@ struct configdata {
 	bool depth_filtering = false;       // If true perform post filtering on depth frame
 	double cloud_resolution = 0.0;      // Resolution of voxelized pointclouds
 	bool tiling = false;	                // If true produce tiled stream
-	double tile_resolution = 0.01;      // Resolution of tiling process
+	double tiling_resolution = 0.01;      // Resolution of tiling process
+	std::string tiling_method = "camera"; // Method of tiling process
 
 	// post processing filtering
 	int decimation_value = 2;           // int value between 2 and 8
