@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     }
     int count = atoi(argv[1]);
     char filename[500];
-    char *error;
+    char *error = NULL;
     
     cwipc_source *generator = cwipc_realsense2(&error);
     if (error) {
