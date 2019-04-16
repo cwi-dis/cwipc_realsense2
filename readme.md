@@ -15,7 +15,8 @@ For use within VRtogether you can get pre-built zipfiles (or tgzfiles for Mac/Li
 ### Windows
 
 - Install PCL 1.8 from <https://github.com/PointCloudLibrary/pcl/releases/download/pcl-1.8.1/PCL-1.8.1-AllInOne-msvc2017-win64.exe>. Make sure you select the "add to %PATH% for all users" option.
-- Install _librealsense2_ from <https://github.com/IntelRealSense/librealsense/releases>. Get the most recent _Intel.RealSense.SDK.exe_. Make sure you select the "add to %PATH% for all users" option.
+- Install _librealsense2_ from <https://github.com/IntelRealSense/librealsense/releases>. Get **v2.20** recent _Intel.RealSense.SDK.exe_. Make sure you select the "add to %PATH% for all users" option.
+	- Note the bold **v2.20** in the previous line. Probably *v2.20.X* is fine, but other versions may lead to crashes (while things appear to start up fine).
 - Create a folder where you will install _all_ VRtogether DLLs and EXEs, for example `C:\vrtogether\installed`.
 - Extract the `cwipc_util_win1064_vX.Y.zip` file into `c:\vrtogether`. This zipfile has everything inside a toplevel `installed` folder, so by extracting in this place it will create `bin`, `lib` and `include` folders inside the `C:\vrtogether\installed` folder.
 - Extract both zipfiles (for _cwipc\_util_ and _cwipc\_realsense2_) in `c:\vrtogether`. The zipfiles have everything (`bin`, `lib`, etc) relative to a toplevel `installed` folder, so this should make everything end up in the correct place.
