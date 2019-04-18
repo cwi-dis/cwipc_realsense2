@@ -29,12 +29,17 @@ multiFrame::multiFrame() {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
 			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 			default_trafo->setIdentity();
+
 			cameradata cd;
 			cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-			cd.usb = std::string(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-			cd.cloud = new_cwipc_pcl_pointcloud();
 			cd.trafo = default_trafo;
+			cd.cloud = new_cwipc_pcl_pointcloud();
 			configuration.camera_data.push_back(cd);
+
+			realsensedata rsd;
+			rsd.serial = cd.serial;
+			rsd.usb = std::string(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+			realsense_data.push_back(rsd);
 		}
 	}
 
@@ -84,14 +89,13 @@ multiFrame::multiFrame() {
 	temp_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.temporal_percistency);
 
 	// start the cameras
-	for (int i = 0; i < configuration.camera_data.size(); i++)
-		camera_start(&(configuration.camera_data[i]));
+	for (int i = 0; i < realsense_data.size(); i++)
+		camera_start(&realsense_data[i]);
 }
 
 multiFrame::~multiFrame() {
-	for (cameradata cd : configuration.camera_data) {
-		cd.pipe.stop();
-	}
+	for (realsensedata rsd : realsense_data)
+		rsd.pipe.stop();
 	std::cout << "stopped all camera's\n";
 }
 
@@ -137,14 +141,14 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 	ring_index = ring_index < Configuration.ringbuffer_size - 1 ? ++ring_index : 0;
 }
 #else
+
 // API function that triggers the capture and returns the merged pointcloud and timestamp
 cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	if (configuration.camera_data.size() > 0) {
-		for (int i = 0; i < configuration.camera_data.size(); i++) {
-			camera_action(&configuration.camera_data[i]);
-		}
+	if (realsense_data.size() > 0) {
+		for (int i = 0; i < realsense_data.size(); i++)
+			camera_action(i);
 
 		if (merge_views()->size() > 0) {
 #ifdef DEBUG
@@ -183,38 +187,40 @@ cwipc_pcl_pointcloud multiFrame::getPointCloud()
 }
 
 // Configure and initialize caputuring of one camera
-void multiFrame::camera_start(cameradata* cd)
+void multiFrame::camera_start(realsensedata* rsd)
 {
 	rs2::config cfg;
-	if (cd->usb[0] == '3') {
-		std::cout << "starting camera ser no: " << cd->serial << " in usb3 mode\n";
-		cfg.enable_device(cd->serial);
+	if (rsd->usb[0] == '3') {
+		std::cout << "starting camera ser no: " << rsd->serial << " in usb3 mode\n";
+		cfg.enable_device(rsd->serial);
 		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_RGB8, configuration.usb3_fps);
 		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_Z16, configuration.usb3_fps);
 	}
 	else {
-		std::cout << "starting camera ser no: " << cd->serial << " in usb2 mode\n";
-		cfg.enable_device(cd->serial);
+		std::cout << "starting camera ser no: " << rsd->serial << " in usb2 mode\n";
+		cfg.enable_device(rsd->serial);
 		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_RGB8, configuration.usb2_fps);
 		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_Z16, configuration.usb2_fps);
 	}
-	cd->pipe.start(cfg);		// Start streaming with the configuration just set
+	rsd->pipe.start(cfg);		// Start streaming with the configuration just set
 }
 
 // get new frames from the camera and update the pointcloud of the camera's data 
-void multiFrame::camera_action(cameradata* cd)
+void multiFrame::camera_action(int camera_index)
 {
+	realsensedata* rsd = &realsense_data[camera_index];
+	cameradata* cd = &configuration.camera_data[camera_index];
 	rs2::pointcloud pc;
 	rs2::points points;
 
 #ifdef POLLING
 	// Poll to find if there is a next set of frames from the camera
 	rs2::frameset frames;
-	if (!cd->pipe.poll_for_frames(&frames))
+	if (!rsd->pipe.poll_for_frames(&frames))
 		return;
 #else
 	// Wait to find if there is a next set of frames from the camera
-	rs2::frameset frames = cd->pipe.wait_for_frames();
+	rs2::frameset frames = rsd->pipe.wait_for_frames();
 #endif
 
 	rs2::depth_frame depth = frames.get_depth_frame();
@@ -228,12 +234,12 @@ void multiFrame::camera_action(cameradata* cd)
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
 	
-	if (configuration.depth_filtering) {    // Apply filters
-		//depth = dec_filter.process(depth);			// decimation filter
-		depth = depth_to_disparity.process(depth);	// transform into disparity domain
-		depth = spat_filter.process(depth);			// spatial filter
-		depth = temp_filter.process(depth);			// temporal filter
-		depth = disparity_to_depth.process(depth);	// revert back to depth domain
+	if (configuration.depth_filtering) { // Apply filters
+		//depth = dec_filter.process(depth);          // decimation filter
+		depth = depth_to_disparity.process(depth);  // transform into disparity domain
+		depth = spat_filter.process(depth);         // spatial filter
+		depth = temp_filter.process(depth);         // temporal filter
+		depth = disparity_to_depth.process(depth);  // revert back to depth domain
 	}
 	points = pc.calculate(depth);
 
@@ -243,40 +249,41 @@ void multiFrame::camera_action(cameradata* cd)
 	unsigned char *colors = (unsigned char*)color.get_data();
 
 	if (configuration.background_removal) {
+		cameradata* cd = get_cameradata(rsd->serial);
 
 		// Set the background removal window
         if (cd->background_z > 0.0) {
-            cd->maxz = cd->background_z;
-            cd->minz = 0.0;
+            rsd->maxz = cd->background_z;
+			rsd->minz = 0.0;
 			if (cd->background_x != 0.0) {
-				cd->minx = cd->background_x;
+				rsd->minx = cd->background_x;
 			}
 			else {
 				for (int i = 0; i < points.size(); i++) {
 					double minz = 100;
 					if (vertices[i].z != 0 && minz > vertices[i].z) {
-						minz = vertices[i].z;
-						cd->minx = vertices[i].x;
+						rsd->minz = vertices[i].z;
+						rsd->minx = vertices[i].x;
 					}
 				}
 			}
         }
 		else {
-			cd->minz = 100.0;
+			rsd->minz = 100.0;
 			for (int i = 0; i < points.size(); i++) {
-				if (vertices[i].z != 0 && cd->minz > vertices[i].z) {
-					cd->minz = vertices[i].z;
-					cd->minx = vertices[i].x;
+				if (vertices[i].z != 0 && rsd->minz > vertices[i].z) {
+					rsd->minz = vertices[i].z;
+					rsd->minx = vertices[i].x;
 				}
 			}
-			cd->maxz = 0.8f + cd->minz;
+			rsd->maxz = 0.8f + rsd->minz;
 		}
 
 		// Make PointCloud
 		for (int i = 0; i < points.size(); i++) {
-			double x = cd->minx - vertices[i].x; x *= x;
+			double x = rsd->minx - vertices[i].x; x *= x;
 			double z = vertices[i].z;
-			if (cd->minz < z && z < cd->maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
+			if (rsd->minz < z && z < rsd->maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
 				cwipc_pcl_point pt;
 				pt.x = vertices[i].x;
 				pt.y = -vertices[i].y;
@@ -338,9 +345,27 @@ cwipc_pcl_pointcloud multiFrame::merge_views()
 	return MergedPC;
 }
 
+cameradata* multiFrame::get_cameradata(std::string serial) {
+	for (int i = 0; i < configuration.camera_data.size(); i++)
+		if (configuration.camera_data[i].serial == serial)
+			return &configuration.camera_data[i];
+	return NULL;
+}
+
+realsensedata* multiFrame::get_realsensedata(std::string serial) {
+	for (int i = 0; i < realsense_data.size(); i++)
+		if (realsense_data[i].serial == serial)
+			return &realsense_data[i];
+	return NULL;
+}
+
+realsensedata multiFrame::newrealsensedata() {
+	realsensedata rsd;
+	return rsd;
+}
+
 // generate a mathematical pointcloud
-cwipc_pcl_pointcloud
-multiFrame::generate_pcl()
+cwipc_pcl_pointcloud multiFrame::generate_pcl()
 {
 	cwipc_pcl_pointcloud point_cloud_ptr(new_cwipc_pcl_pointcloud());
 	uint8_t r(255), g(15), b(15);
@@ -357,7 +382,7 @@ multiFrame::generate_pcl()
 			point_cloud_ptr->points.push_back(point);
             float r = sqrt(point.x*point.x + point.y*point.y);
             if (r > 0.0)
-                angle += 0.18/r;
+                angle += 0.27/r;
             else break;
 		}
 		if (z < 0.0) { r -= 1; g += 1; }

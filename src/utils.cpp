@@ -94,10 +94,8 @@ bool file2config(const char* filename, configdata* config)
 				loadOkay = false;
 
 			cd = new cameradata();
-			cwipc_pcl_pointcloud empty_pntcld(new_cwipc_pcl_pointcloud());
 			boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
 			cd->serial = cameraElement->Attribute("serial");
-			cd->cloud = empty_pntcld;
 			cd->trafo = trafo;
 			config->camera_data.push_back(*cd);
 			cd = &config->camera_data.back();
