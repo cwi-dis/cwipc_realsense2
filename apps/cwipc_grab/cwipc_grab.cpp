@@ -2,20 +2,25 @@
 #include <fstream>
 
 #include "cwipc_util/api.h"
+#include "cwipc_realsense2/api.h"
 
 int main(int argc, char** argv)
 {
     //char *message = NULL;
     if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << "count directory" << std::endl;
-        std::cerr << "Creates COUNT synthetic pointclouds and stores the PLY files in the given DIRECTORY";
+        std::cerr << "Usage: " << argv[0] << " count directory" << std::endl;
+        std::cerr << "Creates COUNT pointclouds from a realsense2 camera and stores the PLY files in the given DIRECTORY" << std::endl;
         return 2;
     }
     int count = atoi(argv[1]);
     char filename[500];
-    char *error;
+    char *error = NULL;
     
-    cwipc_source *generator = cwipc_synthetic();
+    cwipc_source *generator = cwipc_realsense2(&error);
+    if (error) {
+    	std::cerr << argv[0] << ": creating realsense2 grabber failed: " << error << std::endl;
+    	return 1;
+    }
     int ok = 0;
     while (count-- > 0 && ok == 0) {
     	cwipc *pc = generator->get();

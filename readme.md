@@ -10,14 +10,17 @@ This project has software for capturing point clouds using RealSense cameras. Th
 For use within VRtogether you can get pre-built zipfiles (or tgzfiles for Mac/Linux) from <https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_realsense2/releases>. Download the most recent release with a normal v_X_._Y_._Z_ name. You will also need the accompanying _cwipc\_util_ installer from 
 <https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_util/releases>.
 
+[![pipeline status](https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_realsense2/badges/master/pipeline.svg)](https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_realsense2/commits/master)
+
 ### Windows
 
 - Install PCL 1.8 from <https://github.com/PointCloudLibrary/pcl/releases/download/pcl-1.8.1/PCL-1.8.1-AllInOne-msvc2017-win64.exe>. Make sure you select the "add to %PATH% for all users" option.
-- Install _librealsense2_ from <https://github.com/IntelRealSense/librealsense/releases>. Get the most recent _Intel.RealSense.SDK.exe_. Make sure you select the "add to %PATH% for all users" option.
-- Create a folder where you will install _all_ VRtogether DLLs and EXEs, for example `C:\vrtogether`.
-- Extract the `cwipc_util_win1064_vX.Y.zip` file into this folder. This will create `bin`, `lib` and `include` folders inside the `C:\vrtogether` folder.
-- Extract the `cwipc_realsense2_win1064_vX.Y.zip` file into this folder. This will put extra files in the `bin`, `lib` and `include` folders inside the `C:\vrtogether` folder and it should not remove the _util_ stuff from the previous step.
-- Add the `c:\vrtogether\bin` folder to the `%PATH%` system environment variable.
+- Install _librealsense2_ from <https://github.com/IntelRealSense/librealsense/releases>. Get **v2.20** recent _Intel.RealSense.SDK.exe_. Make sure you select the "add to %PATH% for all users" option.
+	- Note the bold **v2.20** in the previous line. Probably *v2.20.X* is fine, but other versions may lead to crashes (while things appear to start up fine).
+- Create a folder where you will install _all_ VRtogether DLLs and EXEs, for example `C:\vrtogether\installed`.
+- Extract the `cwipc_util_win1064_vX.Y.zip` file into `c:\vrtogether`. This zipfile has everything inside a toplevel `installed` folder, so by extracting in this place it will create `bin`, `lib` and `include` folders inside the `C:\vrtogether\installed` folder.
+- Extract both zipfiles (for _cwipc\_util_ and _cwipc\_realsense2_) in `c:\vrtogether`. The zipfiles have everything (`bin`, `lib`, etc) relative to a toplevel `installed` folder, so this should make everything end up in the correct place.
+- Add the `c:\vrtogether\installed\bin` folder to the `%PATH%` system environment variable.
 
 ### OSX
 
@@ -29,10 +32,10 @@ For use within VRtogether you can get pre-built zipfiles (or tgzfiles for Mac/Li
   brew install librealsense
   ```
 
-- Extract both gzip files in the root directory, `/`. This will put the actual contents into `/usr/local`:
+- Extract both gzipped tar files (for _cwipc\_util_ and _cwipc\_realsense2_) in the `/usr/local` directory:
 
   ```
-  cd /
+  cd /usr/local
   [sudo] tar xfv .../cwipc_util_osx1012_vX.Y.tgz
   [sudo] tar xfv .../cwipc_realsense2_osx1012_vX.Y.tgz
   ```
@@ -41,10 +44,10 @@ For use within VRtogether you can get pre-built zipfiles (or tgzfiles for Mac/Li
 
 - Install _PCL_ with `apt-get install libpcl-dev`.
 - Install _librealsense_ following instructions at <https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md> for Ubuntu 18.04.
-- Extract the gzip files in the root directory, `/`. This will put the actual contents into `/usr/local`:
+- Extract both gzipped tar files (for _cwipc\_util_ and _cwipc\_realsense2_) in the `/usr/local` directory:
 
   ```
-  cd /
+  cd /usr/local
   [sudo] tar xfv .../cwipc_util_osx1012_vX.Y.tgz
   [sudo] tar xfv .../cwipc_realsense2_osx1012_vX.Y.tgz
   ```
