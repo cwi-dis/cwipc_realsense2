@@ -16,8 +16,6 @@
 #endif
 #endif
 
-#include "cwipc_realsense2/multiFrame.hpp"
-
 _CWIPC_REALSENSE2_EXPORT bool file2config(const char* filename, configdata* config);
 
 // store the current camera transformation setting into a xml document
