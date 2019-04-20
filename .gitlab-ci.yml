@@ -102,7 +102,7 @@ build_win:
     - (zipfile=$PWD/cwipc_util_win1064_*.zip && cd /cygdrive/c/dist-win && unzip $zipfile)
   script:
     - mkdir -p build
-    - export ziplocation=$(pwd)/cwipc_codec_win1064_$CI_BUILD_TAG.zip
+    - export ziplocation=$(pwd)/cwipc_realsense2_win1064_$CI_BUILD_TAG.zip
     - cd build
     - cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_INSTALL_PREFIX="C:/dist-win/installed"
     - cmake --build . --config Release
