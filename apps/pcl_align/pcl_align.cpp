@@ -84,13 +84,13 @@ bool load_data(multiFrame* multiframe) {
 	if (!file2config("cameraconfig.xml", &ConfigCopy))
 		return false;
 
-	for (auto camera : ConfigCopy.camera_data) {
+	for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 		////////////////////
 		realsensedata rsd = multiframe->newrealsensedata();
-		rsd.serial = camera.serial;
-		camera.cloud = new_cwipc_pcl_pointcloud();
-		if (pcl::io::loadPLYFile<cwipc_pcl_point>(camera.serial + ext, *camera.cloud) < 0) {
-			std::cerr << "Could not load a .ply file for camera " << camera.serial << " as specified in the configuration file\n";
+		rsd.serial = ConfigCopy.camera_data[i].serial;
+		ConfigCopy.camera_data[i].cloud = new_cwipc_pcl_pointcloud();
+		if (pcl::io::loadPLYFile<cwipc_pcl_point>(ConfigCopy.camera_data[i].serial + ext, *ConfigCopy.camera_data[i].cloud) < 0) {
+			std::cerr << "Could not load a .ply file for camera " << ConfigCopy.camera_data[i].serial << " as specified in the configuration file\n";
 			return false;
 		}
 	}
