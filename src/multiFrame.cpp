@@ -213,6 +213,8 @@ void multiFrame::camera_action(int camera_index)
 	rs2::pointcloud pc;
 	rs2::points points;
 
+	uint8_t camera_label = camera_index = 0 ? 1 : (uint8_t)1 << camera_index;
+
 #ifdef POLLING
 	// Poll to find if there is a next set of frames from the camera
 	rs2::frameset frames;
@@ -292,6 +294,7 @@ void multiFrame::camera_action(int camera_index)
 				pt.r = colors[pi];
 				pt.g = colors[pi + 1];
 				pt.b = colors[pi + 2];
+				pt.a = camera_label;
 				if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
 					cd->cloud->push_back(pt);
 			}
@@ -309,6 +312,7 @@ void multiFrame::camera_action(int camera_index)
 			pt.r = colors[pi];
 			pt.g = colors[pi + 1];
 			pt.b = colors[pi + 2];
+			pt.a = camera_label;
 			if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
 				cd->cloud->push_back(pt);
 		}

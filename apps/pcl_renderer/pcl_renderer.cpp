@@ -37,8 +37,14 @@ void draw_pointcloud(window_util* app, cwipc_pcl_pointcloud point_cloud)
 
 	// draw the pointcloud(s)
 	for (auto pnt : point_cloud->points) {
-		float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
-		glColor3fv(col);
+		if (pnt.a) {
+			float col[] = { pnt.a & 1 ? 0.9 : 0.1, pnt.a & 2 ? 0.9 : 0.1, pnt.a & 4 ? 0.9 : 0.1 };
+			glColor3fv(col);
+		}
+		else {
+			float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
+			glColor3fv(col);
+		}
 		float vert[] = { pnt.x, pnt.y, pnt.z };
 		glVertex3fv(vert);
 	}
