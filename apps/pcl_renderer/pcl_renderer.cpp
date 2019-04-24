@@ -16,6 +16,8 @@
 
 typedef void(*GetPointCloudFunction)(uint64_t *, void **);
 
+#define SHOW_CAMERA_CONTRIBUTION_AS_COLOR
+
 #define CENTERSTEPS 256
 
 bool do_align = false;
@@ -37,14 +39,13 @@ void draw_pointcloud(window_util* app, cwipc_pcl_pointcloud point_cloud)
 
 	// draw the pointcloud(s)
 	for (auto pnt : point_cloud->points) {
-		if (pnt.a) {
-			float col[] = { pnt.a & 1 ? 0.9f : 0.1f, pnt.a & 2 ? 0.9f : 0.1f, pnt.a & 4 ? 0.9f : 0.1f };
-			glColor3fv(col);
-		}
-		else {
-			float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
-			glColor3fv(col);
-		}
+#ifdef SHOW_CAMERA_CONTRIBUTION_AS_COLOR
+		float col[] = { pnt.a & 1 ? 0.9f : 0.1f, pnt.a & 2 ? 0.9f : 0.1f, pnt.a & 4 ? 0.9f : 0.1f };
+		glColor3fv(col);
+#else
+		float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
+		glColor3fv(col);
+#endif
 		float vert[] = { pnt.x, pnt.y, pnt.z };
 		glVertex3fv(vert);
 	}
