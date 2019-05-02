@@ -36,6 +36,16 @@ class TestApi(unittest.TestCase):
         grabber.free()
         pc.free()
 
+    def test_cwipc_realsense2_configfile(self):
+        """Test that we can grab a realsense2 image when we pass in a (non-existent) config file"""
+        grabber = cwipc.realsense2.cwipc_realsense2("./nonexistent.xml")
+        self.assertFalse(grabber.eof())
+        self.assertTrue(grabber.available(True))
+        pc = grabber.get()
+        self._verify_pointcloud(pc)
+        grabber.free()
+        pc.free()
+
     def _verify_pointcloud(self, pc):
         points = pc.get_points()
         self.assertGreater(len(points), 1)
