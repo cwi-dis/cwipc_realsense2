@@ -21,11 +21,25 @@ extern "C" {
 #endif
 
 /** \brief Capture pointclouds from realsense2 cameras.
- *
+ * \param errorMessage An optional pointer to a string where any error message will be stored.
+ * \return A cwipc_source object.
+
  * This function returns a cwipc_source that captures pointclouds from realsense
  * cameras. If no camera is connected it will return "watermelon" pointclouds
  * similar to the `cwipc_synthetic()` source.
  */
+
+_CWIPC_REALSENSE2_EXPORT cwipc_source* cwipc_realsense2_ex(const char *configFilename, char **errorMessage);
+
+/** \brief Capture pointclouds from realsense2 cameras.
+* \param configFilename An option string with the filename of the camera configuration file.
+* \param errorMessage An optional pointer to a string where any error message will be stored.
+* \return A cwipc_source object.
+*
+* This function returns a cwipc_source that captures pointclouds from realsense
+* cameras. If no camera is connected it will return "watermelon" pointclouds
+* similar to the `cwipc_synthetic()` source.
+*/
 
 _CWIPC_REALSENSE2_EXPORT cwipc_source* cwipc_realsense2(char **errorMessage);
 

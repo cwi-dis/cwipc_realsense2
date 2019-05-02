@@ -7,8 +7,8 @@
 int main(int argc, char** argv)
 {
     //char *message = NULL;
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " count directory" << std::endl;
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " count directory [configfile]" << std::endl;
         std::cerr << "Creates COUNT pointclouds from a realsense2 camera and stores the PLY files in the given DIRECTORY" << std::endl;
         return 2;
     }
@@ -16,7 +16,13 @@ int main(int argc, char** argv)
     char filename[500];
     char *error = NULL;
     
-    cwipc_source *generator = cwipc_realsense2(&error);
+	cwipc_source *generator;
+	if (argc == 3) {
+		generator = cwipc_realsense2(&error);
+	}
+	else {
+		generator = cwipc_realsense2_ex(argv[3], &error);
+	}
     if (error) {
     	std::cerr << argv[0] << ": creating realsense2 grabber failed: " << error << std::endl;
     	return 1;

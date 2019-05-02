@@ -17,7 +17,14 @@
 #include "cwipc_realsense2/api.h"
 #include "cwipc_realsense2/utils.h"
 
-multiFrame::multiFrame() {
+multiFrame::multiFrame(const char *_configFilename)
+{
+	if (_configFilename) {
+		configFilename = _configFilename;
+	}
+	else {
+		configFilename = "cameraconfig.xml";
+	}
 	// Create librealsense context for managing all connected RealSense devices
 	rs2::context ctx;
 	auto devs = ctx.query_devices();
@@ -50,7 +57,7 @@ multiFrame::multiFrame() {
 	}
 	else {
 		// Read the configuration
-		if (!file2config("cameraconfig.xml", &configuration)) {
+		if (!file2config(configFilename.c_str(), &configuration)) {
 
 			// the configuration file did not fully match the current situation so we have to update the admin
 			std::vector<std::string> serials;

@@ -52,7 +52,7 @@ class CWIPC_DLL_ENTRY multiFrame {
 
 public:
 	// methods
-	multiFrame();
+	multiFrame(const char *_configFilename=NULL);
 	~multiFrame();
 	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
 	cwipc_pcl_pointcloud getPointCloud();                     // return the merged cloud
@@ -64,6 +64,7 @@ public:
     configdata configuration;
 
 private:
+	std::string configFilename;
 	// methods
 	void camera_start(realsensedata* camera_data);            // Configure and initialize caputuring of one camera
 	void camera_action(int camera_index);                     // get new frames and update the camera's pointcloud

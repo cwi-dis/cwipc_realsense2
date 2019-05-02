@@ -25,7 +25,7 @@ bool file2config(const char* filename, configdata* config)
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
-		std::cout << "\nWARNING: Failed to load cameraconfig.xml\n";
+		std::cout << "\nWARNING: Failed to load configfile " << filename << "\n";
 		if (config->camera_data.size() > 1)
 			std::cout << "\t Captured pointclouds will be merged based on unregistered cameras\n";
 		return false;

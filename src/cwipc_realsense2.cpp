@@ -13,25 +13,34 @@ class cwipc_source_realsense2_impl : public cwipc_source {
 private:
     multiFrame *m_grabber;
 public:
-    cwipc_source_realsense2_impl() : m_grabber(NULL){ m_grabber = new multiFrame(); }
+    cwipc_source_realsense2_impl(const char *configFilename=NULL)
+		: m_grabber(NULL)
+	{ 
+		m_grabber = new multiFrame(configFilename); 
+	}
 
-    ~cwipc_source_realsense2_impl() {
+    ~cwipc_source_realsense2_impl()
+	{
         delete m_grabber;
     }
 
-    void free() {
+    void free() 
+	{
         delete m_grabber;
     }
 
-    bool eof() {
+    bool eof() 
+	{
     	return false;
     }
 
-    bool available(bool wait) {
+    bool available(bool wait)
+	{
     	return m_grabber != NULL;
     }
 
-    cwipc* get() {
+    cwipc* get()
+	{
         if (m_grabber == NULL) return NULL;
         uint64_t timestamp;
         cwipc_pcl_pointcloud pc = m_grabber->get_pointcloud(&timestamp);
@@ -46,5 +55,10 @@ public:
 
 cwipc_source* cwipc_realsense2(char **errorMessage)
 {
-    return new cwipc_source_realsense2_impl();
+	return new cwipc_source_realsense2_impl();
+}
+
+cwipc_source* cwipc_realsense2_ex(const char *configFilename, char **errorMessage)
+{
+	return new cwipc_source_realsense2_impl(configFilename);
 }
