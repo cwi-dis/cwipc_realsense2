@@ -9,7 +9,7 @@
 
 #include "cwipc_realsense2/multiFrame.hpp"
 
-class cwipc_source_realsense2_impl : public cwipc_source {
+class cwipc_source_realsense2_impl : public cwipc_tiledsource {
 private:
     multiFrame *m_grabber;
 public:
@@ -47,18 +47,49 @@ public:
         if (pc == NULL) return NULL;
         return cwipc_from_pcl(pc, timestamp, NULL);
     }
+    
+    int maxtile()
+    {
+        if (m_grabber == NULL) return 0;
+        int nCamera = m_grabber->configuration.camera_data.size();
+        if (nCamera <= 1) {
+            // Using a single camera or synthetic grabber. 1 tile only.
+            return 1;
+        }
+        return 1<<nCamera;
+    }
+    
+    bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo, int infoVersion) {
+        if (m_grabber == NULL) return false;
+        if (infoVersion != CWIPC_TILEINFO_VERSION)
+            return false;
+        int nCamera = m_grabber->configuration.camera_data.size();
+        if (nCamera == 0) nCamera = 1; // The synthetic camera...
+        if (tilenum < 0 || tilenum >= nCamera) return false;
+        cwipc_tileinfo info = {0, 0, 180, 180};
+        switch(tilenum) {
+            case 0:
+                if (tileinfo) *tileinfo = info;
+                return true;
+            default:
+                // xxxjack fill in info from m_grabber->configuration.camera_data
+                if (tileinfo) *tileinfo = info;
+                return true;
+        }
+    }
+
 };
 
 //
 // C-compatible entry points
 //
 
-cwipc_source* cwipc_realsense2(char **errorMessage)
+cwipc_tiledsource* cwipc_realsense2(char **errorMessage)
 {
 	return new cwipc_source_realsense2_impl();
 }
 
-cwipc_source* cwipc_realsense2_ex(const char *configFilename, char **errorMessage)
+cwipc_tiledsource* cwipc_realsense2_ex(const char *configFilename, char **errorMessage)
 {
 	return new cwipc_source_realsense2_impl(configFilename);
 }

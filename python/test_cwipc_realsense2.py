@@ -36,6 +36,17 @@ class TestApi(unittest.TestCase):
         grabber.free()
         pc.free()
 
+    def test_cwipc_realsense2_tileinfo(self):
+        """Test that we can get tileinfo from a realsense2 grabber"""
+        grabber = cwipc.realsense2.cwipc_realsense2()
+        nTile = grabber.maxtile()
+        self.assertGreaterEqual(nTile, 1)
+        self.assertEqual(grabber.get_tileinfo_dict(0), {'nx':0, 'nz':0, 'cwangle':180, 'ccwangle':180})
+        for i in range(1, nTile):
+            tileInfo = grabber.get_tileinfo_dict(i)
+            self.assertIn('nx', tileInfo)
+        grabber.free()
+
     def test_cwipc_realsense2_configfile(self):
         """Test that we can grab a realsense2 image when we pass in a (non-existent) config file"""
         grabber = cwipc.realsense2.cwipc_realsense2("./nonexistent.xml")

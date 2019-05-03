@@ -29,7 +29,7 @@ extern "C" {
  * similar to the `cwipc_synthetic()` source.
  */
 
-_CWIPC_REALSENSE2_EXPORT cwipc_source* cwipc_realsense2_ex(const char *configFilename, char **errorMessage);
+_CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2_ex(const char *configFilename, char **errorMessage);
 
 /** \brief Capture pointclouds from realsense2 cameras.
 * \param configFilename An option string with the filename of the camera configuration file.
@@ -41,7 +41,7 @@ _CWIPC_REALSENSE2_EXPORT cwipc_source* cwipc_realsense2_ex(const char *configFil
 * similar to the `cwipc_synthetic()` source.
 */
 
-_CWIPC_REALSENSE2_EXPORT cwipc_source* cwipc_realsense2(char **errorMessage);
+_CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(char **errorMessage);
 
 #ifdef __cplusplus
 };
