@@ -68,6 +68,7 @@ public:
         if (tilenum < 0 || tilenum >= (1<<nCamera)) return false;
         cwipc_tileinfo info = {0, 0, 180, 180};
         switch(tilenum) {
+        	case 0:
             case 1:
             case 2:
             case 4:
