@@ -20,6 +20,7 @@ bool loaded_mode = false;
 bool rotation = true;
 bool depth_plane = false;
 int aligncamera = -1;
+cwipc_pcl_pointcloud mergeded_pc;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;	// Needed to be able to rotate around the cloud's centre of mass
 configdata ConfigCopy;			// Still copy of the configuration data of multiFrame
@@ -65,7 +66,8 @@ void cloud2file(cwipc_pcl_pointcloud pntcld, std::string filename)
 			std::to_string((*pntcld)[i].z) + " " +
 			std::to_string((*pntcld)[i].r) + " " +
 			std::to_string((*pntcld)[i].g) + " " +
-			std::to_string((*pntcld)[i].b) + "\n").c_str();
+			std::to_string((*pntcld)[i].b) + ", " +
+			std::to_string((*pntcld)[i].a) + "\n").c_str();
 	}
 	myfile << oss.str();
 	myfile.close();
@@ -84,15 +86,13 @@ bool load_data(multiFrame* multiframe) {
 	if (!file2config("cameraconfig.xml", &ConfigCopy))
 		return false;
 
-	for (auto camera : ConfigCopy.camera_data) {
-		////////////////////
+	for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
 		realsensedata rsd = multiframe->newrealsensedata();
-		rsd.serial = camera.serial;
-		camera.cloud = new_cwipc_pcl_pointcloud();
-		if (pcl::io::loadPLYFile<cwipc_pcl_point>(camera.serial + ext, *camera.cloud) < 0) {
-			std::cerr << "Could not load a .ply file for camera " << camera.serial << " as specified in the configuration file\n";
+		rsd.serial = ConfigCopy.camera_data[i].serial;
+		uint64_t ts = 0;
+		ConfigCopy.camera_data[i].cloud = cwipc_read((ConfigCopy.camera_data[i].serial + ext).c_str(), ts, NULL)->access_pcl_pointcloud();
+		if (ConfigCopy.camera_data[i].cloud == NULL)
 			return false;
-		}
 	}
 	return true;
 }
@@ -350,11 +350,12 @@ void register_glfw_callbacks(window_util* app, multiFrame* multiframe)
 				if (align_mode)
 					// saving the stilled capture
 					for (auto cd : ConfigCopy.camera_data)
-						cloud2file(cd.cloud, cd.serial + ".ply");
+						cloud2file(cd.cloud, cd.serial + ext);
 				else
 					// saving snapshot of life capturing
 					for (auto cd : multiframe->configuration.camera_data)
-						cloud2file(cd.cloud, cd.serial + ".ply");
+						cloud2file(cd.cloud, cd.serial + ext);
+				cloud2file(mergeded_pc, "merged_pc" + ext);
 			}
 		}
 		else if (key == 84) {	// key = "t": Translate
@@ -410,8 +411,8 @@ void register_glfw_callbacks(window_util* app, multiFrame* multiframe)
 
 				transformPointCloud(*ConfigCopy.camera_data[i].cloud, *aligned_cld, *ConfigCopy.camera_data[i].trafo);
 
-				cloud2file(aligned_cld, "pcl_aligned_" + ConfigCopy.camera_data[i].serial + ".ply");
-				cloud2file(ConfigCopy.camera_data[i].cloud, "pcl_original_" + ConfigCopy.camera_data[i].serial + ".ply");
+				cloud2file(aligned_cld, "pcl_aligned_" + ConfigCopy.camera_data[i].serial + ext);
+				cloud2file(ConfigCopy.camera_data[i].cloud, "pcl_original_" + ConfigCopy.camera_data[i].serial + ext);
 			}
 		}
         else std::cout << key << std::endl;
@@ -455,13 +456,13 @@ int main(int argc, char * argv[]) try
 	while (app) {
 		if (!(align_mode || loaded_mode) || life_align) {
 			// Here we ask for a pointcloud (the merger of all camera's) and thereby trigger the actual capturing
-			cwipc_pcl_pointcloud captured_pc = multiframe.get_pointcloud(&time);
+			mergeded_pc = multiframe.get_pointcloud(&time);
 
-			if (captured_pc.get() == NULL) continue;
+			if (mergeded_pc.get() == NULL) continue;
 
 			// Automatically centre the cloud
 			if (!(frame_num++ % CENTERSTEPS)) {
-				pcl::compute3DCentroid(*captured_pc, newcenter);
+				pcl::compute3DCentroid(*mergeded_pc, newcenter);
 				deltacenter = (newcenter - mergedcenter) / CENTERSTEPS;
 			}
 			mergedcenter += deltacenter;

@@ -65,17 +65,23 @@ public:
             return false;
         int nCamera = m_grabber->configuration.camera_data.size();
         if (nCamera == 0) nCamera = 1; // The synthetic camera...
-        if (tilenum < 0 || tilenum >= nCamera) return false;
+        if (tilenum < 0 || tilenum >= (1<<nCamera)) return false;
         cwipc_tileinfo info = {0, 0, 180, 180};
         switch(tilenum) {
-            case 0:
-                if (tileinfo) *tileinfo = info;
-                return true;
-            default:
+        	case 0:
+            case 1:
+            case 2:
+            case 4:
+            case 8:
+            case 16:
+            case 32:
+            case 64:
+            case 128:
                 // xxxjack fill in info from m_grabber->configuration.camera_data
                 if (tileinfo) *tileinfo = info;
                 return true;
         }
+		return false;
     }
 
 };

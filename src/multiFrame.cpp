@@ -220,7 +220,7 @@ void multiFrame::camera_action(int camera_index)
 	rs2::pointcloud pc;
 	rs2::points points;
 
-	uint8_t camera_label = camera_index = 0 ? 1 : (uint8_t)1 << camera_index;
+	uint8_t camera_label = (uint8_t)1 << camera_index;
 
 #ifdef POLLING
 	// Poll to find if there is a next set of frames from the camera
