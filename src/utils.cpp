@@ -97,12 +97,14 @@ bool file2config(const char* filename, configdata* config)
 			boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
 			cd->serial = cameraElement->Attribute("serial");
 			cd->trafo = trafo;
+			cd->background = { 0, 0, 0 };
+			cd->cameraposition = { 0, 0, 0 };
 			config->camera_data.push_back(*cd);
 			cd = &config->camera_data.back();
 		}
-		cameraElement->QueryDoubleAttribute("backgroundx", &(cd->background_x));
-		cameraElement->QueryDoubleAttribute("backgroundy", &(cd->background_y));
-		cameraElement->QueryDoubleAttribute("backgroundz", &(cd->background_z));
+		cameraElement->QueryDoubleAttribute("backgroundx", &(cd->background.x));
+		cameraElement->QueryDoubleAttribute("backgroundy", &(cd->background.y));
+		cameraElement->QueryDoubleAttribute("backgroundz", &(cd->background.z));
 
 		TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
 		if (trafo) {
@@ -198,9 +200,9 @@ void config2file(const char* filename, configdata* config)
 	for (cameradata cd : config->camera_data) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
-		cam->SetDoubleAttribute("backgroundx", cd.background_x);
-		cam->SetDoubleAttribute("backgroundy", cd.background_y);
-		cam->SetDoubleAttribute("backgroundz", cd.background_z);
+		cam->SetDoubleAttribute("backgroundx", cd.background.x);
+		cam->SetDoubleAttribute("backgroundy", cd.background.y);
+		cam->SetDoubleAttribute("backgroundz", cd.background.z);
 		cameraconfig->LinkEndChild(cam);
 
 		TiXmlElement* trafo = new TiXmlElement("trafo");

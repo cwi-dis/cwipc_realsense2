@@ -102,6 +102,8 @@ void draw_background_planes(window_util* app, multiFrame* multiframe) {
 	for (int i = 0; i < multiframe->configuration.camera_data.size(); i++) {
 		realsensedata* rsd = multiframe->get_realsensedata(multiframe->configuration.camera_data[i].serial);
 		cwipc_pcl_pointcloud bgcld(new_cwipc_pcl_pointcloud());
+
+		// generate raster on backgrounf=d
 		for (double x = rsd->minx - 2 * rsd->maxz; x < rsd->minx + 2 * rsd->maxz; x += rsd->maxz / 20) {
 			for (double y = rsd->minx - 2 * rsd->maxz; y < rsd->minx + 2 * rsd->maxz; y += rsd->maxz / 20) {
 				double zx = rsd->minx - x; zx *= zx;
@@ -109,23 +111,37 @@ void draw_background_planes(window_util* app, multiFrame* multiframe) {
 				pt.x = x;
 				pt.y = -y;
 				pt.z = zx - rsd->maxz;
+				pt.r = 0;
+				pt.g = 1;
+				pt.b = 0;
 				bgcld->push_back(pt);
 			}
 		}
+		// generate cameraposition
+		double d = 0.005;
+		for (double x = -d; x <= d; x += d) {
+			for (double y = -d; y <= d; y += d) {
+				for (double z = -d; z <= d; z += d) {
+					cwipc_pcl_point pt;
+					pt.x = x;
+					pt.y = y;
+					pt.z = z;
+					pt.r = 1;
+					pt.g = 0;
+					pt.b = 0;
+					bgcld->push_back(pt);
+				}
+			}
+		}
+
 		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
 		transformPointCloud(*bgcld, *pcptr, *multiframe->configuration.camera_data[i].trafo);
 		for (auto pnt : pcptr->points) {
 			float col[3];
-			if (i == aligncamera) {	// highlight the cloud of the selected camera
-				col[0] = 0;
-				col[1] = 0.95;
-				col[2] = 0;
-			}
-			else {
-				col[0] = 0;
-				col[1] = 0.4;
-				col[2] = 0;
-			}
+			double intens = i == aligncamera ? 0.95 : 0.4;	// highlight the cloud of the selected camera
+			col[0] = intens * pnt.r;
+			col[1] = intens * pnt.g;
+			col[2] = intens * pnt.b;
 			glColor3fv(col);
 			float vert[] = { pnt.x, pnt.y, pnt.z };
 			glVertex3fv(vert);
@@ -368,41 +384,41 @@ void register_glfw_callbacks(window_util* app, multiFrame* multiframe)
 		}
 		else if (key == 265) {   // key = "arrow up" shift fixed background
 			if (aligncamera >= 0) {
-				if (multiframe->configuration.camera_data[aligncamera].background_z == 0.0)
-					multiframe->configuration.camera_data[aligncamera].background_z = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->maxz * 1.25;
-				multiframe->configuration.camera_data[aligncamera].background_z *= 1.25;
+				if (multiframe->configuration.camera_data[aligncamera].background.z == 0.0)
+					multiframe->configuration.camera_data[aligncamera].background.z = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->maxz * 1.25;
+				multiframe->configuration.camera_data[aligncamera].background.z *= 1.25;
 			}
 		}
 		else if (key == 264) {   // key = "arrow down" shift fixed background
 			if (aligncamera >= 0) {
-				if (multiframe->configuration.camera_data[aligncamera].background_z == 0.0)
-					multiframe->configuration.camera_data[aligncamera].background_z = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->maxz * 0.8;
-				multiframe->configuration.camera_data[aligncamera].background_z *= 0.8;
+				if (multiframe->configuration.camera_data[aligncamera].background.z == 0.0)
+					multiframe->configuration.camera_data[aligncamera].background.z = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->maxz * 0.8;
+				multiframe->configuration.camera_data[aligncamera].background.z *= 0.8;
 			}
 		}
 		else if (key == 263) {   // key = "arrow left" shift fixed background
 			if (aligncamera >= 0) {
-				if (multiframe->configuration.camera_data[aligncamera].background_z != 0.0) {
-					if (multiframe->configuration.camera_data[aligncamera].background_x == 0.0)
-						multiframe->configuration.camera_data[aligncamera].background_x = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->minx - 0.1;
-					multiframe->configuration.camera_data[aligncamera].background_x -= 0.1;
+				if (multiframe->configuration.camera_data[aligncamera].background.z != 0.0) {
+					if (multiframe->configuration.camera_data[aligncamera].background.x == 0.0)
+						multiframe->configuration.camera_data[aligncamera].background.x = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->minx - 0.1;
+					multiframe->configuration.camera_data[aligncamera].background.x -= 0.1;
 				}
 			}
 		}
 		else if (key == 262) {   // key = "arrow right" shift fixed background
 			if (aligncamera >= 0) {
-				if (multiframe->configuration.camera_data[aligncamera].background_z != 0.0) {
-					if (multiframe->configuration.camera_data[aligncamera].background_x == 0.0)
-						multiframe->configuration.camera_data[aligncamera].background_x = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->minx + 0.1;
-					multiframe->configuration.camera_data[aligncamera].background_x += 0.1;
+				if (multiframe->configuration.camera_data[aligncamera].background.z != 0.0) {
+					if (multiframe->configuration.camera_data[aligncamera].background.x == 0.0)
+						multiframe->configuration.camera_data[aligncamera].background.x = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->minx + 0.1;
+					multiframe->configuration.camera_data[aligncamera].background.x += 0.1;
 				}
 			}
 		}
 		else if (key == 90) {   // key = "z" return to adaptive background
 			if (aligncamera >= 0) {
-				multiframe->configuration.camera_data[aligncamera].background_x = 0.0;
-				multiframe->configuration.camera_data[aligncamera].background_y = 0.0;
-				multiframe->configuration.camera_data[aligncamera].background_z = 0.0;
+				multiframe->configuration.camera_data[aligncamera].background.x = 0.0;
+				multiframe->configuration.camera_data[aligncamera].background.y = 0.0;
+				multiframe->configuration.camera_data[aligncamera].background.z = 0.0;
 			}
 		}
 		else if (key == 73) {	// key =\"i": dump frames for icp processing

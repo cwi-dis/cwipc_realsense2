@@ -24,10 +24,9 @@ inline cwipc_pcl_pointcloud new_cwipc_pcl_pointcloud(void) { return cwipc_pcl_po
 struct cameradata {
 	std::string serial;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
+	cwipc_vector cameraposition;
+	cwipc_vector background;
 	cwipc_pcl_pointcloud cloud;
-	double background_x = 0.0;
-	double background_y = 0.0;
-	double background_z = 0.0;
 };
 
 struct configdata {

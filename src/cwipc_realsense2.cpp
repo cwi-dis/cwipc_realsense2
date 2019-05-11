@@ -9,6 +9,34 @@
 
 #include "cwipc_realsense2/multiFrame.hpp"
 
+cwipc_vector* add_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
+	result->x = a.x + b.x;
+	result->y = a.y + b.y;
+	result->z = a.z + b.z;
+	return result;
+}
+cwipc_vector* diff_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
+	result->x = a.x - b.x;
+	result->y = a.y - b.y;
+	result->z = a.z - b.z;
+	return result;
+}
+double len_vector(cwipc_vector v) {
+	return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+cwipc_vector* mult_vector(double factor, cwipc_vector *v) {
+	v->x *= factor;
+	v->y *= factor;
+	v->z *= factor;
+	return v;
+}
+cwipc_vector* norm_vector(cwipc_vector *v) {
+	double len = len_vector(*v);
+	if (len > 0)
+		mult_vector(1.0/len, v);
+	return v;
+}
+
 class cwipc_source_realsense2_impl : public cwipc_tiledsource {
 private:
     multiFrame *m_grabber;
@@ -60,30 +88,57 @@ public:
     }
     
     bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo, int infoVersion) {
-        if (m_grabber == NULL) return false;
+        if (m_grabber == NULL)
+			return false;
         if (infoVersion != CWIPC_TILEINFO_VERSION)
             return false;
+
         int nCamera = m_grabber->configuration.camera_data.size();
-        if (nCamera == 0) nCamera = 1; // The synthetic camera...
-        if (tilenum < 0 || tilenum >= (1<<nCamera)) return false;
-        cwipc_tileinfo info = {0, 0, 180, 180};
-        switch(tilenum) {
-        	case 0:
-            case 1:
-            case 2:
-            case 4:
-            case 8:
-            case 16:
-            case 32:
-            case 64:
-            case 128:
-                // xxxjack fill in info from m_grabber->configuration.camera_data
-                if (tileinfo) *tileinfo = info;
-                return true;
-        }
+        if (tilenum < 0 || tilenum >= (1<<nCamera))
+			return false;
+
+		if (nCamera == 0 || tilenum == 0) { // The synthetic camera...
+			cwipc_tileinfo info = { 0, 0, 0 };
+			if (tileinfo) {
+				*tileinfo = info;
+				return true;
+			}
+			else
+				return false;
+		}
+
+		// nCamera > 0
+		cwipc_vector camcenter = { 0, 0, 0 };
+
+		// calculate the center of all cameras
+		for (auto camdat : m_grabber->configuration.camera_data)
+			add_vectors(camcenter, camdat.cameraposition, &camcenter);
+		mult_vector(1.0 / nCamera, &camcenter);
+
+		// calculate normalized direction vectors from the center towards each camera
+		std::vector<cwipc_vector> camera_directions;
+		for (auto camdat : m_grabber->configuration.camera_data) {
+			cwipc_vector normal;
+			diff_vectors(camdat.cameraposition, camcenter, &normal);
+			norm_vector(&normal);
+			camera_directions.push_back(normal);
+		}
+
+		// add all cameradirections that contributed
+		cwipc_vector tile_direction = { 0, 0, 0 };
+		for (int i = 0; i < m_grabber->configuration.camera_data.size(); i++) {
+			uint8_t camera_label = (uint8_t)1 << i;
+			if (tilenum & camera_label)
+				add_vectors(tile_direction, camera_directions[i], &tile_direction);
+		}
+		norm_vector(&tile_direction);
+
+		if (tileinfo) {
+			tileinfo->normal = tile_direction;
+			return true;
+		}
 		return false;
     }
-
 };
 
 //

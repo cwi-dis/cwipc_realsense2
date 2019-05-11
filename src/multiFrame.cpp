@@ -41,6 +41,8 @@ multiFrame::multiFrame(const char *_configFilename)
 			cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 			cd.trafo = default_trafo;
 			cd.cloud = new_cwipc_pcl_pointcloud();
+			cd.background = { 0, 0, 0 };
+			cd.cameraposition = { 0, 0, 0 };
 			configuration.camera_data.push_back(cd);
 
 			realsensedata rsd;
@@ -94,6 +96,22 @@ multiFrame::multiFrame(const char *_configFilename)
 	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.temporal_alpha);
 	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.temporal_delta);
 	temp_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.temporal_percistency);
+
+	// find camerapositions
+	for (int i = 0; i < configuration.camera_data.size(); i++) {
+		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
+		cwipc_pcl_point pt;
+		pt.x = 0;
+		pt.y = 0;
+		pt.z = 0;
+		pcptr->push_back(pt);
+		transformPointCloud(*pcptr, *pcptr, *configuration.camera_data[i].trafo);
+		cwipc_pcl_point pnt = pcptr->points[0];
+		configuration.camera_data[i].cameraposition.x = pnt.x;
+		configuration.camera_data[i].cameraposition.y = pnt.y;
+		configuration.camera_data[i].cameraposition.z = pnt.z;
+	}
+
 
 	// start the cameras
 	for (int i = 0; i < realsense_data.size(); i++)
@@ -261,11 +279,11 @@ void multiFrame::camera_action(int camera_index)
 		cameradata* cd = get_cameradata(rsd->serial);
 
 		// Set the background removal window
-        if (cd->background_z > 0.0) {
-            rsd->maxz = cd->background_z;
+        if (cd->background.z > 0.0) {
+            rsd->maxz = cd->background.z;
 			rsd->minz = 0.0;
-			if (cd->background_x != 0.0) {
-				rsd->minx = cd->background_x;
+			if (cd->background.x != 0.0) {
+				rsd->minx = cd->background.x;
 			}
 			else {
 				for (int i = 0; i < points.size(); i++) {
