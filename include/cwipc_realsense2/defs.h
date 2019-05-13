@@ -14,11 +14,6 @@
 //
 // Definitions of types used across cwipc_realsense2, cwipc_codec and cwipc_util.
 //
-#if 0
-typedef pcl::PointXYZRGB cwipc_pcl_point;
-typedef  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> cwipc_pcl_pointcloud;
-inline cwipc_pcl_pointcloud new_cwipc_pcl_pointcloud(void) { return cwipc_pcl_pointcloud(new pcl::PointCloud<pcl::PointXYZRGB>); }
-#endif
 #include "cwipc_util/api_pcl.h"
 
 struct cameradata {
