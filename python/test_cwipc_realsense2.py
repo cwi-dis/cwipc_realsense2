@@ -41,10 +41,17 @@ class TestApi(unittest.TestCase):
         grabber = cwipc.realsense2.cwipc_realsense2()
         nTile = grabber.maxtile()
         self.assertGreaterEqual(nTile, 1)
-        self.assertEqual(grabber.get_tileinfo_dict(0), {'nx':0, 'nz':0, 'cwangle':180, 'ccwangle':180})
+        # Assure the non-tiled-tile exists and points nowhere.
+        self.assertEqual(grabber.get_tileinfo_dict(0), {'x':0, 'y':0, 'z':0})
+        # Test siome minimal conditions for other tiles
         for i in range(1, nTile):
             tileInfo = grabber.get_tileinfo_dict(i)
-            self.assertIn('nx', tileInfo)
+            if i in (1, 2, 4, 8, 16, 32, 64, 128):
+                # These tiles should exist
+                self.assertIn('x', tileInfo)
+            else:
+                # These tiles shouldn't exist
+                self.assertEqual(tileInfo, None)
         grabber.free()
 
     def test_cwipc_realsense2_configfile(self):
