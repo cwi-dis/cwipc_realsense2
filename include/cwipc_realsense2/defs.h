@@ -34,13 +34,13 @@ struct configdata {
 	int usb2_fps = 15;
 
 	// processing data
-	bool background_removal = true;       // If true reduces pointcloud to forground object
-	bool greenscreen_removal = true;	  // If true include greenscreen removal
+	bool background_removal = false;       // If true reduces pointcloud to forground object
+	bool greenscreen_removal = false;	  // If true include greenscreen removal
 	bool depth_filtering = false;         // If true perform post filtering on depth frame
 	double cloud_resolution = 0.0;        // Resolution of voxelized pointclouds
 	bool tiling = false;	              // If true produce tiled stream
 	double tiling_resolution = 0.01;      // Resolution of tiling process
-	std::string tiling_method = "camera"; // Method of tiling process
+	std::string tiling_method = "none"; // Method of tiling process
 
 	// realsense specific post processing filtering
 	int decimation_value = 2;             // int value between 2 and 8
