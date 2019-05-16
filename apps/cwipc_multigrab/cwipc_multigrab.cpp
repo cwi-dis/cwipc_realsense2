@@ -48,6 +48,7 @@ int main(int argc, char** argv)
 		capturepointclouds.pop_back();
 		timestamps.pop_back();
 	}
+    generator->free();
 	if (ok < 0) {
 		std::cerr << "Error: " << error << std::endl;
 		return 1;

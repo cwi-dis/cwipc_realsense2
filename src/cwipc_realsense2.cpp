@@ -115,7 +115,7 @@ public:
 			return false;
 
 		if (nCamera == 0 || tilenum == 0) { // The synthetic camera...
-			cwipc_tileinfo info = { 0, 0, 0 };
+			cwipc_tileinfo info = { {0, 0, 0} };
 			if (tileinfo) {
 				*tileinfo = info;
 				return true;

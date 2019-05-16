@@ -39,6 +39,7 @@ int main(int argc, char** argv)
     	snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], pc->timestamp());
     	ok = cwipc_write(filename, pc, &error);
     }
+    generator->free();
     if (ok < 0) {
     	std::cerr << "Error: " << error << std::endl;
     	return 1;
