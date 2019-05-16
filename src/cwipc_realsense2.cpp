@@ -114,22 +114,23 @@ public:
         if (tilenum < 0 || tilenum >= (1<<nCamera))
 			return false;
 
-		if (nCamera == 0 || tilenum == 0) { // The synthetic camera...
-			cwipc_tileinfo info = { {0, 0, 0} };
+		if (nCamera == 0) { // The synthetic camera...
+			cwipc_tileinfo info = { {0, 0, 0}, NULL, 0};
 			if (tileinfo) {
 				*tileinfo = info;
 				return true;
-			}
-			else
+			} else {
 				return false;
+			}
 		}
 
 		// nCamera > 0
 		cwipc_vector camcenter = { 0, 0, 0 };
 
 		// calculate the center of all cameras
-		for (auto camdat : m_grabber->configuration.camera_data)
+		for (auto camdat : m_grabber->configuration.camera_data) {
 			add_vectors(camcenter, camdat.cameraposition, &camcenter);
+		}
 		mult_vector(1.0 / nCamera, &camcenter);
 
 		// calculate normalized direction vectors from the center towards each camera
@@ -142,16 +143,27 @@ public:
 		}
 
 		// add all cameradirections that contributed
+		int ncontribcam = 0;
+		int lastcontribcamid = 0;
 		cwipc_vector tile_direction = { 0, 0, 0 };
 		for (int i = 0; i < m_grabber->configuration.camera_data.size(); i++) {
 			uint8_t camera_label = (uint8_t)1 << i;
-			if (tilenum & camera_label)
+			if (tilenum == 0 || (tilenum & camera_label)) {
 				add_vectors(tile_direction, camera_directions[i], &tile_direction);
+				ncontribcam++;
+				lastcontribcamid = i;
+			}
 		}
 		norm_vector(&tile_direction);
 
 		if (tileinfo) {
 			tileinfo->normal = tile_direction;
+			tileinfo->camera = NULL;
+			tileinfo->ncamera = ncontribcam;
+			if (ncontribcam == 1) {
+				// A single camera contributed to this
+				tileinfo->camera = (char *)m_grabber->configuration.camera_data[lastcontribcamid].serial.c_str();
+			}
 			return true;
 		}
 		return false;
