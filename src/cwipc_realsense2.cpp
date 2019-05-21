@@ -111,18 +111,17 @@ public:
             return false;
 
         int nCamera = m_grabber->configuration.camera_data.size();
-        if (tilenum < 0 || tilenum >= (1<<nCamera))
-			return false;
 
 		if (nCamera == 0) { // The synthetic camera...
+			if (tilenum != 0) return false;
 			cwipc_tileinfo info = { {0, 0, 0}, NULL, 0};
 			if (tileinfo) {
 				*tileinfo = info;
-				return true;
-			} else {
-				return false;
 			}
+			return true;
 		}
+        if (tilenum < 0 || tilenum >= (1<<nCamera))
+			return false;
 
 		// nCamera > 0
 		cwipc_vector camcenter = { 0, 0, 0 };
@@ -155,7 +154,7 @@ public:
 			}
 		}
 		norm_vector(&tile_direction);
-
+		
 		if (tileinfo) {
 			tileinfo->normal = tile_direction;
 			tileinfo->camera = NULL;
@@ -164,9 +163,8 @@ public:
 				// A single camera contributed to this
 				tileinfo->camera = (char *)m_grabber->configuration.camera_data[lastcontribcamid].serial.c_str();
 			}
-			return true;
 		}
-		return false;
+		return true;
     }
 };
 
