@@ -120,7 +120,7 @@ int main(int argc, char * argv[]) try
 	Eigen::Vector4f deltacenter;
 
 	char *msg;
-	cwipc_source *src = cwipc_realsense2(&msg);
+	cwipc_source *src = cwipc_realsense2(NULL, &msg, CWIPC_API_VERSION);
 	if (src == NULL) {
 		std::cerr << "ERROR: could not instantiate realsense2 grabber: " << msg << std::endl;
 		return EXIT_FAILURE;

@@ -90,7 +90,7 @@ bool load_data(multiFrame* multiframe) {
 		realsensedata rsd = multiframe->newrealsensedata();
 		rsd.serial = ConfigCopy.camera_data[i].serial;
 		uint64_t ts = 0;
-		ConfigCopy.camera_data[i].cloud = cwipc_read((ConfigCopy.camera_data[i].serial + ext).c_str(), ts, NULL)->access_pcl_pointcloud();
+		ConfigCopy.camera_data[i].cloud = cwipc_read((ConfigCopy.camera_data[i].serial + ext).c_str(), ts, NULL, CWIPC_API_VERSION)->access_pcl_pointcloud();
 		if (ConfigCopy.camera_data[i].cloud == NULL)
 			return false;
 	}

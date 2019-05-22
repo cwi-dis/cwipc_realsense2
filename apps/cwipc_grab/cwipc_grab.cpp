@@ -17,22 +17,21 @@ int main(int argc, char** argv)
     char *error = NULL;
     
 	cwipc_tiledsource *generator;
+	char *configFile = NULL;
 	if (argc == 3) {
-		generator = cwipc_realsense2(&error);
+		configFile = argv[2];
 	}
-	else {
-		generator = cwipc_realsense2_ex(argv[3], &error);
-	}
+	generator = cwipc_realsense2(argv[3], &error, CWIPC_API_VERSION);
     if (error) {
     	std::cerr << argv[0] << ": creating realsense2 grabber failed: " << error << std::endl;
     	return 1;
     }
 	cwipc_tileinfo tif;
-	generator->get_tileinfo(0, &tif, CWIPC_TILEINFO_VERSION);
-	generator->get_tileinfo(1, &tif, CWIPC_TILEINFO_VERSION);
-	generator->get_tileinfo(2, &tif, CWIPC_TILEINFO_VERSION);
-	generator->get_tileinfo(3, &tif, CWIPC_TILEINFO_VERSION);
-	generator->get_tileinfo(4, &tif, CWIPC_TILEINFO_VERSION);
+	generator->get_tileinfo(0, &tif);
+	generator->get_tileinfo(1, &tif);
+	generator->get_tileinfo(2, &tif);
+	generator->get_tileinfo(3, &tif);
+	generator->get_tileinfo(4, &tif);
 	int ok = 0;
     while (count-- > 0 && ok == 0) {
     	cwipc *pc = generator->get();

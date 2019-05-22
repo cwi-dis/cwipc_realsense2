@@ -90,7 +90,7 @@ public:
         uint64_t timestamp;
         cwipc_pcl_pointcloud pc = m_grabber->get_pointcloud(&timestamp);
         if (pc == NULL) return NULL;
-        return cwipc_from_pcl(pc, timestamp, NULL);
+        return cwipc_from_pcl(pc, timestamp, NULL, CWIPC_API_VERSION);
     }
     
     int maxtile()
@@ -104,11 +104,9 @@ public:
         return 1<<nCamera;
     }
     
-    bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo, int infoVersion) {
+    bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo) {
         if (m_grabber == NULL)
 			return false;
-        if (infoVersion != CWIPC_TILEINFO_VERSION)
-            return false;
 
         int nCamera = m_grabber->configuration.camera_data.size();
 
@@ -169,15 +167,16 @@ public:
 };
 
 //
-// C-compatible entry points
+// C-compatible entry point
 //
 
-cwipc_tiledsource* cwipc_realsense2(char **errorMessage)
+cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion)
 {
-	return new cwipc_source_realsense2_impl();
-}
-
-cwipc_tiledsource* cwipc_realsense2_ex(const char *configFilename, char **errorMessage)
-{
+	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
+		if (errorMessage) {
+			*errorMessage = (char *)"cwipc_synthetic: incorrect apiVersion";
+		}
+		return NULL;
+	}
 	return new cwipc_source_realsense2_impl(configFilename);
 }
