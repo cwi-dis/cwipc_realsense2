@@ -16,7 +16,7 @@
 
 typedef void(*GetPointCloudFunction)(uint64_t *, void **);
 
-#define SHOW_CAMERA_CONTRIBUTION_AS_COLOR
+//#define SHOW_CAMERA_CONTRIBUTION_AS_COLOR
 
 #define CENTERSTEPS 256
 

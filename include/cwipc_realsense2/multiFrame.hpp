@@ -62,12 +62,13 @@ public:
 	
 	// variables
     configdata configuration;
+	uint64_t starttime;
 
 private:
 	std::string configFilename;
 	// methods
 	void camera_start(realsensedata* camera_data);            // Configure and initialize caputuring of one camera
-	void camera_action(int camera_index);                     // get new frames and update the camera's pointcloud
+	void camera_action(int camera_index, uint64_t *timestamp);// get new frames and update the camera's pointcloud
 	cwipc_pcl_pointcloud merge_views();                       // merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // generate a mathematical pointcloud
 
