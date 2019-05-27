@@ -14,20 +14,14 @@
 //
 // Definitions of types used across cwipc_realsense2, cwipc_codec and cwipc_util.
 //
-#if 0
-typedef pcl::PointXYZRGB cwipc_pcl_point;
-typedef  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> cwipc_pcl_pointcloud;
-inline cwipc_pcl_pointcloud new_cwipc_pcl_pointcloud(void) { return cwipc_pcl_pointcloud(new pcl::PointCloud<pcl::PointXYZRGB>); }
-#endif
 #include "cwipc_util/api_pcl.h"
 
 struct cameradata {
 	std::string serial;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
+	cwipc_vector cameraposition;
+	cwipc_vector background;
 	cwipc_pcl_pointcloud cloud;
-	double background_x = 0.0;
-	double background_y = 0.0;
-	double background_z = 0.0;
 };
 
 struct configdata {
@@ -40,13 +34,16 @@ struct configdata {
 	int usb2_fps = 15;
 
 	// processing data
-	bool background_removal = true;       // If true reduces pointcloud to forground object
-	bool greenscreen_removal = true;	  // If true include greenscreen removal
+	bool background_removal = false;      // If true reduces pointcloud to forground object
+	bool greenscreen_removal = false;	  // If true include greenscreen removal
 	bool depth_filtering = false;         // If true perform post filtering on depth frame
 	double cloud_resolution = 0.0;        // Resolution of voxelized pointclouds
 	bool tiling = false;	              // If true produce tiled stream
 	double tiling_resolution = 0.01;      // Resolution of tiling process
-	std::string tiling_method = "camera"; // Method of tiling process
+	std::string tiling_method = "";       // Method of tiling process
+
+	// special features
+	std::string cwi_special_feature = ""; // Specifier for temporary development specific feature
 
 	// realsense specific post processing filtering
 	int decimation_value = 2;             // int value between 2 and 8

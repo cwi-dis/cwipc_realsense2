@@ -4,7 +4,8 @@ stages:
   - deploy
 
 variables:
-  REL_CWIPC_UTIL: v1.4.2
+  # REL_CWIPC_UTIL: --release_name exp-multicam-tiling-12
+  REL_CWIPC_UTIL: ""
 build_linux:
   stage: build
   tags:
@@ -35,8 +36,9 @@ build_linux:
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
     - cd ..
 # Get and install cwipc_util
-    - python3 deployment-helpers/Deployment/getReleaseFromGitLab --cicd --project_name cwipc_util --release_name $REL_CWIPC_UTIL cwipc_util_ubuntu1804_$REL_CWIPC_UTIL
-    - tar --directory /usr/local -xvf cwipc_util_ubuntu1804_$REL_CWIPC_UTIL.tgz
+    - echo Getting cwipc_util $REL_CWIPC_UTIL
+    - python3 deployment-helpers/Deployment/getReleaseFromGitLab --cicd --project_name cwipc_util $REL_CWIPC_UTIL
+    - tar --directory /usr/local -xvf cwipc_util_ubuntu1804_*.tgz
   script:
     - mkdir -p build
     - mkdir -p dist-ubuntu1804
@@ -68,8 +70,8 @@ build_osx:
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
     - cd ..
 # Get and install cwipc_util
-    - python3 deployment-helpers/Deployment/getReleaseFromGitLab --cicd --project_name cwipc_util --release_name $REL_CWIPC_UTIL cwipc_util_osx1012_$REL_CWIPC_UTIL
-    - tar --directory /usr/local -xvmf cwipc_util_osx1012_$REL_CWIPC_UTIL.tgz
+    - python3 deployment-helpers/Deployment/getReleaseFromGitLab --cicd --project_name cwipc_util $REL_CWIPC_UTIL
+    - tar --directory /usr/local -xvmf cwipc_util_osx1012_*.tgz
   script:
     - mkdir -p build
     - mkdir -p dist-osx1012
@@ -89,8 +91,7 @@ build_win:
   tags:
     - win10
   before_script:
-    - printenv
-    - which python
+    - rm -rf /cygdrive/c/dist-win/installed
     - mkdir -p /cygdrive/c/dist-win/installed
 # Install Deployment repo and dependencies
     - python -m pip install requests mechanize
@@ -99,9 +100,8 @@ build_win:
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
     - cd ..
 # Get and install cwipc_util
-    - python deployment-helpers/Deployment/getReleaseFromGitLab --cicd --project_name cwipc_util --release_name $REL_CWIPC_UTIL cwipc_util_win1064_$REL_CWIPC_UTIL
-    - (zipfile=$PWD/cwipc_util_win1064_$REL_CWIPC_UTIL.zip && cd /cygdrive/c/dist-win && unzip $zipfile)
-
+    - python deployment-helpers/Deployment/getReleaseFromGitLab --cicd --project_name cwipc_util $REL_CWIPC_UTIL
+    - (zipfile=$PWD/cwipc_util_win1064_*.zip && cd /cygdrive/c/dist-win && unzip $zipfile)
   script:
     - mkdir -p build
     - export ziplocation=$(pwd)/cwipc_realsense2_win1064_$CI_BUILD_TAG.zip

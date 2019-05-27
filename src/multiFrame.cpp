@@ -17,7 +17,17 @@
 #include "cwipc_realsense2/api.h"
 #include "cwipc_realsense2/utils.h"
 
-multiFrame::multiFrame() {
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "cwipc_realsense2/stb_image_write.h"
+
+multiFrame::multiFrame(const char *_configFilename)
+{
+	if (_configFilename) {
+		configFilename = _configFilename;
+	}
+	else {
+		configFilename = "cameraconfig.xml";
+	}
 	// Create librealsense context for managing all connected RealSense devices
 	rs2::context ctx;
 	auto devs = ctx.query_devices();
@@ -34,6 +44,8 @@ multiFrame::multiFrame() {
 			cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 			cd.trafo = default_trafo;
 			cd.cloud = new_cwipc_pcl_pointcloud();
+			cd.background = { 0, 0, 0 };
+			cd.cameraposition = { 0, 0, 0 };
 			configuration.camera_data.push_back(cd);
 
 			realsensedata rsd;
@@ -50,7 +62,7 @@ multiFrame::multiFrame() {
 	}
 	else {
 		// Read the configuration
-		if (!file2config("cameraconfig.xml", &configuration)) {
+		if (!file2config(configFilename.c_str(), &configuration)) {
 
 			// the configuration file did not fully match the current situation so we have to update the admin
 			std::vector<std::string> serials;
@@ -88,9 +100,32 @@ multiFrame::multiFrame() {
 	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.temporal_delta);
 	temp_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.temporal_percistency);
 
+	// optionally set request for cwi_special_feature
+	char* feature_request;
+	feature_request = getenv("CWI_CAPTURE_FEATURE");
+	if (feature_request != NULL)
+		configuration.cwi_special_feature = feature_request;
+
+	// find camerapositions
+	for (int i = 0; i < configuration.camera_data.size(); i++) {
+		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
+		cwipc_pcl_point pt;
+		pt.x = 0;
+		pt.y = 0;
+		pt.z = 0;
+		pcptr->push_back(pt);
+		transformPointCloud(*pcptr, *pcptr, *configuration.camera_data[i].trafo);
+		cwipc_pcl_point pnt = pcptr->points[0];
+		configuration.camera_data[i].cameraposition.x = pnt.x;
+		configuration.camera_data[i].cameraposition.y = pnt.y;
+		configuration.camera_data[i].cameraposition.z = pnt.z;
+	}
+
+
 	// start the cameras
 	for (int i = 0; i < realsense_data.size(); i++)
 		camera_start(&realsense_data[i]);
+	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 multiFrame::~multiFrame() {
@@ -148,7 +183,7 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	if (realsense_data.size() > 0) {
 		for (int i = 0; i < realsense_data.size(); i++)
-			camera_action(i);
+			camera_action(i, timestamp);
 
 		if (merge_views()->size() > 0) {
 #ifdef DEBUG
@@ -206,12 +241,14 @@ void multiFrame::camera_start(realsensedata* rsd)
 }
 
 // get new frames from the camera and update the pointcloud of the camera's data 
-void multiFrame::camera_action(int camera_index)
+void multiFrame::camera_action(int camera_index, uint64_t *timestamp)
 {
 	realsensedata* rsd = &realsense_data[camera_index];
 	cameradata* cd = &configuration.camera_data[camera_index];
 	rs2::pointcloud pc;
 	rs2::points points;
+
+	uint8_t camera_label = (uint8_t)1 << camera_index;
 
 #ifdef POLLING
 	// Poll to find if there is a next set of frames from the camera
@@ -226,9 +263,14 @@ void multiFrame::camera_action(int camera_index)
 	rs2::depth_frame depth = frames.get_depth_frame();
 	rs2::video_frame color = frames.get_color_frame();
 
-	//std::cout << "size " << depth.get_height() << ", " << depth.get_width();
-	
-	//std::cout << " disp " << depth.get_height() << ", " << depth.get_width() << "\n";
+	// On special request write video to png
+	if (configuration.cwi_special_feature == "dumpvideo") {
+		std::stringstream png_file;
+		png_file << configuration.cwi_special_feature << "_" << camera_index << "_" << *timestamp - starttime << ".png";
+		stbi_write_png(png_file.str().c_str(), color.get_width(), color.get_height(),
+			color.get_bytes_per_pixel(), color.get_data(), color.get_stride_in_bytes());
+	}
+
 	cd->cloud->clear();
 
 	// Tell points frame to map to this color frame
@@ -252,11 +294,11 @@ void multiFrame::camera_action(int camera_index)
 		cameradata* cd = get_cameradata(rsd->serial);
 
 		// Set the background removal window
-        if (cd->background_z > 0.0) {
-            rsd->maxz = cd->background_z;
+        if (cd->background.z > 0.0) {
+            rsd->maxz = cd->background.z;
 			rsd->minz = 0.0;
-			if (cd->background_x != 0.0) {
-				rsd->minx = cd->background_x;
+			if (cd->background.x != 0.0) {
+				rsd->minx = cd->background.x;
 			}
 			else {
 				for (int i = 0; i < points.size(); i++) {
@@ -292,6 +334,7 @@ void multiFrame::camera_action(int camera_index)
 				pt.r = colors[pi];
 				pt.g = colors[pi + 1];
 				pt.b = colors[pi + 2];
+				pt.a = camera_label;
 				if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
 					cd->cloud->push_back(pt);
 			}
@@ -309,6 +352,7 @@ void multiFrame::camera_action(int camera_index)
 			pt.r = colors[pi];
 			pt.g = colors[pi + 1];
 			pt.b = colors[pi + 2];
+			pt.a = camera_label;
 			if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
 				cd->cloud->push_back(pt);
 		}
