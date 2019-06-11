@@ -256,4 +256,5 @@ Below is an example config file.
 
 ## Special feature:
 
-By setting the environment variable `CWI_CAPTURE_FEATURE` to *dumpvideo* the capturer will write out the video frames as .pgn files named "dumpvideo\_[cameraindex]\_[timestamp].png"
+By setting the environment variable `CWI_CAPTURE_FEATURE` to *dumpvideoframes* the capturer will write out the video frames as .pgn files named "videoframe\_*timestamp*\_*cameraindex*.png"
+

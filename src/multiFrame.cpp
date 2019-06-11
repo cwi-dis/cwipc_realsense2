@@ -264,9 +264,9 @@ void multiFrame::camera_action(int camera_index, uint64_t *timestamp)
 	rs2::video_frame color = frames.get_color_frame();
 
 	// On special request write video to png
-	if (configuration.cwi_special_feature == "dumpvideo") {
+	if (configuration.cwi_special_feature == "dumpvideoframes") {
 		std::stringstream png_file;
-		png_file << configuration.cwi_special_feature << "_" << camera_index << "_" << *timestamp - starttime << ".png";
+		png_file <<  "videoframe_" << *timestamp - starttime << "_" << camera_index << ".png";
 		stbi_write_png(png_file.str().c_str(), color.get_width(), color.get_height(),
 			color.get_bytes_per_pixel(), color.get_data(), color.get_stride_in_bytes());
 	}
