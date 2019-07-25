@@ -16,11 +16,11 @@
 #endif
 #endif
 
-_CWIPC_REALSENSE2_EXPORT bool file2config(const char* filename, MFConfigCapture* config);
+_CWIPC_REALSENSE2_EXPORT bool mf_file2config(const char* filename, MFConfigCapture* config);
 
 // store the current camera transformation setting into a xml document
-_CWIPC_REALSENSE2_EXPORT void config2file(const char* filename, MFConfigCapture* config);
+_CWIPC_REALSENSE2_EXPORT void mf_config2file(const char* filename, MFConfigCapture* config);
 
-_CWIPC_REALSENSE2_EXPORT bool noChromaRemoval(cwipc_pcl_point* p);
+_CWIPC_REALSENSE2_EXPORT bool mf_noChromaRemoval(cwipc_pcl_point* p);
 
 #endif /* cwipw_realsense_utils_h */

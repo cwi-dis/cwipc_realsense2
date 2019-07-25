@@ -19,7 +19,7 @@ typedef struct HsvColor
 } HsvColor;
 
 // read and restore the camera transformation setting as stored in the configuration document
-bool file2config(const char* filename, MFConfigCapture* config)
+bool mf_file2config(const char* filename, MFConfigCapture* config)
 {
 	TiXmlDocument doc(filename);
 	bool loadOkay = doc.LoadFile();
@@ -144,7 +144,7 @@ bool file2config(const char* filename, MFConfigCapture* config)
 }
 
 // store the current camera transformation setting into a xml document
-void config2file(const char* filename, MFConfigCapture* config)
+void mf_config2file(const char* filename, MFConfigCapture* config)
 {
 	TiXmlDocument doc;
 	doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
@@ -325,7 +325,7 @@ HsvColor rgbToHsv(cwipc_pcl_point* pnt)
 	return hsv;
 }
 
-bool noChromaRemoval(cwipc_pcl_point* p)
+bool mf_noChromaRemoval(cwipc_pcl_point* p)
 {
 	HsvColor hsv = rgbToHsv(p);
 

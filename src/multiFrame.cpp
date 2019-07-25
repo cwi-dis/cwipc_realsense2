@@ -100,7 +100,7 @@ MFCapture::MFCapture(const char *_configFilename)
 	}
 	else {
 		// Read the configuration
-		if (!file2config(configFilename.c_str(), &configuration)) {
+		if (!mf_file2config(configFilename.c_str(), &configuration)) {
 
 			// the configuration file did not fully match the current situation so we have to update the admin
 			std::vector<std::string> serials;
@@ -373,7 +373,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 				pt.g = colors[pi + 1];
 				pt.b = colors[pi + 2];
 				pt.a = camera_label;
-				if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
+				if (!configuration.greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
 					cd->cloud->push_back(pt);
 			}
 		}
@@ -391,7 +391,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 			pt.g = colors[pi + 1];
 			pt.b = colors[pi + 2];
 			pt.a = camera_label;
-			if (!configuration.greenscreen_removal || noChromaRemoval(&pt)) // chromakey removal
+			if (!configuration.greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
 				cd->cloud->push_back(pt);
 		}
 	}

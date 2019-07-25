@@ -83,7 +83,7 @@ bool load_data(MFCapture* multiframe) {
 
 	ConfigCopy.cameraConfig.clear();
 
-	if (!file2config("cameraconfig.xml", &ConfigCopy))
+	if (!mf_file2config("cameraconfig.xml", &ConfigCopy))
 		return false;
 
 	for (int i = 0; i < ConfigCopy.cameraConfig.size(); i++) {
@@ -360,7 +360,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 		}
 		else if (key == 83) {	// key = "s": Save config and snapshots to file
 			// saving transformations
-			config2file("cameraconfig.xml", &ConfigCopy);
+			mf_config2file("cameraconfig.xml", &ConfigCopy);
 
 			if (!loaded_mode) {	// save the clouds themselves
 				if (align_mode)
