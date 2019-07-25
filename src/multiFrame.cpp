@@ -4,14 +4,17 @@
 //  Created by Fons Kuijk on 23-04-18
 //
 
-#include <chrono>
-#include <cstdint>
-
 // Define to try and use hardware sync to synchronize multiple cameras
 #define WITH_INTER_CAM_SYNC
 
 // Define to enable optional dumping of RGB video frames (to test hardware sync)
 #define WITH_DUMP_VIDEO_FRAMES
+
+// Define to use polling for realsense camera data, otherwise use waiting
+#undef WITH_POLLING
+
+// Define to get (a little) debug prints
+#undef CWIPC_DEBUG
 
 // This is the dll source, so define external symbols as dllexport on windows.
 
@@ -19,6 +22,8 @@
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
 
+#include <chrono>
+#include <cstdint>
 #include "cwipc_realsense2/multiFrame.hpp"
 #include "cwipc_realsense2/api.h"
 #include "cwipc_realsense2/utils.h"
@@ -238,7 +243,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 
 	uint8_t camera_label = (uint8_t)1 << camera_index;
 
-#ifdef POLLING
+#ifdef WITH_POLLING
 	// Poll to find if there is a next set of frames from the camera
 	rs2::frameset frames;
 	if (!rsd->pipe.poll_for_frames(&frames))
