@@ -23,7 +23,7 @@ int aligncamera = -1;
 cwipc_pcl_pointcloud mergeded_pc;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;	// Needed to be able to rotate around the cloud's centre of mass
-configdata ConfigCopy;			// Still copy of the configuration data of multiFrame
+MFConfigCapture ConfigCopy;			// Still copy of the configuration data of multiFrame
 std::string ext(".ply");
 
 void printhelp() {
@@ -81,17 +81,17 @@ void makeFreezeCopy(MFCapture* multiframe)
 // Ignore camera's that may be active, load a configuration and captured frames from file
 bool load_data(MFCapture* multiframe) {
 
-	ConfigCopy.camera_data.clear();
+	ConfigCopy.cameraConfig.clear();
 
 	if (!file2config("cameraconfig.xml", &ConfigCopy))
 		return false;
 
-	for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
+	for (int i = 0; i < ConfigCopy.cameraConfig.size(); i++) {
 		MFCamera rsd = multiframe->newrealsensedata();
-		rsd.serial = ConfigCopy.camera_data[i].serial;
+		rsd.serial = ConfigCopy.cameraConfig[i].serial;
 		uint64_t ts = 0;
-		ConfigCopy.camera_data[i].cloud = cwipc_read((ConfigCopy.camera_data[i].serial + ext).c_str(), ts, NULL, CWIPC_API_VERSION)->access_pcl_pointcloud();
-		if (ConfigCopy.camera_data[i].cloud == NULL)
+		ConfigCopy.cameraConfig[i].cloud = cwipc_read((ConfigCopy.cameraConfig[i].serial + ext).c_str(), ts, NULL, CWIPC_API_VERSION)->access_pcl_pointcloud();
+		if (ConfigCopy.cameraConfig[i].cloud == NULL)
 			return false;
 	}
 	return true;
@@ -99,8 +99,8 @@ bool load_data(MFCapture* multiframe) {
 
 void draw_background_planes(window_util* app, MFCapture* multiframe) {
 	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
-	for (int i = 0; i < multiframe->configuration.camera_data.size(); i++) {
-		MFCamera* rsd = multiframe->get_realsensedata(multiframe->configuration.camera_data[i].serial);
+	for (int i = 0; i < multiframe->configuration.cameraConfig.size(); i++) {
+		MFCamera* rsd = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[i].serial);
 		cwipc_pcl_pointcloud bgcld(new_cwipc_pcl_pointcloud());
 
 		// generate raster on backgrounf=d
@@ -135,7 +135,7 @@ void draw_background_planes(window_util* app, MFCapture* multiframe) {
 		}
 
 		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
-		transformPointCloud(*bgcld, *pcptr, *multiframe->configuration.camera_data[i].trafo);
+		transformPointCloud(*bgcld, *pcptr, *multiframe->configuration.cameraConfig[i].trafo);
 		for (auto pnt : pcptr->points) {
 			float col[3];
 			double intens = i == aligncamera ? 0.95 : 0.4;	// highlight the cloud of the selected camera
@@ -157,9 +157,9 @@ void draw_pointclouds(window_util* app, MFCapture* multiframe)
 	// draw the pointcloud(s)
 	if (align_mode) {
         // 'align' mode action: draw the individual pointclouds of the still
-		for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
+		for (int i = 0; i < ConfigCopy.cameraConfig.size(); i++) {
 			cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
-			transformPointCloud(*ConfigCopy.camera_data[i].cloud, *pcptr, *ConfigCopy.camera_data[i].trafo);
+			transformPointCloud(*ConfigCopy.cameraConfig[i].cloud, *pcptr, *ConfigCopy.cameraConfig[i].trafo);
 			for (auto pnt : pcptr->points) {
 				float col[3];
 				if (i == aligncamera) {	// highlight the cloud of the selected camera
@@ -183,9 +183,9 @@ void draw_pointclouds(window_util* app, MFCapture* multiframe)
 		if (aligncamera < 0) {
 			if (loaded_mode) {
 				// this is the stilled 'life' rendering (loaded mode): rendering all individual pointclouds
-				for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
+				for (int i = 0; i < ConfigCopy.cameraConfig.size(); i++) {
 					cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
-					transformPointCloud(*ConfigCopy.camera_data[i].cloud, *pcptr, *ConfigCopy.camera_data[i].trafo);
+					transformPointCloud(*ConfigCopy.cameraConfig[i].cloud, *pcptr, *ConfigCopy.cameraConfig[i].trafo);
 					for (auto pnt : pcptr->points) {
 						float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
 						glColor3fv(col);
@@ -194,7 +194,7 @@ void draw_pointclouds(window_util* app, MFCapture* multiframe)
 					}
 				}
 			}
-			else if (multiframe->configuration.camera_data.size() > 0) {
+			else if (multiframe->configuration.cameraConfig.size() > 0) {
 				// this is the real 'life' rendering of the merged cloud
 				for (auto pnt : multiframe->getPointCloud()->points) {
 					float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
@@ -207,7 +207,7 @@ void draw_pointclouds(window_util* app, MFCapture* multiframe)
 		else {
 			// this is the stilled 'life' rendering (loaded mode): rendering one selected pointcloud
 			cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
-			transformPointCloud(*ConfigCopy.camera_data[aligncamera].cloud, *pcptr, *ConfigCopy.camera_data[aligncamera].trafo);
+			transformPointCloud(*ConfigCopy.cameraConfig[aligncamera].cloud, *pcptr, *ConfigCopy.cameraConfig[aligncamera].trafo);
 			for (auto pnt : pcptr->points) {
 				float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
 				glColor3fv(col);
@@ -228,7 +228,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 
 	app->on_mouse_scroll = [&](double xoffset, double yoffset) {
 			if (align_mode) {
-				Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
+				Eigen::Affine3d *transform = ConfigCopy.cameraConfig[aligncamera].trafo.get();
 				if (rotation) {
 					(*transform).rotate(Eigen::AngleAxisd(yoffset / 100.0, Eigen::Vector3d::UnitZ()));
 				}
@@ -244,7 +244,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 	app->on_mouse_move = [&](double x, double y) {
 		if (app->app_state()->ml) {
 				if (align_mode) {
-					Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
+					Eigen::Affine3d *transform = ConfigCopy.cameraConfig[aligncamera].trafo.get();
 					double dx = (x - app->app_state()->last_x) / (0.25 * app->width());
 					double dy = -(y - app->app_state()->last_y) / (0.25 * app->width());
 					if (rotation) {
@@ -271,7 +271,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 	app->on_key_release = [&](int key) {
 		if (key == 256) { // Escape is interpreted as a reset of the transformation
 				if (align_mode) {
-					Eigen::Affine3d *transform = ConfigCopy.camera_data[aligncamera].trafo.get();
+					Eigen::Affine3d *transform = ConfigCopy.cameraConfig[aligncamera].trafo.get();
 					(*transform).setIdentity();
 				}
 				else {
@@ -282,18 +282,18 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 		else if (key == 65) {	// key = "a": start/stop Alignment
 			if (align_mode) {
                 // switch to 'life'
-                if (!loaded_mode && multiframe->configuration.camera_data.size() > 0)
+                if (!loaded_mode && multiframe->configuration.cameraConfig.size() > 0)
 					multiframe->configuration = ConfigCopy; // set possible new transforms
 				align_mode = false;
 				aligncamera = -1;
 			}
 			else {
                 // switch to 'align'
-                if (!loaded_mode && multiframe->configuration.camera_data.size() > 0)
+                if (!loaded_mode && multiframe->configuration.cameraConfig.size() > 0)
                     makeFreezeCopy(multiframe); // make a still copy of multiFrame's configuration
-				if (aligncamera < 0 || aligncamera >= ConfigCopy.camera_data.size())
+				if (aligncamera < 0 || aligncamera >= ConfigCopy.cameraConfig.size())
 					aligncamera = 0;
-				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
+				pcl::compute3DCentroid(*ConfigCopy.cameraConfig[aligncamera].cloud, cloudcenter);
 				align_mode = true;
 			}
 		}
@@ -327,7 +327,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 		else if (key == 76) {	// key = "l": load previous result
 			if (loaded_mode) {
 				// leaving loaded mode
-                if (multiframe->configuration.camera_data.size() > 0) {
+                if (multiframe->configuration.cameraConfig.size() > 0) {
                     makeFreezeCopy(multiframe); // make a still copy of multiFrame's configuration
 					align_mode = false; // that is the to be expected mode
 					aligncamera = -1;
@@ -337,16 +337,16 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 			}
 			else {
 				// starting loaded mode
-				if (load_data(multiframe) && ConfigCopy.camera_data.size() > 0)
+				if (load_data(multiframe) && ConfigCopy.cameraConfig.size() > 0)
 					align_mode = true; // that is the to be expected mode
 				else {
 					std::cerr << "\nError: Data could not be loaded\n";
 					makeFreezeCopy(multiframe); // make a still copy of multiFrame's configuration
 					return;
 				}
-				if (aligncamera < 0 || aligncamera >= ConfigCopy.camera_data.size())
+				if (aligncamera < 0 || aligncamera >= ConfigCopy.cameraConfig.size())
 					aligncamera = 0;
-				pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
+				pcl::compute3DCentroid(*ConfigCopy.cameraConfig[aligncamera].cloud, cloudcenter);
 				loaded_mode = true;
 				std::cout << "loaded mode switched on\n";
 			}
@@ -365,11 +365,11 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 			if (!loaded_mode) {	// save the clouds themselves
 				if (align_mode)
 					// saving the stilled capture
-					for (auto cd : ConfigCopy.camera_data)
+					for (auto cd : ConfigCopy.cameraConfig)
 						cloud2file(cd.cloud, cd.serial + ext);
 				else
 					// saving snapshot of life capturing
-					for (auto cd : multiframe->configuration.camera_data)
+					for (auto cd : multiframe->configuration.cameraConfig)
 						cloud2file(cd.cloud, cd.serial + ext);
 				cloud2file(mergeded_pc, "merged_pc" + ext);
 			}
@@ -377,58 +377,58 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 		else if (key == 84) {	// key = "t": Translate
 			rotation = false;
 		}
-		else if (key >= 48 && key < ConfigCopy.camera_data.size() + 49) {	// key = "0-9": select a camera ("0" = none)
+		else if (key >= 48 && key < ConfigCopy.cameraConfig.size() + 49) {	// key = "0-9": select a camera ("0" = none)
 			aligncamera = key - 49;
 			if (aligncamera >= 0)
-			pcl::compute3DCentroid(*ConfigCopy.camera_data[aligncamera].cloud, cloudcenter);
+			pcl::compute3DCentroid(*ConfigCopy.cameraConfig[aligncamera].cloud, cloudcenter);
 		}
 		else if (key == 265) {   // key = "arrow up" shift fixed background
 			if (aligncamera >= 0) {
-				if (multiframe->configuration.camera_data[aligncamera].background.z == 0.0)
-					multiframe->configuration.camera_data[aligncamera].background.z = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->maxz * 1.25;
-				multiframe->configuration.camera_data[aligncamera].background.z *= 1.25;
+				if (multiframe->configuration.cameraConfig[aligncamera].background.z == 0.0)
+					multiframe->configuration.cameraConfig[aligncamera].background.z = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[aligncamera].serial)->maxz * 1.25;
+				multiframe->configuration.cameraConfig[aligncamera].background.z *= 1.25;
 			}
 		}
 		else if (key == 264) {   // key = "arrow down" shift fixed background
 			if (aligncamera >= 0) {
-				if (multiframe->configuration.camera_data[aligncamera].background.z == 0.0)
-					multiframe->configuration.camera_data[aligncamera].background.z = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->maxz * 0.8;
-				multiframe->configuration.camera_data[aligncamera].background.z *= 0.8;
+				if (multiframe->configuration.cameraConfig[aligncamera].background.z == 0.0)
+					multiframe->configuration.cameraConfig[aligncamera].background.z = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[aligncamera].serial)->maxz * 0.8;
+				multiframe->configuration.cameraConfig[aligncamera].background.z *= 0.8;
 			}
 		}
 		else if (key == 263) {   // key = "arrow left" shift fixed background
 			if (aligncamera >= 0) {
-				if (multiframe->configuration.camera_data[aligncamera].background.z != 0.0) {
-					if (multiframe->configuration.camera_data[aligncamera].background.x == 0.0)
-						multiframe->configuration.camera_data[aligncamera].background.x = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->minx - 0.1;
-					multiframe->configuration.camera_data[aligncamera].background.x -= 0.1;
+				if (multiframe->configuration.cameraConfig[aligncamera].background.z != 0.0) {
+					if (multiframe->configuration.cameraConfig[aligncamera].background.x == 0.0)
+						multiframe->configuration.cameraConfig[aligncamera].background.x = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[aligncamera].serial)->minx - 0.1;
+					multiframe->configuration.cameraConfig[aligncamera].background.x -= 0.1;
 				}
 			}
 		}
 		else if (key == 262) {   // key = "arrow right" shift fixed background
 			if (aligncamera >= 0) {
-				if (multiframe->configuration.camera_data[aligncamera].background.z != 0.0) {
-					if (multiframe->configuration.camera_data[aligncamera].background.x == 0.0)
-						multiframe->configuration.camera_data[aligncamera].background.x = multiframe->get_realsensedata(multiframe->configuration.camera_data[aligncamera].serial)->minx + 0.1;
-					multiframe->configuration.camera_data[aligncamera].background.x += 0.1;
+				if (multiframe->configuration.cameraConfig[aligncamera].background.z != 0.0) {
+					if (multiframe->configuration.cameraConfig[aligncamera].background.x == 0.0)
+						multiframe->configuration.cameraConfig[aligncamera].background.x = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[aligncamera].serial)->minx + 0.1;
+					multiframe->configuration.cameraConfig[aligncamera].background.x += 0.1;
 				}
 			}
 		}
 		else if (key == 90) {   // key = "z" return to adaptive background
 			if (aligncamera >= 0) {
-				multiframe->configuration.camera_data[aligncamera].background.x = 0.0;
-				multiframe->configuration.camera_data[aligncamera].background.y = 0.0;
-				multiframe->configuration.camera_data[aligncamera].background.z = 0.0;
+				multiframe->configuration.cameraConfig[aligncamera].background.x = 0.0;
+				multiframe->configuration.cameraConfig[aligncamera].background.y = 0.0;
+				multiframe->configuration.cameraConfig[aligncamera].background.z = 0.0;
 			}
 		}
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
-			for (int i = 0; i < ConfigCopy.camera_data.size(); i++) {
+			for (int i = 0; i < ConfigCopy.cameraConfig.size(); i++) {
 				cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 
-				transformPointCloud(*ConfigCopy.camera_data[i].cloud, *aligned_cld, *ConfigCopy.camera_data[i].trafo);
+				transformPointCloud(*ConfigCopy.cameraConfig[i].cloud, *aligned_cld, *ConfigCopy.cameraConfig[i].trafo);
 
-				cloud2file(aligned_cld, "pcl_aligned_" + ConfigCopy.camera_data[i].serial + ext);
-				cloud2file(ConfigCopy.camera_data[i].cloud, "pcl_original_" + ConfigCopy.camera_data[i].serial + ext);
+				cloud2file(aligned_cld, "pcl_aligned_" + ConfigCopy.cameraConfig[i].serial + ext);
+				cloud2file(ConfigCopy.cameraConfig[i].cloud, "pcl_original_" + ConfigCopy.cameraConfig[i].serial + ext);
 			}
 		}
         else std::cout << key << std::endl;
@@ -453,12 +453,12 @@ int main(int argc, char * argv[]) try
 
 	printhelp();
 
-    if (multiframe.configuration.camera_data.size() < 1) {
+    if (multiframe.configuration.cameraConfig.size() < 1) {
         // no camera connected
-        if (load_data(&multiframe) && ConfigCopy.camera_data.size() > 0) {
+        if (load_data(&multiframe) && ConfigCopy.cameraConfig.size() > 0) {
             loaded_mode = true;
             align_mode = true;
-			if (aligncamera < 0 || aligncamera >= ConfigCopy.camera_data.size())
+			if (aligncamera < 0 || aligncamera >= ConfigCopy.cameraConfig.size())
 				aligncamera = 0;
 		}
 		else {

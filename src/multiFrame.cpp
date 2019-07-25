@@ -47,13 +47,13 @@ MFCapture::MFCapture(const char *_configFilename)
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
 			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 			default_trafo->setIdentity();
-			cameradata cd;
+			MFConfigCamera cd;
 			cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 			cd.trafo = default_trafo;
 			cd.cloud = new_cwipc_pcl_pointcloud();
 			cd.background = { 0, 0, 0 };
 			cd.cameraposition = { 0, 0, 0 };
-			configuration.camera_data.push_back(cd);
+			configuration.cameraConfig.push_back(cd);
 
 			MFCamera rsd;
 			rsd.serial = cd.serial;
@@ -93,7 +93,7 @@ MFCapture::MFCapture(const char *_configFilename)
 		}
 	}
 
-	if (configuration.camera_data.size() == 0) {
+	if (configuration.cameraConfig.size() == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
 		GeneratedPC = generate_pcl();
 		std::cout << "No cameras found, default production is a spinning generated pointcloud of " << GeneratedPC->size() << " data points\n";
@@ -104,7 +104,7 @@ MFCapture::MFCapture(const char *_configFilename)
 
 			// the configuration file did not fully match the current situation so we have to update the admin
 			std::vector<std::string> serials;
-			std::vector<cameradata> realcams;
+			std::vector<MFConfigCamera> realcams;
 
 			// collect serial numbers of all connected cameras
 			for (auto dev : devs) {
@@ -114,14 +114,14 @@ MFCapture::MFCapture(const char *_configFilename)
 			}
 			
 			// collect all camera's in the config that are connected
-			for (cameradata cd : configuration.camera_data) {
+			for (MFConfigCamera cd : configuration.cameraConfig) {
 				if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 					realcams.push_back(cd);
 				else
 					std::cout << "WARNING: camera " << cd.serial << " is not connected\n";
 			}
 			// Reduce the active configuration to cameras that are connected
-			configuration.camera_data = realcams;
+			configuration.cameraConfig = realcams;
 		}
 	}
 	MergedPC = new_cwipc_pcl_pointcloud();
@@ -145,18 +145,18 @@ MFCapture::MFCapture(const char *_configFilename)
 		configuration.cwi_special_feature = feature_request;
 
 	// find camerapositions
-	for (int i = 0; i < configuration.camera_data.size(); i++) {
+	for (int i = 0; i < configuration.cameraConfig.size(); i++) {
 		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
 		cwipc_pcl_point pt;
 		pt.x = 0;
 		pt.y = 0;
 		pt.z = 0;
 		pcptr->push_back(pt);
-		transformPointCloud(*pcptr, *pcptr, *configuration.camera_data[i].trafo);
+		transformPointCloud(*pcptr, *pcptr, *configuration.cameraConfig[i].trafo);
 		cwipc_pcl_point pnt = pcptr->points[0];
-		configuration.camera_data[i].cameraposition.x = pnt.x;
-		configuration.camera_data[i].cameraposition.y = pnt.y;
-		configuration.camera_data[i].cameraposition.z = pnt.z;
+		configuration.cameraConfig[i].cameraposition.x = pnt.x;
+		configuration.cameraConfig[i].cameraposition.y = pnt.y;
+		configuration.cameraConfig[i].cameraposition.z = pnt.z;
 	}
 
 
@@ -178,8 +178,8 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-	if (Configuration.camera_data.size() > 0) {
-		for (cameradata cd : Configuration.camera_data)
+	if (Configuration.cameraConfig.size() > 0) {
+		for (cameradata cd : Configuration.cameraConfig)
 			camera_action(cd);
 		merge_views();
 
@@ -282,7 +282,7 @@ void MFCapture::camera_start(MFCamera* rsd)
 void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 {
 	MFCamera* rsd = &cameras[camera_index];
-	cameradata* cd = &configuration.camera_data[camera_index];
+	MFConfigCamera* cd = &configuration.cameraConfig[camera_index];
 	rs2::pointcloud pc;
 	rs2::points points;
 
@@ -329,7 +329,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 	unsigned char *colors = (unsigned char*)color.get_data();
 
 	if (configuration.background_removal) {
-		cameradata* cd = get_cameradata(rsd->serial);
+		MFConfigCamera* cd = get_cameradata(rsd->serial);
 
 		// Set the background removal window
         if (cd->background.z > 0.0) {
@@ -401,7 +401,7 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 {
 	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 	MergedPC->clear();
-	for (cameradata cd : configuration.camera_data) {
+	for (MFConfigCamera cd : configuration.cameraConfig) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 
 		if (cam_cld->size() > 0) {
@@ -427,10 +427,10 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 	return MergedPC;
 }
 
-cameradata* MFCapture::get_cameradata(std::string serial) {
-	for (int i = 0; i < configuration.camera_data.size(); i++)
-		if (configuration.camera_data[i].serial == serial)
-			return &configuration.camera_data[i];
+MFConfigCamera* MFCapture::get_cameradata(std::string serial) {
+	for (int i = 0; i < configuration.cameraConfig.size(); i++)
+		if (configuration.cameraConfig[i].serial == serial)
+			return &configuration.cameraConfig[i];
 	return NULL;
 }
 

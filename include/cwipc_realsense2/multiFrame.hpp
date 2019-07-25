@@ -56,18 +56,18 @@ public:
 	~MFCapture();
 	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
 	cwipc_pcl_pointcloud getPointCloud();                     // return the merged cloud
-	cameradata* get_cameradata(std::string serial);
+	MFConfigCamera* get_cameradata(std::string serial);
 	MFCamera* get_realsensedata(std::string serial);
 	MFCamera newrealsensedata();
 	
 	// variables
-    configdata configuration;
+    MFConfigCapture configuration;
 	uint64_t starttime;
 
 private:
 	std::string configFilename;
 	// methods
-	void camera_start(MFCamera* camera_data);            // Configure and initialize caputuring of one camera
+	void camera_start(MFCamera* cameraConfig);            // Configure and initialize caputuring of one camera
 	void camera_action(int camera_index, uint64_t *timestamp);// get new frames and update the camera's pointcloud
 	cwipc_pcl_pointcloud merge_views();                       // merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // generate a mathematical pointcloud

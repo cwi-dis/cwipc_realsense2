@@ -19,14 +19,14 @@ typedef struct HsvColor
 } HsvColor;
 
 // read and restore the camera transformation setting as stored in the configuration document
-bool file2config(const char* filename, configdata* config)
+bool file2config(const char* filename, MFConfigCapture* config)
 {
 	TiXmlDocument doc(filename);
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
 		std::cout << "\nWARNING: Failed to load configfile " << filename << "\n";
-		if (config->camera_data.size() > 1)
+		if (config->cameraConfig.size() > 1)
 			std::cout << "\t Captured pointclouds will be merged based on unregistered cameras\n";
 		return false;
 	}
@@ -70,7 +70,7 @@ bool file2config(const char* filename, configdata* config)
         }
     }
     
-	bool allnewcameras = config->camera_data.size() == 0; // if empty we have to set up a new administration
+	bool allnewcameras = config->cameraConfig.size() == 0; // if empty we have to set up a new administration
 	int registeredcameras = 0;
 
 	// now get the per camera info
@@ -78,29 +78,29 @@ bool file2config(const char* filename, configdata* config)
 	while (cameraElement)
 	{
 		const char * serial = cameraElement->Attribute("serial");
-		cameradata* cd;
+		MFConfigCamera* cd;
 
 		int i = 0;
-		while (i < config->camera_data.size()) {
-			if (config->camera_data[i].serial == serial) {
-				cd = &config->camera_data[i];
+		while (i < config->cameraConfig.size()) {
+			if (config->cameraConfig[i].serial == serial) {
+				cd = &config->cameraConfig[i];
 				break;
 			}
 			i++;
 		}
-		if (i == config->camera_data.size()) {
+		if (i == config->cameraConfig.size()) {
 			// this camera was not in the admin yet
 			if (!allnewcameras)
 				loadOkay = false;
 
-			cd = new cameradata();
+			cd = new MFConfigCamera();
 			boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
 			cd->serial = cameraElement->Attribute("serial");
 			cd->trafo = trafo;
 			cd->background = { 0, 0, 0 };
 			cd->cameraposition = { 0, 0, 0 };
-			config->camera_data.push_back(*cd);
-			cd = &config->camera_data.back();
+			config->cameraConfig.push_back(*cd);
+			cd = &config->cameraConfig.back();
 		}
 		cameraElement->QueryDoubleAttribute("backgroundx", &(cd->background.x));
 		cameraElement->QueryDoubleAttribute("backgroundy", &(cd->background.y));
@@ -132,19 +132,19 @@ bool file2config(const char* filename, configdata* config)
 		registeredcameras++;
 		cameraElement = cameraElement->NextSiblingElement("camera");
 	}
-	if (config->camera_data.size() != registeredcameras)
+	if (config->cameraConfig.size() != registeredcameras)
 		loadOkay = false;
 
 	if (!loadOkay)
 		std::cout << "\nWARNING: the configuration file specifying " << registeredcameras
-		<< " cameras did not correspond to the setup of " << config->camera_data.size()
+		<< " cameras did not correspond to the setup of " << config->cameraConfig.size()
 		<< " cameras\n\tre-alignment may be needed!!\n";
 
 	return loadOkay;
 }
 
 // store the current camera transformation setting into a xml document
-void config2file(const char* filename, configdata* config)
+void config2file(const char* filename, MFConfigCapture* config)
 {
 	TiXmlDocument doc;
 	doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
@@ -197,7 +197,7 @@ void config2file(const char* filename, configdata* config)
 	postprocessing->LinkEndChild(parameters);
 
 	cameraconfig->LinkEndChild(new TiXmlComment(" backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane "));
-	for (cameradata cd : config->camera_data) {
+	for (MFConfigCamera cd : config->cameraConfig) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
 		cam->SetDoubleAttribute("backgroundx", cd.background.x);
