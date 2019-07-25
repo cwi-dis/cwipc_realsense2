@@ -88,8 +88,8 @@ MFCapture::MFCapture(const char *_configFilename)
 
 	if (configuration.cameraConfig.size() == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
-		GeneratedPC = generate_pcl();
-		std::cerr << "cwipc_realsense2: multiFrame: No cameras found, default production is a spinning generated pointcloud of " << GeneratedPC->size() << " data points\n";
+		generatedPC = generate_pcl();
+		std::cerr << "cwipc_realsense2: multiFrame: No cameras found, default production is a spinning generated pointcloud of " << generatedPC->size() << " data points\n";
 	}
 	else {
 		// Read the configuration
@@ -117,7 +117,7 @@ MFCapture::MFCapture(const char *_configFilename)
 			configuration.cameraConfig = realcams;
 		}
 	}
-	MergedPC = new_cwipc_pcl_pointcloud();
+	mergedPC = new_cwipc_pcl_pointcloud();
 
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc 
 	dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
@@ -190,7 +190,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 			point.y = 1.0;
 			point.z = 1.0;
 			point.rgb = 0.0;
-			MergedPC->points.push_back(point);
+			mergedPC->points.push_back(point);
 		}
 	}
 	else {	// return a spinning generated mathematical pointcloud
@@ -198,15 +198,15 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-		transformPointCloud(*GeneratedPC, *MergedPC, transform);
+		transformPointCloud(*generatedPC, *mergedPC, transform);
 	}
-	return MergedPC;
+	return mergedPC;
 }
 
 // return the merged cloud 
 cwipc_pcl_pointcloud MFCapture::getPointCloud()
 {
-	return MergedPC;
+	return mergedPC;
 }
 
 // Configure and initialize caputuring of one camera
@@ -352,13 +352,13 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 cwipc_pcl_pointcloud MFCapture::merge_views()
 {
 	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
-	MergedPC->clear();
+	mergedPC->clear();
 	for (MFConfigCamera cd : configuration.cameraConfig) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 
 		if (cam_cld->size() > 0) {
 			transformPointCloud(*cam_cld, *aligned_cld, *cd.trafo);
-			*MergedPC += *aligned_cld;
+			*mergedPC += *aligned_cld;
 		}
 	}
 
@@ -367,16 +367,16 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 		std::cerr << "cwipc_realsense2: multiFrame: Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 		pcl::VoxelGrid<cwipc_pcl_point> grd;
-		grd.setInputCloud(MergedPC);
+		grd.setInputCloud(mergedPC);
 		grd.setLeafSize(configuration.cloud_resolution, configuration.cloud_resolution, configuration.cloud_resolution);
 		grd.setSaveLeafLayout(true);
-		grd.filter(*MergedPC);
+		grd.filter(*mergedPC);
 
 #ifdef DEBUG
 		std::cerr << "cwipc_realsense2: multiFrame: Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
-	return MergedPC;
+	return mergedPC;
 }
 
 MFConfigCamera* MFCapture::get_cameradata(std::string serial) {

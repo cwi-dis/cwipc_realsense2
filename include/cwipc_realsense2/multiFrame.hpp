@@ -73,8 +73,8 @@ private:
 	cwipc_pcl_pointcloud generate_pcl();                      // generate a mathematical pointcloud
 
 	// variables
-	cwipc_pcl_pointcloud MergedPC;                            // Merged pointcloud
-	cwipc_pcl_pointcloud GeneratedPC;                         // Mathematical pointcloud for use without camera
+	cwipc_pcl_pointcloud mergedPC;                            // Merged pointcloud
+	cwipc_pcl_pointcloud generatedPC;                         // Mathematical pointcloud for use without camera
 	std::vector<MFCamera> cameras;                // Staorage of camera specifics
 
 
