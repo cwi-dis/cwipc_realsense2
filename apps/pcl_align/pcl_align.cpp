@@ -87,8 +87,7 @@ bool load_data(MFCapture* multiframe) {
 		return false;
 
 	for (int i = 0; i < configCopy.cameraConfig.size(); i++) {
-		MFCamera rsd = multiframe->new_camera();
-		rsd.serial = configCopy.cameraConfig[i].serial;
+		MFCamera rsd(configCopy.cameraConfig[i].serial);
 		uint64_t ts = 0;
 		configCopy.cameraConfig[i].cloud = cwipc_read((configCopy.cameraConfig[i].serial + ext).c_str(), ts, NULL, CWIPC_API_VERSION)->access_pcl_pointcloud();
 		if (configCopy.cameraConfig[i].cloud == NULL)

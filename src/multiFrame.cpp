@@ -33,6 +33,16 @@
 #include "cwipc_realsense2/stb_image_write.h"
 #endif
 
+MFCamera::MFCamera(std::string _serial, std::string _usb)
+:	serial(_serial),
+	usb(_usb)
+{
+}
+
+MFCamera::~MFCamera()
+{
+}
+
 MFCapture::MFCapture(const char *_configFilename)
 {
 	if (_configFilename) {
@@ -64,9 +74,8 @@ MFCapture::MFCapture(const char *_configFilename)
 			cd.cameraposition = { 0, 0, 0 };
 			configuration.cameraConfig.push_back(cd);
 
-			MFCamera rsd;
-			rsd.serial = cd.serial;
-			rsd.usb = std::string(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+			std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+			MFCamera rsd(cd.serial, camUsb);
 			cameras.push_back(rsd);
 #ifdef WITH_INTER_CAM_SYNC
 			if (multiple_cameras) {
@@ -218,7 +227,7 @@ cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 void MFCapture::camera_start(MFCamera* rsd)
 {
 	rs2::config cfg;
-	if (rsd->usb[0] == '3') {
+	if (rsd->is_usb3()) {
 		std::cerr << "cwipc_realsense2: multiFrame: starting camera ser no: " << rsd->serial << " in usb3 mode\n";
 		cfg.enable_device(rsd->serial);
 		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_RGB8, configuration.usb3_fps);
@@ -396,11 +405,6 @@ MFCamera* MFCapture::get_camera(std::string serial) {
 		if (cameras[i].serial == serial)
 			return &cameras[i];
 	return NULL;
-}
-
-MFCamera MFCapture::new_camera() {
-	MFCamera rsd;
-	return rsd;
 }
 
 // generate a mathematical pointcloud

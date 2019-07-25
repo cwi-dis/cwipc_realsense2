@@ -34,7 +34,12 @@
 
 using namespace std::chrono;
 
-struct MFCamera {
+class MFCamera {
+public:
+	MFCamera(std::string _serial, std::string _usb="0");
+	~MFCamera();
+
+	bool is_usb3() { return usb[0] == '3'; }
 	std::string serial;
 	std::string usb;
 	rs2::pipeline pipe;
@@ -53,8 +58,7 @@ public:
 	cwipc_pcl_pointcloud get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
 	MFConfigCamera* get_camera_config(std::string serial);
 	MFCamera* get_camera(std::string serial);
-	MFCamera new_camera();
-	
+
 	// variables
     MFConfigCapture configuration;
 	uint64_t starttime;
