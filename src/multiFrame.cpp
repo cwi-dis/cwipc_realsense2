@@ -10,6 +10,9 @@
 // Define to try and use hardware sync to synchronize multiple cameras
 #define WITH_INTER_CAM_SYNC
 
+// Define to enable optional dumping of RGB video frames (to test hardware sync)
+#define WITH_DUMP_VIDEO_FRAMES
+
 // This is the dll source, so define external symbols as dllexport on windows.
 
 #if defined(WIN32) || defined(_WIN32)
@@ -20,8 +23,10 @@
 #include "cwipc_realsense2/api.h"
 #include "cwipc_realsense2/utils.h"
 
+#ifdef WITH_DUMP_VIDEO_FRAMES
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "cwipc_realsense2/stb_image_write.h"
+#endif
 
 MFCapture::MFCapture(const char *_configFilename)
 {
@@ -246,6 +251,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 	rs2::depth_frame depth = frames.get_depth_frame();
 	rs2::video_frame color = frames.get_color_frame();
 
+#ifdef WITH_DUMP_VIDEO_FRAMES
 	// On special request write video to png
 	if (configuration.cwi_special_feature == "dumpvideoframes") {
 		std::stringstream png_file;
@@ -253,6 +259,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 		stbi_write_png(png_file.str().c_str(), color.get_width(), color.get_height(),
 			color.get_bytes_per_pixel(), color.get_data(), color.get_stride_in_bytes());
 	}
+#endif // WITH_DUMP_VIDEO_FRAMES
 
 	cd->cloud->clear();
 
