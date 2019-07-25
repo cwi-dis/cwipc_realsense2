@@ -20,7 +20,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "cwipc_realsense2/stb_image_write.h"
 
-multiFrame::multiFrame(const char *_configFilename)
+MFCapture::MFCapture(const char *_configFilename)
 {
 	if (_configFilename) {
 		configFilename = _configFilename;
@@ -55,10 +55,10 @@ multiFrame::multiFrame(const char *_configFilename)
 			cd.cameraposition = { 0, 0, 0 };
 			configuration.camera_data.push_back(cd);
 
-			realsensedata rsd;
+			MFCamera rsd;
 			rsd.serial = cd.serial;
 			rsd.usb = std::string(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-			realsense_data.push_back(rsd);
+			cameras.push_back(rsd);
 #ifdef WITH_OLD_SYNC
 			//Send sync messages
 			if (!master_set)
@@ -161,13 +161,13 @@ multiFrame::multiFrame(const char *_configFilename)
 
 
 	// start the cameras
-	for (int i = 0; i < realsense_data.size(); i++)
-		camera_start(&realsense_data[i]);
+	for (int i = 0; i < cameras.size(); i++)
+		camera_start(&cameras[i]);
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-multiFrame::~multiFrame() {
-	for (realsensedata rsd : realsense_data)
+MFCapture::~MFCapture() {
+	for (MFCamera rsd : cameras)
 		rsd.pipe.stop();
 	std::cout << "stopped all camera's\n";
 }
@@ -216,11 +216,11 @@ void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
 #else
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp
-cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
+cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	if (realsense_data.size() > 0) {
-		for (int i = 0; i < realsense_data.size(); i++)
+	if (cameras.size() > 0) {
+		for (int i = 0; i < cameras.size(); i++)
 			camera_action(i, timestamp);
 
 		if (merge_views()->size() > 0) {
@@ -254,13 +254,13 @@ cwipc_pcl_pointcloud multiFrame::get_pointcloud(uint64_t *timestamp)
 #endif
 
 // return the merged cloud 
-cwipc_pcl_pointcloud multiFrame::getPointCloud()
+cwipc_pcl_pointcloud MFCapture::getPointCloud()
 {
 	return MergedPC;
 }
 
 // Configure and initialize caputuring of one camera
-void multiFrame::camera_start(realsensedata* rsd)
+void MFCapture::camera_start(MFCamera* rsd)
 {
 	rs2::config cfg;
 	if (rsd->usb[0] == '3') {
@@ -279,9 +279,9 @@ void multiFrame::camera_start(realsensedata* rsd)
 }
 
 // get new frames from the camera and update the pointcloud of the camera's data 
-void multiFrame::camera_action(int camera_index, uint64_t *timestamp)
+void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 {
-	realsensedata* rsd = &realsense_data[camera_index];
+	MFCamera* rsd = &cameras[camera_index];
 	cameradata* cd = &configuration.camera_data[camera_index];
 	rs2::pointcloud pc;
 	rs2::points points;
@@ -397,7 +397,7 @@ void multiFrame::camera_action(int camera_index, uint64_t *timestamp)
 	}
 }
 
-cwipc_pcl_pointcloud multiFrame::merge_views()
+cwipc_pcl_pointcloud MFCapture::merge_views()
 {
 	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 	MergedPC->clear();
@@ -427,27 +427,27 @@ cwipc_pcl_pointcloud multiFrame::merge_views()
 	return MergedPC;
 }
 
-cameradata* multiFrame::get_cameradata(std::string serial) {
+cameradata* MFCapture::get_cameradata(std::string serial) {
 	for (int i = 0; i < configuration.camera_data.size(); i++)
 		if (configuration.camera_data[i].serial == serial)
 			return &configuration.camera_data[i];
 	return NULL;
 }
 
-realsensedata* multiFrame::get_realsensedata(std::string serial) {
-	for (int i = 0; i < realsense_data.size(); i++)
-		if (realsense_data[i].serial == serial)
-			return &realsense_data[i];
+MFCamera* MFCapture::get_realsensedata(std::string serial) {
+	for (int i = 0; i < cameras.size(); i++)
+		if (cameras[i].serial == serial)
+			return &cameras[i];
 	return NULL;
 }
 
-realsensedata multiFrame::newrealsensedata() {
-	realsensedata rsd;
+MFCamera MFCapture::newrealsensedata() {
+	MFCamera rsd;
 	return rsd;
 }
 
 // generate a mathematical pointcloud
-cwipc_pcl_pointcloud multiFrame::generate_pcl()
+cwipc_pcl_pointcloud MFCapture::generate_pcl()
 {
 	cwipc_pcl_pointcloud point_cloud_ptr(new_cwipc_pcl_pointcloud());
 	uint8_t r(255), g(15), b(15);

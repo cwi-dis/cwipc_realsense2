@@ -56,12 +56,12 @@ cwipc_vector* cross_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result
 
 class cwipc_source_realsense2_impl : public cwipc_tiledsource {
 private:
-    multiFrame *m_grabber;
+    MFCapture *m_grabber;
 public:
     cwipc_source_realsense2_impl(const char *configFilename=NULL)
 		: m_grabber(NULL)
 	{ 
-		m_grabber = new multiFrame(configFilename); 
+		m_grabber = new MFCapture(configFilename); 
 	}
 
     ~cwipc_source_realsense2_impl()

@@ -39,7 +39,7 @@
 
 using namespace std::chrono;
 
-struct realsensedata {
+struct MFCamera {
 	std::string serial;
 	std::string usb;
 	rs2::pipeline pipe;
@@ -48,17 +48,17 @@ struct realsensedata {
 	double maxz;
 };
 
-class CWIPC_DLL_ENTRY multiFrame {
+class CWIPC_DLL_ENTRY MFCapture {
 
 public:
 	// methods
-	multiFrame(const char *_configFilename=NULL);
-	~multiFrame();
+	MFCapture(const char *_configFilename=NULL);
+	~MFCapture();
 	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
 	cwipc_pcl_pointcloud getPointCloud();                     // return the merged cloud
 	cameradata* get_cameradata(std::string serial);
-	realsensedata* get_realsensedata(std::string serial);
-	realsensedata newrealsensedata();
+	MFCamera* get_realsensedata(std::string serial);
+	MFCamera newrealsensedata();
 	
 	// variables
     configdata configuration;
@@ -67,7 +67,7 @@ public:
 private:
 	std::string configFilename;
 	// methods
-	void camera_start(realsensedata* camera_data);            // Configure and initialize caputuring of one camera
+	void camera_start(MFCamera* camera_data);            // Configure and initialize caputuring of one camera
 	void camera_action(int camera_index, uint64_t *timestamp);// get new frames and update the camera's pointcloud
 	cwipc_pcl_pointcloud merge_views();                       // merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // generate a mathematical pointcloud
@@ -75,7 +75,7 @@ private:
 	// variables
 	cwipc_pcl_pointcloud MergedPC;                            // Merged pointcloud
 	cwipc_pcl_pointcloud GeneratedPC;                         // Mathematical pointcloud for use without camera
-	std::vector<realsensedata> realsense_data;                // Staorage of camera specifics
+	std::vector<MFCamera> cameras;                // Staorage of camera specifics
 
 
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc 
