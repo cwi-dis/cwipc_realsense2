@@ -340,7 +340,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 				if (load_data(multiframe) && ConfigCopy.cameraConfig.size() > 0)
 					align_mode = true; // that is the to be expected mode
 				else {
-					std::cerr << "\nError: Data could not be loaded\n";
+					std::cerr << "\npcl_align: Error: Data could not be loaded\n";
 					makeFreezeCopy(multiframe); // make a still copy of multiFrame's configuration
 					return;
 				}
@@ -462,7 +462,7 @@ int main(int argc, char * argv[]) try
 				aligncamera = 0;
 		}
 		else {
-			std::cerr << "\nSorry: No cameras connected and no data to load\n\n";
+			std::cerr << "\npcl_align: Sorry: No cameras connected and no data to load\n\n";
 			return EXIT_FAILURE;
 		}
 	}
@@ -493,11 +493,11 @@ int main(int argc, char * argv[]) try
 }
 catch (const rs2::error & e)
 {
-	std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+	std::cerr << "pcl_align: Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::exception & e)
 {
-	std::cerr << e.what() << std::endl;
+	std::cerr << "pcl_align: " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }

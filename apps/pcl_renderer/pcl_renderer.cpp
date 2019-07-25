@@ -102,7 +102,7 @@ int main(int argc, char * argv[]) try
 	char *msg;
 	cwipc_source *src = cwipc_realsense2(NULL, &msg, CWIPC_API_VERSION);
 	if (src == NULL) {
-		std::cerr << "ERROR: could not instantiate realsense2 grabber: " << msg << std::endl;
+		std::cerr << "pcl_renderer: ERROR: could not instantiate realsense2 grabber: " << msg << std::endl;
 		return EXIT_FAILURE;
 	}
 	while (app) {
@@ -125,11 +125,11 @@ int main(int argc, char * argv[]) try
 }
 catch (const rs2::error & e)
 {
-	std::cerr << "Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+	std::cerr << "pcl_renderer: Error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::exception & e)
 {
-	std::cerr << e.what() << std::endl;
+	std::cerr << "pcl_renderer: " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }

@@ -79,7 +79,7 @@ MFCapture::MFCapture(const char *_configFilename)
 					}
 				}
 				if (!foundSensorSupportingSync) {
-					std::cout << "Warning: camera " << cd.serial << " does not support inter-camera-sync";
+					std::cerr << "cwipc_realsense2: multiFrame: Warning: camera " << cd.serial << " does not support inter-camera-sync";
 				}
 			}
 #endif // WITH_INTER_CAM_SYNC
@@ -89,7 +89,7 @@ MFCapture::MFCapture(const char *_configFilename)
 	if (configuration.cameraConfig.size() == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
 		GeneratedPC = generate_pcl();
-		std::cout << "No cameras found, default production is a spinning generated pointcloud of " << GeneratedPC->size() << " data points\n";
+		std::cerr << "cwipc_realsense2: multiFrame: No cameras found, default production is a spinning generated pointcloud of " << GeneratedPC->size() << " data points\n";
 	}
 	else {
 		// Read the configuration
@@ -111,7 +111,7 @@ MFCapture::MFCapture(const char *_configFilename)
 				if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 					realcams.push_back(cd);
 				else
-					std::cout << "WARNING: camera " << cd.serial << " is not connected\n";
+					std::cerr << "cwipc_realsense2: multiFrame: Warning: camera " << cd.serial << " is not connected\n";
 			}
 			// Reduce the active configuration to cameras that are connected
 			configuration.cameraConfig = realcams;
@@ -162,7 +162,7 @@ MFCapture::MFCapture(const char *_configFilename)
 MFCapture::~MFCapture() {
 	for (MFCamera rsd : cameras)
 		rsd.pipe.stop();
-	std::cout << "stopped all camera's\n";
+	std::cerr << "cwipc_realsense2: multiFrame: stopped all camera's\n";
 }
 
 
@@ -177,12 +177,12 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 
 		if (merge_views()->size() > 0) {
 #ifdef DEBUG
-			std::cout << "capturer produced a merged cloud of " << MergedPC->size() << " points in ringbuffer " << ring_index << "\n";
+			std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << MergedPC->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
 		}
 		else {
 #ifdef DEBUG
-			std::cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
+			std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer did get an empty pointcloud\n\n";
 #endif
 			// HACK to make sure the encoder does not get an empty pointcloud 
 			cwipc_pcl_point point;
@@ -214,13 +214,13 @@ void MFCapture::camera_start(MFCamera* rsd)
 {
 	rs2::config cfg;
 	if (rsd->usb[0] == '3') {
-		std::cout << "starting camera ser no: " << rsd->serial << " in usb3 mode\n";
+		std::cerr << "cwipc_realsense2: multiFrame: starting camera ser no: " << rsd->serial << " in usb3 mode\n";
 		cfg.enable_device(rsd->serial);
 		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_RGB8, configuration.usb3_fps);
 		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_Z16, configuration.usb3_fps);
 	}
 	else {
-		std::cout << "starting camera ser no: " << rsd->serial << " in usb2 mode\n";
+		std::cerr << "cwipc_realsense2: multiFrame: starting camera ser no: " << rsd->serial << " in usb2 mode\n";
 		cfg.enable_device(rsd->serial);
 		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_RGB8, configuration.usb2_fps);
 		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_Z16, configuration.usb2_fps);
@@ -364,7 +364,7 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 
 	if (configuration.cloud_resolution > 0) {
 #ifdef CWIPC_DEBUG
-		std::cout << "Points before reduction: " << cloud_ptr.get()->size() << endl;
+		std::cerr << "cwipc_realsense2: multiFrame: Points before reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 		pcl::VoxelGrid<cwipc_pcl_point> grd;
 		grd.setInputCloud(MergedPC);
@@ -373,7 +373,7 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 		grd.filter(*MergedPC);
 
 #ifdef DEBUG
-		std::cout << "Points after reduction: " << cloud_ptr.get()->size() << endl;
+		std::cerr << "cwipc_realsense2: multiFrame: Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
 	return MergedPC;

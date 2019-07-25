@@ -25,9 +25,9 @@ bool mf_file2config(const char* filename, MFConfigCapture* config)
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
-		std::cout << "\nWARNING: Failed to load configfile " << filename << "\n";
+		std::cerr << "cwipc_realsense2: multiFrame: Warning: Failed to load configfile " << filename << "\n";
 		if (config->cameraConfig.size() > 1)
-			std::cout << "\t Captured pointclouds will be merged based on unregistered cameras\n";
+			std::cerr << "cwipc_realsense2: multiFrame: Warning: Captured pointclouds will be merged based on unregistered cameras\n";
 		return false;
 	}
 
@@ -136,7 +136,7 @@ bool mf_file2config(const char* filename, MFConfigCapture* config)
 		loadOkay = false;
 
 	if (!loadOkay)
-		std::cout << "\nWARNING: the configuration file specifying " << registeredcameras
+		std::cerr << "cwipc_realsense2: multiFrame: Warning: the configuration file specifying " << registeredcameras
 		<< " cameras did not correspond to the setup of " << config->cameraConfig.size()
 		<< " cameras\n\tre-alignment may be needed!!\n";
 
