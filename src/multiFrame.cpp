@@ -43,6 +43,25 @@ MFCamera::~MFCamera()
 {
 }
 
+// Configure and initialize caputuring of one camera
+void MFCamera::start(MFConfigCapture& configuration)
+{
+	rs2::config cfg;
+	if (is_usb3()) {
+		std::cerr << "cwipc_realsense2: multiFrame: starting camera ser no: " << serial << " in usb3 mode\n";
+		cfg.enable_device(serial);
+		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_RGB8, configuration.usb3_fps);
+		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_Z16, configuration.usb3_fps);
+	}
+	else {
+		std::cerr << "cwipc_realsense2: multiFrame: starting camera ser no: " << serial << " in usb2 mode\n";
+		cfg.enable_device(serial);
+		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_RGB8, configuration.usb2_fps);
+		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_Z16, configuration.usb2_fps);
+	}
+	pipe.start(cfg);		// Start streaming with the configuration just set
+}
+
 MFCapture::MFCapture(const char *_configFilename)
 {
 	if (_configFilename) {
@@ -168,8 +187,8 @@ MFCapture::MFCapture(const char *_configFilename)
 
 
 	// start the cameras
-	for (int i = 0; i < cameras.size(); i++)
-		camera_start(&cameras[i]);
+	for (auto cam: cameras)
+		cam.start(configuration);
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
@@ -221,25 +240,6 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 {
 	return mergedPC;
-}
-
-// Configure and initialize caputuring of one camera
-void MFCapture::camera_start(MFCamera* rsd)
-{
-	rs2::config cfg;
-	if (rsd->is_usb3()) {
-		std::cerr << "cwipc_realsense2: multiFrame: starting camera ser no: " << rsd->serial << " in usb3 mode\n";
-		cfg.enable_device(rsd->serial);
-		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_RGB8, configuration.usb3_fps);
-		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb3_width, configuration.usb3_height, RS2_FORMAT_Z16, configuration.usb3_fps);
-	}
-	else {
-		std::cerr << "cwipc_realsense2: multiFrame: starting camera ser no: " << rsd->serial << " in usb2 mode\n";
-		cfg.enable_device(rsd->serial);
-		cfg.enable_stream(RS2_STREAM_COLOR, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_RGB8, configuration.usb2_fps);
-		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_Z16, configuration.usb2_fps);
-	}
-	rsd->pipe.start(cfg);		// Start streaming with the configuration just set
 }
 
 // get new frames from the camera and update the pointcloud of the camera's data 

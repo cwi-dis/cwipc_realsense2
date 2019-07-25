@@ -40,6 +40,7 @@ public:
 	~MFCamera();
 
 	bool is_usb3() { return usb[0] == '3'; }
+	void start(MFConfigCapture& configuration);
 	std::string serial;
 	std::string usb;
 	rs2::pipeline pipe;
@@ -66,7 +67,6 @@ public:
 private:
 	std::string configFilename;
 	// methods
-	void camera_start(MFCamera* cameraConfig);            // Configure and initialize caputuring of one camera
 	void camera_action(int camera_index, uint64_t *timestamp);// get new frames and update the camera's pointcloud
 	cwipc_pcl_pointcloud merge_views();                       // merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // generate a mathematical pointcloud
