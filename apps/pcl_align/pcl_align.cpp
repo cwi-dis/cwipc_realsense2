@@ -87,7 +87,7 @@ bool load_data(MFCapture* multiframe) {
 		return false;
 
 	for (int i = 0; i < ConfigCopy.cameraConfig.size(); i++) {
-		MFCamera rsd = multiframe->newrealsensedata();
+		MFCamera rsd = multiframe->new_camera();
 		rsd.serial = ConfigCopy.cameraConfig[i].serial;
 		uint64_t ts = 0;
 		ConfigCopy.cameraConfig[i].cloud = cwipc_read((ConfigCopy.cameraConfig[i].serial + ext).c_str(), ts, NULL, CWIPC_API_VERSION)->access_pcl_pointcloud();
@@ -100,7 +100,7 @@ bool load_data(MFCapture* multiframe) {
 void draw_background_planes(window_util* app, MFCapture* multiframe) {
 	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
 	for (int i = 0; i < multiframe->configuration.cameraConfig.size(); i++) {
-		MFCamera* rsd = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[i].serial);
+		MFCamera* rsd = multiframe->get_camera(multiframe->configuration.cameraConfig[i].serial);
 		cwipc_pcl_pointcloud bgcld(new_cwipc_pcl_pointcloud());
 
 		// generate raster on backgrounf=d
@@ -196,7 +196,7 @@ void draw_pointclouds(window_util* app, MFCapture* multiframe)
 			}
 			else if (multiframe->configuration.cameraConfig.size() > 0) {
 				// this is the real 'life' rendering of the merged cloud
-				for (auto pnt : multiframe->getPointCloud()->points) {
+				for (auto pnt : multiframe->get_mostRecentPointCloud()->points) {
 					float col[] = { (float)pnt.r / 256.f, (float)pnt.g / 256.f, (float)pnt.b / 256.f };
 					glColor3fv(col);
 					float vert[] = { pnt.x, pnt.y, pnt.z };
@@ -385,14 +385,14 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 		else if (key == 265) {   // key = "arrow up" shift fixed background
 			if (aligncamera >= 0) {
 				if (multiframe->configuration.cameraConfig[aligncamera].background.z == 0.0)
-					multiframe->configuration.cameraConfig[aligncamera].background.z = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[aligncamera].serial)->maxz * 1.25;
+					multiframe->configuration.cameraConfig[aligncamera].background.z = multiframe->get_camera(multiframe->configuration.cameraConfig[aligncamera].serial)->maxz * 1.25;
 				multiframe->configuration.cameraConfig[aligncamera].background.z *= 1.25;
 			}
 		}
 		else if (key == 264) {   // key = "arrow down" shift fixed background
 			if (aligncamera >= 0) {
 				if (multiframe->configuration.cameraConfig[aligncamera].background.z == 0.0)
-					multiframe->configuration.cameraConfig[aligncamera].background.z = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[aligncamera].serial)->maxz * 0.8;
+					multiframe->configuration.cameraConfig[aligncamera].background.z = multiframe->get_camera(multiframe->configuration.cameraConfig[aligncamera].serial)->maxz * 0.8;
 				multiframe->configuration.cameraConfig[aligncamera].background.z *= 0.8;
 			}
 		}
@@ -400,7 +400,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 			if (aligncamera >= 0) {
 				if (multiframe->configuration.cameraConfig[aligncamera].background.z != 0.0) {
 					if (multiframe->configuration.cameraConfig[aligncamera].background.x == 0.0)
-						multiframe->configuration.cameraConfig[aligncamera].background.x = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[aligncamera].serial)->minx - 0.1;
+						multiframe->configuration.cameraConfig[aligncamera].background.x = multiframe->get_camera(multiframe->configuration.cameraConfig[aligncamera].serial)->minx - 0.1;
 					multiframe->configuration.cameraConfig[aligncamera].background.x -= 0.1;
 				}
 			}
@@ -409,7 +409,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 			if (aligncamera >= 0) {
 				if (multiframe->configuration.cameraConfig[aligncamera].background.z != 0.0) {
 					if (multiframe->configuration.cameraConfig[aligncamera].background.x == 0.0)
-						multiframe->configuration.cameraConfig[aligncamera].background.x = multiframe->get_realsensedata(multiframe->configuration.cameraConfig[aligncamera].serial)->minx + 0.1;
+						multiframe->configuration.cameraConfig[aligncamera].background.x = multiframe->get_camera(multiframe->configuration.cameraConfig[aligncamera].serial)->minx + 0.1;
 					multiframe->configuration.cameraConfig[aligncamera].background.x += 0.1;
 				}
 			}

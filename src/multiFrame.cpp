@@ -209,7 +209,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 }
 
 // return the merged cloud 
-cwipc_pcl_pointcloud MFCapture::getPointCloud()
+cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 {
 	return mergedPC;
 }
@@ -286,7 +286,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 	unsigned char *colors = (unsigned char*)color.get_data();
 
 	if (configuration.background_removal) {
-		MFConfigCamera* cd = get_cameradata(rsd->serial);
+		MFConfigCamera* cd = get_camera_config(rsd->serial);
 
 		// Set the background removal window
         if (cd->background.z > 0.0) {
@@ -384,21 +384,21 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 	return mergedPC;
 }
 
-MFConfigCamera* MFCapture::get_cameradata(std::string serial) {
+MFConfigCamera* MFCapture::get_camera_config(std::string serial) {
 	for (int i = 0; i < configuration.cameraConfig.size(); i++)
 		if (configuration.cameraConfig[i].serial == serial)
 			return &configuration.cameraConfig[i];
 	return NULL;
 }
 
-MFCamera* MFCapture::get_realsensedata(std::string serial) {
+MFCamera* MFCapture::get_camera(std::string serial) {
 	for (int i = 0; i < cameras.size(); i++)
 		if (cameras[i].serial == serial)
 			return &cameras[i];
 	return NULL;
 }
 
-MFCamera MFCapture::newrealsensedata() {
+MFCamera MFCapture::new_camera() {
 	MFCamera rsd;
 	return rsd;
 }
