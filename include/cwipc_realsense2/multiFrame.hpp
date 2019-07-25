@@ -41,6 +41,8 @@ public:
 
 	bool is_usb3() { return usb[0] == '3'; }
 	void start(MFConfigCapture& configuration);
+	rs2::frameset get_frameset();
+	void process_depth_frame(rs2::depth_frame &depth);
 	std::string serial;
 	std::string usb;
 	rs2::pipeline pipe;
@@ -48,6 +50,8 @@ public:
 	double minz;
 	double maxz;
 
+private:
+	bool do_depth_filtering;
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
 	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
 	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);

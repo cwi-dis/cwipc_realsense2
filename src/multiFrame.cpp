@@ -35,23 +35,50 @@
 
 MFCamera::MFCamera(MFConfigCapture& configuration, std::string _serial, std::string _usb)
 :	serial(_serial),
-	usb(_usb)
+	usb(_usb),
+	do_depth_filtering(configuration.depth_filtering)
 {
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
-	dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
+	if (do_depth_filtering) {
+		dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
 
-	spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.spatial_iterations);
-	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.spatial_alpha);
-	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.spatial_delta);
-	spat_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.spatial_filling);
+		spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.spatial_iterations);
+		spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.spatial_alpha);
+		spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.spatial_delta);
+		spat_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.spatial_filling);
 
-	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.temporal_alpha);
-	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.temporal_delta);
-	temp_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.temporal_percistency);
+		temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.temporal_alpha);
+		temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.temporal_delta);
+		temp_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.temporal_percistency);
+	}
 }
 
 MFCamera::~MFCamera()
 {
+}
+
+rs2::frameset MFCamera::get_frameset()
+{
+#ifdef WITH_POLLING
+	// Poll to find if there is a next set of frames from the camera
+	rs2::frameset frames;
+	if (!pipe.poll_for_frames(&frames))
+		return;
+#else
+	// Wait to find if there is a next set of frames from the camera
+	rs2::frameset frames = pipe.wait_for_frames();
+#endif
+	return frames;
+}
+
+void MFCamera::process_depth_frame(rs2::depth_frame &depth) {
+	if (do_depth_filtering) { // Apply filters
+		//depth = dec_filter.process(depth);          // decimation filter
+		depth = depth_to_disparity.process(depth);  // transform into disparity domain
+		depth = spat_filter.process(depth);         // spatial filter
+		depth = temp_filter.process(depth);         // temporal filter
+		depth = disparity_to_depth.process(depth);  // revert back to depth domain
+	}
 }
 
 // Configure and initialize caputuring of one camera
@@ -249,21 +276,13 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 	rs2::pointcloud pc;
 	rs2::points points;
 
-	uint8_t camera_label = (uint8_t)1 << camera_index;
-
-#ifdef WITH_POLLING
-	// Poll to find if there is a next set of frames from the camera
-	rs2::frameset frames;
-	if (!rsd->pipe.poll_for_frames(&frames))
-		return;
-#else
-	// Wait to find if there is a next set of frames from the camera
-	rs2::frameset frames = rsd->pipe.wait_for_frames();
-#endif
+	rs2::frameset frames = rsd->get_frameset();
 
 	rs2::depth_frame depth = frames.get_depth_frame();
 	rs2::video_frame color = frames.get_color_frame();
 
+	rsd->process_depth_frame(depth);
+	
 #ifdef WITH_DUMP_VIDEO_FRAMES
 	// On special request write video to png
 	if (configuration.cwi_special_feature == "dumpvideoframes") {
@@ -275,17 +294,10 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 #endif // WITH_DUMP_VIDEO_FRAMES
 
 	cd->cloud->clear();
-
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
-	
-	if (configuration.depth_filtering) { // Apply filters
-		//depth = dec_filter.process(depth);          // decimation filter
-		depth = rsd->depth_to_disparity.process(depth);  // transform into disparity domain
-		depth = rsd->spat_filter.process(depth);         // spatial filter
-		depth = rsd->temp_filter.process(depth);         // temporal filter
-		depth = rsd->disparity_to_depth.process(depth);  // revert back to depth domain
-	}
+
+	uint8_t camera_label = (uint8_t)1 << camera_index;
 	points = pc.calculate(depth);
 
 	// Generate new vertices and color vector
