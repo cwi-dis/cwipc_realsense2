@@ -36,7 +36,7 @@ using namespace std::chrono;
 
 class MFCamera {
 public:
-	MFCamera(std::string _serial, std::string _usb="0");
+	MFCamera(MFConfigCapture& configuration, std::string _serial, std::string _usb="0");
 	~MFCamera();
 
 	bool is_usb3() { return usb[0] == '3'; }
@@ -47,6 +47,14 @@ public:
 	double minx;
 	double minz;
 	double maxz;
+
+	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
+	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
+	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
+	rs2::spatial_filter spat_filter;                          // Spatial    - edge-preserving spatial smoothing
+	rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
+	rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
+
 };
 
 class CWIPC_DLL_ENTRY MFCapture {
@@ -77,11 +85,5 @@ private:
 	std::vector<MFCamera> cameras;                // Staorage of camera specifics
 
 
-	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc 
-	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
-	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
-	rs2::spatial_filter spat_filter;                          // Spatial    - edge-preserving spatial smoothing
-	rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
-	rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
 };
 #endif /* cwipw_realsense_multiFrame_hpp */

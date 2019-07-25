@@ -33,10 +33,21 @@
 #include "cwipc_realsense2/stb_image_write.h"
 #endif
 
-MFCamera::MFCamera(std::string _serial, std::string _usb)
+MFCamera::MFCamera(MFConfigCapture& configuration, std::string _serial, std::string _usb)
 :	serial(_serial),
 	usb(_usb)
 {
+	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
+	dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
+
+	spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.spatial_iterations);
+	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.spatial_alpha);
+	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.spatial_delta);
+	spat_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.spatial_filling);
+
+	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.temporal_alpha);
+	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.temporal_delta);
+	temp_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.temporal_percistency);
 }
 
 MFCamera::~MFCamera()
@@ -94,7 +105,7 @@ MFCapture::MFCapture(const char *_configFilename)
 			configuration.cameraConfig.push_back(cd);
 
 			std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-			MFCamera rsd(cd.serial, camUsb);
+			MFCamera rsd(configuration, cd.serial, camUsb);
 			cameras.push_back(rsd);
 #ifdef WITH_INTER_CAM_SYNC
 			if (multiple_cameras) {
@@ -151,18 +162,6 @@ MFCapture::MFCapture(const char *_configFilename)
 		}
 	}
 	mergedPC = new_cwipc_pcl_pointcloud();
-
-	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc 
-	dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
-
-	spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.spatial_iterations);
-	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.spatial_alpha);
-	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.spatial_delta);
-	spat_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.spatial_filling);
-
-	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.temporal_alpha);
-	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.temporal_delta);
-	temp_filter.set_option(RS2_OPTION_HOLES_FILL, configuration.temporal_percistency);
 
 	// optionally set request for cwi_special_feature
 	char* feature_request;
@@ -282,10 +281,10 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 	
 	if (configuration.depth_filtering) { // Apply filters
 		//depth = dec_filter.process(depth);          // decimation filter
-		depth = depth_to_disparity.process(depth);  // transform into disparity domain
-		depth = spat_filter.process(depth);         // spatial filter
-		depth = temp_filter.process(depth);         // temporal filter
-		depth = disparity_to_depth.process(depth);  // revert back to depth domain
+		depth = rsd->depth_to_disparity.process(depth);  // transform into disparity domain
+		depth = rsd->spat_filter.process(depth);         // spatial filter
+		depth = rsd->temp_filter.process(depth);         // temporal filter
+		depth = rsd->disparity_to_depth.process(depth);  // revert back to depth domain
 	}
 	points = pc.calculate(depth);
 
