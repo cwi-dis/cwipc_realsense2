@@ -8,15 +8,12 @@
 #include "cwipc_realsense2/defs.h"
 #include <librealsense2/rs.hpp>
 
-#ifdef WITH_WIN32_LOADLIBRARY
-#include <windows.h>
-#else
 #include "cwipc_realsense2/api.h"
-#endif
 
 typedef void(*GetPointCloudFunction)(uint64_t *, void **);
 
-//#define SHOW_CAMERA_CONTRIBUTION_AS_COLOR
+// Define to use color to show which camera contributed to the point (otherwise show real world color)
+#undef SHOW_CAMERA_CONTRIBUTION_AS_COLOR
 
 #define CENTERSTEPS 256
 
@@ -92,23 +89,6 @@ int main(int argc, char * argv[]) try
 {
 	printhelp();
 
-#ifdef WITH_WIN32_LOADLIBRARY
-	GetPointCloudFunction getPointCloud = nullptr;
-	HINSTANCE hInstLibrary;
-
-	hInstLibrary = LoadLibrary(TEXT("multiFrame.dll"));
-
-	if (hInstLibrary)		// the function dll file has been found and is loaded
-		getPointCloud = (GetPointCloudFunction)GetProcAddress(hInstLibrary, "getPointCloud");
-	else
-		std::cerr << "ERROR: no dll file named 'multiFrame.dll' found\n";
-	if (!getPointCloud) {
-		std::cerr << "ERROR: function 'getPointCloud' not found in dll file\n";
-		return EXIT_FAILURE;
-	}
-#else
-#endif // WITH_WIN32_LOADLIBRARY
-
 	// Create a simple OpenGL window for rendering:
 	window_util app(2560, 1440, "Multicamera Capturing");
 
@@ -141,9 +121,6 @@ int main(int argc, char * argv[]) try
 
 		draw_pointcloud(&app, captured_pc);
 	}
-#ifdef WITH_WIN32_LOADLIBRARY
-	FreeLibrary(hInstLibrary);
-#endif
 	return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)

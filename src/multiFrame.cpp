@@ -7,6 +7,9 @@
 #include <chrono>
 #include <cstdint>
 
+// Define to try and use hardware sync to synchronize multiple cameras
+#define WITH_INTER_CAM_SYNC
+
 // This is the dll source, so define external symbols as dllexport on windows.
 
 #if defined(WIN32) || defined(_WIN32)
@@ -33,15 +36,11 @@ MFCapture::MFCapture(const char *_configFilename)
 	auto devs = ctx.query_devices();
 	const std::string platform_camera_name = "Platform Camera";
 	//Sync messages to assign master and slave
-#define WITH_NEW_SYNC
-#ifndef WITH_OLD_SYNC
-	uint8_t sync_default[24] = { 0x14,0x0,0xAB,0xCD,0x64,0x0,0x0,0x0,0x00,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 };
-	uint8_t sync_master[24] = { 0x14,0x0,0xAB,0xCD,0x64,0x0,0x0,0x0,0x01,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 };
-	uint8_t sync_slave[24] = { 0x14,0x0,0xAB,0xCD,0x64,0x0,0x0,0x0,0x02,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 };
-#endif // WITH_OLD_SYNC
+#ifdef WITH_INTER_CAM_SYNC
 	bool master_set = false;
 	bool multiple_cameras = true; // xxxjack devs.size() > 1;
 	rs2_error* e = nullptr;
+#endif // WITH_INTER_CAM_SYNC
 	// prepare storage for camera data for each connected camera
 	for (auto dev : devs) {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
@@ -59,18 +58,7 @@ MFCapture::MFCapture(const char *_configFilename)
 			rsd.serial = cd.serial;
 			rsd.usb = std::string(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
 			cameras.push_back(rsd);
-#ifdef WITH_OLD_SYNC
-			//Send sync messages
-			if (!master_set)
-			{
-				rs2_send_and_receive_raw_data((rs2_device*)&dev, (void*)&sync_master, sizeof(sync_master), &e);
-				master_set = true;
-			}
-			else {
-				rs2_send_and_receive_raw_data((rs2_device*)&dev, (void*)&sync_slave, sizeof(sync_default), &e);
-			}
-#endif
-#ifdef WITH_NEW_SYNC
+#ifdef WITH_INTER_CAM_SYNC
 			if (multiple_cameras) {
 				auto allSensors = dev.query_sensors();
 				bool foundSensorSupportingSync = false;
@@ -89,7 +77,7 @@ MFCapture::MFCapture(const char *_configFilename)
 					std::cout << "Warning: camera " << cd.serial << " does not support inter-camera-sync";
 				}
 			}
-#endif
+#endif // WITH_INTER_CAM_SYNC
 		}
 	}
 
@@ -172,48 +160,7 @@ MFCapture::~MFCapture() {
 	std::cout << "stopped all camera's\n";
 }
 
-#if 0
-// API function that triggers the capture and returns the merged pointcloud and timestamp
-void multiFrame::get_pointcloud(uint64_t *timestamp, void **pointcloud)
-{
-	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-	if (Configuration.cameraConfig.size() > 0) {
-		for (cameradata cd : Configuration.cameraConfig)
-			camera_action(cd);
-		merge_views();
-
-		if (MergedPC.get()->size() > 0) {
-#ifdef CWIPC_DEBUG
-			std::cout << "capturer produced a merged cloud of " << MergedPC->size() << " points in ringbuffer " << ring_index << "\n";
-#endif
-			*pointcloud = reinterpret_cast<void *> (&(MergedPC));
-		}
-		else {
-#ifdef CWIPC_DEBUG
-			std::cout << "\nWARNING: capturer did get an empty pointcloud\n\n";
-#endif
-			// HACK to make sure the encoder does not get an empty pointcloud 
-			cwipc_pcl_point point;
-			point.x = 1.0;
-			point.y = 1.0;
-			point.z = 1.0;
-			point.rgb = 0.0;
-			MergedPC->points.push_back(point);
-			*pointcloud = reinterpret_cast<void *> (&(MergedPC));
-		}
-	}
-	else {	// return a spinning generated mathematical pointcloud
-		static float angle;
-		angle += 0.031415;
-		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-		transformPointCloud(*GeneratedPC, *MergedPC, transform);
-		*pointcloud = reinterpret_cast<void *> (&(MergedPC));
-	}
-	ring_index = ring_index < Configuration.ringbuffer_size - 1 ? ++ring_index : 0;
-}
-#else
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp
 cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
@@ -250,8 +197,6 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 	}
 	return MergedPC;
 }
-
-#endif
 
 // return the merged cloud 
 cwipc_pcl_pointcloud MFCapture::getPointCloud()
