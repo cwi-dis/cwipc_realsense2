@@ -176,12 +176,12 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 			camera_action(i, timestamp);
 
 		if (merge_views()->size() > 0) {
-#ifdef DEBUG
+#ifdef CWIPC_DEBUG
 			std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << MergedPC->size() << " points in ringbuffer " << ring_index << "\n";
 #endif
 		}
 		else {
-#ifdef DEBUG
+#ifdef CWIPC_DEBUG
 			std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer did get an empty pointcloud\n\n";
 #endif
 			// HACK to make sure the encoder does not get an empty pointcloud 
@@ -372,7 +372,7 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 		grd.setSaveLeafLayout(true);
 		grd.filter(*mergedPC);
 
-#ifdef DEBUG
+#ifdef CWIPC_DEBUG
 		std::cerr << "cwipc_realsense2: multiFrame: Points after reduction: " << cloud_ptr.get()->size() << endl;
 #endif
 	}
