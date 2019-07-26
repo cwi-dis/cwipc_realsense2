@@ -79,7 +79,7 @@ void makeFreezeCopy(MFCapture* multiframe)
 }
 
 // Ignore camera's that may be active, load a configuration and captured frames from file
-bool load_data(MFCapture* multiframe) {
+bool load_data() {
 
 	configCopy.cameraConfig.clear();
 
@@ -87,7 +87,6 @@ bool load_data(MFCapture* multiframe) {
 		return false;
 
 	for (int i = 0; i < configCopy.cameraConfig.size(); i++) {
-		MFCamera rsd(configCopy, configCopy.cameraConfig[i].serial);
 		uint64_t ts = 0;
 		configCopy.cameraConfig[i].cloud = cwipc_read((configCopy.cameraConfig[i].serial + ext).c_str(), ts, NULL, CWIPC_API_VERSION)->access_pcl_pointcloud();
 		if (configCopy.cameraConfig[i].cloud == NULL)
@@ -336,7 +335,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 			}
 			else {
 				// starting loaded mode
-				if (load_data(multiframe) && configCopy.cameraConfig.size() > 0)
+				if (load_data() && configCopy.cameraConfig.size() > 0)
 					align_mode = true; // that is the to be expected mode
 				else {
 					std::cerr << "\npcl_align: Error: Data could not be loaded\n";
@@ -454,7 +453,7 @@ int main(int argc, char * argv[]) try
 
     if (multiframe.configuration.cameraConfig.size() < 1) {
         // no camera connected
-        if (load_data(&multiframe) && configCopy.cameraConfig.size() > 0) {
+        if (load_data() && configCopy.cameraConfig.size() > 0) {
             loaded_mode = true;
             align_mode = true;
 			if (aligncamera < 0 || aligncamera >= configCopy.cameraConfig.size())
