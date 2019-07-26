@@ -60,6 +60,7 @@ private:
 	bool do_depth_filtering;
 	bool stopped;
 	std::thread *grabber_thread;
+	rs2::frame_queue queue;
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
 	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
 	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);

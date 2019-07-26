@@ -40,7 +40,8 @@ MFCamera::MFCamera(rs2::context& ctx, MFConfigCapture& configuration, std::strin
 	pipe(ctx),
 	do_depth_filtering(configuration.depth_filtering),
 	stopped(true),
-	grabber_thread(NULL)
+	grabber_thread(nullptr),
+	queue(1)
 {
 #ifdef CWIPC_DEBUG
 		std::cout << "MFCapture: creating camera " << serial << std::endl;
@@ -70,18 +71,7 @@ MFCamera::~MFCamera()
 
 rs2::frameset MFCamera::get_frameset()
 {
-#ifdef WITH_POLLING
-	// Poll to find if there is a next set of frames from the camera
-	rs2::frameset frames;
-	if (!pipe.poll_for_frames(&frames))
-		return;
-#else
-	// Wait to find if there is a next set of frames from the camera
-	rs2::frameset frames = pipe.wait_for_frames();
-#endif
-#ifdef CWIPC_DEBUG
-	std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
-#endif
+	rs2::frameset frames = queue.wait_for_frame();
 	return frames;
 }
 
@@ -117,8 +107,12 @@ void MFCamera::start(MFConfigCapture& configuration)
 	grabber_thread = new std::thread([&]() {
 		std::cout << "xxxjack thread started" << std::endl;
 		while(!stopped) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			std::cout << "xxxjack thread running" << std::endl;
+			// Wait to find if there is a next set of frames from the camera
+			rs2::frameset frames = pipe.wait_for_frames();
+#ifdef CWIPC_DEBUG
+			std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
+#endif
+			queue.enqueue(frames);
 		}
 		std::cout << "xxxjack thread stopped" << std::endl;
 	});
