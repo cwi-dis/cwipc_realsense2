@@ -39,7 +39,8 @@ MFCamera::MFCamera(rs2::context& ctx, MFConfigCapture& configuration, std::strin
 	usb(_usb),
 	pipe(ctx),
 	do_depth_filtering(configuration.depth_filtering),
-	stopped(true)
+	stopped(true),
+	grabber_thread(NULL)
 {
 #ifdef CWIPC_DEBUG
 		std::cout << "MFCapture: creating camera " << serial << std::endl;
@@ -113,13 +114,23 @@ void MFCamera::start(MFConfigCapture& configuration)
 	}
 	pipe.start(cfg);		// Start streaming with the configuration just set
 	stopped = false;
+	grabber_thread = new std::thread([&]() {
+		std::cout << "xxxjack thread started" << std::endl;
+		while(!stopped) {
+			sleep(1);
+			std::cout << "xxxjack thread running" << std::endl;
+		}
+		std::cout << "xxxjack thread stopped" << std::endl;
+	});
 }
 
 void MFCamera::stop()
 {
 	assert(!stopped);
+	assert(grabber_thread);
 	stopped = true;
 	pipe.stop();
+	grabber_thread->join();
 }
 
 MFCapture::MFCapture(const char *_configFilename)
