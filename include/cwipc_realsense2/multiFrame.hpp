@@ -35,23 +35,29 @@
 using namespace std::chrono;
 
 class MFCamera {
+private:
+	MFCamera(const MFCamera&);	// Disable copy constructor
+	MFCamera& operator=(const MFCamera&);	// Disable assignment
 public:
 	MFCamera(rs2::context& ctx, MFConfigCapture& configuration, std::string _serial, std::string _usb="0");
 	~MFCamera();
 
 	bool is_usb3() { return usb[0] == '3'; }
 	void start(MFConfigCapture& configuration);
+	void stop();
 	rs2::frameset get_frameset();
 	void process_depth_frame(rs2::depth_frame &depth);
-	std::string serial;
-	std::string usb;
-	rs2::pipeline pipe;
+
 	double minx;
 	double minz;
 	double maxz;
+	std::string serial;
 
 private:
+	std::string usb;
+	rs2::pipeline pipe;
 	bool do_depth_filtering;
+	bool stopped;
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
 	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
 	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
@@ -87,7 +93,7 @@ private:
 	// variables
 	cwipc_pcl_pointcloud mergedPC;                            // Merged pointcloud
 	cwipc_pcl_pointcloud generatedPC;                         // Mathematical pointcloud for use without camera
-	std::vector<MFCamera> cameras;                // Staorage of camera specifics
+	std::vector<MFCamera*> cameras;                // Storage of camera specifics
 
 
 };

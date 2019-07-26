@@ -34,11 +34,16 @@
 #endif
 
 MFCamera::MFCamera(rs2::context& ctx, MFConfigCapture& configuration, std::string _serial, std::string _usb)
-:	serial(_serial),
+:	minx(0), minz(0), maxz(0),
+	serial(_serial),
 	usb(_usb),
 	pipe(ctx),
-	do_depth_filtering(configuration.depth_filtering)
+	do_depth_filtering(configuration.depth_filtering),
+	stopped(true)
 {
+#ifdef CWIPC_DEBUG
+		std::cout << "MFCapture: creating camera " << serial << std::endl;
+#endif
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
 	if (do_depth_filtering) {
 		dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
@@ -56,6 +61,10 @@ MFCamera::MFCamera(rs2::context& ctx, MFConfigCapture& configuration, std::strin
 
 MFCamera::~MFCamera()
 {
+#ifdef CWIPC_DEBUG
+	std::cout << "MFCamera: destroying " << serial << std::endl;
+#endif
+	assert(stopped);
 }
 
 rs2::frameset MFCamera::get_frameset()
@@ -70,7 +79,7 @@ rs2::frameset MFCamera::get_frameset()
 	rs2::frameset frames = pipe.wait_for_frames();
 #endif
 #ifdef CWIPC_DEBUG
-	std::cerr << "frame: cam=" << serial << ", time=" << frames.get_timestamp() << ", seq=" << frames.get_frame_number() << std::endl;
+	std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
 #endif
 	return frames;
 }
@@ -88,6 +97,7 @@ void MFCamera::process_depth_frame(rs2::depth_frame &depth) {
 // Configure and initialize caputuring of one camera
 void MFCamera::start(MFConfigCapture& configuration)
 {
+	assert(stopped);
 	rs2::config cfg;
 	if (is_usb3()) {
 		std::cerr << "cwipc_realsense2: multiFrame: starting camera ser no: " << serial << " in usb3 mode\n";
@@ -102,6 +112,14 @@ void MFCamera::start(MFConfigCapture& configuration)
 		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_Z16, configuration.usb2_fps);
 	}
 	pipe.start(cfg);		// Start streaming with the configuration just set
+	stopped = false;
+}
+
+void MFCamera::stop()
+{
+	assert(!stopped);
+	stopped = true;
+	pipe.stop();
 }
 
 MFCapture::MFCapture(const char *_configFilename)
@@ -118,11 +136,13 @@ MFCapture::MFCapture(const char *_configFilename)
 	//Sync messages to assign master and slave
 #ifdef WITH_INTER_CAM_SYNC
 	bool master_set = false;
-	bool multiple_cameras = true; // xxxjack devs.size() > 1;
-	rs2_error* e = nullptr;
+	bool multiple_cameras = devs.size() > 1;
 #endif // WITH_INTER_CAM_SYNC
 	// prepare storage for camera data for each connected camera
 	for (auto dev : devs) {
+#ifdef CWIPC_DEBUG
+		std::cout << "MFCapture: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+#endif
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
 			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 			default_trafo->setIdentity();
@@ -135,8 +155,8 @@ MFCapture::MFCapture(const char *_configFilename)
 			configuration.cameraConfig.push_back(cd);
 
 			std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-			MFCamera rsd(ctx, configuration, cd.serial, camUsb);
-			cameras.push_back(rsd);
+			auto cam = new MFCamera(ctx, configuration, cd.serial, camUsb);
+			cameras.push_back(cam);
 #ifdef WITH_INTER_CAM_SYNC
 			if (multiple_cameras) {
 				auto allSensors = dev.query_sensors();
@@ -217,14 +237,18 @@ MFCapture::MFCapture(const char *_configFilename)
 
 	// start the cameras
 	for (auto cam: cameras)
-		cam.start(configuration);
+		cam->start(configuration);
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 MFCapture::~MFCapture() {
-	for (MFCamera rsd : cameras)
-		rsd.pipe.stop();
-	std::cerr << "cwipc_realsense2: multiFrame: stopped all camera's\n";
+	for (auto cam : cameras)
+		cam->stop();
+	std::cerr << "cwipc_realsense2: multiFrame: stopped all cameras\n";
+	for (auto cam : cameras)
+		delete cam;
+	cameras.clear();
+	std::cerr << "cwipc_realsense2: multiFrame: deleted all cameras\n";
 }
 
 
@@ -274,7 +298,7 @@ cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 // get new frames from the camera and update the pointcloud of the camera's data 
 void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 {
-	MFCamera* rsd = &cameras[camera_index];
+	MFCamera* rsd = cameras[camera_index];
 	MFConfigCamera* cd = &configuration.cameraConfig[camera_index];
 	rs2::pointcloud pc;
 	rs2::points points;
@@ -283,6 +307,9 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 
 	rs2::depth_frame depth = frames.get_depth_frame();
 	rs2::video_frame color = frames.get_color_frame();
+#ifdef CWIPC_DEBUG
+	std::cerr << "frame process: cam=" << rsd->serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
+#endif
 
 	rsd->process_depth_frame(depth);
 	
@@ -415,9 +442,9 @@ MFConfigCamera* MFCapture::get_camera_config(std::string serial) {
 }
 
 MFCamera* MFCapture::get_camera(std::string serial) {
-	for (int i = 0; i < cameras.size(); i++)
-		if (cameras[i].serial == serial)
-			return &cameras[i];
+	for (auto cam : cameras)
+		if (cam->serial == serial)
+			return cam;
 	return NULL;
 }
 
