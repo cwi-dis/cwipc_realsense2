@@ -117,7 +117,7 @@ void MFCamera::start(MFConfigCapture& configuration)
 	grabber_thread = new std::thread([&]() {
 		std::cout << "xxxjack thread started" << std::endl;
 		while(!stopped) {
-			sleep(1);
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			std::cout << "xxxjack thread running" << std::endl;
 		}
 		std::cout << "xxxjack thread stopped" << std::endl;
