@@ -33,9 +33,10 @@
 #include "cwipc_realsense2/stb_image_write.h"
 #endif
 
-MFCamera::MFCamera(MFConfigCapture& configuration, std::string _serial, std::string _usb)
+MFCamera::MFCamera(rs2::context& ctx, MFConfigCapture& configuration, std::string _serial, std::string _usb)
 :	serial(_serial),
 	usb(_usb),
+	pipe(ctx),
 	do_depth_filtering(configuration.depth_filtering)
 {
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
@@ -109,7 +110,6 @@ MFCapture::MFCapture(const char *_configFilename)
 		configFilename = "cameraconfig.xml";
 	}
 	// Create librealsense context for managing all connected RealSense devices
-	rs2::context ctx;
 	auto devs = ctx.query_devices();
 	const std::string platform_camera_name = "Platform Camera";
 	//Sync messages to assign master and slave
@@ -132,7 +132,7 @@ MFCapture::MFCapture(const char *_configFilename)
 			configuration.cameraConfig.push_back(cd);
 
 			std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-			MFCamera rsd(configuration, cd.serial, camUsb);
+			MFCamera rsd(ctx, configuration, cd.serial, camUsb);
 			cameras.push_back(rsd);
 #ifdef WITH_INTER_CAM_SYNC
 			if (multiple_cameras) {

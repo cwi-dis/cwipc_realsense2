@@ -36,7 +36,7 @@ using namespace std::chrono;
 
 class MFCamera {
 public:
-	MFCamera(MFConfigCapture& configuration, std::string _serial, std::string _usb="0");
+	MFCamera(rs2::context& ctx, MFConfigCapture& configuration, std::string _serial, std::string _usb="0");
 	~MFCamera();
 
 	bool is_usb3() { return usb[0] == '3'; }
@@ -77,6 +77,7 @@ public:
 	uint64_t starttime;
 
 private:
+	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
 	std::string configFilename;
 	// methods
 	void camera_action(int camera_index, uint64_t *timestamp);// get new frames and update the camera's pointcloud
