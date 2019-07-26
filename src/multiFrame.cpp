@@ -14,7 +14,7 @@
 #undef WITH_POLLING
 
 // Define to get (a little) debug prints
-#undef CWIPC_DEBUG
+#define CWIPC_DEBUG
 
 // This is the dll source, so define external symbols as dllexport on windows.
 
@@ -68,6 +68,9 @@ rs2::frameset MFCamera::get_frameset()
 #else
 	// Wait to find if there is a next set of frames from the camera
 	rs2::frameset frames = pipe.wait_for_frames();
+#endif
+#ifdef CWIPC_DEBUG
+	std::cerr << "frame: cam=" << serial << ", time=" << frames.get_timestamp() << ", seq=" << frames.get_frame_number() << std::endl;
 #endif
 	return frames;
 }
@@ -236,7 +239,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 
 		if (merge_views()->size() > 0) {
 #ifdef CWIPC_DEBUG
-			std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << MergedPC->size() << " points in ringbuffer " << ring_index << "\n";
+			std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
 #endif
 		}
 		else {
@@ -389,7 +392,7 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 
 	if (configuration.cloud_resolution > 0) {
 #ifdef CWIPC_DEBUG
-		std::cerr << "cwipc_realsense2: multiFrame: Points before reduction: " << cloud_ptr.get()->size() << endl;
+		std::cerr << "cwipc_realsense2: multiFrame: Points before reduction: " << mergedPC->size() << std::endl;
 #endif
 		pcl::VoxelGrid<cwipc_pcl_point> grd;
 		grd.setInputCloud(mergedPC);
@@ -398,7 +401,7 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 		grd.filter(*mergedPC);
 
 #ifdef CWIPC_DEBUG
-		std::cerr << "cwipc_realsense2: multiFrame: Points after reduction: " << cloud_ptr.get()->size() << endl;
+		std::cerr << "cwipc_realsense2: multiFrame: Points after reduction: " << mergedPC->size() << std::endl;
 #endif
 	}
 	return mergedPC;
