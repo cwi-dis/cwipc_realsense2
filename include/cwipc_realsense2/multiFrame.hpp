@@ -40,11 +40,11 @@ private:
 	MFCamera(const MFCamera&);	// Disable copy constructor
 	MFCamera& operator=(const MFCamera&);	// Disable assignment
 public:
-	MFCamera(rs2::context& ctx, MFConfigCapture& configuration, std::string _serial, std::string _usb="0");
+	MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, MFCameraData& _camData, std::string _usb="0");
 	~MFCamera();
 
 	bool is_usb3() { return usb[0] == '3'; }
-	void start(MFConfigCapture& configuration);
+	void start(MFCaptureConfig& configuration);
 	void start_capturer();
 	void stop();
 	rs2::frameset get_frameset();
@@ -56,6 +56,7 @@ public:
 	std::string serial;
 
 private:
+	MFCameraData& camData;
 	std::string usb;
 	rs2::pipeline pipe;
 	bool do_depth_filtering;
@@ -79,11 +80,11 @@ public:
 	~MFCapture();
 	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
 	cwipc_pcl_pointcloud get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
-	MFConfigCamera* get_camera_config(std::string serial);
+	MFCameraData* get_camera_config(std::string serial);
 	MFCamera* get_camera(std::string serial);
 
 	// variables
-    MFConfigCapture configuration;
+    MFCaptureConfig configuration;
 	uint64_t starttime;
 
 private:

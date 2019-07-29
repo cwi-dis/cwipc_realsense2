@@ -16,7 +16,7 @@
 //
 #include "cwipc_util/api_pcl.h"
 
-struct MFConfigCamera {
+struct MFCameraData {
 	std::string serial;
 	boost::shared_ptr<Eigen::Affine3d> trafo;
 	cwipc_vector cameraposition;
@@ -24,7 +24,7 @@ struct MFConfigCamera {
 	cwipc_pcl_pointcloud cloud;
 };
 
-struct MFConfigCapture {
+struct MFCaptureConfig {
 	// system data
 	int usb3_width = 1280;
 	int usb3_height = 720;
@@ -56,7 +56,7 @@ struct MFConfigCapture {
 	int temporal_percistency = 3;         // val between 0 and 8
 
 	// per camera data
-	std::vector<MFConfigCamera> cameraConfig;
+	std::vector<MFCameraData> cameraData;
 };
 
 #endif /* cwipc_realsense2_defs_h */
