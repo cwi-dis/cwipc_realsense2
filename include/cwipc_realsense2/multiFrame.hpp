@@ -45,6 +45,7 @@ public:
 
 	bool is_usb3() { return usb[0] == '3'; }
 	void start(MFConfigCapture& configuration);
+	void start_capturer();
 	void stop();
 	rs2::frameset get_frameset();
 	void process_depth_frame(rs2::depth_frame &depth);

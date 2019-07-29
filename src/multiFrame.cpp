@@ -103,6 +103,11 @@ void MFCamera::start(MFConfigCapture& configuration)
 		cfg.enable_stream(RS2_STREAM_DEPTH, configuration.usb2_width, configuration.usb2_height, RS2_FORMAT_Z16, configuration.usb2_fps);
 	}
 	pipe.start(cfg);		// Start streaming with the configuration just set
+}
+
+void MFCamera::start_capturer()
+{
+	assert(stopped);
 	stopped = false;
 	grabber_thread = new std::thread([&]() {
 		std::cout << "xxxjack thread started" << std::endl;
@@ -241,8 +246,14 @@ MFCapture::MFCapture(const char *_configFilename)
 
 
 	// start the cameras
+	try {
+		for (auto cam: cameras)
+			cam->start(configuration);
+	} catch(const rs2::error& e) {
+		std::cerr << "cwipc_realsense2: exception while starting camera: " << e.get_failed_function() << ": " << e.what() << std::endl;
+	}
 	for (auto cam: cameras)
-		cam->start(configuration);
+		cam->start_capturer();
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
