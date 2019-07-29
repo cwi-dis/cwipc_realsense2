@@ -144,32 +144,39 @@ MFCapture::MFCapture(const char *_configFilename)
 	// Create librealsense context for managing all connected RealSense devices
 	auto devs = ctx.query_devices();
 	const std::string platform_camera_name = "Platform Camera";
+	// Determine how many realsense cameras (not platform cameras like webcams) are connected
+	int camera_count = 0;
+	for(auto dev: devs) {
+		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
+			camera_count++;
+		}
+	}
 	//Sync messages to assign master and slave
 #ifdef WITH_INTER_CAM_SYNC
 	bool master_set = false;
-	bool multiple_cameras = devs.size() > 1;
 #endif // WITH_INTER_CAM_SYNC
-	// prepare storage for camera data for each connected camera
+	//
+	// Enumerate over all connected cameras, create their default MFCameraData structures
+	// and set any hardware options (for example for sync).
+	// We will create the actual MFCamera objects later, after we have read the configuration file.
+	//
 	for (auto dev : devs) {
 #ifdef CWIPC_DEBUG
 		std::cout << "MFCapture: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 #endif
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
-			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
-			default_trafo->setIdentity();
+			// Found a realsense camera. Create a default data entry for it.
 			MFCameraData cd;
 			cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+			boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
+			default_trafo->setIdentity();
 			cd.trafo = default_trafo;
 			cd.cloud = new_cwipc_pcl_pointcloud();
 			cd.background = { 0, 0, 0 };
 			cd.cameraposition = { 0, 0, 0 };
 			configuration.cameraData.push_back(cd);
-
-			std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-			auto cam = new MFCamera(ctx, configuration, cd, camUsb);
-			cameras.push_back(cam);
 #ifdef WITH_INTER_CAM_SYNC
-			if (multiple_cameras) {
+			if (camera_count > 1) {
 				auto allSensors = dev.query_sensors();
 				bool foundSensorSupportingSync = false;
 				for (auto sensor : allSensors) {
@@ -191,7 +198,7 @@ MFCapture::MFCapture(const char *_configFilename)
 		}
 	}
 
-	if (configuration.cameraData.size() == 0) {
+	if (camera_count == 0) {
 		// no camera connected, so we'll use a generated pointcloud instead
 		generatedPC = generate_pcl();
 		std::cerr << "cwipc_realsense2: multiFrame: No cameras found, default production is a spinning generated pointcloud of " << generatedPC->size() << " data points\n";
@@ -222,6 +229,21 @@ MFCapture::MFCapture(const char *_configFilename)
 			configuration.cameraData = realcams;
 		}
 	}
+	// Now we have all the configuration information. Open the cameras.
+	for (auto dev : devs) {
+#ifdef CWIPC_DEBUG
+		std::cout << "MFCapture: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+#endif
+		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
+			// Found a realsense camera. Create a default data entry for it.
+			MFCameraData& cd = get_camera_data(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
+
+			std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+			auto cam = new MFCamera(ctx, configuration, cd, camUsb);
+			cameras.push_back(cam);
+		}
+	}
+
 	mergedPC = new_cwipc_pcl_pointcloud();
 
 	// optionally set request for cwi_special_feature
@@ -247,15 +269,16 @@ MFCapture::MFCapture(const char *_configFilename)
 
 
 	// start the cameras
+	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	try {
 		for (auto cam: cameras)
 			cam->start(configuration);
 	} catch(const rs2::error& e) {
 		std::cerr << "cwipc_realsense2: exception while starting camera: " << e.get_failed_function() << ": " << e.what() << std::endl;
 	}
+	// start the per-camera capture threads
 	for (auto cam: cameras)
 		cam->start_capturer();
-	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 MFCapture::~MFCapture() {
@@ -316,7 +339,7 @@ cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 {
 	MFCamera* rsd = cameras[camera_index];
-	MFCameraData* cd = &configuration.cameraData[camera_index];
+	MFCameraData& cd = configuration.cameraData[camera_index];
 	rs2::pointcloud pc;
 	rs2::points points;
 
@@ -340,7 +363,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 	}
 #endif // WITH_DUMP_VIDEO_FRAMES
 
-	cd->cloud->clear();
+	cd.cloud->clear();
 	// Tell points frame to map to this color frame
 	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
 
@@ -353,14 +376,14 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 	unsigned char *colors = (unsigned char*)color.get_data();
 
 	if (configuration.background_removal) {
-		MFCameraData* cd = get_camera_config(rsd->serial);
+		MFCameraData& cd = get_camera_data(rsd->serial);
 
 		// Set the background removal window
-        if (cd->background.z > 0.0) {
-            rsd->maxz = cd->background.z;
+        if (cd.background.z > 0.0) {
+            rsd->maxz = cd.background.z;
 			rsd->minz = 0.0;
-			if (cd->background.x != 0.0) {
-				rsd->minx = cd->background.x;
+			if (cd.background.x != 0.0) {
+				rsd->minx = cd.background.x;
 			}
 			else {
 				for (int i = 0; i < points.size(); i++) {
@@ -398,7 +421,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 				pt.b = colors[pi + 2];
 				pt.a = camera_label;
 				if (!configuration.greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
-					cd->cloud->push_back(pt);
+					cd.cloud->push_back(pt);
 			}
 		}
 	}
@@ -416,7 +439,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 			pt.b = colors[pi + 2];
 			pt.a = camera_label;
 			if (!configuration.greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
-				cd->cloud->push_back(pt);
+				cd.cloud->push_back(pt);
 		}
 	}
 }
@@ -451,11 +474,12 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 	return mergedPC;
 }
 
-MFCameraData* MFCapture::get_camera_config(std::string serial) {
+MFCameraData& MFCapture::get_camera_data(std::string serial) {
 	for (int i = 0; i < configuration.cameraData.size(); i++)
 		if (configuration.cameraData[i].serial == serial)
-			return &configuration.cameraData[i];
-	return NULL;
+			return configuration.cameraData[i];
+	std::cerr << "cwipc_realsense2: multiFrame: unknown camera " << serial << std::endl;
+	abort();
 }
 
 MFCamera* MFCapture::get_camera(std::string serial) {

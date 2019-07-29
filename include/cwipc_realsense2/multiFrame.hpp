@@ -80,7 +80,7 @@ public:
 	~MFCapture();
 	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
 	cwipc_pcl_pointcloud get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
-	MFCameraData* get_camera_config(std::string serial);
+	MFCameraData& get_camera_data(std::string serial);
 	MFCamera* get_camera(std::string serial);
 
 	// variables
