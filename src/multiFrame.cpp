@@ -111,16 +111,20 @@ void MFCamera::start_capturer()
 	assert(stopped);
 	stopped = false;
 	grabber_thread = new std::thread([&]() {
-		std::cout << "xxxjack thread started" << std::endl;
+#ifdef CWIPC_DEBUG_THREAD
+		std::cerr << "frame capture: cam=" << serial << " thread started" << std::endl;
+#endif
 		while(!stopped) {
 			// Wait to find if there is a next set of frames from the camera
 			rs2::frameset frames = pipe.wait_for_frames();
-#ifdef CWIPC_DEBUG
+#ifdef CWIPC_DEBUG_THREAD
 			std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
 #endif
 			queue.enqueue(frames);
 		}
-		std::cout << "xxxjack thread stopped" << std::endl;
+#ifdef CWIPC_DEBUG_THREAD
+		std::cerr << "frame capture: cam=" << serial << " thread stopped" << std::endl;
+#endif
 	});
 }
 

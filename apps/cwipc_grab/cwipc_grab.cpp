@@ -9,8 +9,9 @@ int main(int argc, char** argv)
     //char *message = NULL;
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " count directory [configfile]" << std::endl;
-        std::cerr << "Creates COUNT pointclouds from a realsense2 camera and stores the PLY files in the given DIRECTORY" << std::endl;
-        return 2;
+		std::cerr << "Creates COUNT pointclouds from a realsense2 camera and stores the PLY files in the given DIRECTORY" << std::endl;
+		std::cerr << "If directory is - then drop the pointclouds on the floor" << std::endl;
+		return 2;
     }
     int count = atoi(argv[1]);
     char filename[500];
@@ -35,8 +36,10 @@ int main(int argc, char** argv)
 	int ok = 0;
     while (count-- > 0 && ok == 0) {
     	cwipc *pc = generator->get();
-    	snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], pc->timestamp());
-    	ok = cwipc_write(filename, pc, &error);
+		if (strcmp(argv[2], "-") != 0) {
+			snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], pc->timestamp());
+			ok = cwipc_write(filename, pc, &error);
+		}
     }
     generator->free();
     if (ok < 0) {
