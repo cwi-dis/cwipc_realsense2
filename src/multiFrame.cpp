@@ -440,6 +440,8 @@ MFCapture::~MFCapture() {
 cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	// Step 0: relinquish old pointcloud
+	mergedPC = new_cwipc_pcl_pointcloud();
 	if (cameras.size() > 0) {
 		// Step one: grab frames from all cameras. This should happen as close together in time as possible,
 		// because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
