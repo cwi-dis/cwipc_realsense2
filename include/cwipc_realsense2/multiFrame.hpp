@@ -19,6 +19,7 @@
 #include <chrono>
 #include <algorithm>
 #include <thread>
+#include <mutex>
 
 #include <librealsense2/rs.hpp>
 #include <Eigen/StdVector>

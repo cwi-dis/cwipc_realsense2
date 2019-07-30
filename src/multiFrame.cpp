@@ -144,7 +144,7 @@ void MFCamera::_processing_thread_main()
 	while(!stopped) {
 		// Wait for next frame to process. Allow aborting in case of stopped becoming false...
 		rs2::frameset processing_frameset;
-		bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset);
+		bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset, 1000);
 		if (!ok) continue;
 
 		std::lock_guard<std::mutex> lock(processing_mutex);
