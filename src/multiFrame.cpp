@@ -40,6 +40,8 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, MFCameraDa
 	usb(_usb),
 	pipe(ctx),
 	do_depth_filtering(configuration.depth_filtering),
+	do_background_removal(configuration.background_removal),
+	do_greenscreen_removal(configuration.greenscreen_removal),
 	stopped(true),
 	grabber_thread(nullptr),
 	queue(1)
@@ -70,10 +72,9 @@ MFCamera::~MFCamera()
 	assert(stopped);
 }
 
-rs2::frameset MFCamera::get_frameset()
+void MFCamera::get_frameset()
 {
-	rs2::frameset frames = queue.wait_for_frame();
-	return frames;
+	current_frameset = queue.wait_for_frame();
 }
 
 void MFCamera::process_depth_frame(rs2::depth_frame &depth) {
@@ -135,6 +136,90 @@ void MFCamera::stop()
 	stopped = true;
 	pipe.stop();
 	grabber_thread->join();
+}
+
+void MFCamera::create_pc_from_frames(rs2::video_frame& color, rs2::depth_frame& depth, int camera_index)
+{
+	camData.cloud->clear();
+	// Tell points frame to map to this color frame
+	rs2::pointcloud pc;
+	rs2::points points;
+	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
+
+	uint8_t camera_label = (uint8_t)1 << camera_index;
+	points = pc.calculate(depth);
+
+	// Generate new vertices and color vector
+	auto vertices = points.get_vertices();
+
+	unsigned char *colors = (unsigned char*)color.get_data();
+
+	if (do_background_removal) {
+
+		// Set the background removal window
+        if (camData.background.z > 0.0) {
+            maxz = camData.background.z;
+			minz = 0.0;
+			if (camData.background.x != 0.0) {
+				minx = camData.background.x;
+			}
+			else {
+				for (int i = 0; i < points.size(); i++) {
+					double minz = 100;
+					if (vertices[i].z != 0 && minz > vertices[i].z) {
+						minz = vertices[i].z;
+						minx = vertices[i].x;
+					}
+				}
+			}
+        }
+		else {
+			minz = 100.0;
+			for (int i = 0; i < points.size(); i++) {
+				if (vertices[i].z != 0 && minz > vertices[i].z) {
+					minz = vertices[i].z;
+					minx = vertices[i].x;
+				}
+			}
+			maxz = 0.8f + minz;
+		}
+
+		// Make PointCloud
+		for (int i = 0; i < points.size(); i++) {
+			double x = minx - vertices[i].x; x *= x;
+			double z = vertices[i].z;
+			if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
+				cwipc_pcl_point pt;
+				pt.x = vertices[i].x;
+				pt.y = -vertices[i].y;
+				pt.z = -z;
+				int pi = i * 3;
+				pt.r = colors[pi];
+				pt.g = colors[pi + 1];
+				pt.b = colors[pi + 2];
+				pt.a = camera_label;
+				if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
+					camData.cloud->push_back(pt);
+			}
+		}
+	}
+	else {
+		// Make PointCloud
+		for (int i = 0; i < points.size(); i++) {
+			cwipc_pcl_point pt;
+
+			pt.x = vertices[i].x;
+			pt.y = -vertices[i].y;
+			pt.z = -vertices[i].z;
+			int pi = i * 3;
+			pt.r = colors[pi];
+			pt.g = colors[pi + 1];
+			pt.b = colors[pi + 2];
+			pt.a = camera_label;
+			if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
+				camData.cloud->push_back(pt);
+		}
+	}
 }
 
 MFCapture::MFCapture(const char *_configFilename)
@@ -343,14 +428,11 @@ cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 {
 	MFCamera* rsd = cameras[camera_index];
-	MFCameraData& cd = configuration.cameraData[camera_index];
-	rs2::pointcloud pc;
-	rs2::points points;
 
-	rs2::frameset frames = rsd->get_frameset();
+	rsd->get_frameset();
 
-	rs2::depth_frame depth = frames.get_depth_frame();
-	rs2::video_frame color = frames.get_color_frame();
+	rs2::depth_frame depth = rsd->current_frameset.get_depth_frame();
+	rs2::video_frame color = rsd->current_frameset.get_color_frame();
 #ifdef CWIPC_DEBUG
 	std::cerr << "frame process: cam=" << rsd->serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif
@@ -367,85 +449,7 @@ void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
 	}
 #endif // WITH_DUMP_VIDEO_FRAMES
 
-	cd.cloud->clear();
-	// Tell points frame to map to this color frame
-	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
-
-	uint8_t camera_label = (uint8_t)1 << camera_index;
-	points = pc.calculate(depth);
-
-	// Generate new vertices and color vector
-	auto vertices = points.get_vertices();
-
-	unsigned char *colors = (unsigned char*)color.get_data();
-
-	if (configuration.background_removal) {
-		MFCameraData& cd = get_camera_data(rsd->serial);
-
-		// Set the background removal window
-        if (cd.background.z > 0.0) {
-            rsd->maxz = cd.background.z;
-			rsd->minz = 0.0;
-			if (cd.background.x != 0.0) {
-				rsd->minx = cd.background.x;
-			}
-			else {
-				for (int i = 0; i < points.size(); i++) {
-					double minz = 100;
-					if (vertices[i].z != 0 && minz > vertices[i].z) {
-						rsd->minz = vertices[i].z;
-						rsd->minx = vertices[i].x;
-					}
-				}
-			}
-        }
-		else {
-			rsd->minz = 100.0;
-			for (int i = 0; i < points.size(); i++) {
-				if (vertices[i].z != 0 && rsd->minz > vertices[i].z) {
-					rsd->minz = vertices[i].z;
-					rsd->minx = vertices[i].x;
-				}
-			}
-			rsd->maxz = 0.8f + rsd->minz;
-		}
-
-		// Make PointCloud
-		for (int i = 0; i < points.size(); i++) {
-			double x = rsd->minx - vertices[i].x; x *= x;
-			double z = vertices[i].z;
-			if (rsd->minz < z && z < rsd->maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
-				cwipc_pcl_point pt;
-				pt.x = vertices[i].x;
-				pt.y = -vertices[i].y;
-				pt.z = -z;
-				int pi = i * 3;
-				pt.r = colors[pi];
-				pt.g = colors[pi + 1];
-				pt.b = colors[pi + 2];
-				pt.a = camera_label;
-				if (!configuration.greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
-					cd.cloud->push_back(pt);
-			}
-		}
-	}
-	else {
-		// Make PointCloud
-		for (int i = 0; i < points.size(); i++) {
-			cwipc_pcl_point pt;
-
-			pt.x = vertices[i].x;
-			pt.y = -vertices[i].y;
-			pt.z = -vertices[i].z;
-			int pi = i * 3;
-			pt.r = colors[pi];
-			pt.g = colors[pi + 1];
-			pt.b = colors[pi + 2];
-			pt.a = camera_label;
-			if (!configuration.greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
-				cd.cloud->push_back(pt);
-		}
-	}
+	rsd->create_pc_from_frames(color, depth, camera_index);
 }
 
 cwipc_pcl_pointcloud MFCapture::merge_views()

@@ -47,9 +47,14 @@ public:
 	void start(MFCaptureConfig& configuration);
 	void start_capturer();
 	void stop();
-	rs2::frameset get_frameset();
+	void get_frameset();
 	void process_depth_frame(rs2::depth_frame &depth);
-
+	void create_pc_from_frames(rs2::video_frame& color, rs2::depth_frame& depth, int camera_index);
+public:
+	// This is public because MFCapture needs it when dumping the color images
+	rs2::frameset current_frameset;
+public:
+	// These are public because pcl_align wants to access them
 	double minx;
 	double minz;
 	double maxz;
@@ -60,6 +65,8 @@ private:
 	std::string usb;
 	rs2::pipeline pipe;
 	bool do_depth_filtering;
+	bool do_background_removal;
+	bool do_greenscreen_removal;
 	bool stopped;
 	std::thread *grabber_thread;
 	rs2::frame_queue queue;
