@@ -33,8 +33,9 @@
 #include "cwipc_realsense2/stb_image_write.h"
 #endif
 
-MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, MFCameraData& _camData, std::string _usb)
+MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb)
 :	minx(0), minz(0), maxz(0),
+	camera_index(_camera_index),
 	serial(_camData.serial),
 	camData(_camData),
 	usb(_usb),
@@ -77,7 +78,7 @@ void MFCamera::get_frameset()
 	current_frameset = queue.wait_for_frame();
 }
 
-void MFCamera::process_depth_frame(rs2::depth_frame &depth) {
+void MFCamera::_process_depth_frame(rs2::depth_frame &depth) {
 	if (do_depth_filtering) { // Apply filters
 		//depth = dec_filter.process(depth);          // decimation filter
 		depth = depth_to_disparity.process(depth);  // transform into disparity domain
@@ -138,8 +139,14 @@ void MFCamera::stop()
 	grabber_thread->join();
 }
 
-void MFCamera::create_pc_from_frames(rs2::video_frame& color, rs2::depth_frame& depth, int camera_index)
+void MFCamera::create_pc_from_frames()
 {
+	rs2::depth_frame depth = current_frameset.get_depth_frame();
+	rs2::video_frame color = current_frameset.get_color_frame();
+#ifdef CWIPC_DEBUG
+	std::cerr << "frame process: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
+#endif
+	_process_depth_frame(depth);
 	camData.cloud->clear();
 	// Tell points frame to map to this color frame
 	rs2::pointcloud pc;
@@ -220,6 +227,20 @@ void MFCamera::create_pc_from_frames(rs2::video_frame& color, rs2::depth_frame& 
 				camData.cloud->push_back(pt);
 		}
 	}
+}
+
+void MFCamera::wait_for_pc()
+{
+
+}
+
+void
+MFCamera::dump_color_frame(const std::string& filename)
+{
+		rs2::video_frame color = current_frameset.get_color_frame();
+		stbi_write_png(filename.c_str(), color.get_width(), color.get_height(),
+			color.get_bytes_per_pixel(), color.get_data(), color.get_stride_in_bytes());
+
 }
 
 MFCapture::MFCapture(const char *_configFilename)
@@ -328,7 +349,8 @@ MFCapture::MFCapture(const char *_configFilename)
 			MFCameraData& cd = get_camera_data(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
 
 			std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-			auto cam = new MFCamera(ctx, configuration, cd, camUsb);
+			int camera_index = cameras.size();
+			auto cam = new MFCamera(ctx, configuration, camera_index, cd, camUsb);
 			cameras.push_back(cam);
 		}
 	}
@@ -387,15 +409,37 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	if (cameras.size() > 0) {
-		for (int i = 0; i < cameras.size(); i++)
-			camera_action(i, timestamp);
-
-		if (merge_views()->size() > 0) {
+		// Step one: grab frames from all cameras. This should happen as close together in time as possible,
+		// because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
+		// camera.
+		for(auto cam : cameras) {
+			cam->get_frameset();
+		}
+#ifdef WITH_DUMP_VIDEO_FRAMES
+		// Step 2, if needed: dump image frames.
+		if (configuration.cwi_special_feature == "dumpvideoframes") {
+			for(auto cam : cameras) {
+				std::stringstream png_file;
+				png_file <<  "videoframe_" << *timestamp - starttime << "_" << cam->camera_index << ".png";
+				cam->dump_color_frame(png_file.str());
+			}
+		}
+#endif // WITH_DUMP_VIDEO_FRAMES
+		// Step 3: start processing frames to pointclouds, for each camera
+		for(auto cam : cameras) {
+			cam->create_pc_from_frames();
+		}
+		// Step 4: wait for frame processing to complete.
+		for(auto cam : cameras) {
+			cam->wait_for_pc();
+		}
+		// Step 5: merge views
+		merge_views();
+		if (mergedPC->size() > 0) {
 #ifdef CWIPC_DEBUG
 			std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
 #endif
-		}
-		else {
+		} else {
 #ifdef CWIPC_DEBUG
 			std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer did get an empty pointcloud\n\n";
 #endif
@@ -407,8 +451,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 			point.rgb = 0.0;
 			mergedPC->points.push_back(point);
 		}
-	}
-	else {	// return a spinning generated mathematical pointcloud
+	} else {	// return a spinning generated mathematical pointcloud
 		static float angle;
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
@@ -424,35 +467,7 @@ cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 	return mergedPC;
 }
 
-// get new frames from the camera and update the pointcloud of the camera's data 
-void MFCapture::camera_action(int camera_index, uint64_t *timestamp)
-{
-	MFCamera* rsd = cameras[camera_index];
-
-	rsd->get_frameset();
-
-	rs2::depth_frame depth = rsd->current_frameset.get_depth_frame();
-	rs2::video_frame color = rsd->current_frameset.get_color_frame();
-#ifdef CWIPC_DEBUG
-	std::cerr << "frame process: cam=" << rsd->serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
-#endif
-
-	rsd->process_depth_frame(depth);
-	
-#ifdef WITH_DUMP_VIDEO_FRAMES
-	// On special request write video to png
-	if (configuration.cwi_special_feature == "dumpvideoframes") {
-		std::stringstream png_file;
-		png_file <<  "videoframe_" << *timestamp - starttime << "_" << camera_index << ".png";
-		stbi_write_png(png_file.str().c_str(), color.get_width(), color.get_height(),
-			color.get_bytes_per_pixel(), color.get_data(), color.get_stride_in_bytes());
-	}
-#endif // WITH_DUMP_VIDEO_FRAMES
-
-	rsd->create_pc_from_frames(color, depth, camera_index);
-}
-
-cwipc_pcl_pointcloud MFCapture::merge_views()
+void MFCapture::merge_views()
 {
 	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 	mergedPC->clear();
@@ -479,7 +494,6 @@ cwipc_pcl_pointcloud MFCapture::merge_views()
 		std::cerr << "cwipc_realsense2: multiFrame: Points after reduction: " << mergedPC->size() << std::endl;
 #endif
 	}
-	return mergedPC;
 }
 
 MFCameraData& MFCapture::get_camera_data(std::string serial) {

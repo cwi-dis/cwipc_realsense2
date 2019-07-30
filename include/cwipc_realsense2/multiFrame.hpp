@@ -40,7 +40,7 @@ private:
 	MFCamera(const MFCamera&);	// Disable copy constructor
 	MFCamera& operator=(const MFCamera&);	// Disable assignment
 public:
-	MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, MFCameraData& _camData, std::string _usb="0");
+	MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb="0");
 	~MFCamera();
 
 	bool is_usb3() { return usb[0] == '3'; }
@@ -48,8 +48,9 @@ public:
 	void start_capturer();
 	void stop();
 	void get_frameset();
-	void process_depth_frame(rs2::depth_frame &depth);
-	void create_pc_from_frames(rs2::video_frame& color, rs2::depth_frame& depth, int camera_index);
+	void create_pc_from_frames();
+	void wait_for_pc();
+	void dump_color_frame(const std::string& filename);
 public:
 	// This is public because MFCapture needs it when dumping the color images
 	rs2::frameset current_frameset;
@@ -58,6 +59,7 @@ public:
 	double minx;
 	double minz;
 	double maxz;
+	int camera_index;
 	std::string serial;
 
 private:
@@ -76,6 +78,7 @@ private:
 	rs2::spatial_filter spat_filter;                          // Spatial    - edge-preserving spatial smoothing
 	rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
 	rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
+	void _process_depth_frame(rs2::depth_frame &depth);
 
 };
 
@@ -98,8 +101,7 @@ private:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
 	std::string configFilename;
 	// methods
-	void camera_action(int camera_index, uint64_t *timestamp);// get new frames and update the camera's pointcloud
-	cwipc_pcl_pointcloud merge_views();                       // merge all camera's pointclouds into one
+	void merge_views();                       // merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // generate a mathematical pointcloud
 
 	// variables
