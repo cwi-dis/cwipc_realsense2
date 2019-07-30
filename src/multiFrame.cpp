@@ -232,13 +232,13 @@ void MFCamera::_processing_thread_main()
 				if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
 					camData.cloud->push_back(pt);
 			}
-			{
-				std::lock_guard<std::mutex> lock(processing_mutex);
-				processing_done = true;
-				processing_done_cv.notify_one();
-			}
 		}
 		// Notify wait_for_pc that we're done.
+		{
+			std::lock_guard<std::mutex> lock(processing_mutex);
+			processing_done = true;
+			processing_done_cv.notify_one();
+		}
 
 	}
 #ifdef CWIPC_DEBUG_THREAD
