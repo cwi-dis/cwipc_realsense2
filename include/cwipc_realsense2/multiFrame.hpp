@@ -47,7 +47,7 @@ public:
 	void start(MFCaptureConfig& configuration);
 	void start_capturer();
 	void stop();
-	void get_frameset();
+	void capture_frameset();
 	void create_pc_from_frames();
 	void wait_for_pc();
 	void dump_color_frame(const std::string& filename);
@@ -71,7 +71,12 @@ private:
 	bool do_greenscreen_removal;
 	bool stopped;
 	std::thread *grabber_thread;
-	rs2::frame_queue queue;
+	std::thread *processing_thread;
+	rs2::frame_queue captured_frame_queue;
+	rs2::frame_queue processing_frame_queue;
+	std::mutex processing_mutex;
+	std::condition_variable processing_done_cv;
+	bool processing_done;
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
 	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
 	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
@@ -79,6 +84,8 @@ private:
 	rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
 	rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
 	void _process_depth_frame(rs2::depth_frame &depth);
+	void _capture_thread_main();
+	void _processing_thread_main();
 
 };
 

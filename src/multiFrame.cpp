@@ -15,6 +15,7 @@
 
 // Define to get (a little) debug prints
 #define CWIPC_DEBUG
+#define CWIPC_DEBUG_THREAD
 
 // This is the dll source, so define external symbols as dllexport on windows.
 
@@ -45,7 +46,8 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	do_greenscreen_removal(configuration.greenscreen_removal),
 	stopped(true),
 	grabber_thread(nullptr),
-	queue(1)
+	captured_frame_queue(1),
+	processing_frame_queue(1)
 {
 #ifdef CWIPC_DEBUG
 		std::cout << "MFCapture: creating camera " << serial << std::endl;
@@ -73,19 +75,9 @@ MFCamera::~MFCamera()
 	assert(stopped);
 }
 
-void MFCamera::get_frameset()
+void MFCamera::capture_frameset()
 {
-	current_frameset = queue.wait_for_frame();
-}
-
-void MFCamera::_process_depth_frame(rs2::depth_frame &depth) {
-	if (do_depth_filtering) { // Apply filters
-		//depth = dec_filter.process(depth);          // decimation filter
-		depth = depth_to_disparity.process(depth);  // transform into disparity domain
-		depth = spat_filter.process(depth);         // spatial filter
-		depth = temp_filter.process(depth);         // temporal filter
-		depth = disparity_to_depth.process(depth);  // revert back to depth domain
-	}
+	current_frameset = captured_frame_queue.wait_for_frame();
 }
 
 // Configure and initialize caputuring of one camera
@@ -108,28 +100,6 @@ void MFCamera::start(MFCaptureConfig& configuration)
 	pipe.start(cfg);		// Start streaming with the configuration just set
 }
 
-void MFCamera::start_capturer()
-{
-	assert(stopped);
-	stopped = false;
-	grabber_thread = new std::thread([&]() {
-#ifdef CWIPC_DEBUG_THREAD
-		std::cerr << "frame capture: cam=" << serial << " thread started" << std::endl;
-#endif
-		while(!stopped) {
-			// Wait to find if there is a next set of frames from the camera
-			rs2::frameset frames = pipe.wait_for_frames();
-#ifdef CWIPC_DEBUG_THREAD
-			std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
-#endif
-			queue.enqueue(frames);
-		}
-#ifdef CWIPC_DEBUG_THREAD
-		std::cerr << "frame capture: cam=" << serial << " thread stopped" << std::endl;
-#endif
-	});
-}
-
 void MFCamera::stop()
 {
 	assert(!stopped);
@@ -137,69 +107,123 @@ void MFCamera::stop()
 	stopped = true;
 	pipe.stop();
 	grabber_thread->join();
+	processing_thread->join();
 }
 
-void MFCamera::create_pc_from_frames()
+void MFCamera::start_capturer()
 {
-	rs2::depth_frame depth = current_frameset.get_depth_frame();
-	rs2::video_frame color = current_frameset.get_color_frame();
-#ifdef CWIPC_DEBUG
-	std::cerr << "frame process: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
+	assert(stopped);
+	stopped = false;
+	grabber_thread = new std::thread(&MFCamera::_capture_thread_main, this);
+	processing_thread = new std::thread(&MFCamera::_processing_thread_main, this);
+}
+
+void MFCamera::_capture_thread_main()
+{
+#ifdef CWIPC_DEBUG_THREAD
+	std::cerr << "frame capture: cam=" << serial << " thread started" << std::endl;
 #endif
-	_process_depth_frame(depth);
-	camData.cloud->clear();
-	// Tell points frame to map to this color frame
-	rs2::pointcloud pc;
-	rs2::points points;
-	pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
+	while(!stopped) {
+		// Wait to find if there is a next set of frames from the camera
+		rs2::frameset frames = pipe.wait_for_frames();
+#ifdef CWIPC_DEBUG_THREAD
+		std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
+#endif
+		captured_frame_queue.enqueue(frames);
+	}
+#ifdef CWIPC_DEBUG_THREAD
+	std::cerr << "frame capture: cam=" << serial << " thread stopped" << std::endl;
+#endif
+}
 
-	uint8_t camera_label = (uint8_t)1 << camera_index;
-	points = pc.calculate(depth);
+void MFCamera::_processing_thread_main()
+{
+#ifdef CWIPC_DEBUG_THREAD
+	std::cerr << "frame processing: cam=" << serial << " thread started" << std::endl;
+#endif
+	while(!stopped) {
+		// Wait for next frame to process. Allow aborting in case of stopped becoming false...
+		rs2::frameset processing_frameset;
+		bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset);
+		if (!ok) continue;
 
-	// Generate new vertices and color vector
-	auto vertices = points.get_vertices();
+		rs2::depth_frame depth = processing_frameset.get_depth_frame();
+		rs2::video_frame color = processing_frameset.get_color_frame();
+#ifdef CWIPC_DEBUG
+		std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
+#endif
+		_process_depth_frame(depth);
+		camData.cloud->clear();
+		// Tell points frame to map to this color frame
+		rs2::pointcloud pc;
+		rs2::points points;
+		pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
 
-	unsigned char *colors = (unsigned char*)color.get_data();
+		uint8_t camera_label = (uint8_t)1 << camera_index;
+		points = pc.calculate(depth);
 
-	if (do_background_removal) {
+		// Generate new vertices and color vector
+		auto vertices = points.get_vertices();
 
-		// Set the background removal window
-        if (camData.background.z > 0.0) {
-            maxz = camData.background.z;
-			minz = 0.0;
-			if (camData.background.x != 0.0) {
-				minx = camData.background.x;
+		unsigned char *colors = (unsigned char*)color.get_data();
+
+		if (do_background_removal) {
+
+			// Set the background removal window
+			if (camData.background.z > 0.0) {
+				maxz = camData.background.z;
+				minz = 0.0;
+				if (camData.background.x != 0.0) {
+					minx = camData.background.x;
+				}
+				else {
+					for (int i = 0; i < points.size(); i++) {
+						double minz = 100;
+						if (vertices[i].z != 0 && minz > vertices[i].z) {
+							minz = vertices[i].z;
+							minx = vertices[i].x;
+						}
+					}
+				}
 			}
 			else {
+				minz = 100.0;
 				for (int i = 0; i < points.size(); i++) {
-					double minz = 100;
 					if (vertices[i].z != 0 && minz > vertices[i].z) {
 						minz = vertices[i].z;
 						minx = vertices[i].x;
 					}
 				}
+				maxz = 0.8f + minz;
 			}
-        }
-		else {
-			minz = 100.0;
+
+			// Make PointCloud
 			for (int i = 0; i < points.size(); i++) {
-				if (vertices[i].z != 0 && minz > vertices[i].z) {
-					minz = vertices[i].z;
-					minx = vertices[i].x;
+				double x = minx - vertices[i].x; x *= x;
+				double z = vertices[i].z;
+				if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
+					cwipc_pcl_point pt;
+					pt.x = vertices[i].x;
+					pt.y = -vertices[i].y;
+					pt.z = -z;
+					int pi = i * 3;
+					pt.r = colors[pi];
+					pt.g = colors[pi + 1];
+					pt.b = colors[pi + 2];
+					pt.a = camera_label;
+					if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
+						camData.cloud->push_back(pt);
 				}
 			}
-			maxz = 0.8f + minz;
 		}
-
-		// Make PointCloud
-		for (int i = 0; i < points.size(); i++) {
-			double x = minx - vertices[i].x; x *= x;
-			double z = vertices[i].z;
-			if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
+		else {
+			// Make PointCloud
+			for (int i = 0; i < points.size(); i++) {
 				cwipc_pcl_point pt;
+
 				pt.x = vertices[i].x;
 				pt.y = -vertices[i].y;
-				pt.z = -z;
+				pt.z = -vertices[i].z;
 				int pi = i * 3;
 				pt.r = colors[pi];
 				pt.g = colors[pi + 1];
@@ -208,30 +232,40 @@ void MFCamera::create_pc_from_frames()
 				if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
 					camData.cloud->push_back(pt);
 			}
+			{
+				std::lock_guard<std::mutex> lock(processing_mutex);
+				processing_done = true;
+				processing_done_cv.notify_one();
+			}
 		}
-	}
-	else {
-		// Make PointCloud
-		for (int i = 0; i < points.size(); i++) {
-			cwipc_pcl_point pt;
+		// Notify wait_for_pc that we're done.
 
-			pt.x = vertices[i].x;
-			pt.y = -vertices[i].y;
-			pt.z = -vertices[i].z;
-			int pi = i * 3;
-			pt.r = colors[pi];
-			pt.g = colors[pi + 1];
-			pt.b = colors[pi + 2];
-			pt.a = camera_label;
-			if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
-				camData.cloud->push_back(pt);
-		}
 	}
+#ifdef CWIPC_DEBUG_THREAD
+	std::cerr << "frame processing: cam=" << serial << " thread stopped" << std::endl;
+#endif
+}
+
+void MFCamera::_process_depth_frame(rs2::depth_frame &depth) {
+	if (do_depth_filtering) { // Apply filters
+		//depth = dec_filter.process(depth);          // decimation filter
+		depth = depth_to_disparity.process(depth);  // transform into disparity domain
+		depth = spat_filter.process(depth);         // spatial filter
+		depth = temp_filter.process(depth);         // temporal filter
+		depth = disparity_to_depth.process(depth);  // revert back to depth domain
+	}
+}
+
+void MFCamera::create_pc_from_frames()
+{
+	processing_frame_queue.enqueue(current_frameset);
 }
 
 void MFCamera::wait_for_pc()
 {
-
+	std::unique_lock<std::mutex> lock(processing_mutex);
+	processing_done_cv.wait(lock, [this]{ return processing_done; });
+	processing_done = false;
 }
 
 void
@@ -413,7 +447,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 		// because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
 		// camera.
 		for(auto cam : cameras) {
-			cam->get_frameset();
+			cam->capture_frameset();
 		}
 #ifdef WITH_DUMP_VIDEO_FRAMES
 		// Step 2, if needed: dump image frames.
