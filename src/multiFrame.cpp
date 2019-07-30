@@ -147,6 +147,8 @@ void MFCamera::_processing_thread_main()
 		bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset);
 		if (!ok) continue;
 
+		std::lock_guard<std::mutex> lock(processing_mutex);
+
 		rs2::depth_frame depth = processing_frameset.get_depth_frame();
 		rs2::video_frame color = processing_frameset.get_color_frame();
 #ifdef CWIPC_DEBUG
@@ -234,12 +236,8 @@ void MFCamera::_processing_thread_main()
 			}
 		}
 		// Notify wait_for_pc that we're done.
-		{
-			std::lock_guard<std::mutex> lock(processing_mutex);
-			processing_done = true;
-			processing_done_cv.notify_one();
-		}
-
+		processing_done = true;
+		processing_done_cv.notify_one();
 	}
 #ifdef CWIPC_DEBUG_THREAD
 	std::cerr << "frame processing: cam=" << serial << " thread stopped" << std::endl;
