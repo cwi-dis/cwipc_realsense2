@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include "string.h"
 
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
