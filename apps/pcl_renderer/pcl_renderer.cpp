@@ -21,6 +21,7 @@ bool do_align = false;
 bool rotation = true;
 int aligncamera = 0;
 Eigen::Vector4f mergedcenter;	// needed to automatically center the merged cloud
+bool stop = false;
 
 void printhelp() {
 	std::cout << "\nThe cloud rendered by this application will automatically be centered with the view origin.\n";
@@ -80,7 +81,7 @@ void register_glfw_callbacks(window_util* app)
 			app->app_state()->offset = 0.0;
 		}
 		else if (key == 81) {	// key = "q": Quit program
-			exit(0);
+			stop = true;
 		}
 	};
 }
@@ -106,7 +107,7 @@ int main(int argc, char * argv[]) try
 		return EXIT_FAILURE;
 	}
 	cwipc *prevpc = NULL;
-	while (app) {
+	while (app && !stop) {
 		cwipc *pc = src->get();
 
 		cwipc_pcl_pointcloud captured_pc = pc->access_pcl_pointcloud();
