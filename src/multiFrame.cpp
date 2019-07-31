@@ -105,9 +105,9 @@ void MFCamera::stop()
 	assert(!stopped);
 	assert(grabber_thread);
 	stopped = true;
-	pipe.stop();
 	grabber_thread->join();
 	processing_thread->join();
+	pipe.stop();
 }
 
 void MFCamera::start_capturer()
@@ -266,6 +266,11 @@ void MFCamera::wait_for_pc()
 	processing_done = false;
 }
 
+uint64_t MFCamera::get_capture_timestamp()
+{
+	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
 void
 MFCamera::dump_color_frame(const std::string& filename)
 {
@@ -276,9 +281,9 @@ MFCamera::dump_color_frame(const std::string& filename)
 }
 
 MFCapture::MFCapture(const char *_configFilename)
-:	mergedPC_is_fresh(false),
-	mergedPC_want_new(false),
-	numberOfPCsProduced(0)
+:	numberOfPCsProduced(0),
+	mergedPC_is_fresh(false),
+	mergedPC_want_new(false)
 {
 	if (_configFilename) {
 		configFilename = _configFilename;
@@ -426,10 +431,19 @@ MFCapture::MFCapture(const char *_configFilename)
 	// start the per-camera capture threads
 	for (auto cam: cameras)
 		cam->start_capturer();
+	// start our run thread (which will drive the capturers and merge the pointclouds)
+	control_thread = new std::thread(&MFCapture::_control_thread_main, this);
+	stopped = false;
 }
 
 MFCapture::~MFCapture() {
 	uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	if(!stopped) {
+		// Make the control thread stop
+		stopped = true;
+		mergedPC_want_new = true;
+		mergedPC_want_new_cv.notify_all();
+	}
 	for (auto cam : cameras)
 		cam->stop();
 	std::cerr << "cwipc_realsense2: multiFrame: stopped all cameras\n";
@@ -441,85 +455,110 @@ MFCapture::~MFCapture() {
 	std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
 }
 
-
-
 // API function that triggers the capture and returns the merged pointcloud and timestamp
 cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	_request_new_pointcloud();
+	// Wait for a fresh mergedPC to become available.
+	// Note we keep the return value while holding the lock, so we can start the next grab/process/merge cycle before returning.
+	cwipc_pcl_pointcloud rv;
 	{
 		std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-		mergedPC_want_new_cv.wait(mylock, [this]{ return mergedPC_want_new;});
+		mergedPC_is_fresh_cv.wait(mylock, [this]{return mergedPC_is_fresh; });
+		mergedPC_is_fresh = false;
+		numberOfPCsProduced++;
+		rv = mergedPC;
 	}
-	if (cameras.size() > 0) {
-		// Step one: grab frames from all cameras. This should happen as close together in time as possible,
-		// because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
-		// camera.
-		for(auto cam : cameras) {
-			cam->capture_frameset();
+	_request_new_pointcloud();
+	return rv;
+}
+
+void MFCapture::_control_thread_main()
+{
+#ifdef CWIPC_DEBUG_THREAD
+	std::cerr << "pointcloud processing: thread stopped" << std::endl;
+#endif
+	while(!stopped) {
+		{
+			std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+			mergedPC_want_new_cv.wait(mylock, [this]{ return mergedPC_want_new;});
 		}
-#ifdef WITH_DUMP_VIDEO_FRAMES
-		// Step 2, if needed: dump image frames.
-		if (configuration.cwi_special_feature == "dumpvideoframes") {
+		if (stopped) break;
+		if (cameras.size() > 0) {
+			// Step one: grab frames from all cameras. This should happen as close together in time as possible,
+			// because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
+			// camera.
 			for(auto cam : cameras) {
-				std::stringstream png_file;
-				png_file <<  "videoframe_" << *timestamp - starttime << "_" << cam->camera_index << ".png";
-				cam->dump_color_frame(png_file.str());
+				cam->capture_frameset();
 			}
-		}
+			// And get the best timestamp
+			uint64_t timestamp = 0;
+			for(auto cam: cameras) {
+				uint64_t camts = cam->get_capture_timestamp();
+				if (camts > timestamp) timestamp = camts;
+			}
+#ifdef WITH_DUMP_VIDEO_FRAMES
+			// Step 2, if needed: dump image frames.
+			if (configuration.cwi_special_feature == "dumpvideoframes") {
+				for(auto cam : cameras) {
+					std::stringstream png_file;
+					png_file <<  "videoframe_" << timestamp - starttime << "_" << cam->camera_index << ".png";
+					cam->dump_color_frame(png_file.str());
+				}
+			}
 #endif // WITH_DUMP_VIDEO_FRAMES
-		// Step 3: start processing frames to pointclouds, for each camera
-		for(auto cam : cameras) {
-			cam->create_pc_from_frames();
-		}
-		// Step 4: wait for frame processing to complete.
-		for(auto cam : cameras) {
-			cam->wait_for_pc();
-		}
-		// Step 5: merge views
-		// Lock mergedPC while we are modifying it
-		std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-		mergedPC = new_cwipc_pcl_pointcloud();
-		merge_views();
-		if (mergedPC->size() > 0) {
+			// Step 3: start processing frames to pointclouds, for each camera
+			for(auto cam : cameras) {
+				cam->create_pc_from_frames();
+			}
+			// Step 4: wait for frame processing to complete.
+			for(auto cam : cameras) {
+				cam->wait_for_pc();
+			}
+			// Step 5: merge views
+			// Lock mergedPC while we are modifying it
+			std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+			mergedPC = new_cwipc_pcl_pointcloud();
+			merge_views();
+			if (mergedPC->size() > 0) {
 #ifdef CWIPC_DEBUG
-			std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
+				std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
 #endif
-		} else {
+			} else {
 #ifdef CWIPC_DEBUG
-			std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer did get an empty pointcloud\n\n";
+				std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer got an empty pointcloud\n";
 #endif
-			// HACK to make sure the encoder does not get an empty pointcloud 
-			cwipc_pcl_point point;
-			point.x = 1.0;
-			point.y = 1.0;
-			point.z = 1.0;
-			point.rgb = 0.0;
-			mergedPC->points.push_back(point);
+				// HACK to make sure the encoder does not get an empty pointcloud
+				cwipc_pcl_point point;
+				point.x = 1.0;
+				point.y = 1.0;
+				point.z = 1.0;
+				point.rgb = 0.0;
+				mergedPC->points.push_back(point);
+			}
+			// Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
+			mergedPC_is_fresh = true;
+			mergedPC_want_new = false;
+			mergedPC_is_fresh_cv.notify_all();
+		} else {	// return a spinning generated mathematical pointcloud
+			static float angle;
+			angle += 0.031415;
+			Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+			transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
+			std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+			// Lock mergedPC while we are modifying it
+			mergedPC = new_cwipc_pcl_pointcloud();
+			transformPointCloud(*generatedPC, *mergedPC, transform);
+			// Signal that a new mergedPC is available
+			mergedPC_is_fresh = true;
+			mergedPC_want_new = false;
+			mergedPC_is_fresh_cv.notify_all();
 		}
-		// Signal that a new mergedPC is available
-		mergedPC_is_fresh = true;
-		mergedPC_is_fresh_cv.notify_all();
-	} else {	// return a spinning generated mathematical pointcloud
-		static float angle;
-		angle += 0.031415;
-		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-		std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-		// Lock mergedPC while we are modifying it
-		mergedPC = new_cwipc_pcl_pointcloud();
-		transformPointCloud(*generatedPC, *mergedPC, transform);
-		// Signal that a new mergedPC is available
-		mergedPC_is_fresh = true;
-		mergedPC_is_fresh_cv.notify_all();
 	}
-	// Wait for a fresh mergedPC to become available
-	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-	mergedPC_is_fresh_cv.wait(mylock, [this]{return mergedPC_is_fresh; });
-	mergedPC_is_fresh = false;
-	numberOfPCsProduced++;
-	return mergedPC;
+#ifdef CWIPC_DEBUG_THREAD
+	std::cerr << "pointcloud processing: thread stopped" << std::endl;
+#endif
 }
 
 // return the merged cloud 

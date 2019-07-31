@@ -53,6 +53,7 @@ public:
 	void create_pc_from_frames();
 	void wait_for_pc();
 	void dump_color_frame(const std::string& filename);
+	uint64_t get_capture_timestamp();
 public:
 	// This is public because MFCapture needs it when dumping the color images
 	rs2::frameset current_frameset;
@@ -114,8 +115,10 @@ private:
 	void merge_views();                       // Internal: merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // Internal: generate a mathematical pointcloud
 	void _request_new_pointcloud();           // Internal: request a new pointcloud to be grabbed and processed
-
+	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
+	bool stopped;
 	// variables
+	std::thread *control_thread;
 	cwipc_pcl_pointcloud mergedPC;                            // Merged pointcloud
 	std::mutex mergedPC_mutex;                                // Lock for all mergedPC-related dta structures
 	bool mergedPC_is_fresh;                                   // True if mergedPC contains a freshly-created pointcloud
