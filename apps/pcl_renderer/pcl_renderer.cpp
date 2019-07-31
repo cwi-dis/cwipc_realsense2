@@ -124,6 +124,7 @@ int main(int argc, char * argv[]) try
 		if (prevpc) prevpc->free();
 		prevpc = pc;
 	}
+	src->free();
 	return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
