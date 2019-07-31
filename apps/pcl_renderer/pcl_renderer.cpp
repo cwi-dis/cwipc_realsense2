@@ -105,6 +105,7 @@ int main(int argc, char * argv[]) try
 		std::cerr << "pcl_renderer: ERROR: could not instantiate realsense2 grabber: " << msg << std::endl;
 		return EXIT_FAILURE;
 	}
+	cwipc *prevpc = NULL;
 	while (app) {
 		cwipc *pc = src->get();
 
@@ -120,6 +121,8 @@ int main(int argc, char * argv[]) try
 			mergedcenter += deltacenter;
 
 		draw_pointcloud(&app, captured_pc);
+		if (prevpc) prevpc->free();
+		prevpc = pc;
 	}
 	return EXIT_SUCCESS;
 }

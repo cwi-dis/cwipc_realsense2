@@ -39,6 +39,7 @@ int main(int argc, char** argv)
 		cwipc_pcl_pointcloud pcl_pc = pc->access_pcl_pointcloud();
 		capturepointclouds.push_back(pcl_pc->makeShared());
 		timestamps.push_back(pc->timestamp());
+		pc->free();
 	}
 	count = atoi(argv[1]);
 	while (count-- > 0 && ok == 0) {

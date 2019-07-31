@@ -41,6 +41,7 @@ int main(int argc, char** argv)
 			snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], pc->timestamp());
 			ok = cwipc_write(filename, pc, &error);
 		}
+		pc->free();
     }
     generator->free();
     if (ok < 0) {
