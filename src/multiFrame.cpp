@@ -277,7 +277,8 @@ MFCamera::dump_color_frame(const std::string& filename)
 
 MFCapture::MFCapture(const char *_configFilename)
 :	mergedPC_is_fresh(false),
-	mergedPC_want_new(false)
+	mergedPC_want_new(false),
+	numberOfPCsProduced(0)
 {
 	if (_configFilename) {
 		configFilename = _configFilename;
@@ -428,6 +429,7 @@ MFCapture::MFCapture(const char *_configFilename)
 }
 
 MFCapture::~MFCapture() {
+	uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	for (auto cam : cameras)
 		cam->stop();
 	std::cerr << "cwipc_realsense2: multiFrame: stopped all cameras\n";
@@ -435,6 +437,8 @@ MFCapture::~MFCapture() {
 		delete cam;
 	cameras.clear();
 	std::cerr << "cwipc_realsense2: multiFrame: deleted all cameras\n";
+	float deltaT = (stopTime - starttime) / 1000.0;
+	std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
 }
 
 
@@ -514,6 +518,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
 	mergedPC_is_fresh_cv.wait(mylock, [this]{return mergedPC_is_fresh; });
 	mergedPC_is_fresh = false;
+	numberOfPCsProduced++;
 	return mergedPC;
 }
 

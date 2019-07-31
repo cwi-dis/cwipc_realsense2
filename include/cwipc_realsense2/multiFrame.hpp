@@ -105,6 +105,7 @@ public:
 	// variables
     MFCaptureConfig configuration;
 	uint64_t starttime;
+	int numberOfPCsProduced;
 
 private:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
