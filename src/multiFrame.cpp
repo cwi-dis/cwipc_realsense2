@@ -276,6 +276,8 @@ MFCamera::dump_color_frame(const std::string& filename)
 }
 
 MFCapture::MFCapture(const char *_configFilename)
+:	mergedPC_is_fresh(false),
+	mergedPC_want_new(false)
 {
 	if (_configFilename) {
 		configFilename = _configFilename;
@@ -387,6 +389,7 @@ MFCapture::MFCapture(const char *_configFilename)
 		}
 	}
 
+	// Create an empty pointcloud just in case anyone calls get_mostRecentPointcloud() before one is generated.
 	mergedPC = new_cwipc_pcl_pointcloud();
 
 	// optionally set request for cwi_special_feature
@@ -440,8 +443,11 @@ MFCapture::~MFCapture() {
 cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 {
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	// Step 0: relinquish old pointcloud
-	mergedPC = new_cwipc_pcl_pointcloud();
+	_request_new_pointcloud();
+	{
+		std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+		mergedPC_want_new_cv.wait(mylock, [this]{ return mergedPC_want_new;});
+	}
 	if (cameras.size() > 0) {
 		// Step one: grab frames from all cameras. This should happen as close together in time as possible,
 		// because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
@@ -468,6 +474,9 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 			cam->wait_for_pc();
 		}
 		// Step 5: merge views
+		// Lock mergedPC while we are modifying it
+		std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+		mergedPC = new_cwipc_pcl_pointcloud();
 		merge_views();
 		if (mergedPC->size() > 0) {
 #ifdef CWIPC_DEBUG
@@ -485,20 +494,45 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 			point.rgb = 0.0;
 			mergedPC->points.push_back(point);
 		}
+		// Signal that a new mergedPC is available
+		mergedPC_is_fresh = true;
+		mergedPC_is_fresh_cv.notify_all();
 	} else {	// return a spinning generated mathematical pointcloud
 		static float angle;
 		angle += 0.031415;
 		Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 		transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
+		std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+		// Lock mergedPC while we are modifying it
+		mergedPC = new_cwipc_pcl_pointcloud();
 		transformPointCloud(*generatedPC, *mergedPC, transform);
+		// Signal that a new mergedPC is available
+		mergedPC_is_fresh = true;
+		mergedPC_is_fresh_cv.notify_all();
 	}
+	// Wait for a fresh mergedPC to become available
+	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+	mergedPC_is_fresh_cv.wait(mylock, [this]{return mergedPC_is_fresh; });
+	mergedPC_is_fresh = false;
 	return mergedPC;
 }
 
 // return the merged cloud 
 cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 {
+	// This call doesn't need a fresh pointcloud (Jack thinks), but it does need one that is
+	// consistent. So we lock, but don't wait on the condition.
+	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
 	return mergedPC;
+}
+
+void MFCapture::_request_new_pointcloud()
+{
+	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+	if (!mergedPC_want_new && !mergedPC_is_fresh) {
+		mergedPC_want_new = true;
+		mergedPC_want_new_cv.notify_all();
+	}
 }
 
 void MFCapture::merge_views()
