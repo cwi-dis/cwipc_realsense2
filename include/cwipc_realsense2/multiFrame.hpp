@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 #include <librealsense2/rs.hpp>
 #include <Eigen/StdVector>
