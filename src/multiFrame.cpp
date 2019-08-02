@@ -130,6 +130,7 @@ void MFCamera::_capture_thread_main()
 		std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
 #endif
 		captured_frame_queue.enqueue(frames);
+		std::this_thread::yield();
 	}
 #ifdef CWIPC_DEBUG_THREAD
 	std::cerr << "frame capture: cam=" << serial << " thread stopped" << std::endl;
@@ -432,8 +433,8 @@ MFCapture::MFCapture(const char *_configFilename)
 	for (auto cam: cameras)
 		cam->start_capturer();
 	// start our run thread (which will drive the capturers and merge the pointclouds)
-	control_thread = new std::thread(&MFCapture::_control_thread_main, this);
 	stopped = false;
+	control_thread = new std::thread(&MFCapture::_control_thread_main, this);
 }
 
 MFCapture::~MFCapture() {
