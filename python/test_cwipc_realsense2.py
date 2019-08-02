@@ -14,7 +14,8 @@ if 0:
     # - Attach to python in the XCode debugger
     # - press return to python3.
     import cwipc.realsense2
-    cwipc.realsense2._cwipc_realsense2_dll('/Users/jack/src/VRTogether/cwipc_realsense2/build-xcode/lib/Debug/libcwipc_realsense2.dylib')
+    #cwipc.realsense2._cwipc_realsense2_dll('/Users/jack/src/VRTogether/cwipc_realsense2/build-xcode/lib/Debug/libcwipc_realsense2.dylib')
+    cwipc.realsense2._cwipc_realsense2_dll('C:/Users/vrtogether/src/VRtogether/cwipc_realsense2/build/bin/RelWithDebInfo/cwipc_realsense2.dll')
     print('Type return after attaching in XCode debugger (pid=%d) - ' % os.getpid())
     sys.stdin.readline()
 

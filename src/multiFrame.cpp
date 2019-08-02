@@ -452,6 +452,7 @@ MFCapture::~MFCapture() {
 		stopped = true;
 		mergedPC_want_new = true;
 		mergedPC_want_new_cv.notify_all();
+		control_thread->join();
 	}
 	for (auto cam : cameras)
 		cam->stop();
