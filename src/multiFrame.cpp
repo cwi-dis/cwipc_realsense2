@@ -203,7 +203,9 @@ void MFCamera::_processing_thread_main()
 				}
 				maxz = 0.8f + minz;
 			}
-
+			// Pre-allocate space in the pointcloud (so we don't realloc).
+			// Note that we allocate too much space because the Z filtering will remove points.
+			camData.cloud->reserve(points.size());
 			// Make PointCloud
 			for (int i = 0; i < points.size(); i++) {
 				double x = minx - vertices[i].x; x *= x;
@@ -224,6 +226,8 @@ void MFCamera::_processing_thread_main()
 			}
 		}
 		else {
+			// Pre-allocate space in the pointcloud (so we don't realloc)
+			camData.cloud->reserve(points.size());
 			// Make PointCloud
 			for (int i = 0; i < points.size(); i++) {
 				cwipc_pcl_point pt;
@@ -601,7 +605,7 @@ void MFCapture::merge_views()
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 		nPoints += cam_cld->size();
 	}
-	//mergedPC->reserve(nPoints);
+	mergedPC->reserve(nPoints);
 	// Now transform and copy each pointcloud
 	for (MFCameraData cd : configuration.cameraData) {
 			cwipc_pcl_pointcloud cam_cld = cd.cloud;
