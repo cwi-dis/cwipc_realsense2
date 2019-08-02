@@ -81,8 +81,9 @@ class TestApi(unittest.TestCase):
     def _verify_pointcloud(self, pc):
         points = pc.get_points()
         self.assertGreater(len(points), 1)
-        p0 = points[0].x, points[0].y, points[0].z
-        p1 = points[len(points)-1].x, points[len(points)-1].y, points[len(points)-1].z
+        halfway = int((len(points)+1)/2)
+        p0 = points[0].x, points[0].y, points[0].z, points[0].r, points[0].g, points[0].b
+        p1 = points[halfway].x, points[halfway].y, points[halfway].z, points[halfway].r, points[halfway].g, points[halfway].b
         self.assertNotEqual(p0, p1)
    
 if __name__ == '__main__':
