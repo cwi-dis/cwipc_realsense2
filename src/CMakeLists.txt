@@ -16,6 +16,7 @@ target_sources(cwipc_realsense2
 	"../include/cwipc_realsense2/utils.h"
 	"../include/cwipc_realsense2/multiFrame.hpp"
 	"../include/cwipc_realsense2/window_util.hpp"
+	"../include/cwipc_realsense2/stb_image_write.h"
 	"../include/cwipc_realsense2/api.h"
 )
 
