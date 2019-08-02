@@ -34,6 +34,10 @@
 #include "cwipc_realsense2/stb_image_write.h"
 #endif
 
+// Static variable used to print a warning message when we re-create an MFCapture
+// if there is another one open.
+static int numberOfCapturersActive = 0;
+
 MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb)
 :	minx(0), minz(0), maxz(0),
 	camera_index(_camera_index),
@@ -286,6 +290,10 @@ MFCapture::MFCapture(const char *_configFilename)
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)
 {
+	numberOfCapturersActive++;
+	if (numberOfCapturersActive > 1) {
+		std::cerr << "cwipc_realsense2: multiFrame: Warning: attempting to create capturer while one is already active." << std::endl;
+	}
 	if (_configFilename) {
 		configFilename = _configFilename;
 	}
@@ -454,6 +462,8 @@ MFCapture::~MFCapture() {
 	std::cerr << "cwipc_realsense2: multiFrame: deleted all cameras\n";
 	float deltaT = (stopTime - starttime) / 1000.0;
 	std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
+	numberOfCapturersActive--;
+	assert(numberOfCapturersActive == 0);
 }
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp

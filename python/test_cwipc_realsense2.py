@@ -5,7 +5,7 @@ import os
 import sys
 import tempfile
 
-if 1:
+if 0:
     # This code can be used to debug the C++ code in XCode:
     # - build for XCode with cmake
     # - build the cwipc_util project
