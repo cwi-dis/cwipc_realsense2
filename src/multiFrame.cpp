@@ -595,8 +595,16 @@ void MFCapture::merge_views()
 {
 	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 	mergedPC->clear();
+	// Pre-allocate space in the merged pointcloud
+	size_t nPoints = 0;
 	for (MFCameraData cd : configuration.cameraData) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
+		nPoints += cam_cld->size();
+	}
+	//mergedPC->reserve(nPoints);
+	// Now transform and copy each pointcloud
+	for (MFCameraData cd : configuration.cameraData) {
+			cwipc_pcl_pointcloud cam_cld = cd.cloud;
 
 		if (cam_cld->size() > 0) {
 			transformPointCloud(*cam_cld, *aligned_cld, *cd.trafo);
