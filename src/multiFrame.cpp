@@ -7,6 +7,9 @@
 // Define to try and use hardware sync to synchronize multiple cameras
 #define WITH_INTER_CAM_SYNC
 
+// Define to do the transformationsin the per-camera processing.
+#define WITH_EARLY_TRANSFORM
+
 // Define to enable optional dumping of RGB video frames (to test hardware sync)
 #define WITH_DUMP_VIDEO_FRAMES
 
@@ -244,6 +247,9 @@ void MFCamera::_processing_thread_main()
 					camData.cloud->push_back(pt);
 			}
 		}
+#ifdef WITH_EARLY_TRANSFORM
+		transformPointCloud(*camData.cloud, *camData.cloud, *camData.trafo);
+#endif
 		// Notify wait_for_pc that we're done.
 		processing_done = true;
 		processing_done_cv.notify_one();
@@ -608,12 +614,16 @@ void MFCapture::merge_views()
 	mergedPC->reserve(nPoints);
 	// Now transform and copy each pointcloud
 	for (MFCameraData cd : configuration.cameraData) {
-			cwipc_pcl_pointcloud cam_cld = cd.cloud;
+		cwipc_pcl_pointcloud cam_cld = cd.cloud;
+#ifdef WITH_EARLY_TRANSFORM
+		*mergedPC += *cam_cld;
+#else
 
 		if (cam_cld->size() > 0) {
 			transformPointCloud(*cam_cld, *aligned_cld, *cd.trafo);
 			*mergedPC += *aligned_cld;
 		}
+#endif
 	}
 
 	if (configuration.cloud_resolution > 0) {
