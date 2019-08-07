@@ -23,7 +23,7 @@ int main(int argc, char** argv)
 	if (argc == 3) {
 		configFile = argv[2];
 	}
-	generator = cwipc_realsense2(argv[3], &error, CWIPC_API_VERSION);
+	generator = cwipc_realsense2(configFile, &error, CWIPC_API_VERSION);
     if (error) {
     	std::cerr << argv[0] << ": creating realsense2 grabber failed: " << error << std::endl;
     	return 1;
