@@ -46,9 +46,9 @@ struct MFCaptureConfig {
 	std::string cwi_special_feature = ""; // Specifier for temporary development specific feature
 
 	// realsense specific post processing filtering
-	int decimation_value = 2;             // int value between 2 and 8
-	int spatial_iterations = 4;           // int val between 1 and 5
-	double spatial_alpha = 0.25;          // val between 0.25 and 1.0
+	int decimation_value = 1;             // int value between 2 and 8
+	int spatial_iterations = 2;           // int val between 1 and 5
+	double spatial_alpha = 0.5;          // val between 0.25 and 1.0
 	int spatial_delta = 30;               // int val between 1 and 50
 	int spatial_filling = 0;	          // int val between 0 and 6
 	double temporal_alpha = 0.4;	      // val between 0 and 1

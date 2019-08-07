@@ -63,6 +63,10 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	if (do_depth_filtering) {
 		dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
 
+		threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, 0.15);
+		threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, 2.0);
+		do_background_removal = false;
+
 		spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.spatial_iterations);
 		spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.spatial_alpha);
 		spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, configuration.spatial_delta);
@@ -162,15 +166,23 @@ void MFCamera::_processing_thread_main()
 #ifdef CWIPC_DEBUG
 		std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif
-		_process_depth_frame(depth);
+		if (do_depth_filtering) { // Apply filters
+			//depth = dec_filter.process(depth);          // decimation filter
+			depth = threshold_filter.process(depth);	// threshold
+			depth = depth_to_disparity.process(depth);  // transform into disparity domain
+			depth = spat_filter.process(depth);         // spatial filter
+			depth = temp_filter.process(depth);         // temporal filter
+			depth = disparity_to_depth.process(depth);  // revert back to depth domain
+		}
+
 		camData.cloud->clear();
 		// Tell points frame to map to this color frame
 		rs2::pointcloud pc;
 		rs2::points points;
-		pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
 
 		uint8_t camera_label = (uint8_t)1 << camera_index;
 		points = pc.calculate(depth);
+		pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
 
 		// Generate new vertices and color vector
 		auto vertices = points.get_vertices();
@@ -257,16 +269,6 @@ void MFCamera::_processing_thread_main()
 #ifdef CWIPC_DEBUG_THREAD
 	std::cerr << "frame processing: cam=" << serial << " thread stopped" << std::endl;
 #endif
-}
-
-void MFCamera::_process_depth_frame(rs2::depth_frame &depth) {
-	if (do_depth_filtering) { // Apply filters
-		//depth = dec_filter.process(depth);          // decimation filter
-		depth = depth_to_disparity.process(depth);  // transform into disparity domain
-		depth = spat_filter.process(depth);         // spatial filter
-		depth = temp_filter.process(depth);         // temporal filter
-		depth = disparity_to_depth.process(depth);  // revert back to depth domain
-	}
 }
 
 void MFCamera::create_pc_from_frames()

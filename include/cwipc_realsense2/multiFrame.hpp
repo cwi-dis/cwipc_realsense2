@@ -82,6 +82,7 @@ private:
 	bool processing_done;
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
 	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
+	rs2::threshold_filter threshold_filter;					  // Thresholding: minimum and maximum distance
 	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
 	rs2::spatial_filter spat_filter;                          // Spatial    - edge-preserving spatial smoothing
 	rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
