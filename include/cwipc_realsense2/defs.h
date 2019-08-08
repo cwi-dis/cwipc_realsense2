@@ -47,6 +47,8 @@ struct MFCaptureConfig {
 
 	// realsense specific post processing filtering
 	int decimation_value = 1;             // int value between 2 and 8
+	double threshold_near = 0.15;         // float, near point for distance threshold
+	double threshold_far = 6.0;           // float, far point for distance threshold
 	int spatial_iterations = 2;           // int val between 1 and 5
 	double spatial_alpha = 0.5;          // val between 0.25 and 1.0
 	int spatial_delta = 30;               // int val between 1 and 50

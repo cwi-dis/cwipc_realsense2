@@ -63,9 +63,8 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	if (do_depth_filtering) {
 		dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.decimation_value);
 
-		threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, 0.15);
-		threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, 2.0);
-		do_background_removal = false;
+		threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, configuration.threshold_near);
+		threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, configuration.threshold_far);
 
 		spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, configuration.spatial_iterations);
 		spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, configuration.spatial_alpha);
@@ -168,11 +167,11 @@ void MFCamera::_processing_thread_main()
 #endif
 		if (do_depth_filtering) { // Apply filters
 			//depth = dec_filter.process(depth);          // decimation filter
-			depth = threshold_filter.process(depth);	// threshold
-			depth = depth_to_disparity.process(depth);  // transform into disparity domain
-			depth = spat_filter.process(depth);         // spatial filter
-			depth = temp_filter.process(depth);         // temporal filter
-			depth = disparity_to_depth.process(depth);  // revert back to depth domain
+			//depth = threshold_filter.process(depth);	// threshold
+			//depth = depth_to_disparity.process(depth);  // transform into disparity domain
+			//depth = spat_filter.process(depth);         // spatial filter
+			//depth = temp_filter.process(depth);         // temporal filter
+			//depth = disparity_to_depth.process(depth);  // revert back to depth domain
 		}
 
 		camData.cloud->clear();
@@ -181,8 +180,8 @@ void MFCamera::_processing_thread_main()
 		rs2::points points;
 
 		uint8_t camera_label = (uint8_t)1 << camera_index;
-		points = pc.calculate(depth);
 		pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
+		points = pc.calculate(depth);
 
 		// Generate new vertices and color vector
 		auto vertices = points.get_vertices();

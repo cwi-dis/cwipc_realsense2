@@ -60,6 +60,8 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
 			parameterElement->QueryIntAttribute("decimation_value", &(config->decimation_value));
+			parameterElement->QueryDoubleAttribute("threshold_near", &(config->threshold_near));
+			parameterElement->QueryDoubleAttribute("threshold_far", &(config->threshold_far));
 			parameterElement->QueryIntAttribute("spatial_iterations", &(config->spatial_iterations));
 			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->spatial_alpha));
 			parameterElement->QueryIntAttribute("spatial_delta", &(config->spatial_delta));
@@ -187,6 +189,8 @@ void mf_config2file(const char* filename, MFCaptureConfig* config)
 
 	TiXmlElement* parameters = new TiXmlElement("depthfilterparameters");
 	parameters->SetAttribute("decimation_value", config->decimation_value);
+	parameters->SetDoubleAttribute("threshold_near", config->threshold_near);
+	parameters->SetDoubleAttribute("threshold_far", config->threshold_far);
 	parameters->SetAttribute("spatial_iterations", config->spatial_iterations);
 	parameters->SetDoubleAttribute("spatial_alpha", config->spatial_alpha);
 	parameters->SetAttribute("spatial_delta", config->spatial_delta);
