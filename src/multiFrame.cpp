@@ -167,11 +167,11 @@ void MFCamera::_processing_thread_main()
 #endif
 		if (do_depth_filtering) { // Apply filters
 			//depth = dec_filter.process(depth);          // decimation filter
-			//depth = threshold_filter.process(depth);	// threshold
-			//depth = depth_to_disparity.process(depth);  // transform into disparity domain
-			//depth = spat_filter.process(depth);         // spatial filter
-			//depth = temp_filter.process(depth);         // temporal filter
-			//depth = disparity_to_depth.process(depth);  // revert back to depth domain
+			depth = threshold_filter.process(depth);	// threshold
+			depth = depth_to_disparity.process(depth);  // transform into disparity domain
+			depth = spat_filter.process(depth);         // spatial filter
+			depth = temp_filter.process(depth);         // temporal filter
+			depth = disparity_to_depth.process(depth);  // revert back to depth domain
 		}
 
 		camData.cloud->clear();
