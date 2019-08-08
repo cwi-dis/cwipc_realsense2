@@ -81,6 +81,7 @@ private:
 	std::condition_variable processing_done_cv;
 	bool processing_done;
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
+	rs2::align aligner;					// Align depth and color data
 	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
 	rs2::threshold_filter threshold_filter;					  // Thresholding: minimum and maximum distance
 	rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);

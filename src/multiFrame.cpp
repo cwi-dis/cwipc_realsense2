@@ -54,7 +54,8 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	stopped(true),
 	grabber_thread(nullptr),
 	captured_frame_queue(1),
-	processing_frame_queue(1)
+	processing_frame_queue(1),
+	aligner(RS2_STREAM_DEPTH)
 {
 #ifdef CWIPC_DEBUG
 		std::cout << "MFCapture: creating camera " << serial << std::endl;
@@ -160,20 +161,34 @@ void MFCamera::_processing_thread_main()
 
 		std::lock_guard<std::mutex> lock(processing_mutex);
 
+#if 1
+		// xxxjack experiment with aligning
+		if (do_depth_filtering) {
+			processing_frameset = processing_frameset.apply_filter(aligner);
+			//processing_frameset = processing_frameset.apply_filter(dec_filter);
+			processing_frameset = processing_frameset.apply_filter(threshold_filter);
+			processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
+			processing_frameset = processing_frameset.apply_filter(spat_filter);
+			processing_frameset = processing_frameset.apply_filter(temp_filter);
+			processing_frameset = processing_frameset.apply_filter(disparity_to_depth);
+		}
+#endif
+
 		rs2::depth_frame depth = processing_frameset.get_depth_frame();
 		rs2::video_frame color = processing_frameset.get_color_frame();
 #ifdef CWIPC_DEBUG
 		std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif
+#if 0
 		if (do_depth_filtering) { // Apply filters
-			//depth = dec_filter.process(depth);          // decimation filter
+			depth = dec_filter.process(depth);          // decimation filter
 			depth = threshold_filter.process(depth);	// threshold
 			depth = depth_to_disparity.process(depth);  // transform into disparity domain
 			depth = spat_filter.process(depth);         // spatial filter
 			depth = temp_filter.process(depth);         // temporal filter
 			depth = disparity_to_depth.process(depth);  // revert back to depth domain
 		}
-
+#endif
 		camData.cloud->clear();
 		// Tell points frame to map to this color frame
 		rs2::pointcloud pc;
