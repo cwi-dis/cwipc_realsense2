@@ -20,8 +20,8 @@ int main(int argc, char** argv)
     
 	cwipc_tiledsource *generator;
 	char *configFile = NULL;
-	if (argc == 3) {
-		configFile = argv[2];
+	if (argc == 4) {
+		configFile = argv[3];
 	}
 	generator = cwipc_realsense2(configFile, &error, CWIPC_API_VERSION);
     if (error) {
