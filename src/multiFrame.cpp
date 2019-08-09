@@ -7,9 +7,6 @@
 // Define to try and use hardware sync to synchronize multiple cameras
 #define WITH_INTER_CAM_SYNC
 
-// Define to do the transformationsin the per-camera processing.
-#define WITH_EARLY_TRANSFORM
-
 // Define to enable optional dumping of RGB video frames (to test hardware sync)
 #define WITH_DUMP_VIDEO_FRAMES
 
@@ -161,47 +158,43 @@ void MFCamera::_processing_thread_main()
 
 		std::lock_guard<std::mutex> lock(processing_mutex);
 
-#if 1
-		// xxxjack experiment with aligning
 		if (do_depth_filtering) {
 			processing_frameset = processing_frameset.apply_filter(aligner);
-			//processing_frameset = processing_frameset.apply_filter(dec_filter);
+			processing_frameset = processing_frameset.apply_filter(dec_filter);
 			processing_frameset = processing_frameset.apply_filter(threshold_filter);
 			processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
 			processing_frameset = processing_frameset.apply_filter(spat_filter);
 			processing_frameset = processing_frameset.apply_filter(temp_filter);
 			processing_frameset = processing_frameset.apply_filter(disparity_to_depth);
 		}
-#endif
 
 		rs2::depth_frame depth = processing_frameset.get_depth_frame();
 		rs2::video_frame color = processing_frameset.get_color_frame();
 #ifdef CWIPC_DEBUG
 		std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif
-#if 0
-		if (do_depth_filtering) { // Apply filters
-			depth = dec_filter.process(depth);          // decimation filter
-			depth = threshold_filter.process(depth);	// threshold
-			depth = depth_to_disparity.process(depth);  // transform into disparity domain
-			depth = spat_filter.process(depth);         // spatial filter
-			depth = temp_filter.process(depth);         // temporal filter
-			depth = disparity_to_depth.process(depth);  // revert back to depth domain
-		}
-#endif
-		camData.cloud->clear();
-		// Tell points frame to map to this color frame
-		rs2::points points;
 
-		uint8_t camera_label = (uint8_t)1 << camera_index;
-		pointcloud.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
-		points = pointcloud.calculate(depth);
-
-		// Generate new vertices and color vector
+		// Calculate new pointcloud, map to the color images and get vertices and color indices
+		auto points = pointcloud.calculate(depth);
+		pointcloud.map_to(color);
 		auto vertices = points.get_vertices();
+		auto texture_coordinates = points.get_texture_coordinates();
 
-		unsigned char *colors = (unsigned char*)color.get_data();
+		// Get some constants used later to map colors and such from rs2 to pcl pointclouds.
+		const int texture_width = color.get_width();
+		const int texture_height = color.get_height();
+		const int texture_x_step = color.get_bytes_per_pixel();
+		const int texture_y_step = color.get_stride_in_bytes();
+		const unsigned char *texture_data = (unsigned char*)color.get_data();
+		const uint8_t camera_label = (uint8_t)1 << camera_index;
+
+		// Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
+		camData.cloud->clear();
+		camData.cloud->reserve(points.size());
+
 #ifdef WITH_MANUAL_BACKGROUND_REMOVAL
+		// Note by Jack: this code is currently not correct, hasn't been updated
+		// for the texture coordinate mapping.
 		if (do_background_removal) {
 
 			// Set the background removal window
@@ -231,9 +224,6 @@ void MFCamera::_processing_thread_main()
 				}
 				maxz = 0.8f + minz;
 			}
-			// Pre-allocate space in the pointcloud (so we don't realloc).
-			// Note that we allocate too much space because the Z filtering will remove points.
-			camData.cloud->reserve(points.size());
 			// Make PointCloud
 			for (int i = 0; i < points.size(); i++) {
 				double x = minx - vertices[i].x; x *= x;
@@ -244,9 +234,9 @@ void MFCamera::_processing_thread_main()
 					pt.y = -vertices[i].y;
 					pt.z = -z;
 					int pi = i * 3;
-					pt.r = colors[pi];
-					pt.g = colors[pi + 1];
-					pt.b = colors[pi + 2];
+					pt.r = texture_data[pi];
+					pt.g = texture_data[pi + 1];
+					pt.b = texture_data[pi + 2];
 					pt.a = camera_label;
 					if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
 						camData.cloud->push_back(pt);
@@ -256,29 +246,31 @@ void MFCamera::_processing_thread_main()
 		else
 #endif // WITH_MANUAL_BACKGROUND_REMOVAL
 		{
-			// Pre-allocate space in the pointcloud (so we don't realloc)
-			camData.cloud->reserve(points.size());
 			// Make PointCloud
 			for (int i = 0; i < points.size(); i++) {
+				// Skip points with z=0 (they don't exist)
 				if (vertices[i].z == 0) continue;
-				
+
 				cwipc_pcl_point pt;
 
 				pt.x = vertices[i].x;
 				pt.y = -vertices[i].y;
 				pt.z = -vertices[i].z;
-				int pi = i * 3;
-				pt.r = colors[pi];
-				pt.g = colors[pi + 1];
-				pt.b = colors[pi + 2];
+
+				float u = texture_coordinates[i].u;
+				float v = texture_coordinates[i].v;
+				int texture_x = std::min(std::max(int(u*texture_width + .5f), 0), texture_width - 1);
+				int texture_y = std::min(std::max(int(v*texture_height + .5f), 0), texture_height - 1);
+				int idx = texture_x * texture_x_step + texture_y * texture_y_step;
+				pt.r = texture_data[idx];
+				pt.g = texture_data[idx + 1];
+				pt.b = texture_data[idx + 2];
 				pt.a = camera_label;
 				if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
 					camData.cloud->push_back(pt);
 			}
 		}
-#ifdef WITH_EARLY_TRANSFORM
 		transformPointCloud(*camData.cloud, *camData.cloud, *camData.trafo);
-#endif
 		// Notify wait_for_pc that we're done.
 		processing_done = true;
 		processing_done_cv.notify_one();
@@ -631,18 +623,10 @@ void MFCapture::merge_views()
 		nPoints += cam_cld->size();
 	}
 	mergedPC->reserve(nPoints);
-	// Now transform and copy each pointcloud
+	// Now merge all pointclouds
 	for (MFCameraData cd : configuration.cameraData) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
-#ifdef WITH_EARLY_TRANSFORM
 		*mergedPC += *cam_cld;
-#else
-
-		if (cam_cld->size() > 0) {
-			transformPointCloud(*cam_cld, *aligned_cld, *cd.trafo);
-			*mergedPC += *aligned_cld;
-		}
-#endif
 	}
 
 	if (configuration.cloud_resolution > 0) {
