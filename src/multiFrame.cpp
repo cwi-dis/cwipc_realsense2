@@ -191,18 +191,17 @@ void MFCamera::_processing_thread_main()
 #endif
 		camData.cloud->clear();
 		// Tell points frame to map to this color frame
-		rs2::pointcloud pc;
 		rs2::points points;
 
 		uint8_t camera_label = (uint8_t)1 << camera_index;
-		pc.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
-		points = pc.calculate(depth);
+		pointcloud.map_to(color); // NB: This does not align the frames. That should be handled by setting resolution of cameras
+		points = pointcloud.calculate(depth);
 
 		// Generate new vertices and color vector
 		auto vertices = points.get_vertices();
 
 		unsigned char *colors = (unsigned char*)color.get_data();
-
+#ifdef WITH_MANUAL_BACKGROUND_REMOVAL
 		if (do_background_removal) {
 
 			// Set the background removal window
@@ -254,11 +253,15 @@ void MFCamera::_processing_thread_main()
 				}
 			}
 		}
-		else {
+		else
+#endif // WITH_MANUAL_BACKGROUND_REMOVAL
+		{
 			// Pre-allocate space in the pointcloud (so we don't realloc)
 			camData.cloud->reserve(points.size());
 			// Make PointCloud
 			for (int i = 0; i < points.size(); i++) {
+				if (vertices[i].z == 0) continue;
+				
 				cwipc_pcl_point pt;
 
 				pt.x = vertices[i].x;

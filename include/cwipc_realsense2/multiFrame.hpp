@@ -88,6 +88,7 @@ private:
 	rs2::spatial_filter spat_filter;                          // Spatial    - edge-preserving spatial smoothing
 	rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
 	rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
+	rs2::pointcloud pointcloud;		// The pointcloud constructor
 	void _process_depth_frame(rs2::depth_frame &depth);
 	void _capture_thread_main();
 	void _processing_thread_main();
