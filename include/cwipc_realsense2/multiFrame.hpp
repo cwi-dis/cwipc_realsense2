@@ -46,7 +46,7 @@ public:
 	~MFCamera();
 
 	bool is_usb3() { return usb[0] == '3'; }
-	void start(MFCaptureConfig& configuration);
+	void start();
 	void start_capturer();
 	void stop();
 	void capture_frameset();
@@ -67,11 +67,16 @@ public:
 
 private:
 	MFCameraData& camData;
+	MFCameraSettings& camSettings;
 	std::string usb;
-	rs2::pipeline pipe;
+
+	int camera_width;
+	int camera_height;
+	int camera_fps;
 	bool do_depth_filtering;
 	bool do_background_removal;
 	bool do_greenscreen_removal;
+
 	bool stopped;
 	std::thread *grabber_thread;
 	std::thread *processing_thread;
@@ -80,6 +85,8 @@ private:
 	std::mutex processing_mutex;
 	std::condition_variable processing_done_cv;
 	bool processing_done;
+
+	rs2::pipeline pipe;
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
 	rs2::align aligner;					// Align depth and color data
 	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
@@ -89,7 +96,8 @@ private:
 	rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
 	rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
 	rs2::pointcloud pointcloud;		// The pointcloud constructor
-	void _process_depth_frame(rs2::depth_frame &depth);
+
+	void _init_filters();
 	void _capture_thread_main();
 	void _processing_thread_main();
 
@@ -99,7 +107,7 @@ class CWIPC_DLL_ENTRY MFCapture {
 
 public:
 	// methods
-	MFCapture(const char *_configFilename=NULL);
+	MFCapture(const char *configFilename=NULL);
 	~MFCapture();
 	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
 	cwipc_pcl_pointcloud get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
@@ -113,7 +121,6 @@ public:
 
 private:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
-	std::string configFilename;
 	// methods
 	void merge_views();                       // Internal: merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // Internal: generate a mathematical pointcloud

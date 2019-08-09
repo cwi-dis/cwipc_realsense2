@@ -59,16 +59,16 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
         
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
-			parameterElement->QueryIntAttribute("decimation_value", &(config->decimation_value));
-			parameterElement->QueryDoubleAttribute("threshold_near", &(config->threshold_near));
-			parameterElement->QueryDoubleAttribute("threshold_far", &(config->threshold_far));
-			parameterElement->QueryIntAttribute("spatial_iterations", &(config->spatial_iterations));
-			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->spatial_alpha));
-			parameterElement->QueryIntAttribute("spatial_delta", &(config->spatial_delta));
-			parameterElement->QueryIntAttribute("spatial_filling", &(config->spatial_filling));
-			parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->temporal_alpha));
-			parameterElement->QueryIntAttribute("temporal_delta", &(config->temporal_delta));
-			parameterElement->QueryIntAttribute("temporal_percistency", &(config->temporal_percistency));
+			parameterElement->QueryIntAttribute("decimation_value", &(config->default_camera_settings.decimation_value));
+			parameterElement->QueryDoubleAttribute("threshold_near", &(config->default_camera_settings.threshold_near));
+			parameterElement->QueryDoubleAttribute("threshold_far", &(config->default_camera_settings.threshold_far));
+			parameterElement->QueryIntAttribute("spatial_iterations", &(config->default_camera_settings.spatial_iterations));
+			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->default_camera_settings.spatial_alpha));
+			parameterElement->QueryIntAttribute("spatial_delta", &(config->default_camera_settings.spatial_delta));
+			parameterElement->QueryIntAttribute("spatial_filling", &(config->default_camera_settings.spatial_filling));
+			parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->default_camera_settings.temporal_alpha));
+			parameterElement->QueryIntAttribute("temporal_delta", &(config->default_camera_settings.temporal_delta));
+			parameterElement->QueryIntAttribute("temporal_percistency", &(config->default_camera_settings.temporal_percistency));
         }
     }
     
@@ -188,16 +188,16 @@ void mf_config2file(const char* filename, MFCaptureConfig* config)
 	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_percistency is a float between 0 and 8 "));
 
 	TiXmlElement* parameters = new TiXmlElement("depthfilterparameters");
-	parameters->SetAttribute("decimation_value", config->decimation_value);
-	parameters->SetDoubleAttribute("threshold_near", config->threshold_near);
-	parameters->SetDoubleAttribute("threshold_far", config->threshold_far);
-	parameters->SetAttribute("spatial_iterations", config->spatial_iterations);
-	parameters->SetDoubleAttribute("spatial_alpha", config->spatial_alpha);
-	parameters->SetAttribute("spatial_delta", config->spatial_delta);
-	parameters->SetAttribute("spatial_filling", config->spatial_filling);
-	parameters->SetDoubleAttribute("temporal_alpha", config->temporal_alpha);
-	parameters->SetAttribute("temporal_delta", config->temporal_delta);
-	parameters->SetAttribute("temporal_percistency", config->temporal_percistency);
+	parameters->SetAttribute("decimation_value", config->default_camera_settings.decimation_value);
+	parameters->SetDoubleAttribute("threshold_near", config->default_camera_settings.threshold_near);
+	parameters->SetDoubleAttribute("threshold_far", config->default_camera_settings.threshold_far);
+	parameters->SetAttribute("spatial_iterations", config->default_camera_settings.spatial_iterations);
+	parameters->SetDoubleAttribute("spatial_alpha", config->default_camera_settings.spatial_alpha);
+	parameters->SetAttribute("spatial_delta", config->default_camera_settings.spatial_delta);
+	parameters->SetAttribute("spatial_filling", config->default_camera_settings.spatial_filling);
+	parameters->SetDoubleAttribute("temporal_alpha", config->default_camera_settings.temporal_alpha);
+	parameters->SetAttribute("temporal_delta", config->default_camera_settings.temporal_delta);
+	parameters->SetAttribute("temporal_percistency", config->default_camera_settings.temporal_percistency);
 	postprocessing->LinkEndChild(parameters);
 
 	cameraconfig->LinkEndChild(new TiXmlComment(" backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane "));

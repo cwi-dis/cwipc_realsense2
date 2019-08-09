@@ -16,8 +16,21 @@
 //
 #include "cwipc_util/api_pcl.h"
 
+struct MFCameraSettings {
+	int decimation_value = 1;             // int value between 2 and 8
+	double threshold_near = 0.15;         // float, near point for distance threshold
+	double threshold_far = 6.0;           // float, far point for distance threshold
+	int spatial_iterations = 2;           // int val between 1 and 5
+	double spatial_alpha = 0.5;          // val between 0.25 and 1.0
+	int spatial_delta = 30;               // int val between 1 and 50
+	int spatial_filling = 0;	          // int val between 0 and 6
+	double temporal_alpha = 0.4;	      // val between 0 and 1
+	int temporal_delta = 20;	          // val between 1 and 100
+	int temporal_percistency = 3;         // val between 0 and 8
+};
+
 struct MFCameraData {
-	std::string serial;
+	std::string serial;		// Serial number of this camera
 	boost::shared_ptr<Eigen::Affine3d> trafo;
 	cwipc_vector cameraposition;
 	cwipc_vector background;
@@ -45,17 +58,8 @@ struct MFCaptureConfig {
 	// special features
 	std::string cwi_special_feature = ""; // Specifier for temporary development specific feature
 
+	MFCameraSettings default_camera_settings;
 	// realsense specific post processing filtering
-	int decimation_value = 1;             // int value between 2 and 8
-	double threshold_near = 0.15;         // float, near point for distance threshold
-	double threshold_far = 6.0;           // float, far point for distance threshold
-	int spatial_iterations = 2;           // int val between 1 and 5
-	double spatial_alpha = 0.5;          // val between 0.25 and 1.0
-	int spatial_delta = 30;               // int val between 1 and 50
-	int spatial_filling = 0;	          // int val between 0 and 6
-	double temporal_alpha = 0.4;	      // val between 0 and 1
-	int temporal_delta = 20;	          // val between 1 and 100
-	int temporal_percistency = 3;         // val between 0 and 8
 
 	// per camera data
 	std::vector<MFCameraData> cameraData;
