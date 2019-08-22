@@ -1,0 +1,60 @@
+#ifndef cwipc_realsense_MFCapture_hpp
+#define cwipc_realsense_MFCapture_hpp
+#pragma once
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
+#include <librealsense2/rs.hpp>
+
+#include "defs.h"
+
+#ifndef CWIPC_DLL_ENTRY
+#if defined(WIN32) || defined(_WIN32)
+#define CWIPC_DLL_ENTRY __declspec(dllimport)
+#else
+#define CWIPC_DLL_ENTRY 
+#endif
+#endif
+
+class MFCamera;
+
+class CWIPC_DLL_ENTRY MFCapture {
+
+public:
+	// methods
+	MFCapture(const char *configFilename=NULL);
+	~MFCapture();
+	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
+	cwipc_pcl_pointcloud get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
+	MFCameraData& get_camera_data(std::string serial);
+	MFCamera* get_camera(std::string serial);
+
+	// variables
+    MFCaptureConfig configuration;
+	uint64_t starttime;
+	int numberOfPCsProduced;
+
+private:
+	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
+	// methods
+	void merge_views();                       // Internal: merge all camera's pointclouds into one
+	cwipc_pcl_pointcloud generate_pcl();                      // Internal: generate a mathematical pointcloud
+	void _request_new_pointcloud();           // Internal: request a new pointcloud to be grabbed and processed
+	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
+	bool stopped;
+	// variables
+	std::thread *control_thread;
+	cwipc_pcl_pointcloud mergedPC;                            // Merged pointcloud
+	std::mutex mergedPC_mutex;                                // Lock for all mergedPC-related dta structures
+	bool mergedPC_is_fresh;                                   // True if mergedPC contains a freshly-created pointcloud
+	std::condition_variable mergedPC_is_fresh_cv;             // Condition variable for signalling freshly-created pointcloud
+	bool mergedPC_want_new;                                   // Set to true to request a new pointcloud
+	std::condition_variable mergedPC_want_new_cv;             // Condition variable for signalling we want a new pointcloud
+	cwipc_pcl_pointcloud generatedPC;                         // Mathematical pointcloud for use without camera
+	std::vector<MFCamera*> cameras;                // Storage of camera specifics
+
+
+};
+#endif // cwipc_realsense_MFCapture_hpp
