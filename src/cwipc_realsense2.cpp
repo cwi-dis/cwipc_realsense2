@@ -178,5 +178,6 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 		}
 		return NULL;
 	}
+	if (!MFCapture_versionCheck(errorMessage)) return NULL;
 	return new cwipc_source_realsense2_impl(configFilename);
 }

@@ -140,4 +140,6 @@ private:
 
 
 };
+
+bool MFCapture_versionCheck(char **errorMessage);
 #endif /* cwipw_realsense_multiFrame_hpp */

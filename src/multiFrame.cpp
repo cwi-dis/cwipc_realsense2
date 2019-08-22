@@ -705,3 +705,14 @@ cwipc_pcl_pointcloud MFCapture::generate_pcl()
 	return point_cloud_ptr;
 }
 
+bool MFCapture_versionCheck(char **errorMessage)
+{
+	int version = rs2_get_api_version(NULL);
+	if ((version/100) == (RS2_API_VERSION/100)) return true;
+	if (errorMessage) {
+		static char errorBuf[80];
+		sprintf(errorBuf, "Built against librealsense %d but %d is installed.", RS2_API_VERSION, version);
+		*errorMessage = errorBuf;
+	}
+	return false;
+}
