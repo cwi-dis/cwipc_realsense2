@@ -40,9 +40,8 @@ using namespace std::chrono;
 #endif
 #include "cwipc_realsense2/MFCapture.hpp"
 #include "cwipc_realsense2/MFCamera.hpp"
-
-
-
+#include "cwipc_realsense2/MFOffline.hpp"
+#include "cwipc_realsense2/MFOfflineCamera.hpp"
 
 bool MFCapture_versionCheck(char **errorMessage);
 #endif /* cwipw_realsense_multiFrame_hpp */

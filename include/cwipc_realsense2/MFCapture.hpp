@@ -25,7 +25,7 @@ class CWIPC_DLL_ENTRY MFCapture {
 public:
 	// methods
 	MFCapture(const char *configFilename=NULL);
-	~MFCapture();
+	virtual ~MFCapture();
 	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
 	cwipc_pcl_pointcloud get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
 	MFCameraData& get_camera_data(std::string serial);
@@ -35,9 +35,12 @@ public:
     MFCaptureConfig configuration;
 	uint64_t starttime;
 	int numberOfPCsProduced;
+protected:
+	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
+	virtual void _create_cameras(rs2::device_list devs);
+	std::vector<MFCamera*> cameras;                // Storage of camera specifics
 
 private:
-	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
 	// methods
 	void merge_views();                       // Internal: merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // Internal: generate a mathematical pointcloud
@@ -53,7 +56,6 @@ private:
 	bool mergedPC_want_new;                                   // Set to true to request a new pointcloud
 	std::condition_variable mergedPC_want_new_cv;             // Condition variable for signalling we want a new pointcloud
 	cwipc_pcl_pointcloud generatedPC;                         // Mathematical pointcloud for use without camera
-	std::vector<MFCamera*> cameras;                // Storage of camera specifics
 
 
 };

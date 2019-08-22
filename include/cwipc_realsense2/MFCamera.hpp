@@ -24,11 +24,10 @@ private:
 	MFCamera& operator=(const MFCamera&);	// Disable assignment
 public:
 	MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb="0");
-	~MFCamera();
+	virtual ~MFCamera();
 
-	bool is_usb3() { return usb[0] == '3'; }
 	void start();
-	void start_capturer();
+	virtual void start_capturer();
 	void stop();
 	void capture_frameset();
 	void create_pc_from_frames();
@@ -49,7 +48,7 @@ public:
 private:
 	MFCameraData& camData;
 	MFCameraSettings& camSettings;
-	std::string usb;
+	bool high_speed_connection;
 
 	int camera_width;
 	int camera_height;

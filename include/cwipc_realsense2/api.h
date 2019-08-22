@@ -33,6 +33,19 @@ extern "C" {
 
 _CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion);
 
+/** \brief Capture pointclouds from offline realsense2 images.
+ * \param configFilename An option string with the filename of the camera configuration file.
+ * \param errorMessage An optional pointer to a string where any error message will be stored.
+ * \param apiVersion Pass in CWIPC_API_VERSION to ensure DLL compatibility.
+ * \return A cwipc_source object.
+
+ * This function returns a cwipc_source that create pointclouds from color and
+ * depth images captured earlier (or elsewhere) from realsense
+ * cameras.
+ */
+
+_CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_rs2offline(const char *configFilename, char **errorMessage, uint64_t apiVersion);
+
 #ifdef __cplusplus
 };
 #endif

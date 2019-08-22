@@ -47,7 +47,7 @@ MFCapture::MFCapture(const char *configFilename)
 
 	// Determine how many realsense cameras (not platform cameras like webcams) are connected
 	const std::string platform_camera_name = "Platform Camera";
-	auto devs = ctx.query_devices();
+	rs2::device_list devs = ctx.query_devices();
 	int camera_count = 0;
 	for(auto dev: devs) {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
@@ -143,22 +143,8 @@ MFCapture::MFCapture(const char *configFilename)
 		}
 	}
 #endif // WITH_INTER_CAM_SYNC
-
 	// Now we have all the configuration information. Open the cameras.
-	for (auto dev : devs) {
-		if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) continue;
-#ifdef CWIPC_DEBUG
-		std::cout << "MFCapture: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-#endif
-		// Found a realsense camera. Create a default data entry for it.
-		std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-		std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-
-		MFCameraData& cd = get_camera_data(serial);
-		int camera_index = cameras.size();
-		auto cam = new MFCamera(ctx, configuration, camera_index, cd, camUsb);
-		cameras.push_back(cam);
-	}
+	_create_cameras(devs);
 
 	// Create an empty pointcloud just in case anyone calls get_mostRecentPointcloud() before one is generated.
 	mergedPC = new_cwipc_pcl_pointcloud();
@@ -192,6 +178,7 @@ MFCapture::MFCapture(const char *configFilename)
 			cam->start();
 	} catch(const rs2::error& e) {
 		std::cerr << "cwipc_realsense2: exception while starting camera: " << e.get_failed_function() << ": " << e.what() << std::endl;
+		throw;
 	}
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	//
@@ -204,6 +191,24 @@ MFCapture::MFCapture(const char *configFilename)
 	//
 	stopped = false;
 	control_thread = new std::thread(&MFCapture::_control_thread_main, this);
+}
+
+void MFCapture::_create_cameras(rs2::device_list devs) {
+	const std::string platform_camera_name = "Platform Camera";
+	for (auto dev : devs) {
+		if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) continue;
+#ifdef CWIPC_DEBUG
+		std::cout << "MFCapture: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+#endif
+		// Found a realsense camera. Create a default data entry for it.
+		std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+		std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+
+		MFCameraData& cd = get_camera_data(serial);
+		int camera_index = cameras.size();
+		auto cam = new MFCamera(ctx, configuration, camera_index, cd, camUsb);
+		cameras.push_back(cam);
+	}
 }
 
 MFCapture::~MFCapture() {

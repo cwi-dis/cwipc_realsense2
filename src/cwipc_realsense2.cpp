@@ -55,8 +55,11 @@ cwipc_vector* cross_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result
 }
 
 class cwipc_source_realsense2_impl : public cwipc_tiledsource {
-private:
+protected:
     MFCapture *m_grabber;
+    cwipc_source_realsense2_impl(MFCapture *obj)
+    : m_grabber(obj)
+    {}
 public:
     cwipc_source_realsense2_impl(const char *configFilename=NULL)
 		: m_grabber(NULL)
@@ -64,7 +67,7 @@ public:
 		m_grabber = new MFCapture(configFilename); 
 	}
 
-    ~cwipc_source_realsense2_impl()
+    virtual ~cwipc_source_realsense2_impl()
 	{
         delete m_grabber;
     }
@@ -166,8 +169,18 @@ public:
     }
 };
 
+class cwipc_source_rs2offline_impl : public cwipc_source_realsense2_impl
+{
+public:
+    cwipc_source_rs2offline_impl(const char *configFilename=NULL)
+	:	cwipc_source_realsense2_impl(new MFOffline(configFilename))
+	{
+	}
+
+};
+
 //
-// C-compatible entry point
+// C-compatible entry points
 //
 
 cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion)
@@ -180,4 +193,16 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 	}
 	if (!MFCapture_versionCheck(errorMessage)) return NULL;
 	return new cwipc_source_realsense2_impl(configFilename);
+}
+
+cwipc_tiledsource* cwipc_rs2offline(const char *configFilename, char **errorMessage, uint64_t apiVersion)
+{
+	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
+		if (errorMessage) {
+			*errorMessage = (char *)"cwipc_synthetic: incorrect apiVersion";
+		}
+		return NULL;
+	}
+	if (!MFCapture_versionCheck(errorMessage)) return NULL;
+	return new cwipc_source_rs2offline_impl(configFilename);
 }

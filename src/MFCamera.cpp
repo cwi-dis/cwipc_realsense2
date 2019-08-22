@@ -35,10 +35,10 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	serial(_camData.serial),
 	camData(_camData),
 	camSettings(configuration.default_camera_settings),
-	usb(_usb),
-	camera_width(is_usb3() ? configuration.usb3_width : configuration.usb2_width),
-	camera_height(is_usb3() ? configuration.usb3_height : configuration.usb2_height),
-	camera_fps(is_usb3() ? configuration.usb3_fps : configuration.usb2_fps),
+	high_speed_connection(_usb[0] == '3'),
+	camera_width(high_speed_connection ? configuration.usb3_width : configuration.usb2_width),
+	camera_height(high_speed_connection ? configuration.usb3_height : configuration.usb2_height),
+	camera_fps(high_speed_connection ? configuration.usb3_fps : configuration.usb2_fps),
 	do_depth_filtering(configuration.depth_filtering),
 	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
@@ -105,8 +105,8 @@ void MFCamera::stop()
 	assert(!stopped);
 	assert(grabber_thread);
 	stopped = true;
-	grabber_thread->join();
-	processing_thread->join();
+	if (grabber_thread) grabber_thread->join();
+	if (processing_thread) processing_thread->join();
 	pipe.stop();
 }
 
