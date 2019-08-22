@@ -29,6 +29,29 @@
 #include "cwipc_realsense2/stb_image_write.h"
 #endif
 
+// Internal-only constructor for OfflineCamera constructor
+MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& configuration, MFCameraData& _camData)
+:	minx(0), minz(0), maxz(0),
+	camera_index(_camera_index),
+	serial(_camData.serial),
+	camData(_camData),
+	camSettings(configuration.default_camera_settings),
+	high_speed_connection(true),
+	camera_width(0),
+	camera_height(0),
+	camera_fps(0),
+	do_depth_filtering(configuration.depth_filtering),
+	do_background_removal(configuration.background_removal),
+	do_greenscreen_removal(configuration.greenscreen_removal),
+	stopped(true),
+	grabber_thread(nullptr),
+	captured_frame_queue(1),
+	processing_frame_queue(1),
+	pipe(ctx),
+	aligner(RS2_STREAM_DEPTH)
+{
+}
+
 MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb)
 :	minx(0), minz(0), maxz(0),
 	camera_index(_camera_index),

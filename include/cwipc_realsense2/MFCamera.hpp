@@ -22,6 +22,8 @@ class MFCamera {
 private:
 	MFCamera(const MFCamera&);	// Disable copy constructor
 	MFCamera& operator=(const MFCamera&);	// Disable assignment
+protected:
+	MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& configuration, MFCameraData& _camData);
 public:
 	MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb="0");
 	virtual ~MFCamera();

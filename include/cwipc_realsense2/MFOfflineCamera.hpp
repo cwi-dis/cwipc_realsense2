@@ -7,6 +7,7 @@
 #include <condition_variable>
 
 #include <librealsense2/rs.hpp>
+#include <librealsense2/hpp/rs_internal.hpp>
 
 #include "defs.h"
 #include "cwipc_realsense2/MFCamera.hpp"
@@ -28,5 +29,10 @@ public:
 	virtual ~MFOfflineCamera();
 
 	virtual void start_capturer();
+private:
+	rs2::software_device dev;
+	rs2::stream_profile color_stream;
+	rs2::stream_profile depth_stream;
+	rs2::syncer sync;
 };
 #endif // cwipc_realsense_MFOfflineCamera_hpp
