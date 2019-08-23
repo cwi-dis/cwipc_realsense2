@@ -5,49 +5,71 @@
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include "stb_image.h"
+
 int main(int argc, char** argv)
 {
-    //char *message = NULL;
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " count directory [configfile]" << std::endl;
-		std::cerr << "Creates COUNT pointclouds from a realsense2 camera and stores the PLY files in the given DIRECTORY" << std::endl;
-		std::cerr << "If directory is - then drop the pointclouds on the floor" << std::endl;
+    bool ok;
+
+    if (argc != 5) {
+        std::cerr << "Usage: " << argv[0] << " configfile depthimage colorimage outputfile" << std::endl;
+		std::cerr << "Convert a depth image and color image to a pointcloud" << std::endl;
 		return 2;
     }
-    int count = atoi(argv[1]);
-    char filename[500];
+	char *configFile = argv[1];
+	char *depthFile = argv[2];
+	char *colorFile = argv[3];
+	char *outputFile = argv[4];
+	if (strcmp(configFile, "-") == 0) configFile = NULL;
+
     char *error = NULL;
-    
+    cwipc_offline *converter;
 	cwipc_tiledsource *generator;
-	char *configFile = NULL;
 	if (argc == 4) {
 		configFile = argv[3];
 	}
-	generator = cwipc_rs2offline(configFile, &error, CWIPC_API_VERSION);
+	converter = cwipc_rs2offline(configFile, &error, CWIPC_API_VERSION);
     if (error) {
-    	std::cerr << argv[0] << ": creating realsense2 grabber failed: " << error << std::endl;
+    	std::cerr << argv[0] << ": creating realsense2 offline converter failed: " << error << std::endl;
     	return 1;
     }
-	cwipc_tileinfo tif;
-	generator->get_tileinfo(0, &tif);
-	generator->get_tileinfo(1, &tif);
-	generator->get_tileinfo(2, &tif);
-	generator->get_tileinfo(3, &tif);
-	generator->get_tileinfo(4, &tif);
-	int ok = 0;
-    while (count-- > 0 && ok == 0) {
-    	cwipc *pc = generator->get();
-		if (strcmp(argv[2], "-") != 0) {
-			snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], pc->timestamp());
-			ok = cwipc_write(filename, pc, &error);
+	generator = converter->get_source();
+
+	int depthWidth, depthHeight, depthComponents;
+    unsigned short *depthData = stbi_load_16(depthFile, &depthWidth, &depthHeight, &depthComponents, 1);
+	assert(depthWidth == 640);
+	assert(depthHeight == 480);
+	assert(depthComponents == 1);
+    size_t depthDataSize = depthWidth*depthHeight*2;
+    int colorWidth, colorHeight, colorComponents;
+    unsigned char *colorData = stbi_load(colorFile, &colorWidth, &colorHeight, &colorComponents, 4);
+	assert(colorWidth == 640);
+	assert(colorHeight == 480);
+	assert(colorComponents == 4);
+    size_t colorDataSize = colorWidth*colorHeight*4;
+
+	ok = converter->feed(0, 0, depthData, depthDataSize);
+	if (!ok) {
+		std::cerr << argv[0] << ": Error feeding depth data" << std::endl;
+		return 1;
+	}
+	converter->feed(0, 1, colorData, colorDataSize);
+	if (!ok) {
+		std::cerr << argv[0] << ": Error feeding color data" << std::endl;
+		return 1;
+	}
+
+	cwipc *pc = generator->get();
+		if (strcmp(outputFile, "-") != 0) {
+			bool ok = cwipc_write(outputFile, pc, &error);
+			if (!ok) {
+				std::cerr << argv[0] << ": Error writing output file: " << error << std::endl;
 		}
 		pc->free();
     }
     generator->free();
-    if (ok < 0) {
-    	std::cerr << "Error: " << error << std::endl;
-    	return 1;
-    }
     return 0;
 }
 

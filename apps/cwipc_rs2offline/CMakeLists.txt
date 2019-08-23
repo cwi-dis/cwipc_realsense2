@@ -1,7 +1,7 @@
 
 cmake_minimum_required(VERSION 3.10.0)
 
-add_executable(cwipc_rs2offline cwipc_rs2offline.cpp)
+add_executable(cwipc_rs2offline cwipc_rs2offline.cpp stb_image.h)
 include_directories(
 	"../../include"
 	${PCL_INCLUDE_DIRS}

@@ -55,6 +55,7 @@ cwipc_vector* cross_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result
 }
 
 class cwipc_source_realsense2_impl : public cwipc_tiledsource {
+friend class cwipc_source_rs2offline_impl;
 protected:
     MFCapture *m_grabber;
     cwipc_source_realsense2_impl(MFCapture *obj)
@@ -67,7 +68,7 @@ public:
 		m_grabber = new MFCapture(configFilename); 
 	}
 
-    virtual ~cwipc_source_realsense2_impl()
+    ~cwipc_source_realsense2_impl()
 	{
         delete m_grabber;
     }
@@ -169,14 +170,40 @@ public:
     }
 };
 
-class cwipc_source_rs2offline_impl : public cwipc_source_realsense2_impl
+class cwipc_source_rs2offline_impl : public cwipc_offline
 {
+protected:
+	MFOffline *m_offline;
+	cwipc_source_realsense2_impl *m_source;
 public:
     cwipc_source_rs2offline_impl(const char *configFilename=NULL)
-	:	cwipc_source_realsense2_impl(new MFOffline(configFilename))
+	:	m_offline(new MFOffline(configFilename)),
+		m_source(new cwipc_source_realsense2_impl(m_offline))
 	{
 	}
 
+    ~cwipc_source_rs2offline_impl()
+	{
+		// xxxjack unsure whether this is the correct way of freeing the MFoffline exactly once...
+		m_offline = NULL;
+		delete m_source;
+    }
+
+    void free()
+	{
+		m_offline = NULL;
+		delete m_source;
+    }
+
+	cwipc_tiledsource* get_source()
+	{
+		return m_source;
+	}
+
+	bool feed(int camNum, int sensorNum, void *buffer, size_t size)
+	{
+		return false;
+	}
 };
 
 //
@@ -195,7 +222,7 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 	return new cwipc_source_realsense2_impl(configFilename);
 }
 
-cwipc_tiledsource* cwipc_rs2offline(const char *configFilename, char **errorMessage, uint64_t apiVersion)
+cwipc_offline* cwipc_rs2offline(const char *configFilename, char **errorMessage, uint64_t apiVersion)
 {
 	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
 		if (errorMessage) {

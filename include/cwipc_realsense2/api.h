@@ -13,7 +13,37 @@
 #endif
 
 #ifdef __cplusplus
+/** \brief Converter to create pointclouds from streams of RGB and D images
+ *
+ * Note that the image data fed into the converter with feed() must be kept alive
+ * until the resulting pointcloud has been retrieved with get_source()->get().
+ */
+class cwipc_offline {
+public:
+    virtual ~cwipc_offline() {};
+
+    virtual void free() = 0;
+	/** \brief Return the pointcloud source for this converter.
+	 */
+    virtual cwipc_tiledsource* get_source() = 0;
+
+	/** \brief Feed an image into the converter.
+	 * \param camNum Index of camera for which this data is meant.
+	 * \param sensorNum Index of sensor within camera camNum for which this data is meant.
+	 * \param buffer Pointer to the image data
+	 * \param size Size of buffer (in bytes).
+	 * \returns False in case of detectable errors (such as incorrect image size)
+	 */
+    virtual bool feed(int camNum, int sensorNum, void *buffer, size_t size) = 0;
+};
 #else
+
+/** \brief Abstract interface to a single pointcloud, C-compatible placeholder.
+ */
+typedef struct _cwipc_offline {
+	int _dummy;
+} cwipc_offline;
+
 #endif
 
 #ifdef __cplusplus
@@ -44,7 +74,7 @@ _CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configF
  * cameras.
  */
 
-_CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_rs2offline(const char *configFilename, char **errorMessage, uint64_t apiVersion);
+_CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(const char *configFilename, char **errorMessage, uint64_t apiVersion);
 
 #ifdef __cplusplus
 };
