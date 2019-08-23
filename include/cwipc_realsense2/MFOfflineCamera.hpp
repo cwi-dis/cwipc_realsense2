@@ -34,8 +34,8 @@ private:
 	int feed_number;			// Number of times feed_image_data() was called (to simulate frame numbers)
 	rs2::frameset current_frameset;
 	rs2::software_device dev;
-	rs2::software_sensor* depth_sensor;
-	rs2::software_sensor* color_sensor;
+	rs2::software_sensor depth_sensor;
+	rs2::software_sensor color_sensor;
 	rs2::stream_profile color_stream;
 	rs2::stream_profile depth_stream;
 	rs2::syncer sync;

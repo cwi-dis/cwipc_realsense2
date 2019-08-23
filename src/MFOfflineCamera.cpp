@@ -32,13 +32,15 @@
 
 MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData)
 :	MFCamera(_camera_index, ctx, configuration, _camData),
-	feed_number(0)
+	feed_number(0),
+	dev(),
+	depth_sensor(dev.add_sensor("Depth")),
+	color_sensor(dev.add_sensor("Color"))
 {
 	dev = rs2::software_device();
 	//xxxjack dev.add_to(ctx);
 
 	// Create depth stream
-	depth_sensor = new rs2::software_sensor(dev.add_sensor("Depth"));
 	rs2_intrinsics depth_intrinsics = {
 		XXXJACK_DEPTH_W, XXXJACK_DEPTH_H,
 		(float)XXXJACK_DEPTH_W / 2, (float)XXXJACK_DEPTH_H / 2,
@@ -46,7 +48,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		RS2_DISTORTION_BROWN_CONRADY,
 		{ 0,0,0,0,0 }
 	};
-	depth_stream = depth_sensor->add_video_stream({
+	depth_stream = depth_sensor.add_video_stream({
 		RS2_STREAM_DEPTH,
 		0,
 		0,
@@ -55,10 +57,9 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		XXXJACK_DEPTH_FMT,
 		depth_intrinsics
 	});
-	depth_sensor->add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
+	depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
 
 	// Create color stream
-	color_sensor = new rs2::software_sensor(dev.add_sensor("Color"));
 	rs2_intrinsics color_intrinsics = {
 		XXXJACK_COLOR_W, XXXJACK_COLOR_H,
 		(float)XXXJACK_COLOR_W / 2, (float)XXXJACK_COLOR_H / 2,
@@ -66,10 +67,10 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		RS2_DISTORTION_BROWN_CONRADY,
 		{ 0,0,0,0,0 }
 	};
-	color_stream = color_sensor->add_video_stream({
+	color_stream = color_sensor.add_video_stream({
 		RS2_STREAM_COLOR,
 		0,
-		0,
+		1,
 		XXXJACK_COLOR_W, XXXJACK_COLOR_H,
 		XXXJACK_COLOR_FPS, XXXJACK_COLOR_BPP,
 		XXXJACK_COLOR_FMT,
@@ -78,10 +79,10 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 
 	// Tie the two streams together
 	dev.create_matcher(RS2_MATCHER_DLR_C);
-	depth_sensor->open(depth_stream);
-	color_sensor->open(color_stream);
-	depth_sensor->start(sync);
-	color_sensor->start(sync);
+	depth_sensor.open(depth_stream);
+	color_sensor.open(color_stream);
+	depth_sensor.start(sync);
+	color_sensor.start(sync);
 	depth_stream.register_extrinsics_to(color_stream, XXXJACK_INTER_STREAM_EXTRINSICS);
 }
 
@@ -107,7 +108,7 @@ bool MFOfflineCamera::feed_image_data(int sensorNum, void *buffer, size_t size)
 	if (sensorNum == 0) {
 		int stride = XXXJACK_DEPTH_W * XXXJACK_DEPTH_BPP;
 		int bpp = XXXJACK_DEPTH_BPP;
-		depth_sensor->on_video_frame({
+		depth_sensor.on_video_frame({
 			buffer,
 			[](void *) {},
 			stride, bpp,
@@ -119,7 +120,7 @@ bool MFOfflineCamera::feed_image_data(int sensorNum, void *buffer, size_t size)
 	} else {
 		int stride = XXXJACK_COLOR_W * XXXJACK_COLOR_BPP;
 		int bpp = XXXJACK_COLOR_BPP;
-		color_sensor->on_video_frame({
+		color_sensor.on_video_frame({
 			buffer,
 			[](void *) {},
 			stride, bpp,

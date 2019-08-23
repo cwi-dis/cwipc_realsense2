@@ -185,8 +185,8 @@ void MFCamera::_processing_thread_main()
 
 		rs2::depth_frame depth = processing_frameset.get_depth_frame();
 		rs2::video_frame color = processing_frameset.get_color_frame();
-		assert(color);
 		assert(depth);
+		assert(color);
 #ifdef CWIPC_DEBUG
 		std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif
