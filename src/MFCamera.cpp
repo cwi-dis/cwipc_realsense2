@@ -5,8 +5,8 @@
 //
 
 // Define to get (a little) debug prints
-#undef CWIPC_DEBUG
-#undef CWIPC_DEBUG_THREAD
+#define CWIPC_DEBUG
+#define CWIPC_DEBUG_THREAD
 
 // This is the dll source, so define external symbols as dllexport on windows.
 
@@ -34,6 +34,7 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 :	minx(0), minz(0), maxz(0),
 	camera_index(_camera_index),
 	serial(_camData.serial),
+	stopped(true),
 	camData(_camData),
 	camSettings(configuration.default_camera_settings),
 	high_speed_connection(true),
@@ -43,7 +44,6 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 	do_depth_filtering(configuration.depth_filtering),
 	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
-	stopped(true),
 	grabber_thread(nullptr),
 	captured_frame_queue(1),
 	processing_frame_queue(1),
@@ -56,6 +56,7 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 :	minx(0), minz(0), maxz(0),
 	camera_index(_camera_index),
 	serial(_camData.serial),
+	stopped(true),
 	camData(_camData),
 	camSettings(configuration.default_camera_settings),
 	high_speed_connection(_usb[0] == '3'),
@@ -65,7 +66,6 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	do_depth_filtering(configuration.depth_filtering),
 	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
-	stopped(true),
 	grabber_thread(nullptr),
 	captured_frame_queue(1),
 	processing_frame_queue(1),
@@ -185,6 +185,8 @@ void MFCamera::_processing_thread_main()
 
 		rs2::depth_frame depth = processing_frameset.get_depth_frame();
 		rs2::video_frame color = processing_frameset.get_color_frame();
+		assert(color);
+		assert(depth);
 #ifdef CWIPC_DEBUG
 		std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif

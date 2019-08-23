@@ -20,29 +20,30 @@
 #include "cwipc_realsense2/MFOfflineCamera.hpp"
 
 MFOffline::MFOffline(const char *configFilename)
-:	MFCapture(configFilename)
+:	MFCapture(1)
 {
-
+	bool ok = mf_file2config(configFilename, &configuration);
+	assert(ok);
+	int camera_index = 0;
+	for (auto cd : configuration.cameraData) {
+		auto cam = new MFOfflineCamera(ctx, configuration, camera_index, cd);
+		feeders.push_back(cam);
+		cameras.push_back(cam);
+		camera_index++;
+	}
+	for (auto cam: cameras)
+		cam->start_capturer();
+	stopped = false;
+	control_thread = new std::thread(&MFOffline::_control_thread_main, this);
 }
 
 MFOffline::~MFOffline() {
 
 }
 
-void MFOffline::_create_cameras(rs2::device_list devs) {
-	const std::string platform_camera_name = "Platform Camera";
-	for (auto dev : devs) {
-		if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) continue;
-#ifdef CWIPC_DEBUG
-		std::cout << "MFCapture: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-#endif
-		// Found a realsense camera. Create a default data entry for it.
-		std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-		std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-
-		MFCameraData& cd = get_camera_data(serial);
-		int camera_index = cameras.size();
-		auto cam = new MFOfflineCamera(ctx, configuration, camera_index, cd);
-		cameras.push_back(cam);
-	}
+bool MFOffline::feed_image_data(int camNum, int sensorNum, void *buffer, size_t size)
+{
+	if (camNum < 0 || camNum > feeders.size()) return false;
+	auto cam = feeders[camNum];
+	return cam->feed_image_data(sensorNum, buffer, size);
 }

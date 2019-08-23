@@ -202,7 +202,7 @@ public:
 
 	bool feed(int camNum, int sensorNum, void *buffer, size_t size)
 	{
-		return false;
+		return m_offline->feed_image_data(camNum, sensorNum, buffer, size);
 	}
 };
 

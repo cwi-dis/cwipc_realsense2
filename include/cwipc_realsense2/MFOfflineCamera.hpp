@@ -28,9 +28,14 @@ public:
 	MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData);
 	virtual ~MFOfflineCamera();
 
-	virtual void start_capturer();
+	void _capture_thread_main();
+	bool feed_image_data(int sensorNum, void *buffer, size_t size);
 private:
+	int feed_number;			// Number of times feed_image_data() was called (to simulate frame numbers)
+	rs2::frameset current_frameset;
 	rs2::software_device dev;
+	rs2::software_sensor* depth_sensor;
+	rs2::software_sensor* color_sensor;
 	rs2::stream_profile color_stream;
 	rs2::stream_profile depth_stream;
 	rs2::syncer sync;

@@ -47,6 +47,13 @@ public:
 	int camera_index;
 	std::string serial;
 
+protected:
+	bool stopped;
+	std::thread *processing_thread;
+	void _processing_thread_main();
+	virtual void _capture_thread_main();
+	rs2::frame_queue captured_frame_queue;
+
 private:
 	MFCameraData& camData;
 	MFCameraSettings& camSettings;
@@ -59,10 +66,7 @@ private:
 	bool do_background_removal;
 	bool do_greenscreen_removal;
 
-	bool stopped;
 	std::thread *grabber_thread;
-	std::thread *processing_thread;
-	rs2::frame_queue captured_frame_queue;
 	rs2::frame_queue processing_frame_queue;
 	std::mutex processing_mutex;
 	std::condition_variable processing_done_cv;
@@ -80,8 +84,6 @@ private:
 	rs2::pointcloud pointcloud;		// The pointcloud constructor
 
 	void _init_filters();
-	void _capture_thread_main();
-	void _processing_thread_main();
 
 };
 #endif // cwipc_realsense_MFCamera_hpp

@@ -34,6 +34,14 @@
 // if there is another one open.
 static int numberOfCapturersActive = 0;
 
+MFCapture::MFCapture(int dummy)
+:	numberOfPCsProduced(0),
+	mergedPC_is_fresh(false),
+	mergedPC_want_new(false)
+{
+	mergedPC = new_cwipc_pcl_pointcloud();
+}
+
 MFCapture::MFCapture(const char *configFilename)
 :	numberOfPCsProduced(0),
 	mergedPC_is_fresh(false),

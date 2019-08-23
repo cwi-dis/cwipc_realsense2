@@ -21,7 +21,8 @@
 class MFCamera;
 
 class CWIPC_DLL_ENTRY MFCapture {
-
+protected:
+	MFCapture(int dummy);
 public:
 	// methods
 	MFCapture(const char *configFilename=NULL);
@@ -39,16 +40,14 @@ protected:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
 	virtual void _create_cameras(rs2::device_list devs);
 	std::vector<MFCamera*> cameras;                // Storage of camera specifics
+	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
+	bool stopped;
+	std::thread *control_thread;
 
 private:
-	// methods
 	void merge_views();                       // Internal: merge all camera's pointclouds into one
 	cwipc_pcl_pointcloud generate_pcl();                      // Internal: generate a mathematical pointcloud
 	void _request_new_pointcloud();           // Internal: request a new pointcloud to be grabbed and processed
-	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
-	bool stopped;
-	// variables
-	std::thread *control_thread;
 	cwipc_pcl_pointcloud mergedPC;                            // Merged pointcloud
 	std::mutex mergedPC_mutex;                                // Lock for all mergedPC-related dta structures
 	bool mergedPC_is_fresh;                                   // True if mergedPC contains a freshly-created pointcloud

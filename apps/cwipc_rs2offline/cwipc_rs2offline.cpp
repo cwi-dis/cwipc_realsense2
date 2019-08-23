@@ -50,14 +50,14 @@ int main(int argc, char** argv)
 	assert(colorComponents == 4);
     size_t colorDataSize = colorWidth*colorHeight*4;
 
+	ok = converter->feed(0, 1, colorData, colorDataSize);
+	if (!ok) {
+		std::cerr << argv[0] << ": Error feeding color data" << std::endl;
+		return 1;
+	}
 	ok = converter->feed(0, 0, depthData, depthDataSize);
 	if (!ok) {
 		std::cerr << argv[0] << ": Error feeding depth data" << std::endl;
-		return 1;
-	}
-	converter->feed(0, 1, colorData, colorDataSize);
-	if (!ok) {
-		std::cerr << argv[0] << ": Error feeding color data" << std::endl;
 		return 1;
 	}
 
