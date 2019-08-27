@@ -102,36 +102,36 @@ void MFOfflineCamera::_capture_thread_main()
 		std::this_thread::yield();
 	}
 }
-bool MFOfflineCamera::feed_image_data(int sensorNum, void *buffer, size_t size)
+bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
 {
-	if (sensorNum < 0 || sensorNum > 1) return false;
-	if (sensorNum == 0) {
+	{
 		int stride = XXXJACK_DEPTH_W * XXXJACK_DEPTH_BPP;
 		int bpp = XXXJACK_DEPTH_BPP;
 		depth_sensor.on_video_frame({
-			buffer,
+			depthBuffer,
 			[](void *) {},
 			stride, bpp,
-			(rs2_time_t)((feed_number/2) * 16),
+			(rs2_time_t)(feed_number * 16),
 			RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-			(feed_number/2),
+			feed_number,
 			depth_stream
 		});
-	} else {
+	}
+	{
 		int stride = XXXJACK_COLOR_W * XXXJACK_COLOR_BPP;
 		int bpp = XXXJACK_COLOR_BPP;
 		color_sensor.on_video_frame({
-			buffer,
+			colorBuffer,
 			[](void *) {},
 			stride, bpp,
-			(rs2_time_t)((feed_number/2) * 16),
+			(rs2_time_t)(feed_number * 16),
 			RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-			(feed_number/2),
+			feed_number,
 			color_stream
 		});
 	}
 #ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "MFOfflineCamera: fed camera " << serial << " sensor " << sensorNum << " framenum " << (feed_number/2) << std::endl;
+	std::cerr << "MFOfflineCamera: fed camera " << serial << " framenum " << feed_number << std::endl;
 #endif
 	feed_number++;
 

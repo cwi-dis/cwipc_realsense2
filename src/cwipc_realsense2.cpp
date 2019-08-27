@@ -200,9 +200,9 @@ public:
 		return m_source;
 	}
 
-	bool feed(int camNum, int sensorNum, void *buffer, size_t size)
+	bool feed(int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)
 	{
-		return m_offline->feed_image_data(camNum, sensorNum, buffer, size);
+		return m_offline->feed_image_data(camNum, colorBuffer, colorSize, depthBuffer, depthSize);
 	}
 };
 

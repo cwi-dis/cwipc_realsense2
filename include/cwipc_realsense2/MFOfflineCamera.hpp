@@ -29,7 +29,7 @@ public:
 	virtual ~MFOfflineCamera();
 
 	void _capture_thread_main();
-	bool feed_image_data(int sensorNum, void *buffer, size_t size);
+	bool feed_image_data(void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize);
 private:
 	int feed_number;			// Number of times feed_image_data() was called (to simulate frame numbers)
 	rs2::frameset current_frameset;

@@ -34,7 +34,7 @@ public:
 	 * \param size Size of buffer (in bytes).
 	 * \returns False in case of detectable errors (such as incorrect image size)
 	 */
-    virtual bool feed(int camNum, int sensorNum, void *buffer, size_t size) = 0;
+    virtual bool feed(int camNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize) = 0;
 };
 #else
 

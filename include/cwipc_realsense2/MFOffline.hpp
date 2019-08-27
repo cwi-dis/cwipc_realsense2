@@ -25,7 +25,7 @@ class CWIPC_DLL_ENTRY MFOffline : public MFCapture {
 public:
 	// methods
 	MFOffline(const char *configFilename=NULL);
-	bool feed_image_data(int camNum, int sensorNum, void *buffer, size_t size);
+	bool feed_image_data(int camNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize);
 	~MFOffline();
 private:
 	std::vector<MFOfflineCamera*> feeders;
