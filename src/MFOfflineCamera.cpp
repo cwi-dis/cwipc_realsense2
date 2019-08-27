@@ -50,8 +50,8 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	};
 	depth_stream = depth_sensor.add_video_stream({
 		RS2_STREAM_DEPTH,
-		0,
-		0,
+		1,
+		2,
 		XXXJACK_DEPTH_W, XXXJACK_DEPTH_H,
 		XXXJACK_DEPTH_FPS, XXXJACK_DEPTH_BPP,
 		XXXJACK_DEPTH_FMT,
@@ -69,8 +69,8 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	};
 	color_stream = color_sensor.add_video_stream({
 		RS2_STREAM_COLOR,
-		0,
-		1,
+		3,
+		4,
 		XXXJACK_COLOR_W, XXXJACK_COLOR_H,
 		XXXJACK_COLOR_FPS, XXXJACK_COLOR_BPP,
 		XXXJACK_COLOR_FMT,
@@ -83,7 +83,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	color_sensor.open(color_stream);
 	depth_sensor.start(sync);
 	color_sensor.start(sync);
-	depth_stream.register_extrinsics_to(color_stream, XXXJACK_INTER_STREAM_EXTRINSICS);
+	color_stream.register_extrinsics_to(depth_stream, XXXJACK_INTER_STREAM_EXTRINSICS);
 }
 
 MFOfflineCamera::~MFOfflineCamera()
@@ -94,11 +94,6 @@ void MFOfflineCamera::_capture_thread_main()
 {
 	while(!stopped) {
 		// Wait to find if there is a next set of frames from the camera
-		rs2::frameset frames = sync.wait_for_frames();
-#ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "MFOfflineCamera: _capture_thread_main: got " << frames.size() << " frames" << std::endl;
-#endif
-		captured_frame_queue.enqueue(frames);
 		std::this_thread::yield();
 	}
 }
@@ -134,6 +129,17 @@ bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void
 	std::cerr << "MFOfflineCamera: fed camera " << serial << " framenum " << feed_number << std::endl;
 #endif
 	feed_number++;
+	rs2::frameset fset = sync.wait_for_frames();
+    auto depth = fset.first_or_default(RS2_STREAM_DEPTH);
+    auto color = fset.first_or_default(RS2_STREAM_COLOR);
 
-	return true;
+	if (depth && color) {
+		captured_frame_queue.enqueue(fset);
+		return true;
+	}
+	if (!depth)
+		std::cerr << "MFOfflineCamera: warning: feed didn't produce depth frame" << std::endl;
+	if (!color)
+		std::cerr << "MFOfflineCamera: warning: feed didn't produce color frame" << std::endl;
+	return false;
 }
