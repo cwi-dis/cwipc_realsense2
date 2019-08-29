@@ -35,6 +35,7 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 	camera_index(_camera_index),
 	serial(_camData.serial),
 	stopped(true),
+	captured_frame_queue(1),
 	camData(_camData),
 	camSettings(configuration.default_camera_settings),
 	high_speed_connection(true),
@@ -45,7 +46,6 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
 	grabber_thread(nullptr),
-	captured_frame_queue(1),
 	processing_frame_queue(1),
 	pipe(ctx),
 	aligner(RS2_STREAM_DEPTH)
@@ -57,6 +57,7 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	camera_index(_camera_index),
 	serial(_camData.serial),
 	stopped(true),
+	captured_frame_queue(1),
 	camData(_camData),
 	camSettings(configuration.default_camera_settings),
 	high_speed_connection(_usb[0] == '3'),
@@ -67,7 +68,6 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
 	grabber_thread(nullptr),
-	captured_frame_queue(1),
 	processing_frame_queue(1),
 	pipe(ctx),
 	aligner(RS2_STREAM_DEPTH)

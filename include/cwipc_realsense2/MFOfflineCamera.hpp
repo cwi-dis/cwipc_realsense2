@@ -32,6 +32,11 @@ public:
 	bool feed_image_data(void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize);
 private:
 	int feed_number;			// Number of times feed_image_data() was called (to simulate frame numbers)
+	int depth_width, depth_height, depth_bpp, depth_fps;
+	rs2_format depth_format;
+	int color_width, color_height, color_bpp, color_fps;
+	rs2_format color_format;
+	rs2_extrinsics depth_to_color_extrinsics;
 	rs2::frameset current_frameset;
 	rs2::software_device dev;
 	rs2::software_sensor depth_sensor;

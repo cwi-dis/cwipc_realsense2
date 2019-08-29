@@ -8,8 +8,8 @@
 #define WITH_INTER_CAM_SYNC
 
 // Define to get (a little) debug prints
-#undef CWIPC_DEBUG
-#undef CWIPC_DEBUG_THREAD
+#define CWIPC_DEBUG
+#define CWIPC_DEBUG_THREAD
 
 // This is the dll source, so define external symbols as dllexport on windows.
 
@@ -266,7 +266,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 void MFCapture::_control_thread_main()
 {
 #ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "pointcloud processing: thread stopped" << std::endl;
+	std::cerr << "MFCapture: processing thread started" << std::endl;
 #endif
 	while(!stopped) {
 		{
@@ -281,6 +281,7 @@ void MFCapture::_control_thread_main()
 			for(auto cam : cameras) {
 				cam->capture_frameset();
 			}
+			std::cerr << "xxxjack processing thread got frameset" << std::endl;
 			// And get the best timestamp
 			uint64_t timestamp = 0;
 			for(auto cam: cameras) {
@@ -301,10 +302,12 @@ void MFCapture::_control_thread_main()
 			for(auto cam : cameras) {
 				cam->create_pc_from_frames();
 			}
+			std::cerr << "xxxjack processing thread created pointclouds" << std::endl;
 			// Step 4: wait for frame processing to complete.
 			for(auto cam : cameras) {
 				cam->wait_for_pc();
 			}
+			std::cerr << "xxxjack processing thread got pointclouds" << std::endl;
 			// Step 5: merge views
 			// Lock mergedPC while we are modifying it
 			std::unique_lock<std::mutex> mylock(mergedPC_mutex);
@@ -346,7 +349,7 @@ void MFCapture::_control_thread_main()
 		}
 	}
 #ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "pointcloud processing: thread stopped" << std::endl;
+	std::cerr << "MFCapture: processing thread stopped" << std::endl;
 #endif
 }
 
