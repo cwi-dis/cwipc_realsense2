@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 		if (!ok) {
 			std::cerr << argv[0] << ": Error feeding color and depth data" << std::endl;
 		}
-	} while(!ok);
+	} while(!generator->available(false));
 	cwipc *pc = generator->get();
 		if (strcmp(outputFile, "-") != 0) {
 			int sts = cwipc_write(outputFile, pc, &error);

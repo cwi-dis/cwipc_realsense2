@@ -85,7 +85,8 @@ public:
 
     bool available(bool wait)
 	{
-    	return m_grabber != NULL;
+    	if (m_grabber == NULL) return false;
+    	return m_grabber->pointcloud_available(wait);
     }
 
     cwipc* get()

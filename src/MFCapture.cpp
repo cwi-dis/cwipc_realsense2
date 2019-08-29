@@ -17,8 +17,8 @@
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
 
-#if 0
 #include <chrono>
+#if 0
 #include <cstdint>
 #include "cwipc_realsense2/multiFrame.hpp"
 #include "cwipc_realsense2/api.h"
@@ -262,6 +262,14 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 	}
 	_request_new_pointcloud();
 	return rv;
+}
+
+bool MFCapture::pointcloud_available(bool wait)
+{
+	_request_new_pointcloud();
+	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+	mergedPC_is_fresh_cv.wait_for(mylock, std::chrono::seconds(0), [this]{return mergedPC_is_fresh; });
+	return mergedPC_is_fresh;
 }
 
 void MFCapture::_control_thread_main()
