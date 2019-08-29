@@ -267,6 +267,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 bool MFCapture::pointcloud_available(bool wait)
 {
 	_request_new_pointcloud();
+	std::this_thread::yield();
 	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
 	mergedPC_is_fresh_cv.wait_for(mylock, std::chrono::seconds(0), [this]{return mergedPC_is_fresh; });
 	return mergedPC_is_fresh;

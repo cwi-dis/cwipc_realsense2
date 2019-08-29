@@ -49,8 +49,8 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	};
 	depth_stream = depth_sensor.add_video_stream({
 		RS2_STREAM_DEPTH,
-		1,
-		2,
+		0,
+		0,
 		depth_width, depth_height,
 		depth_fps, depth_bpp,
 		depth_format,
@@ -68,8 +68,8 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	};
 	color_stream = color_sensor.add_video_stream({
 		RS2_STREAM_COLOR,
-		3,
-		4,
+		0,
+		1,
 		color_width, color_height,
 		color_fps, color_bpp,
 		color_format,
@@ -82,7 +82,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	color_sensor.open(color_stream);
 	depth_sensor.start(sync);
 	color_sensor.start(sync);
-	depth_stream.register_extrinsics_to(color_stream, depth_to_color_extrinsics);
+	color_stream.register_extrinsics_to(depth_stream, depth_to_color_extrinsics);
 }
 
 MFOfflineCamera::~MFOfflineCamera()
@@ -93,9 +93,24 @@ void MFOfflineCamera::_capture_thread_main()
 {
 	while(!stopped) {
 		// Wait to find if there is a next set of frames from the camera
+		rs2::frameset fset;
+		bool ok = sync.try_wait_for_frames(&fset);
+		if (!ok) continue;
+		auto depth = fset.first_or_default(RS2_STREAM_DEPTH);
+		auto color = fset.first_or_default(RS2_STREAM_COLOR);
+		if (!depth) {
+			std::cerr << "MFOfflineCamera: warning: feed didn't produce depth frame" << std::endl;
+			continue;
+		}
+		if (!color) {
+			std::cerr << "MFOfflineCamera: warning: feed didn't produce color frame" << std::endl;
+			continue;
+		}
+		captured_frame_queue.enqueue(fset);
 		std::this_thread::yield();
 	}
 }
+
 bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
 {
 	{
@@ -106,7 +121,7 @@ bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void
 			depth_bpp,
 			(rs2_time_t)(feed_number * 16),
 			RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-			feed_number*2,
+			feed_number,
 			depth_stream
 		});
 	}
@@ -116,9 +131,9 @@ bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void
 			[](void *) {},
 			color_width*color_bpp,
 			color_bpp,
-			(rs2_time_t)(feed_number * 16)+1,
+			(rs2_time_t)(feed_number * 16),
 			RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-			feed_number*2+1,
+			feed_number,
 			color_stream
 		});
 	}
@@ -126,18 +141,5 @@ bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void
 	std::cerr << "MFOfflineCamera: fed camera " << serial << " framenum " << feed_number << std::endl;
 #endif
 	feed_number++;
-	rs2::frameset fset = sync.wait_for_frames();
-    auto depth = fset.first_or_default(RS2_STREAM_DEPTH);
-    auto color = fset.first_or_default(RS2_STREAM_COLOR);
-
-	if (depth && color) {
-		captured_frame_queue.enqueue(fset);
-		std::this_thread::yield();
-		return true;
-	}
-	if (!depth)
-		std::cerr << "MFOfflineCamera: warning: feed didn't produce depth frame" << std::endl;
-	if (!color)
-		std::cerr << "MFOfflineCamera: warning: feed didn't produce color frame" << std::endl;
-	return false;
+	return true;
 }

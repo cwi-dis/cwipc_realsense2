@@ -291,6 +291,9 @@ void MFCamera::_processing_thread_main()
 					camData.cloud->push_back(pt);
 			}
 		}
+		if (camData.cloud->size() == 0) {
+			std::cerr << "cwipc_realsense2: warning: captured empty pointcloud from camera " << camData.serial << std::endl;
+		}
 		transformPointCloud(*camData.cloud, *camData.cloud, *camData.trafo);
 		// Notify wait_for_pc that we're done.
 		processing_done = true;
