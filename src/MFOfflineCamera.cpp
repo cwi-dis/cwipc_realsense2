@@ -130,16 +130,9 @@ bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void
     auto depth = fset.first_or_default(RS2_STREAM_DEPTH);
     auto color = fset.first_or_default(RS2_STREAM_COLOR);
 
-	if (depth) {
-		const void* bufptr = depth.get_data();
-		std::cout << std::hex << "xxxjack depth pointer=" << (unsigned long)bufptr << std::endl;
-	}
-	if (color) {
-		const void* bufptr = color.get_data();
-		std::cout << std::hex << "xxxjack color pointer=" << (unsigned long)bufptr << std::endl;
-	}
 	if (depth && color) {
 		captured_frame_queue.enqueue(fset);
+		std::this_thread::yield();
 		return true;
 	}
 	if (!depth)

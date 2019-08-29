@@ -25,7 +25,8 @@ MFOffline::MFOffline(const char *configFilename)
 	bool ok = mf_file2config(configFilename, &configuration);
 	assert(ok);
 	int camera_index = 0;
-	for (auto cd : configuration.cameraData) {
+	for (MFCameraData& cd : configuration.cameraData) {
+		cd.cloud = new_cwipc_pcl_pointcloud();
 		auto cam = new MFOfflineCamera(ctx, configuration, camera_index, cd);
 		feeders.push_back(cam);
 		cameras.push_back(cam);

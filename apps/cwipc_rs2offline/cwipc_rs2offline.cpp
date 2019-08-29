@@ -58,8 +58,9 @@ int main(int argc, char** argv)
 	} while(!ok);
 	cwipc *pc = generator->get();
 		if (strcmp(outputFile, "-") != 0) {
-			bool ok = cwipc_write(outputFile, pc, &error);
-			if (!ok) {
+			int sts = cwipc_write(outputFile, pc, &error);
+			if (sts < 0) {
+				if (error == NULL) error = (char *)"Unknown error";
 				std::cerr << argv[0] << ": Error writing output file: " << error << std::endl;
 		}
 		pc->free();

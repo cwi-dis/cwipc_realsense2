@@ -48,6 +48,7 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 	grabber_thread(nullptr),
 	processing_frame_queue(1),
 	pipe(ctx),
+	pipe_started(false),
 	aligner(RS2_STREAM_DEPTH)
 {
 }
@@ -70,6 +71,7 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	grabber_thread(nullptr),
 	processing_frame_queue(1),
 	pipe(ctx),
+	pipe_started(false),
 	aligner(RS2_STREAM_DEPTH)
 {
 #ifdef CWIPC_DEBUG
@@ -104,9 +106,9 @@ void MFCamera::_init_filters()
 	temp_filter.set_option(RS2_OPTION_HOLES_FILL, camSettings.temporal_percistency);
 }
 
-void MFCamera::capture_frameset()
+bool MFCamera::capture_frameset()
 {
-	current_frameset = captured_frame_queue.wait_for_frame();
+	return captured_frame_queue.try_wait_for_frame(&current_frameset);
 }
 
 // Configure and initialize caputuring of one camera
@@ -121,6 +123,7 @@ void MFCamera::start()
 	// xxxjack need to set things like disabling color correction and auto-exposure
 	// xxxjack need to allow setting things like laser power
 	pipe.start(cfg);		// Start streaming with the configuration just set
+	pipe_started = true;
 }
 
 void MFCamera::stop()
@@ -130,7 +133,8 @@ void MFCamera::stop()
 	stopped = true;
 	if (grabber_thread) grabber_thread->join();
 	if (processing_thread) processing_thread->join();
-	pipe.stop();
+	if (pipe_started) pipe.stop();
+	pipe_started = false;
 }
 
 void MFCamera::start_capturer()

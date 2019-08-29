@@ -39,7 +39,9 @@ MFCapture::MFCapture(int dummy)
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)
 {
+	numberOfCapturersActive++;
 	mergedPC = new_cwipc_pcl_pointcloud();
+	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 MFCapture::MFCapture(const char *configFilename)
@@ -241,7 +243,6 @@ MFCapture::~MFCapture() {
 	float deltaT = (stopTime - starttime) / 1000.0;
 	std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
 	numberOfCapturersActive--;
-	assert(numberOfCapturersActive == 0);
 }
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp
@@ -279,7 +280,7 @@ void MFCapture::_control_thread_main()
 			// because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
 			// camera.
 			for(auto cam : cameras) {
-				cam->capture_frameset();
+				if (!cam->capture_frameset()) continue;
 			}
 			std::cerr << "xxxjack processing thread got frameset" << std::endl;
 			// And get the best timestamp

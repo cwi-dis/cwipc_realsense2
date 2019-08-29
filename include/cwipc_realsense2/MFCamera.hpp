@@ -31,7 +31,7 @@ public:
 	void start();
 	virtual void start_capturer();
 	void stop();
-	void capture_frameset();
+	bool capture_frameset();
 	void create_pc_from_frames();
 	void wait_for_pc();
 	void dump_color_frame(const std::string& filename);
@@ -73,6 +73,7 @@ private:
 	bool processing_done;
 
 	rs2::pipeline pipe;
+	bool pipe_started;
 	// for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
 	rs2::align aligner;					// Align depth and color data
 	rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
