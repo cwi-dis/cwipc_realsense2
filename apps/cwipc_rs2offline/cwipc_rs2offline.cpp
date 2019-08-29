@@ -47,7 +47,7 @@ int main(int argc, char** argv)
     unsigned char *colorData = stbi_load(colorFile, &colorWidth, &colorHeight, &colorComponents, 4);
 	assert(colorWidth == 640);
 	assert(colorHeight == 480);
-	assert(colorComponents == 4);
+	assert(colorComponents == 3 || colorComponents == 4);
     size_t colorDataSize = colorWidth*colorHeight*4;
 
 	do {

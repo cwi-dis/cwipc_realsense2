@@ -277,12 +277,15 @@ void MFCamera::_processing_thread_main()
 				pt.x = vertices[i].x;
 				pt.y = -vertices[i].y;
 				pt.z = -vertices[i].z;
-
+#if 0
 				float u = texture_coordinates[i].u;
 				float v = texture_coordinates[i].v;
 				int texture_x = std::min(std::max(int(u*texture_width + .5f), 0), texture_width - 1);
 				int texture_y = std::min(std::max(int(v*texture_height + .5f), 0), texture_height - 1);
 				int idx = texture_x * texture_x_step + texture_y * texture_y_step;
+#else
+				int idx = i*4;
+#endif
 				pt.r = texture_data[idx];
 				pt.g = texture_data[idx + 1];
 				pt.b = texture_data[idx + 2];

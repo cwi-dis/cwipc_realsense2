@@ -44,7 +44,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		depth_width, depth_height,
 		(float)depth_width / 2, (float)depth_height / 2,
 		(float)depth_width , (float)depth_height ,
-		RS2_DISTORTION_BROWN_CONRADY,
+		RS2_DISTORTION_NONE, // RS2_DISTORTION_BROWN_CONRADY,
 		{ 0,0,0,0,0 }
 	};
 	depth_stream = depth_sensor.add_video_stream({
@@ -63,7 +63,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		color_width, color_height,
 		(float)color_width / 2, (float)color_height / 2,
 		(float)color_width / 2, (float)color_height / 2,
-		RS2_DISTORTION_BROWN_CONRADY,
+		RS2_DISTORTION_NONE, // RS2_DISTORTION_BROWN_CONRADY,
 		{ 0,0,0,0,0 }
 	};
 	color_stream = color_sensor.add_video_stream({
@@ -82,7 +82,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	color_sensor.open(color_stream);
 	depth_sensor.start(sync);
 	color_sensor.start(sync);
-	color_stream.register_extrinsics_to(depth_stream, depth_to_color_extrinsics);
+	depth_stream.register_extrinsics_to(color_stream, depth_to_color_extrinsics);
 }
 
 MFOfflineCamera::~MFOfflineCamera()
