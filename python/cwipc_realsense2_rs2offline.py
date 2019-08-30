@@ -4,7 +4,7 @@ from cwipc.util import CwipcError, CWIPC_API_VERSION, cwipc_tiledsource
 from cwipc.util import cwipc_tiledsource_p, cwipc_tiledsource
 
 __all__ = [
-    "cwpic_rs2offline"
+    "cwipc_rs2offline"
 ]
 
 class cwipc_offline_p(ctypes.c_void_p):
@@ -67,11 +67,11 @@ class cwipc_offline_wrapper:
         depthLength = len(depthBuffer)
         if isinstance(depthBuffer, bytearray):
             depthBuffer = (ctypes.c_char * depthLength).from_buffer(depthBuffer)
-        depthPtr = ctypes.cast(colorBuffer, ctypes.c_void_p)
+        depthPtr = ctypes.cast(depthBuffer, ctypes.c_void_p)
         rv = _cwipc_realsense2_dll().cwipc_offline_feed(self._as_cwipc_offline_p(), camNum, colorPtr, colorLength, depthPtr, depthLength)
         return rv
 
-def cwpic_rs2offline(conffile):
+def cwipc_rs2offline(conffile):
     """Returns a cwipc_source object that grabs from a realsense2 camera and returns cwipc object on every get() call."""
     errorString = ctypes.c_char_p()
     if conffile:
@@ -86,7 +86,7 @@ def cwpic_rs2offline(conffile):
     return None
      
 def main():
-    offline = cwpic_rs2offline('offline.xml')
+    offline = cwipc_rs2offline('offline.xml')
     print(f'offline={offline} ptr={offline._cwipc_offline}')
     grabber = offline.get_source()
     print(f'grabber={grabber} ptr={grabber._cwipc_source}')
