@@ -71,11 +71,13 @@ public:
     ~cwipc_source_realsense2_impl()
 	{
         delete m_grabber;
+        m_grabber = NULL;
     }
 
     void free() 
 	{
         delete m_grabber;
+        m_grabber = NULL;
     }
 
     bool eof() 
@@ -194,6 +196,7 @@ public:
 	{
 		m_offline = NULL;
 		delete m_source;
+		m_source = NULL;
     }
 
 	cwipc_tiledsource* get_source()
@@ -233,4 +236,19 @@ cwipc_offline* cwipc_rs2offline(const char *configFilename, char **errorMessage,
 	}
 	if (!MFCapture_versionCheck(errorMessage)) return NULL;
 	return new cwipc_source_rs2offline_impl(configFilename);
+}
+
+void cwipc_offline_free(cwipc_offline* obj, int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)
+{
+	obj->free();
+}
+
+cwipc_tiledsource* cwipc_offline_get_source(cwipc_offline* obj)
+{
+	return obj->get_source();
+}
+
+bool cwipc_offline_feed(cwipc_offline* obj, int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)
+{
+	return obj->feed(camNum, colorBuffer, colorSize, depthBuffer, depthSize);
 }

@@ -223,6 +223,9 @@ void MFCapture::_create_cameras(rs2::device_list devs) {
 
 MFCapture::~MFCapture() {
 	uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	// Stop all cameras
+	for (auto cam : cameras)
+		cam->stop();
 	if(!stopped) {
 		// Make the control thread stop. We set want_new to make it wake up (bit of a hack, really...)
 		stopped = true;
@@ -230,9 +233,6 @@ MFCapture::~MFCapture() {
 		mergedPC_want_new_cv.notify_all();
 		control_thread->join();
 	}
-	// Stop all cameras
-	for (auto cam : cameras)
-		cam->stop();
 	std::cerr << "cwipc_realsense2: multiFrame: stopped all cameras\n";
 	// Delete all cameras (which will stop their threads as well)
 	for (auto cam : cameras)

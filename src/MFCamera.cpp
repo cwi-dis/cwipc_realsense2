@@ -135,6 +135,8 @@ void MFCamera::stop()
 	if (processing_thread) processing_thread->join();
 	if (pipe_started) pipe.stop();
 	pipe_started = false;
+	processing_done = true;
+	processing_done_cv.notify_one();
 }
 
 void MFCamera::start_capturer()
