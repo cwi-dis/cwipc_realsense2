@@ -21,6 +21,8 @@ def main():
     colorImage = loadImage(colorFile)
     assert colorImage.size == (640, 480)
     assert colorImage.mode in {"RGB", "RGBA"}
+    #b, g, r = colorImage.split()
+    #colorImage = Image.merge("RGB", (r, g, b))
     gotPC = False
     # Convert to bytes
     depthData = depthImage.tobytes()
@@ -45,6 +47,5 @@ def main():
     grabber.free()
     
 if __name__ == '__main__':
-    sys.stdin.readline()
     main()
     
