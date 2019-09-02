@@ -44,11 +44,11 @@ int main(int argc, char** argv)
 	assert(depthComponents == 1);
     size_t depthDataSize = depthWidth*depthHeight*2;
     int colorWidth, colorHeight, colorComponents;
-    unsigned char *colorData = stbi_load(colorFile, &colorWidth, &colorHeight, &colorComponents, 4);
+    unsigned char *colorData = stbi_load(colorFile, &colorWidth, &colorHeight, &colorComponents, 3);
 	assert(colorWidth == 640);
 	assert(colorHeight == 480);
 	assert(colorComponents == 3 || colorComponents == 4);
-    size_t colorDataSize = colorWidth*colorHeight*4;
+    size_t colorDataSize = colorWidth*colorHeight*3;
 
 	do {
 		ok = converter->feed(0, colorData, colorDataSize, depthData, depthDataSize);

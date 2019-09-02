@@ -286,7 +286,7 @@ void MFCamera::_processing_thread_main()
 				int texture_y = std::min(std::max(int(v*texture_height + .5f), 0), texture_height - 1);
 				int idx = texture_x * texture_x_step + texture_y * texture_y_step;
 #else
-				int idx = i*4;
+				int idx = i*3;
 #endif
 				pt.r = texture_data[idx];
 				pt.g = texture_data[idx + 1];
