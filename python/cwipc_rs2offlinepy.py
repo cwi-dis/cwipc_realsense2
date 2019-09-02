@@ -20,9 +20,7 @@ def main():
     assert depthImage.mode == "I;16"
     colorImage = loadImage(colorFile)
     assert colorImage.size == (640, 480)
-    assert colorImage.mode in {"RGB", "RGBA"}
-    #b, g, r = colorImage.split()
-    #colorImage = Image.merge("RGB", (r, g, b))
+    assert colorImage.mode == "RGB"
     gotPC = False
     # Convert to bytes
     depthData = depthImage.tobytes()
