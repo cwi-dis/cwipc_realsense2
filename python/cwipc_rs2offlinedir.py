@@ -101,7 +101,7 @@ class CerthDir:
         assert len(colorData) == 640*480*3
         return colorData
         
-    def getDepthData(self, filename):
+    def getDepthData_notworking(self, filename):
         depthImage = loadImage(filename)
         depthImage = Image.fromarray(numpy.array(depthImage).astype("uint16"))
         assert depthImage.size == (640, 480)
@@ -109,18 +109,53 @@ class CerthDir:
         depthData = depthImage.tobytes()
         assert len(depthData) == 640*480*2
         return depthData
+        
+    def getDepthData(self, filename):
+        fp = open(filename)
+        fp.readline()
+        fp.readline()
+        fp.readline()
+        fp.readline()
+        numbers = fp.read().split()
+        assert(len(numbers)) == 640*480
+        numbers = list(map(int, numbers))
+        array = numpy.array(numbers)
+        array = array.reshape((480, 640))
+        depthImage = Image.fromarray(array.astype("uint16"))
+        assert depthImage.size == (640, 480)
+        assert depthImage.mode == "I;16"
+        depthData = depthImage.tobytes()
+        assert len(depthData) == 640*480*2
+        return depthData
+        
+    def get(self):
+        images = self.curData()
+        gotPC = False
+        while not gotPC:
+            for i in range(len(images)):
+                colorData, depthData = images[i]
+                print(f'\t{i}: {len(colorData)} {len(depthData)}')
+                self.converter.feed(i, colorData, depthData)
+                gotPC = self.grabber.available(False)
+                if not gotPC:
+                    print('\t no data try again')
+        rv = self.grabber.get()
+        self.next()
+        return rv
+        
+                
 
 def main():
     certhDir = sys.argv[1]
+    outputDir = sys.argv[2]
     dirHandler = CerthDir(certhDir)
     print(f'cameras: {dirHandler.cameras()}')
     while not dirHandler.eof():
-        print(f'PC {dirHandler.index}:')
-        images = dirHandler.curData()
-        for i in range(len(images)):
-            colorData, depthData = images[i]
-            print(f'\t{i}: {len(colorData)} {len(depthData)}')
-        dirHandler.next()
+        pc = dirHandler.get()
+        print('got pointcloud')
+        outputFile = os.path.join(outputDir, 'cloud-%d.ply' % dirHandler.index)
+        cwipc.cwipc_write(outputFile, pc)
+        pc.free()
      
 def oldmain():
     configFile = sys.argv[1]
