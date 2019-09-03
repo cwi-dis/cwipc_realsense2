@@ -10,22 +10,6 @@ BASECONFIG="""<?xml version="1.0" ?>
         <postprocessing depthfiltering="0" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
             <depthfilterparameters decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
         </postprocessing>
-        <camera serial="offline-0" backgroundx="0" backgroundy="0" backgroundz="0">
-            <trafo>
-                <values 
-                    v00="0.115766" v10="0.0787819" v20="-0.990147" v03="1351.74" 
-                    v01="0.664986" v11="-0.74663" v21="0.0183429" v13="1461.83" 
-                    v02="-0.737829" v12="0.0183429" v22="-0.138824" v23="305.322" 
-                    
-                    v30="0.0" v31="0" v32="0" v33="1"  />
-<!-->                <values 
-                    v00="0.115766" v01="0.0787819" v02="-0.990147" v03="1.35174" 
-                    v10="0.664986" v11="-0.74663" v12="0.0183429" v13="1.46183" 
-                    v20="-0.737829" v21="0.0183429" v22="-0.138824" v23="0.305322" 
-                    v30="0.0" v31="0" v32="0" v33="1"  /> -->
-            </trafo>
-        </camera>
-
     </CameraConfig>
 </file>
 """
@@ -36,20 +20,36 @@ def baseConfig():
     
 def fillTrafo(elt, items):
     """Fill and XML element with a 4x4 matrix based on 12 values specifying a 3x3 matrix and a vector"""
-    elt.set('v00', str(items[0]))
-    elt.set('v01', str(items[1]))
-    elt.set('v02', str(items[2]))
-    elt.set('v03', str(items[9])) # Translation
+    if 1:
+        elt.set('v00', str(items[0]))
+        elt.set('v01', str(items[1]))
+        elt.set('v02', str(items[2]))
+        elt.set('v03', str(items[9]/1000.0)) # Translation
     
-    elt.set('v10', str(items[3]))
-    elt.set('v11', str(items[4]))
-    elt.set('v12', str(items[5]))
-    elt.set('v13', str(items[10])) # Translation
+        elt.set('v10', str(items[3]))
+        elt.set('v11', str(items[4]))
+        elt.set('v12', str(items[5]))
+        elt.set('v13', str(items[10]/1000.0)) # Translation
     
-    elt.set('v20', str(items[6]))
-    elt.set('v21', str(items[7]))
-    elt.set('v22', str(items[8]))
-    elt.set('v23', str(items[11])) # Translation
+        elt.set('v20', str(items[6]))
+        elt.set('v21', str(items[7]))
+        elt.set('v22', str(items[8]))
+        elt.set('v23', str(items[11]/1000.0)) # Translation
+    else:
+        elt.set('v00', str(items[0]))
+        elt.set('v01', str(items[3]))
+        elt.set('v02', str(items[6]))
+        elt.set('v03', str(items[9]/1000.0)) # Translation
+    
+        elt.set('v10', str(items[1]))
+        elt.set('v11', str(items[4]))
+        elt.set('v12', str(items[7]))
+        elt.set('v13', str(items[10]/1000.0)) # Translation
+    
+        elt.set('v20', str(items[2]))
+        elt.set('v21', str(items[5]))
+        elt.set('v22', str(items[8]))
+        elt.set('v23', str(items[11]/1000.0)) # Translation
     
     elt.set('v30', '0')
     elt.set('v31', '0')
@@ -92,7 +92,7 @@ def readTrafo(filename):
     return rv
     
 def main():
-    if sys.argv != 3:
+    if len(sys.argv) != 3:
         print(f"Usage: {sys.argv[0]} certh-dir outputfile.xml", file=sys.stderr)
     certhDir = sys.argv[1]
     outputFilename = sys.argv[2]
