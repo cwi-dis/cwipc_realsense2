@@ -97,8 +97,11 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 
 			cd = new MFCameraData();
 			boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
+			boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
+			intrinsicTrafo->setIdentity();
 			cd->serial = cameraElement->Attribute("serial");
 			cd->trafo = trafo;
+			cd->intrinsicTrafo = intrinsicTrafo;
 			cd->background = { 0, 0, 0 };
 			cd->cameraposition = { 0, 0, 0 };
 			config->cameraData.push_back(*cd);
@@ -130,6 +133,27 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 		}
 		else
 			loadOkay = false;
+		// load optional intrinsicTrafo element (only for offline usage)
+		trafo = cameraElement->FirstChildElement("intrinsicTrafo");
+		if (trafo) {
+			TiXmlElement *val = trafo->FirstChildElement("values");
+			val->QueryDoubleAttribute("v00", &(*cd->intrinsicTrafo)(0, 0));
+			val->QueryDoubleAttribute("v01", &(*cd->intrinsicTrafo)(0, 1));
+			val->QueryDoubleAttribute("v02", &(*cd->intrinsicTrafo)(0, 2));
+			val->QueryDoubleAttribute("v03", &(*cd->intrinsicTrafo)(0, 3));
+			val->QueryDoubleAttribute("v10", &(*cd->intrinsicTrafo)(1, 0));
+			val->QueryDoubleAttribute("v11", &(*cd->intrinsicTrafo)(1, 1));
+			val->QueryDoubleAttribute("v12", &(*cd->intrinsicTrafo)(1, 2));
+			val->QueryDoubleAttribute("v13", &(*cd->intrinsicTrafo)(1, 3));
+			val->QueryDoubleAttribute("v20", &(*cd->intrinsicTrafo)(2, 0));
+			val->QueryDoubleAttribute("v21", &(*cd->intrinsicTrafo)(2, 1));
+			val->QueryDoubleAttribute("v22", &(*cd->intrinsicTrafo)(2, 2));
+			val->QueryDoubleAttribute("v23", &(*cd->intrinsicTrafo)(2, 3));
+			val->QueryDoubleAttribute("v30", &(*cd->intrinsicTrafo)(3, 0));
+			val->QueryDoubleAttribute("v31", &(*cd->intrinsicTrafo)(3, 1));
+			val->QueryDoubleAttribute("v32", &(*cd->intrinsicTrafo)(3, 2));
+			val->QueryDoubleAttribute("v33", &(*cd->intrinsicTrafo)(3, 3));
+		}
 
 		registeredcameras++;
 		cameraElement = cameraElement->NextSiblingElement("camera");

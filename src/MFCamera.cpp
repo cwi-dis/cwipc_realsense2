@@ -214,7 +214,6 @@ void MFCamera::_processing_thread_main()
 		// Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
 		camData.cloud->clear();
 		camData.cloud->reserve(points.size());
-
 #ifdef WITH_MANUAL_BACKGROUND_REMOVAL
 		// Note by Jack: this code is currently not correct, hasn't been updated
 		// for the texture coordinate mapping.
@@ -277,17 +276,13 @@ void MFCamera::_processing_thread_main()
 				cwipc_pcl_point pt;
 
 				pt.x = vertices[i].x;
-				pt.y = -vertices[i].y;
-				pt.z = -vertices[i].z;
-#if 0
+				pt.y = vertices[i].y;
+				pt.z = vertices[i].z;
 				float u = texture_coordinates[i].u;
 				float v = texture_coordinates[i].v;
 				int texture_x = std::min(std::max(int(u*texture_width + .5f), 0), texture_width - 1);
 				int texture_y = std::min(std::max(int(v*texture_height + .5f), 0), texture_height - 1);
 				int idx = texture_x * texture_x_step + texture_y * texture_y_step;
-#else
-				int idx = i*3;
-#endif
 				pt.r = texture_data[idx];
 				pt.g = texture_data[idx + 1];
 				pt.b = texture_data[idx + 2];

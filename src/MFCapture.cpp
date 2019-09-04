@@ -90,6 +90,7 @@ MFCapture::MFCapture(const char *configFilename)
 		boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 		default_trafo->setIdentity();
 		cd.trafo = default_trafo;
+		cd.intrinsicTrafo = default_trafo;
 		cd.cloud = new_cwipc_pcl_pointcloud();
 		cd.background = { 0, 0, 0 };
 		cd.cameraposition = { 0, 0, 0 };

@@ -7,7 +7,7 @@ BASECONFIG="""<?xml version="1.0" ?>
 <file>
     <CameraConfig>
         <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
-        <postprocessing depthfiltering="0" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
+        <postprocessing depthfiltering="0" backgroundremoval="0" greenscreenremoval="0" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
             <depthfilterparameters decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
         </postprocessing>
     </CameraConfig>
@@ -18,38 +18,38 @@ def baseConfig():
     tree = ET.ElementTree(ET.fromstring(BASECONFIG))
     return tree
     
-def fillTrafo(elt, items):
+def fillTrafo(elt, items, transpose=False, translateScaling=1):
     """Fill and XML element with a 4x4 matrix based on 12 values specifying a 3x3 matrix and a vector"""
-    if 1:
+    if transpose:
         elt.set('v00', str(items[0]))
         elt.set('v01', str(items[1]))
         elt.set('v02', str(items[2]))
-        elt.set('v03', str(items[9]/1000.0)) # Translation
+        elt.set('v03', str(items[9]*translateScaling)) # Translation
     
         elt.set('v10', str(items[3]))
         elt.set('v11', str(items[4]))
         elt.set('v12', str(items[5]))
-        elt.set('v13', str(items[10]/1000.0)) # Translation
+        elt.set('v13', str(items[10]*translateScaling)) # Translation
     
         elt.set('v20', str(items[6]))
         elt.set('v21', str(items[7]))
         elt.set('v22', str(items[8]))
-        elt.set('v23', str(items[11]/1000.0)) # Translation
+        elt.set('v23', str(items[11]*translateScaling)) # Translation
     else:
         elt.set('v00', str(items[0]))
         elt.set('v01', str(items[3]))
         elt.set('v02', str(items[6]))
-        elt.set('v03', str(items[9]/1000.0)) # Translation
+        elt.set('v03', str(items[9]*translateScaling)) # Translation
     
         elt.set('v10', str(items[1]))
         elt.set('v11', str(items[4]))
         elt.set('v12', str(items[7]))
-        elt.set('v13', str(items[10]/1000.0)) # Translation
+        elt.set('v13', str(items[10]*translateScaling)) # Translation
     
         elt.set('v20', str(items[2]))
         elt.set('v21', str(items[5]))
         elt.set('v22', str(items[8]))
-        elt.set('v23', str(items[11]/1000.0)) # Translation
+        elt.set('v23', str(items[11]*translateScaling)) # Translation
     
     elt.set('v30', '0')
     elt.set('v31', '0')
@@ -61,7 +61,10 @@ def entry2xml(entry):
     rv.set('serial', entry['name'])
     trafoParent = ET.SubElement(rv, 'trafo')
     trafo = ET.SubElement(trafoParent, 'values')
-    fillTrafo(trafo, entry['cam2worldTrafo'])
+    fillTrafo(trafo, entry['cam2worldTrafo'], transpose=True, translateScaling=1)
+    intParent = ET.SubElement(rv, 'intrinsicTrafo')
+    intTrafo = ET.SubElement(intParent, 'values')
+    fillTrafo(intTrafo, entry['color2depthTrafo'], transpose=True)
     return rv
 
 def indentXml(elem, level=0):

@@ -34,10 +34,11 @@ struct MFCameraSettings {
 
 struct MFCameraData {
 	std::string serial;		// Serial number of this camera
-	boost::shared_ptr<Eigen::Affine3d> trafo;
-	cwipc_vector cameraposition;
+	boost::shared_ptr<Eigen::Affine3d> trafo;	//!< Transformation matrix from camera coorindates to world coordinates
+	boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo;	//!< offline only: matrix to convert color to depth coordinates
+	cwipc_vector cameraposition;	//!< Position of this camera in real world coordinates
 	cwipc_vector background;
-	cwipc_pcl_pointcloud cloud;
+	cwipc_pcl_pointcloud cloud;	//!< Pointcloud most recently captured
 };
 
 struct MFCaptureConfig {

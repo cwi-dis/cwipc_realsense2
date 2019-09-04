@@ -36,6 +36,21 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	depth_sensor(dev.add_sensor("Depth")),
 	color_sensor(dev.add_sensor("Color"))
 {
+	// Get transformation matrix between color and depth in librealsense2 format
+	auto matrix = _camData.intrinsicTrafo->matrix();
+	depth_to_color_extrinsics.rotation[0] = matrix(0,0);
+	depth_to_color_extrinsics.rotation[1] = matrix(0,1);
+	depth_to_color_extrinsics.rotation[2] = matrix(0,2);
+	depth_to_color_extrinsics.rotation[3] = matrix(1,0);
+	depth_to_color_extrinsics.rotation[4] = matrix(1,1);
+	depth_to_color_extrinsics.rotation[5] = matrix(1,2);
+	depth_to_color_extrinsics.rotation[6] = matrix(2,0);
+	depth_to_color_extrinsics.rotation[7] = matrix(2,1);
+	depth_to_color_extrinsics.rotation[8] = matrix(2,2);
+	depth_to_color_extrinsics.translation[0] = matrix(0,3);
+	depth_to_color_extrinsics.translation[1] = matrix(1,3);
+	depth_to_color_extrinsics.translation[2] = matrix(2,3);
+	
 	dev = rs2::software_device();
 	//xxxjack dev.add_to(ctx);
 
@@ -44,7 +59,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		depth_width, depth_height,
 		(float)depth_width / 2, (float)depth_height / 2,
 		(float)depth_width , (float)depth_height ,
-		RS2_DISTORTION_NONE, // RS2_DISTORTION_BROWN_CONRADY,
+		RS2_DISTORTION_BROWN_CONRADY,
 		{ 0,0,0,0,0 }
 	};
 	depth_stream = depth_sensor.add_video_stream({
@@ -56,14 +71,14 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		depth_format,
 		depth_intrinsics
 	});
-	depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
+	depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.1f);
 
 	// Create color stream
 	rs2_intrinsics color_intrinsics = {
 		color_width, color_height,
 		(float)color_width / 2, (float)color_height / 2,
-		(float)color_width / 2, (float)color_height / 2,
-		RS2_DISTORTION_NONE, // RS2_DISTORTION_BROWN_CONRADY,
+		(float)color_width, (float)color_height,
+		RS2_DISTORTION_BROWN_CONRADY,
 		{ 0,0,0,0,0 }
 	};
 	color_stream = color_sensor.add_video_stream({
@@ -77,7 +92,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	});
 
 	// Tie the two streams together
-	dev.create_matcher(RS2_MATCHER_DLR_C);
+	dev.create_matcher(RS2_MATCHER_DEFAULT);
 	depth_sensor.open(depth_stream);
 	color_sensor.open(color_stream);
 	depth_sensor.start(sync);
