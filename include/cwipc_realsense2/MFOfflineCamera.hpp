@@ -25,7 +25,7 @@ private:
 	MFOfflineCamera(const MFOfflineCamera&);	// Disable copy constructor
 	MFOfflineCamera& operator=(const MFOfflineCamera&);	// Disable assignment
 public:
-	MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData);
+	MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, MFOfflineSettings& settings);
 	virtual ~MFOfflineCamera();
 
 	void _capture_thread_main();

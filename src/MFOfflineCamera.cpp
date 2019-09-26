@@ -18,19 +18,19 @@
 #include "cwipc_realsense2/utils.h"
 #include "cwipc_realsense2/MFOfflineCamera.hpp"
 
-MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData)
+MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, MFOfflineSettings& settings)
 :	MFCamera(_camera_index, ctx, configuration, _camData),
 	feed_number(0),
-	depth_width(640),
-	depth_height(480),
-	depth_bpp(2),
-	depth_fps(60),
-	depth_format(RS2_FORMAT_Z16),
-	color_width(640),
-	color_height(480),
-	color_bpp(3),
-	color_fps(60),
-	color_format(RS2_FORMAT_RGB8),
+	depth_width(settings.depth.width),
+	depth_height(settings.depth.height),
+	depth_bpp(settings.depth.bpp),
+	depth_fps(settings.depth.fps),
+	depth_format(rs2_format(settings.depth.format)),
+	color_width(settings.color.width),
+	color_height(settings.color.height),
+	color_bpp(settings.color.bpp),
+	color_fps(settings.color.fps),
+	color_format(rs2_format(settings.color.format)),
 	depth_to_color_extrinsics({ { 1,0,0,0,1,0,0,0,1 },{ 0,0,0 } }),
 	dev(),
 	depth_sensor(dev.add_sensor("Depth")),

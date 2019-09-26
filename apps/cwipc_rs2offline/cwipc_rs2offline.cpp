@@ -12,15 +12,31 @@
 int main(int argc, char** argv)
 {
     bool ok;
+    MFOfflineSettings settings = {
+		{
+			640,
+			480,
+			3,
+			60,
+			CWIPC_RS2_FORMAT_RGB8
+		},
+		{
+			640,
+			480,
+			4,
+			60,
+			CWIPC_RS2_FORMAT_Z16
+		}
+	};
 
     if (argc != 5) {
-        std::cerr << "Usage: " << argv[0] << " configfile depthimage colorimage outputfile" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " configfile colorimage depthimage outputfile" << std::endl;
 		std::cerr << "Convert a depth image and color image to a pointcloud" << std::endl;
 		return 2;
     }
 	char *configFile = argv[1];
-	char *depthFile = argv[2];
-	char *colorFile = argv[3];
+	char *colorFile = argv[2];
+	char *depthFile = argv[3];
 	char *outputFile = argv[4];
 	if (strcmp(configFile, "-") == 0) configFile = NULL;
 
@@ -30,7 +46,7 @@ int main(int argc, char** argv)
 	if (argc == 4) {
 		configFile = argv[3];
 	}
-	converter = cwipc_rs2offline(configFile, &error, CWIPC_API_VERSION);
+	converter = cwipc_rs2offline(settings, configFile, &error, CWIPC_API_VERSION);
     if (error) {
     	std::cerr << argv[0] << ": creating realsense2 offline converter failed: " << error << std::endl;
     	return 1;

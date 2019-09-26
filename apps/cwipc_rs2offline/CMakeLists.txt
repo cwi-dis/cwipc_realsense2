@@ -10,4 +10,4 @@ target_link_libraries(cwipc_rs2offline cwipc_realsense2 cwipc_util ${PCL_LIBRARI
 
 install(TARGETS cwipc_rs2offline RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-add_test(NAME cwipc_rs2offline COMMAND cwipc_rs2offline input/offlineconfig.xml input/depth.png input/color.png output/rs2offline.ply WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/fixtures )
+add_test(NAME cwipc_rs2offline COMMAND cwipc_rs2offline input/offlineconfig.xml input/color.png input/depth.png output/rs2offline.ply WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/fixtures )

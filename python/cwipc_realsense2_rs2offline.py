@@ -7,15 +7,35 @@ __all__ = [
     "cwipc_rs2offline"
 ]
 
+class cwipc_offline_camera_settings(Structure):
+    _fields_ = [
+        ("width", c_int),
+        ("height", c_int),
+        ("bpp", c_int),
+        ("fps", c_int),
+        ("format", c_int)
+    ]
+    
+class cwipc_offline_settings(Structure):
+    _fields_ = [
+        ("color", cwipc_offline_camera_settings),
+        ("depth", cwipc_offline_camera_settings),
+    ]
 class cwipc_offline_p(ctypes.c_void_p):
     pass
     
 _cwipc_realsense2_dll_reference = None
 
+RS2_FORMAT_RGB8 = None
+RS2_FORMAT_Z16 = None
+
 #
 # NOTE: the signatures here must match those in cwipc_util/api.h or all hell will break loose
 #
 def _cwipc_realsense2_dll(libname=None):
+    global RS2_FORMAT_RGB8
+    global RS2_FORMAT_Z16
+    
     """Load the cwipc_util DLL and assign the signatures (if not already loaded)"""
     global _cwipc_realsense2_dll_reference
     if _cwipc_realsense2_dll_reference: return _cwipc_realsense2_dll_reference
@@ -27,7 +47,7 @@ def _cwipc_realsense2_dll(libname=None):
     assert libname
     _cwipc_realsense2_dll_reference = ctypes.CDLL(libname)
     
-    _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
+    _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [cwipc_offline_settings, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_realsense2.restype = cwipc_tiledsource_p
     _cwipc_realsense2_dll_reference.cwipc_rs2offline.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_rs2offline.restype = cwipc_offline_p
@@ -38,6 +58,8 @@ def _cwipc_realsense2_dll(libname=None):
     _cwipc_realsense2_dll_reference.cwipc_offline_feed.argtypes = [cwipc_offline_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     _cwipc_realsense2_dll_reference.cwipc_offline_feed.restype = ctypes.c_bool
 
+    RS2_FORMAT_RGB8 = c_int.in_dll(_cwipc_realsense2_dll_reference, "CWIPC_RS2_FORMAT_RGB8")
+    RS2_FORMAT_Z16 = c_int.in_dll(_cwipc_realsense2_dll_reference, "CWIPC_RS2_FORMAT_Z16")
     return _cwipc_realsense2_dll_reference
         
 class cwipc_offline_wrapper:
@@ -71,14 +93,14 @@ class cwipc_offline_wrapper:
         rv = _cwipc_realsense2_dll().cwipc_offline_feed(self._as_cwipc_offline_p(), camNum, colorPtr, colorLength, depthPtr, depthLength)
         return rv
 
-def cwipc_rs2offline(conffile):
+def cwipc_rs2offline(settings, conffile):
     """Returns a cwipc_source object that grabs from a realsense2 camera and returns cwipc object on every get() call."""
     errorString = ctypes.c_char_p()
     if conffile:
         conffile = conffile.encode('utf8')
     else:
         conffile = None
-    rv = _cwipc_realsense2_dll().cwipc_rs2offline(conffile, ctypes.byref(errorString), CWIPC_API_VERSION)
+    rv = _cwipc_realsense2_dll().cwipc_rs2offline(settings, conffile, ctypes.byref(errorString), CWIPC_API_VERSION)
     if errorString:
         raise CwipcError(errorString.value.decode('utf8'))
     if rv:

@@ -156,27 +156,6 @@ def main():
         outputFile = os.path.join(outputDir, 'cloud-%d.ply' % dirHandler.index)
         cwipc.cwipc_write(outputFile, pc)
         pc.free()
-     
-def oldmain():
-    configFile = sys.argv[1]
-    depthFile = sys.argv[2]
-    colorFile = sys.argv[3]
-    outputFile = sys.argv[4]
-    #b, g, r = colorImage.split()
-    #colorImage = Image.merge("RGB", (r, g, b))
-    gotPC = False
-    # Convert to bytes
-#        depthData = b""
-    open('tmpdump.bin', 'wb').write(depthData)
-    print(f"depth {len(depthData)} bytes, color {len(colorData)} bytes")
-    # We need to feed the first image a couple of times, until the syncer gets the idea.
-    while not gotPC:
-        converter.feed(0, colorData, depthData)
-        gotPC = grabber.available(False)
-    pc = grabber.get()
-    cwipc.cwipc_write(outputFile, pc)
-    pc.free()
-    grabber.free()
     
 if __name__ == '__main__':
     main()

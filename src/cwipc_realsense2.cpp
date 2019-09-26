@@ -9,6 +9,12 @@
 
 #include "cwipc_realsense2/multiFrame.hpp"
 
+// Global variables (constants, really)
+
+
+int CWIPC_RS2_FORMAT_Z16 = RS2_FORMAT_Z16;
+int CWIPC_RS2_FORMAT_RGB8 = RS2_FORMAT_RGB8;
+
 cwipc_vector* add_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
 	if (result) {
 		result->x = a.x + b.x;
@@ -179,8 +185,8 @@ protected:
 	MFOffline *m_offline;
 	cwipc_source_realsense2_impl *m_source;
 public:
-    cwipc_source_rs2offline_impl(const char *configFilename=NULL)
-	:	m_offline(new MFOffline(configFilename)),
+    cwipc_source_rs2offline_impl(MFOfflineSettings& settings, const char *configFilename=NULL)
+	:	m_offline(new MFOffline(settings, configFilename)),
 		m_source(new cwipc_source_realsense2_impl(m_offline))
 	{
 	}
@@ -226,7 +232,7 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 	return new cwipc_source_realsense2_impl(configFilename);
 }
 
-cwipc_offline* cwipc_rs2offline(const char *configFilename, char **errorMessage, uint64_t apiVersion)
+cwipc_offline* cwipc_rs2offline(MFOfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion)
 {
 	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
 		if (errorMessage) {
@@ -235,7 +241,7 @@ cwipc_offline* cwipc_rs2offline(const char *configFilename, char **errorMessage,
 		return NULL;
 	}
 	if (!MFCapture_versionCheck(errorMessage)) return NULL;
-	return new cwipc_source_rs2offline_impl(configFilename);
+	return new cwipc_source_rs2offline_impl(settings, configFilename);
 }
 
 void cwipc_offline_free(cwipc_offline* obj, int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)

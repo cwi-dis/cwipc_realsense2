@@ -24,6 +24,7 @@ add_library(cwipc_realsense2
 target_sources(cwipc_realsense2
 	PRIVATE
 	"../include/cwipc_realsense2/defs.h"
+	"../include/cwipc_realsense2/offlinedefs.h"
 	"../include/cwipc_realsense2/utils.h"
 	"../include/cwipc_realsense2/multiFrame.hpp"
 	"../include/cwipc_realsense2/MFCapture.hpp"

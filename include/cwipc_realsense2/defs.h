@@ -18,6 +18,7 @@
 // Definitions of types used across cwipc_realsense2, cwipc_codec and cwipc_util.
 //
 #include "cwipc_util/api_pcl.h"
+#include "offlinedefs.h"
 
 struct MFCameraSettings {
 	int decimation_value = 1;             // int value between 2 and 8
@@ -68,5 +69,4 @@ struct MFCaptureConfig {
 	// per camera data
 	std::vector<MFCameraData> cameraData;
 };
-
 #endif /* cwipc_realsense2_defs_h */

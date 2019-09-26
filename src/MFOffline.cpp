@@ -19,7 +19,7 @@
 #include "cwipc_realsense2/MFOffline.hpp"
 #include "cwipc_realsense2/MFOfflineCamera.hpp"
 
-MFOffline::MFOffline(const char *configFilename)
+MFOffline::MFOffline(MFOfflineSettings& settings, const char *configFilename)
 :	MFCapture(1)
 {
 	bool ok = mf_file2config(configFilename, &configuration);
@@ -27,7 +27,7 @@ MFOffline::MFOffline(const char *configFilename)
 	int camera_index = 0;
 	for (MFCameraData& cd : configuration.cameraData) {
 		cd.cloud = new_cwipc_pcl_pointcloud();
-		auto cam = new MFOfflineCamera(ctx, configuration, camera_index, cd);
+		auto cam = new MFOfflineCamera(ctx, configuration, camera_index, cd, settings);
 		feeders.push_back(cam);
 		cameras.push_back(cam);
 		camera_index++;

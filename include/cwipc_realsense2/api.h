@@ -2,6 +2,7 @@
 #define cwipc_realsense_api_h
 
 #include "cwipc_util/api.h"
+#include "offlinedefs.h"
 
 /* Ensure we have the right dllexport or dllimport on windows */
 #ifndef _CWIPC_REALSENSE2_EXPORT
@@ -50,6 +51,9 @@ typedef struct _cwipc_offline {
 extern "C" {
 #endif
 
+extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_RGB8;	//!< Constant: 24-bit RGB pixels
+extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16;	//!< Constant: 16-bit Depth pixels
+
 /** \brief Capture pointclouds from realsense2 cameras.
  * \param configFilename An option string with the filename of the camera configuration file.
  * \param errorMessage An optional pointer to a string where any error message will be stored.
@@ -74,7 +78,7 @@ _CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configF
  * cameras.
  */
 
-_CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(const char *configFilename, char **errorMessage, uint64_t apiVersion);
+_CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(MFOfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion);
 
 /** \brief Feed image data into an offline pointcloud constructor.
  * \param obj The cwipc_offline object to feed data to.
