@@ -9,6 +9,49 @@ import xml.etree.ElementTree as ET
 def loadImage(filename):
     return Image.open(filename)
     
+def settings(which):
+    cwipc_realsense2_rs2offline.initconsts()
+    if which == 'prod':
+        settings = cwipc_realsense2_rs2offline.cwipc_offline_settings(
+            color=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+                width=1280,
+                height=720,
+                bpp=3,
+                fps=60,
+                format=cwipc_realsense2_rs2offline.RS2_FORMAT_RGB8
+            ),
+            depth=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+                width=320,
+                height=180,
+                bpp=2,
+                fps=60,
+                format=cwipc_realsense2_rs2offline.RS2_FORMAT_Z16
+            ),
+        
+        )
+        return settings
+    elif which == 'test':
+        settings = cwipc_realsense2_rs2offline.cwipc_offline_settings(
+            color=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+                width=640,
+                height=480,
+                bpp=3,
+                fps=60,
+                format=cwipc_realsense2_rs2offline.RS2_FORMAT_RGB8
+            ),
+            depth=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+                width=640,
+                height=480,
+                bpp=2,
+                fps=60,
+                format=cwipc_realsense2_rs2offline.RS2_FORMAT_Z16
+            ),
+        
+        )
+        return settings
+    else:
+        assert False, 'settings argument must be "test" or "prod", or else edit source'
+        
 def cameraNamesFromXml(filename):
     """Parse a cameraconfig file and return a list of camera names"""
     tree = ET.parse(filename)
@@ -35,15 +78,16 @@ class CerthImageDir:
     
 
 class CerthDir:
-    def __init__(self, dirname):
+    def __init__(self, dirname, captureType):
         self.configFile = os.path.join(dirname, 'offlineconfig.xml')
         assert os.path.exists(self.configFile)
+        self.offlineSettings = settings(captureType)
         self.cameraNames = cameraNamesFromXml(self.configFile)
         self.colorFiles = CerthImageDir(os.path.join(dirname, 'color'))
         self.depthFiles = CerthImageDir(os.path.join(dirname, 'depth'))
         self.index = 0
         self._eof = False
-        self.converter = cwipc_realsense2_rs2offline.cwipc_rs2offline(self.configFile)
+        self.converter = cwipc_realsense2_rs2offline.cwipc_rs2offline(self.offlineSettings, self.configFile)
         self.grabber = self.converter.get_source()
 
     def cameras(self):
@@ -95,19 +139,19 @@ class CerthDir:
         
     def getColorData(self, filename):
         colorImage = loadImage(filename)
-        assert colorImage.size == (640, 480)
+        assert colorImage.size == (self.offlineSettings.color.width, self.offlineSettings.color.height)
         assert colorImage.mode in {"RGB", "RGBA"}
         colorData = colorImage.tobytes()
-        assert len(colorData) == 640*480*3
+        assert len(colorData) == self.offlineSettings.color.width*self.offlineSettings.color.height*self.offlineSettings.color.bpp
         return colorData
         
     def getDepthData_notworking(self, filename):
         depthImage = loadImage(filename)
         depthImage = Image.fromarray(numpy.array(depthImage).astype("uint16"))
-        assert depthImage.size == (640, 480)
+        assert depthImage.size == (self.offlineSettings.depth.width, self.offlineSettings.depth.height)
         assert depthImage.mode == "I;16"
         depthData = depthImage.tobytes()
-        assert len(depthData) == 640*480*2
+        assert len(depthData) == self.offlineSettings.depth.width*self.offlineSettings.depth.height*self.offlineSettings.depth.bpp
         return depthData
         
     def getDepthData(self, filename):
@@ -117,15 +161,15 @@ class CerthDir:
         fp.readline()
         fp.readline()
         numbers = fp.read().split()
-        assert(len(numbers)) == 640*480
+        assert(len(numbers)) == self.offlineSettings.depth.width*self.offlineSettings.depth.height
         numbers = list(map(int, numbers))
         array = numpy.array(numbers)
-        array = array.reshape((480, 640))
+        array = array.reshape((self.offlineSettings.depth.height, self.offlineSettings.depth.width))
         depthImage = Image.fromarray(array.astype("uint16"))
-        assert depthImage.size == (640, 480)
+        assert depthImage.size == (self.offlineSettings.depth.width, self.offlineSettings.depth.height)
         assert depthImage.mode == "I;16"
         depthData = depthImage.tobytes()
-        assert len(depthData) == 640*480*2
+        assert len(depthData) == self.offlineSettings.depth.width*self.offlineSettings.depth.height*self.offlineSettings.depth.bpp
         return depthData
         
     def get(self):
@@ -147,8 +191,9 @@ class CerthDir:
 
 def main():
     certhDir = sys.argv[1]
-    outputDir = sys.argv[2]
-    dirHandler = CerthDir(certhDir)
+    certhCapturetype = sys.argv[2]
+    outputDir = sys.argv[3]
+    dirHandler = CerthDir(certhDir, certhCapturetype)
     print(f'cameras: {dirHandler.cameras()}')
     while not dirHandler.eof():
         pc = dirHandler.get()
