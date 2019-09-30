@@ -9,32 +9,46 @@ def loadImage(filename):
     
 def main():
     configFile = sys.argv[1]
-    depthFile = sys.argv[2]
-    colorFile = sys.argv[3]
+    colorFile = sys.argv[2]
+    depthFile = sys.argv[3]
     outputFile = sys.argv[4]
-    converter = cwipc_realsense2_rs2offline.cwipc_rs2offline(configFile)
+    cwipc_realsense2_rs2offline.initconsts()
+    settings = cwipc_realsense2_rs2offline.cwipc_offline_settings(
+        color=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+            width=640,
+            height=480,
+            bpp=3,
+            fps=60,
+            format=cwipc_realsense2_rs2offline.RS2_FORMAT_RGB8
+        ),
+        depth=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+            width=640,
+            height=480,
+            bpp=2,
+            fps=60,
+            format=cwipc_realsense2_rs2offline.RS2_FORMAT_Z16
+        ),
+        
+    )
+    converter = cwipc_realsense2_rs2offline.cwipc_rs2offline(settings, configFile)
     grabber = converter.get_source()
     depthImage = loadImage(depthFile)
     depthImage = Image.fromarray(numpy.array(depthImage).astype("uint16"))
-    assert depthImage.size == (640, 480)
+    assert depthImage.size == (settings.depth.width, settings.depth.height)
     assert depthImage.mode == "I;16"
     colorImage = loadImage(colorFile)
-    assert colorImage.size == (640, 480)
+    assert colorImage.size == (settings.color.width, settings.color.height)
     assert colorImage.mode == "RGB"
     gotPC = False
     # Convert to bytes
     depthData = depthImage.tobytes()
-    if 0 and len(depthData) == 640*480*4:
-        newData = b""
-        for i in range(0, len(depthData), 4):
-            newData +=  depthData[i+1:i+3]
-        depthData = newData
-    assert len(depthData) == 640*480*2
-#        depthData = b""
-    open('tmpdump.bin', 'wb').write(depthData)
+    assert len(depthData) == settings.depth.width*settings.depth.height*settings.depth.bpp
+
     colorData = colorImage.tobytes()
-    assert len(colorData) in {640*480*3, 640_480*4}
+    assert len(colorData) == settings.color.width*settings.color.height*settings.color.bpp
+
     print(f"depth {len(depthData)} bytes, color {len(colorData)} bytes")
+
     # We need to feed the first image a couple of times, until the syncer gets the idea.
     while not gotPC:
         converter.feed(0, colorData, depthData)

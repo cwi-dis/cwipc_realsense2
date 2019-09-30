@@ -7,16 +7,16 @@ __all__ = [
     "cwipc_rs2offline"
 ]
 
-class cwipc_offline_camera_settings(Structure):
+class cwipc_offline_camera_settings(ctypes.Structure):
     _fields_ = [
-        ("width", c_int),
-        ("height", c_int),
-        ("bpp", c_int),
-        ("fps", c_int),
-        ("format", c_int)
+        ("width", ctypes.c_int),
+        ("height", ctypes.c_int),
+        ("bpp", ctypes.c_int),
+        ("fps", ctypes.c_int),
+        ("format", ctypes.c_int)
     ]
     
-class cwipc_offline_settings(Structure):
+class cwipc_offline_settings(ctypes.Structure):
     _fields_ = [
         ("color", cwipc_offline_camera_settings),
         ("depth", cwipc_offline_camera_settings),
@@ -49,7 +49,7 @@ def _cwipc_realsense2_dll(libname=None):
     
     _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [cwipc_offline_settings, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_realsense2.restype = cwipc_tiledsource_p
-    _cwipc_realsense2_dll_reference.cwipc_rs2offline.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
+    _cwipc_realsense2_dll_reference.cwipc_rs2offline.argtypes = [cwipc_offline_settings, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_rs2offline.restype = cwipc_offline_p
     _cwipc_realsense2_dll_reference.cwipc_offline_free.argtypes = [cwipc_offline_p]
     _cwipc_realsense2_dll_reference.cwipc_offline_free.restype = None
@@ -58,8 +58,8 @@ def _cwipc_realsense2_dll(libname=None):
     _cwipc_realsense2_dll_reference.cwipc_offline_feed.argtypes = [cwipc_offline_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     _cwipc_realsense2_dll_reference.cwipc_offline_feed.restype = ctypes.c_bool
 
-    RS2_FORMAT_RGB8 = c_int.in_dll(_cwipc_realsense2_dll_reference, "CWIPC_RS2_FORMAT_RGB8")
-    RS2_FORMAT_Z16 = c_int.in_dll(_cwipc_realsense2_dll_reference, "CWIPC_RS2_FORMAT_Z16")
+    RS2_FORMAT_RGB8 = ctypes.c_int.in_dll(_cwipc_realsense2_dll_reference, "CWIPC_RS2_FORMAT_RGB8")
+    RS2_FORMAT_Z16 = ctypes.c_int.in_dll(_cwipc_realsense2_dll_reference, "CWIPC_RS2_FORMAT_Z16")
     return _cwipc_realsense2_dll_reference
         
 class cwipc_offline_wrapper:
@@ -107,6 +107,9 @@ def cwipc_rs2offline(settings, conffile):
         return cwipc_offline_wrapper(rv)
     return None
      
+def initconsts():
+    _cwipc_realsense2_dll()
+    
 def main():
     offline = cwipc_rs2offline('offline.xml')
     print(f'offline={offline} ptr={offline._cwipc_offline}')

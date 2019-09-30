@@ -1,6 +1,7 @@
 import unittest
 import cwipc
 import cwipc.realsense2
+import cwipc_realsense2_rs2offline # xxxjack temporary
 import os
 import sys
 import tempfile
@@ -25,6 +26,18 @@ if 0:
 if 'CWIPC_TEST_DLL' in os.environ:
 	filename = os.environ['CWIPC_TEST_DLL']
 	dllobj = cwipc.realsense2._cwipc_realsense2_dll(filename)
+
+#
+# Find directories for test inputs and outputs
+#
+_thisdir=os.path.dirname(os.path.join(os.getcwd(), __file__))
+_topdir=os.path.dirname(_thisdir)
+TEST_FIXTURES_DIR=os.path.join(_topdir, "tests", "fixtures")
+print('xxxjack', _thisdir, _topdir, TEST_FIXTURES_DIR)
+TEST_OUTPUT_DIR=os.path.join(TEST_FIXTURES_DIR, "output")
+if not os.access(TEST_OUTPUT_DIR, os.W_OK):
+    TEST_OUTPUT_DIR=tempfile.mkdtemp('cwipc_realsense2_test')
+
 class TestApi(unittest.TestCase):
         
     def test_cwipc_realsense2(self):
@@ -77,6 +90,39 @@ class TestApi(unittest.TestCase):
         finally:
             if grabber: grabber.free()
             if pc: pc.free()
+
+    def test_cwipc_rs2offline(self):
+        """Test that we can create a pointcloud from offline images"""
+        grabber = None
+        pc = None
+        try:
+            conffile = os.path.join(TEST_FIXTURES_DIR, 'input', 'offlineconfig.xml')
+            cwipc_realsense2_rs2offline.initconsts()
+            settings = cwipc_realsense2_rs2offline.cwipc_offline_settings(
+                color=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+                    width=640,
+                    height=480,
+                    bpp=3,
+                    fps=60,
+                    format=cwipc_realsense2_rs2offline.RS2_FORMAT_RGB8
+                ),
+                depth=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+                    width=640,
+                    height=480,
+                    bpp=2,
+                    fps=60,
+                    format=cwipc_realsense2_rs2offline.RS2_FORMAT_Z16
+                ),
+        
+            )
+            converter = cwipc_realsense2_rs2offline.cwipc_rs2offline(settings, conffile)
+            grabber = converter.get_source()
+            self.assertFalse(grabber.eof())
+            self.assertFalse(grabber.available(True))
+        finally:
+            if grabber: grabber.free()
+            if pc: pc.free()
+
 
     def _verify_pointcloud(self, pc):
         points = pc.get_points()
