@@ -210,9 +210,9 @@ public:
 		return m_source;
 	}
 
-	bool feed(int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)
+	bool feed(int camNum, int frameNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)
 	{
-		return m_offline->feed_image_data(camNum, colorBuffer, colorSize, depthBuffer, depthSize);
+		return m_offline->feed_image_data(camNum, frameNum, colorBuffer, colorSize, depthBuffer, depthSize);
 	}
 };
 
@@ -254,7 +254,7 @@ cwipc_tiledsource* cwipc_offline_get_source(cwipc_offline* obj)
 	return obj->get_source();
 }
 
-bool cwipc_offline_feed(cwipc_offline* obj, int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)
+bool cwipc_offline_feed(cwipc_offline* obj, int camNum, int frameNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)
 {
-	return obj->feed(camNum, colorBuffer, colorSize, depthBuffer, depthSize);
+	return obj->feed(camNum, frameNum, colorBuffer, colorSize, depthBuffer, depthSize);
 }

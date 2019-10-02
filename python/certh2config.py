@@ -97,6 +97,7 @@ def readTrafo(filename):
 def main():
     if len(sys.argv) != 3:
         print(f"Usage: {sys.argv[0]} certh-dir outputfile.xml", file=sys.stderr)
+        sys.exit(1)
     certhDir = sys.argv[1]
     outputFilename = sys.argv[2]
     repoFilename = os.path.join(certhDir, 'device_repository_vrt.json')

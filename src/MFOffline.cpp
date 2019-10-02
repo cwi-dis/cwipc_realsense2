@@ -42,9 +42,9 @@ MFOffline::~MFOffline() {
 
 }
 
-bool MFOffline::feed_image_data(int camNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
+bool MFOffline::feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
 {
 	if (camNum < 0 || camNum > feeders.size()) return false;
 	auto cam = feeders[camNum];
-	return cam->feed_image_data(colorBuffer, colorSize, depthBuffer, depthSize);
+	return cam->feed_image_data(frameNum, colorBuffer, colorSize, depthBuffer, depthSize);
 }

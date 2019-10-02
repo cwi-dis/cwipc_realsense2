@@ -29,9 +29,8 @@ public:
 	virtual ~MFOfflineCamera();
 
 	void _capture_thread_main();
-	bool feed_image_data(void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize);
+	bool feed_image_data(int frameNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize);
 private:
-	int feed_number;			// Number of times feed_image_data() was called (to simulate frame numbers)
 	int depth_width, depth_height, depth_bpp, depth_fps;
 	rs2_format depth_format;
 	int color_width, color_height, color_bpp, color_fps;

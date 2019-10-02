@@ -30,12 +30,14 @@ public:
 
 	/** \brief Feed an image into the converter.
 	 * \param camNum Index of camera for which this data is meant.
-	 * \param sensorNum Index of sensor within camera camNum for which this data is meant.
-	 * \param buffer Pointer to the image data
-	 * \param size Size of buffer (in bytes).
+	 * \param frameNum frame number for this data
+	 * \param colorBuffer Pointer to the RGB image data
+	 * \param colorSize Size of colorBuffer (in bytes).
+	 * \param depthBuffer Pointer to the depth data
+	 * \param depthSize Size of depthBuffer (in bytes).
 	 * \returns False in case of detectable errors (such as incorrect image size)
 	 */
-    virtual bool feed(int camNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize) = 0;
+    virtual bool feed(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize) = 0;
 };
 #else
 
@@ -93,7 +95,7 @@ _CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(MFOfflineSettings setti
  * After all cameras have been fed data the get() method can be used to retrieve the resulting pointcloud.
  */
 
-_CWIPC_REALSENSE2_EXPORT bool cwipc_offline_feed(cwipc_offline* obj, int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize);
+_CWIPC_REALSENSE2_EXPORT bool cwipc_offline_feed(cwipc_offline* obj, int camNum, int frameNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize);
 
 /** \brief Free the offline converter.
  */

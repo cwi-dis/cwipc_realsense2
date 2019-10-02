@@ -65,12 +65,13 @@ int main(int argc, char** argv)
 	assert(colorHeight == 480);
 	assert(colorComponents == 3 || colorComponents == 4);
     size_t colorDataSize = colorWidth*colorHeight*3;
-
+	int frameNum = 0;
 	do {
-		ok = converter->feed(0, colorData, colorDataSize, depthData, depthDataSize);
+		ok = converter->feed(0, frameNum, colorData, colorDataSize, depthData, depthDataSize);
 		if (!ok) {
 			std::cerr << argv[0] << ": Error feeding color and depth data" << std::endl;
 		}
+		frameNum++;
 	} while(!generator->available(false));
 	cwipc *pc = generator->get();
 		if (strcmp(outputFile, "-") != 0) {

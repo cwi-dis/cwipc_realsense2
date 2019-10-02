@@ -20,7 +20,6 @@
 
 MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, MFOfflineSettings& settings)
 :	MFCamera(_camera_index, ctx, configuration, _camData),
-	feed_number(0),
 	depth_width(settings.depth.width),
 	depth_height(settings.depth.height),
 	depth_bpp(settings.depth.bpp),
@@ -126,7 +125,7 @@ void MFOfflineCamera::_capture_thread_main()
 	}
 }
 
-bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
+bool MFOfflineCamera::feed_image_data(int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
 {
 	{
 		depth_sensor.on_video_frame({
@@ -134,9 +133,9 @@ bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void
 			[](void *) {},
 			depth_width * depth_bpp,
 			depth_bpp,
-			(rs2_time_t)(feed_number * 16),
+			(rs2_time_t)(frameNum * 1000.0 / depth_fps),
 			RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-			feed_number,
+			frameNum,
 			depth_stream
 		});
 	}
@@ -146,15 +145,14 @@ bool MFOfflineCamera::feed_image_data(void *colorBuffer, size_t colorSize,  void
 			[](void *) {},
 			color_width*color_bpp,
 			color_bpp,
-			(rs2_time_t)(feed_number * 16),
+			(rs2_time_t)(frameNum * 1000.0 / color_fps),
 			RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-			feed_number,
+			frameNum,
 			color_stream
 		});
 	}
 #ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "MFOfflineCamera: fed camera " << serial << " framenum " << feed_number << std::endl;
+	std::cerr << "MFOfflineCamera: fed camera " << serial << " framenum " << frameNum << std::endl;
 #endif
-	feed_number++;
 	return true;
 }

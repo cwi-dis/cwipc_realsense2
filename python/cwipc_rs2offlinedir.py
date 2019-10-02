@@ -179,7 +179,7 @@ class CerthDir:
             for i in range(len(images)):
                 colorData, depthData = images[i]
                 print(f'\t{i}: {len(colorData)} {len(depthData)}')
-                self.converter.feed(i, colorData, depthData)
+                self.converter.feed(i, self.index, colorData, depthData)
                 gotPC = self.grabber.available(False)
                 if not gotPC:
                     print('\t no data try again')
@@ -190,6 +190,10 @@ class CerthDir:
                 
 
 def main():
+    if len(sys.argv) != 4:
+        print(f"Usage: {sys.argv[0]} certh-directory capturetype ply-output-directory")
+        print("capturetype is prod (1280x720 RGB, 320x180 D) or test (640x480 RGB and D)")
+        sys.exit(1)
     certhDir = sys.argv[1]
     certhCapturetype = sys.argv[2]
     outputDir = sys.argv[3]

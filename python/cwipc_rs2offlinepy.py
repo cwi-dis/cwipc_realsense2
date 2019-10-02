@@ -50,9 +50,11 @@ def main():
     print(f"depth {len(depthData)} bytes, color {len(colorData)} bytes")
 
     # We need to feed the first image a couple of times, until the syncer gets the idea.
+    frameNum = 0
     while not gotPC:
-        converter.feed(0, colorData, depthData)
+        converter.feed(0, frameNum, colorData, depthData)
         gotPC = grabber.available(False)
+        frameNum += 1
     pc = grabber.get()
     cwipc.cwipc_write(outputFile, pc)
     pc.free()
