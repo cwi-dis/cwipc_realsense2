@@ -315,14 +315,16 @@ void MFCapture::_control_thread_main()
 				cam->create_pc_from_frames();
 			}
 			std::cerr << "xxxjack processing thread created pointclouds" << std::endl;
+			// Lock mergedPC already while we are waiting for the per-camera
+			// processing threads. This so the main thread doesn't go off and do
+			// useless things if it is calling available(true).
+			std::unique_lock<std::mutex> mylock(mergedPC_mutex);
 			// Step 4: wait for frame processing to complete.
 			for(auto cam : cameras) {
 				cam->wait_for_pc();
 			}
 			std::cerr << "xxxjack processing thread got pointclouds" << std::endl;
 			// Step 5: merge views
-			// Lock mergedPC while we are modifying it
-			std::unique_lock<std::mutex> mylock(mergedPC_mutex);
 			mergedPC = new_cwipc_pcl_pointcloud();
 			merge_views();
 			if (mergedPC->size() > 0) {
