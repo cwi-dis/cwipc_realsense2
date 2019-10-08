@@ -70,7 +70,7 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		depth_format,
 		depth_intrinsics
 	});
-	depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.1f);
+	depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
 
 	// Create color stream
 	rs2_intrinsics color_intrinsics = {
