@@ -51,6 +51,7 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 	pipe_started(false),
 	aligner(RS2_STREAM_DEPTH)
 {
+	_init_filters();
 }
 
 MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb)
@@ -91,19 +92,26 @@ MFCamera::~MFCamera()
 void MFCamera::_init_filters()
 {
 	if (!do_depth_filtering) return;
-	dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, camSettings.decimation_value);
+	if (camSettings.do_decimation) {
+		dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, camSettings.decimation_value);
+	}
+	if (camSettings.do_threshold) {
+		threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, camSettings.threshold_near);
+		threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, camSettings.threshold_far);
+	}
 
-	threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, camSettings.threshold_near);
-	threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, camSettings.threshold_far);
+	if (camSettings.do_spatial) {
+		spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, camSettings.spatial_iterations);
+		spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, camSettings.spatial_alpha);
+		spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, camSettings.spatial_delta);
+		spat_filter.set_option(RS2_OPTION_HOLES_FILL, camSettings.spatial_filling);
+	}
 
-	spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, camSettings.spatial_iterations);
-	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, camSettings.spatial_alpha);
-	spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, camSettings.spatial_delta);
-	spat_filter.set_option(RS2_OPTION_HOLES_FILL, camSettings.spatial_filling);
-
-	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, camSettings.temporal_alpha);
-	temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, camSettings.temporal_delta);
-	temp_filter.set_option(RS2_OPTION_HOLES_FILL, camSettings.temporal_percistency);
+	if (camSettings.do_temporal) {
+		temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, camSettings.temporal_alpha);
+		temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, camSettings.temporal_delta);
+		temp_filter.set_option(RS2_OPTION_HOLES_FILL, camSettings.temporal_percistency);
+	}
 }
 
 bool MFCamera::capture_frameset()
@@ -185,12 +193,15 @@ void MFCamera::_processing_thread_main()
 
 		if (do_depth_filtering) {
 			processing_frameset = processing_frameset.apply_filter(aligner);
-			processing_frameset = processing_frameset.apply_filter(dec_filter);
-			processing_frameset = processing_frameset.apply_filter(threshold_filter);
-			processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
-			processing_frameset = processing_frameset.apply_filter(spat_filter);
-			processing_frameset = processing_frameset.apply_filter(temp_filter);
-			processing_frameset = processing_frameset.apply_filter(disparity_to_depth);
+			if (camSettings.do_decimation) processing_frameset = processing_frameset.apply_filter(dec_filter);
+			if (camSettings.do_threshold) processing_frameset = processing_frameset.apply_filter(threshold_filter);
+			if (camSettings.do_spatial || camSettings.do_temporal) {
+				processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
+				if (camSettings.do_spatial) processing_frameset = processing_frameset.apply_filter(spat_filter);
+				if (camSettings.do_temporal) processing_frameset = processing_frameset.apply_filter(temp_filter);
+				processing_frameset = processing_frameset.apply_filter(disparity_to_depth);
+			}
+
 		}
 
 		rs2::depth_frame depth = processing_frameset.get_depth_frame();

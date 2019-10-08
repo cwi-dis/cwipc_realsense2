@@ -21,13 +21,17 @@
 #include "offlinedefs.h"
 
 struct MFCameraSettings {
+	bool do_decimation = true;
 	int decimation_value = 1;             // int value between 2 and 8
+	bool do_threshold = true;
 	double threshold_near = 0.15;         // float, near point for distance threshold
 	double threshold_far = 6.0;           // float, far point for distance threshold
+	bool do_spatial = true;
 	int spatial_iterations = 2;           // int val between 1 and 5
 	double spatial_alpha = 0.5;          // val between 0.25 and 1.0
 	int spatial_delta = 30;               // int val between 1 and 50
 	int spatial_filling = 0;	          // int val between 0 and 6
+	bool do_temporal = true;
 	double temporal_alpha = 0.4;	      // val between 0 and 1
 	int temporal_delta = 20;	          // val between 1 and 100
 	int temporal_percistency = 3;         // val between 0 and 8
