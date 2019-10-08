@@ -33,7 +33,8 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	depth_to_color_extrinsics({ { 1,0,0,0,1,0,0,0,1 },{ 0,0,0 } }),
 	dev(),
 	depth_sensor(dev.add_sensor("Depth")),
-	color_sensor(dev.add_sensor("Color"))
+	color_sensor(dev.add_sensor("Color")),
+	feedFrameNum(0)
 {
 	// Get transformation matrix between color and depth in librealsense2 format
 	auto matrix = _camData.intrinsicTrafo->matrix();
@@ -106,6 +107,7 @@ MFOfflineCamera::~MFOfflineCamera()
 void MFOfflineCamera::_capture_thread_main()
 {
 	while(!stopped) {
+#if 0
 		// Wait to find if there is a next set of frames from the camera
 		rs2::frameset fset;
 		bool ok = sync.try_wait_for_frames(&fset);
@@ -121,38 +123,49 @@ void MFOfflineCamera::_capture_thread_main()
 			continue;
 		}
 		captured_frame_queue.enqueue(fset);
+#endif
 		std::this_thread::yield();
 	}
 }
 
 bool MFOfflineCamera::feed_image_data(int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
 {
-	{
+	// frameNum is ignored, because sometimes we have to feed a frame multiple times
+
+	bool frameset_produced = false;
+	while (!frameset_produced) {
+		feedFrameNum++;
 		depth_sensor.on_video_frame({
 			depthBuffer,
 			[](void *) {},
 			depth_width * depth_bpp,
 			depth_bpp,
-			(rs2_time_t)(frameNum * 1000.0 / depth_fps),
+			(rs2_time_t)(feedFrameNum * 1000.0 / depth_fps),
 			RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-			frameNum,
+			feedFrameNum,
 			depth_stream
 		});
-	}
-	{
 		color_sensor.on_video_frame({
 			colorBuffer,
 			[](void *) {},
 			color_width*color_bpp,
 			color_bpp,
-			(rs2_time_t)(frameNum * 1000.0 / color_fps),
+			(rs2_time_t)(feedFrameNum * 1000.0 / color_fps),
 			RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-			frameNum,
+			feedFrameNum,
 			color_stream
 		});
+		// Wait to find if there is a next set of frames from the camera
+		rs2::frameset fset = sync.wait_for_frames();
+		auto depth = fset.first_or_default(RS2_STREAM_DEPTH);
+		auto color = fset.first_or_default(RS2_STREAM_COLOR);
+		if (depth && color) {
+			captured_frame_queue.enqueue(fset);
+			frameset_produced = true;
+		}
 	}
 #ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "MFOfflineCamera: fed camera " << serial << " framenum " << frameNum << std::endl;
+	std::cerr << "MFOfflineCamera: fed camera " << serial << " framenum " << frameNum << " as " << feedFrameNum << std::endl;
 #endif
 	return true;
 }

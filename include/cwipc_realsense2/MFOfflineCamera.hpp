@@ -43,5 +43,6 @@ private:
 	rs2::stream_profile color_stream;
 	rs2::stream_profile depth_stream;
 	rs2::syncer sync;
+	int feedFrameNum;
 };
 #endif // cwipc_realsense_MFOfflineCamera_hpp

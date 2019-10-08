@@ -8,6 +8,9 @@ def loadImage(filename):
     return Image.open(filename)
     
 def main():
+    if len(sys.argv) != 5:
+        print(f"Usage: {sys.argv[0]} configFile colorFile depthFile outputFile", file=sys.stderr)
+        sys.exit(1)
     configFile = sys.argv[1]
     colorFile = sys.argv[2]
     depthFile = sys.argv[3]
@@ -51,11 +54,11 @@ def main():
 
     # We need to feed the first image a couple of times, until the syncer gets the idea.
     frameNum = 0
-    while not gotPC:
-        converter.feed(0, frameNum, colorData, depthData)
-        gotPC = grabber.available(False)
-        frameNum += 1
+    converter.feed(0, frameNum, colorData, depthData)
+    assert grabber.available(True)
     pc = grabber.get()
+    assert pc
+    assert pc.get_uncompressed_size()
     cwipc.cwipc_write(outputFile, pc)
     pc.free()
     grabber.free()

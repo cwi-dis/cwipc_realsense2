@@ -66,22 +66,32 @@ int main(int argc, char** argv)
 	assert(colorComponents == 3 || colorComponents == 4);
     size_t colorDataSize = colorWidth*colorHeight*3;
 	int frameNum = 0;
-	do {
-		ok = converter->feed(0, frameNum, colorData, colorDataSize, depthData, depthDataSize);
-		if (!ok) {
-			std::cerr << argv[0] << ": Error feeding color and depth data" << std::endl;
-		}
-		frameNum++;
-	} while(!generator->available(false));
+	ok = converter->feed(0, frameNum, colorData, colorDataSize, depthData, depthDataSize);
+	if (!ok) {
+		std::cerr << argv[0] << ": Error feeding color and depth data" << std::endl;
+		exit(1);
+	}
+	if(!generator->available(true)) {
+		std::cerr << argv[0] << ": No pointcloud produced" << std::endl;
+		exit(1);
+	}
 	cwipc *pc = generator->get();
+	if (pc == NULL) {
+		std::cerr << argv[0] << ": NULL pointcloud?" << std::endl;
+		exit(1);
+	}
+	if (pc->get_uncompressed_size() == 0) {
+		std::cerr << argv[0] << ": Empty pointcloud" << std::endl;
+	} else {
 		if (strcmp(outputFile, "-") != 0) {
 			int sts = cwipc_write(outputFile, pc, &error);
 			if (sts < 0) {
 				if (error == NULL) error = (char *)"Unknown error";
 				std::cerr << argv[0] << ": Error writing output file: " << error << std::endl;
+			}
 		}
-		pc->free();
-    }
+	}
+	pc->free();
     generator->free();
     return 0;
 }
