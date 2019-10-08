@@ -174,15 +174,12 @@ class CerthDir:
         
     def get(self):
         images = self.curData()
-        gotPC = False
-        while not gotPC:
-            for i in range(len(images)):
-                colorData, depthData = images[i]
-                print(f'\t{i}: {len(colorData)} {len(depthData)}')
-                self.converter.feed(i, self.index, colorData, depthData)
-                gotPC = self.grabber.available(False)
-                if not gotPC:
-                    print('\t no data try again')
+        for i in range(len(images)):
+            colorData, depthData = images[i]
+            self.converter.feed(i, self.index, colorData, depthData)
+        gotPC = self.grabber.available(True)
+        if not gotPC:
+            print(f"Frame {self.index}: no pointcloud available")
         rv = self.grabber.get()
         self.next()
         return rv
@@ -200,8 +197,8 @@ def main():
     dirHandler = CerthDir(certhDir, certhCapturetype)
     print(f'cameras: {dirHandler.cameras()}')
     while not dirHandler.eof():
+        print(f"Processing frame {dirHandler.index}")
         pc = dirHandler.get()
-        print('got pointcloud')
         outputFile = os.path.join(outputDir, 'cloud-%d.ply' % dirHandler.index)
         cwipc.cwipc_write(outputFile, pc)
         pc.free()

@@ -6,7 +6,7 @@
 
 // Define to get (a little) debug prints
 #undef CWIPC_DEBUG
-#define CWIPC_DEBUG_THREAD
+#undef CWIPC_DEBUG_THREAD
 
 // This is the dll source, so define external symbols as dllexport on windows.
 
@@ -52,7 +52,6 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	depth_to_color_extrinsics.translation[2] = matrix(2,3);
 	
 	dev = rs2::software_device();
-	//xxxjack dev.add_to(ctx);
 
 	// Create depth stream
 	rs2_intrinsics depth_intrinsics = {

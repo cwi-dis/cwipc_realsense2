@@ -5,8 +5,8 @@
 //
 
 // Define to get (a little) debug prints
-#define CWIPC_DEBUG
-#define CWIPC_DEBUG_THREAD
+#undef CWIPC_DEBUG
+#undef CWIPC_DEBUG_THREAD
 
 // This is the dll source, so define external symbols as dllexport on windows.
 

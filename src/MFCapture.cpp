@@ -8,8 +8,8 @@
 #define WITH_INTER_CAM_SYNC
 
 // Define to get (a little) debug prints
-#define CWIPC_DEBUG
-#define CWIPC_DEBUG_THREAD
+#undef CWIPC_DEBUG
+#undef CWIPC_DEBUG_THREAD
 
 // This is the dll source, so define external symbols as dllexport on windows.
 
@@ -293,7 +293,6 @@ void MFCapture::_control_thread_main()
 			for(auto cam : cameras) {
 				if (!cam->capture_frameset()) continue;
 			}
-			std::cerr << "xxxjack processing thread got frameset" << std::endl;
 			// And get the best timestamp
 			uint64_t timestamp = 0;
 			for(auto cam: cameras) {
@@ -314,7 +313,6 @@ void MFCapture::_control_thread_main()
 			for(auto cam : cameras) {
 				cam->create_pc_from_frames();
 			}
-			std::cerr << "xxxjack processing thread created pointclouds" << std::endl;
 			// Lock mergedPC already while we are waiting for the per-camera
 			// processing threads. This so the main thread doesn't go off and do
 			// useless things if it is calling available(true).
@@ -323,7 +321,6 @@ void MFCapture::_control_thread_main()
 			for(auto cam : cameras) {
 				cam->wait_for_pc();
 			}
-			std::cerr << "xxxjack processing thread got pointclouds" << std::endl;
 			// Step 5: merge views
 			mergedPC = new_cwipc_pcl_pointcloud();
 			merge_views();

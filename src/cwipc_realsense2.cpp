@@ -193,7 +193,6 @@ public:
 
     ~cwipc_source_rs2offline_impl()
 	{
-		// xxxjack unsure whether this is the correct way of freeing the MFoffline exactly once...
 		m_offline = NULL;
 		delete m_source;
     }
