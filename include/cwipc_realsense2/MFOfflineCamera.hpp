@@ -28,6 +28,7 @@ public:
 	MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, MFOfflineSettings& settings);
 	virtual ~MFOfflineCamera();
 
+	void _start_capture_thread();
 	void _capture_thread_main();
 	bool feed_image_data(int frameNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize);
 private:

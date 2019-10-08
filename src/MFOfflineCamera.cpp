@@ -104,28 +104,14 @@ MFOfflineCamera::~MFOfflineCamera()
 {
 }
 
+void MFOfflineCamera::_start_capture_thread()
+{
+	// No capture thread needed for offline processing
+}
+
 void MFOfflineCamera::_capture_thread_main()
 {
-	while(!stopped) {
-#if 0
-		// Wait to find if there is a next set of frames from the camera
-		rs2::frameset fset;
-		bool ok = sync.try_wait_for_frames(&fset);
-		if (!ok) continue;
-		auto depth = fset.first_or_default(RS2_STREAM_DEPTH);
-		auto color = fset.first_or_default(RS2_STREAM_COLOR);
-		if (!depth) {
-			std::cerr << "MFOfflineCamera: warning: feed didn't produce depth frame" << std::endl;
-			continue;
-		}
-		if (!color) {
-			std::cerr << "MFOfflineCamera: warning: feed didn't produce color frame" << std::endl;
-			continue;
-		}
-		captured_frame_queue.enqueue(fset);
-#endif
-		std::this_thread::yield();
-	}
+	assert(0);
 }
 
 bool MFOfflineCamera::feed_image_data(int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)

@@ -51,6 +51,7 @@ protected:
 	bool stopped;
 	std::thread *processing_thread;
 	void _processing_thread_main();
+	virtual void _start_capture_thread();
 	virtual void _capture_thread_main();
 	rs2::frame_queue captured_frame_queue;
 

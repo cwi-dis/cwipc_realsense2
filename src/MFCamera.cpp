@@ -129,7 +129,6 @@ void MFCamera::start()
 void MFCamera::stop()
 {
 	assert(!stopped);
-	assert(grabber_thread);
 	stopped = true;
 	if (grabber_thread) grabber_thread->join();
 	if (processing_thread) processing_thread->join();
@@ -143,8 +142,13 @@ void MFCamera::start_capturer()
 {
 	assert(stopped);
 	stopped = false;
-	grabber_thread = new std::thread(&MFCamera::_capture_thread_main, this);
+	_start_capture_thread();
 	processing_thread = new std::thread(&MFCamera::_processing_thread_main, this);
+}
+
+void MFCamera::_start_capture_thread()
+{
+	grabber_thread = new std::thread(&MFCamera::_capture_thread_main, this);
 }
 
 void MFCamera::_capture_thread_main()
