@@ -10,14 +10,6 @@
 
 #include "defs.h"
 
-#ifndef CWIPC_DLL_ENTRY
-#if defined(WIN32) || defined(_WIN32)
-#define CWIPC_DLL_ENTRY __declspec(dllimport)
-#else
-#define CWIPC_DLL_ENTRY 
-#endif
-#endif
-
 class MFCamera {
 private:
 	MFCamera(const MFCamera&);	// Disable copy constructor

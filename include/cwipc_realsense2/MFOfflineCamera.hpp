@@ -12,21 +12,13 @@
 #include "defs.h"
 #include "cwipc_realsense2/MFCamera.hpp"
 
-#ifndef CWIPC_DLL_ENTRY
-#if defined(WIN32) || defined(_WIN32)
-#define CWIPC_DLL_ENTRY __declspec(dllimport)
-#else
-#define CWIPC_DLL_ENTRY 
-#endif
-#endif
-
 class MFOfflineCamera : public MFCamera {
 private:
 	MFOfflineCamera(const MFOfflineCamera&);	// Disable copy constructor
 	MFOfflineCamera& operator=(const MFOfflineCamera&);	// Disable assignment
 public:
 	MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, MFOfflineSettings& settings);
-	virtual ~MFOfflineCamera();
+	~MFOfflineCamera();
 
 	void _start_capture_thread();
 	void _capture_thread_main();

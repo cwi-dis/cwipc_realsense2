@@ -15,6 +15,7 @@
 
 #if defined(WIN32) || defined(_WIN32)
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
+#define CWIPC_DLL_ENTRY __declspec(dllexport)
 #endif
 
 #include <chrono>
