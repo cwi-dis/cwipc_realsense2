@@ -70,7 +70,13 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 		depth_format,
 		depth_intrinsics
 	});
-	depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
+	depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.0001f);
+	depth_sensor.add_read_only_option(RS2_OPTION_STEREO_BASELINE, 0.0001f);
+#ifdef xxxjack
+	auto ds = depth_sensor.as<rs2::depth_sensor>();
+	auto dscale = ds.get_depth_scale();
+	std::cerr << "dpeth scale=" << dscale << std::endl;
+#endif
 
 	// Create color stream
 	rs2_intrinsics color_intrinsics = {
