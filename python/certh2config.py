@@ -7,8 +7,8 @@ BASECONFIG="""<?xml version="1.0" ?>
 <file>
     <CameraConfig>
         <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
-        <postprocessing depthfiltering="0" backgroundremoval="0" greenscreenremoval="0" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
-            <depthfilterparameters decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+        <postprocessing depthfiltering="1" backgroundremoval="0" greenscreenremoval="0" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
+            <depthfilterparameters do_decimation="no" do_threshold="yes" do_spatial="no" do_temporal="no" threshold_near="0.4" threshold_far="4" />
         </postprocessing>
     </CameraConfig>
 </file>
@@ -61,7 +61,7 @@ def entry2xml(entry):
     rv.set('serial', entry['name'])
     trafoParent = ET.SubElement(rv, 'trafo')
     trafo = ET.SubElement(trafoParent, 'values')
-    fillTrafo(trafo, entry['cam2worldTrafo'], transpose=True, translateScaling=1)
+    fillTrafo(trafo, entry['cam2worldTrafo'], transpose=True, translateScaling=0.001)
     intParent = ET.SubElement(rv, 'intrinsicTrafo')
     intTrafo = ET.SubElement(intParent, 'values')
     fillTrafo(intTrafo, entry['color2depthTrafo'], transpose=True)
