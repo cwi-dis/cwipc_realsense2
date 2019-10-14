@@ -8,3 +8,4 @@ build-*/
 .vs
 __pycache__
 *.pyc
+tests/fixtures/output/*.ply
