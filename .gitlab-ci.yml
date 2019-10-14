@@ -30,7 +30,7 @@ build_linux:
     - apt-get install -y librealsense2-dev
 # Install Deployment repo and dependencies
     - apt-get install -y python3-pip
-    - python3 -m pip install requests mechanize pillow
+    - python3 -m pip install requests mechanize pillow numpy
     - mkdir deployment-helpers
     - cd deployment-helpers
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
@@ -64,7 +64,7 @@ build_osx:
     - brew install homebrew/core/glfw3 || true # brew upgrade homebrew/core/glfw3
     - brew install librealsense || true # brew upgrade librealsense
 # Install Deployment repo and dependencies
-    - python3 -m pip install requests mechanize pillow
+    - python3 -m pip install requests mechanize pillow numpy
     - mkdir deployment-helpers
     - cd deployment-helpers
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
@@ -94,7 +94,7 @@ build_win:
     - rm -rf /cygdrive/c/dist-win/installed
     - mkdir -p /cygdrive/c/dist-win/installed
 # Install Deployment repo and dependencies
-    - python -m pip install requests mechanize pillow
+    - python -m pip install requests mechanize pillow numpy
     - mkdir deployment-helpers
     - cd deployment-helpers
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
