@@ -1,6 +1,6 @@
 import sys
 import cwipc
-import cwipc_realsense2_rs2offline
+import cwipc.realsense2
 from PIL import Image
 import numpy
 
@@ -15,25 +15,24 @@ def main():
     colorFile = sys.argv[2]
     depthFile = sys.argv[3]
     outputFile = sys.argv[4]
-    cwipc_realsense2_rs2offline.initconsts()
-    settings = cwipc_realsense2_rs2offline.cwipc_offline_settings(
-        color=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+    settings = cwipc.realsense2.cwipc_offline_settings(
+        color=cwipc.realsense2.cwipc_offline_camera_settings(
             width=640,
             height=480,
             bpp=3,
             fps=60,
-            format=cwipc_realsense2_rs2offline.RS2_FORMAT_RGB8
+            format=cwipc.realsense2.RS2_FORMAT_RGB8()
         ),
-        depth=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+        depth=cwipc.realsense2.cwipc_offline_camera_settings(
             width=640,
             height=480,
             bpp=2,
             fps=60,
-            format=cwipc_realsense2_rs2offline.RS2_FORMAT_Z16
+            format=cwipc.realsense2.RS2_FORMAT_Z16()
         ),
         
     )
-    converter = cwipc_realsense2_rs2offline.cwipc_rs2offline(settings, configFile)
+    converter = cwipc.realsense2.cwipc_rs2offline(settings, configFile)
     grabber = converter.get_source()
     depthImage = loadImage(depthFile)
     depthImage = Image.fromarray(numpy.array(depthImage).astype("uint16"))

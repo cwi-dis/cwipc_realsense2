@@ -1,7 +1,7 @@
 import sys
 import os
 import cwipc
-import cwipc_realsense2_rs2offline
+import cwipc.realsense2
 from PIL import Image
 import numpy
 import xml.etree.ElementTree as ET
@@ -10,41 +10,40 @@ def loadImage(filename):
     return Image.open(filename)
     
 def settings(which):
-    cwipc_realsense2_rs2offline.initconsts()
     if which == 'prod':
-        settings = cwipc_realsense2_rs2offline.cwipc_offline_settings(
-            color=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+        settings = cwipc.realsense2.cwipc_offline_settings(
+            color=cwipc.realsense2.cwipc_offline_camera_settings(
                 width=1280,
                 height=720,
                 bpp=3,
                 fps=60,
-                format=cwipc_realsense2_rs2offline.RS2_FORMAT_RGB8
+                format=cwipc.realsense2.RS2_FORMAT_RGB8()
             ),
-            depth=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+            depth=cwipc.realsense2.cwipc_offline_camera_settings(
                 width=320,
                 height=180,
                 bpp=2,
                 fps=60,
-                format=cwipc_realsense2_rs2offline.RS2_FORMAT_Z16
+                format=cwipc.realsense2.RS2_FORMAT_Z16()
             ),
         
         )
         return settings
     elif which == 'test':
-        settings = cwipc_realsense2_rs2offline.cwipc_offline_settings(
-            color=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+        settings = cwipc.realsense2.cwipc_offline_settings(
+            color=cwipc.realsense2.cwipc_offline_camera_settings(
                 width=640,
                 height=480,
                 bpp=3,
                 fps=60,
-                format=cwipc_realsense2_rs2offline.RS2_FORMAT_RGB8
+                format=cwipc.realsense2.RS2_FORMAT_RGB8()
             ),
-            depth=cwipc_realsense2_rs2offline.cwipc_offline_camera_settings(
+            depth=cwipc.realsense2.cwipc_offline_camera_settings(
                 width=640,
                 height=480,
                 bpp=2,
                 fps=60,
-                format=cwipc_realsense2_rs2offline.RS2_FORMAT_Z16
+                format=cwipc.realsense2.RS2_FORMAT_Z16()
             ),
         
         )
@@ -87,7 +86,7 @@ class CerthDir:
         self.depthFiles = CerthImageDir(os.path.join(dirname, 'depth'))
         self.index = 0
         self._eof = False
-        self.converter = cwipc_realsense2_rs2offline.cwipc_rs2offline(self.offlineSettings, self.configFile)
+        self.converter = cwipc.realsense2.cwipc_rs2offline(self.offlineSettings, self.configFile)
         self.grabber = self.converter.get_source()
 
     def cameras(self):
