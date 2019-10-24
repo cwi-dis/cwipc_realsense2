@@ -12,8 +12,8 @@
 // Global variables (constants, really)
 
 
-int CWIPC_RS2_FORMAT_Z16 = RS2_FORMAT_Z16;
-int CWIPC_RS2_FORMAT_RGB8 = RS2_FORMAT_RGB8;
+_CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16 = RS2_FORMAT_Z16;
+_CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_RGB8 = RS2_FORMAT_RGB8;
 
 cwipc_vector* add_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
 	if (result) {
