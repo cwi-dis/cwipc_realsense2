@@ -1,8 +1,16 @@
 import sys
+import os
 import cwipc
 import cwipc.realsense2
 from PIL import Image
 import numpy
+
+#
+# Windows search path is horrible. Work around it for testing with an environment variable
+#
+if 'CWIPC_TEST_DLL' in os.environ:
+    filename = os.environ['CWIPC_TEST_DLL']
+    dllobj = cwipc.realsense2._cwipc_realsense2_dll(filename)
 
 def loadImage(filename):
     return Image.open(filename)

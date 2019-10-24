@@ -23,8 +23,8 @@ if 0:
 # Windows search path is horrible. Work around it for testing with an environment variable
 #
 if 'CWIPC_TEST_DLL' in os.environ:
-	filename = os.environ['CWIPC_TEST_DLL']
-	dllobj = cwipc.realsense2._cwipc_realsense2_dll(filename)
+    filename = os.environ['CWIPC_TEST_DLL']
+    dllobj = cwipc.realsense2._cwipc_realsense2_dll(filename)
 
 #
 # Find directories for test inputs and outputs
@@ -65,14 +65,14 @@ class TestApi(unittest.TestCase):
             self.assertIn('normal', tileInfo)
             self.assertIn('camera', tileInfo)
             self.assertIn('ncamera', tileInfo)
-            self.assertLessEqual(tileInfo['ncamera'], 1)
+            # Untrue if multiple realsenses connected: self.assertLessEqual(tileInfo['ncamera'], 1)
             # Test some minimal conditions for other tiles
             for i in range(1, nTile):
                 tileInfo = grabber.get_tileinfo_dict(i)
                 if i in (1, 2, 4, 8, 16, 32, 64, 128):
                     # These tiles should exist and have a camera ID
                     self.assertIn('normal', tileInfo)
-                    self.assertNotEqual(tileinfo['camera'], None)
+                    self.assertNotEqual(tileInfo['camera'], None)
         finally:
             if grabber: grabber.free()
 
