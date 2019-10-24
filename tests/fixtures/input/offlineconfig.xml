@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<file>
+    <CameraConfig>
+        <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
+        <postprocessing depthfiltering="1" backgroundremoval="0" greenscreenremoval="0" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
+            <depthfilterparameters do_decimation="no" do_threshold="yes" do_spatial="no" do_temporal="no" threshold_near="0.4" threshold_far="4" decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+        </postprocessing>
+        <camera serial="M72i">
+            <trafo>
+                <values v00="0.115766" v01="0.664986" v02="-0.737829" v03="1.35174" v10="0.0787819" v11="-0.74663" v12="-0.660558" v13="1.46183" v20="-0.990147" v21="0.0183429" v22="-0.138824" v23="0.305322" v30="0" v31="0" v32="0" v33="1" />
+            </trafo>
+            <intrinsicTrafo>
+                <values v00="0.9999992847442627" v01="0.0012106744106858969" v02="2.5306997486040927e-05" v03="-0.014730011112987995" v10="-0.0012106535723432899" v11="0.999998927116394" v12="-0.0008052455959841609" v13="0.00010096529877046123" v20="-2.6281712052877992e-05" v21="0.0008052143384702504" v22="0.9999996423721313" v23="-0.0002816435880959034" v30="0" v31="0" v32="0" v33="1" />
+            </intrinsicTrafo>
+        </camera>
+
+    </CameraConfig>
+</file>

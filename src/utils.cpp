@@ -59,13 +59,17 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
         
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
+			parameterElement->QueryBoolAttribute("do_decimation", &(config->default_camera_settings.do_decimation));
 			parameterElement->QueryIntAttribute("decimation_value", &(config->default_camera_settings.decimation_value));
+			parameterElement->QueryBoolAttribute("do_threshold", &(config->default_camera_settings.do_threshold));
 			parameterElement->QueryDoubleAttribute("threshold_near", &(config->default_camera_settings.threshold_near));
 			parameterElement->QueryDoubleAttribute("threshold_far", &(config->default_camera_settings.threshold_far));
+			parameterElement->QueryBoolAttribute("do_spatial", &(config->default_camera_settings.do_spatial));
 			parameterElement->QueryIntAttribute("spatial_iterations", &(config->default_camera_settings.spatial_iterations));
 			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->default_camera_settings.spatial_alpha));
 			parameterElement->QueryIntAttribute("spatial_delta", &(config->default_camera_settings.spatial_delta));
 			parameterElement->QueryIntAttribute("spatial_filling", &(config->default_camera_settings.spatial_filling));
+			parameterElement->QueryBoolAttribute("do_temporal", &(config->default_camera_settings.do_temporal));
 			parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->default_camera_settings.temporal_alpha));
 			parameterElement->QueryIntAttribute("temporal_delta", &(config->default_camera_settings.temporal_delta));
 			parameterElement->QueryIntAttribute("temporal_percistency", &(config->default_camera_settings.temporal_percistency));
@@ -97,8 +101,11 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 
 			cd = new MFCameraData();
 			boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
+			boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
+			intrinsicTrafo->setIdentity();
 			cd->serial = cameraElement->Attribute("serial");
 			cd->trafo = trafo;
+			cd->intrinsicTrafo = intrinsicTrafo;
 			cd->background = { 0, 0, 0 };
 			cd->cameraposition = { 0, 0, 0 };
 			config->cameraData.push_back(*cd);
@@ -130,6 +137,27 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 		}
 		else
 			loadOkay = false;
+		// load optional intrinsicTrafo element (only for offline usage)
+		trafo = cameraElement->FirstChildElement("intrinsicTrafo");
+		if (trafo) {
+			TiXmlElement *val = trafo->FirstChildElement("values");
+			val->QueryDoubleAttribute("v00", &(*cd->intrinsicTrafo)(0, 0));
+			val->QueryDoubleAttribute("v01", &(*cd->intrinsicTrafo)(0, 1));
+			val->QueryDoubleAttribute("v02", &(*cd->intrinsicTrafo)(0, 2));
+			val->QueryDoubleAttribute("v03", &(*cd->intrinsicTrafo)(0, 3));
+			val->QueryDoubleAttribute("v10", &(*cd->intrinsicTrafo)(1, 0));
+			val->QueryDoubleAttribute("v11", &(*cd->intrinsicTrafo)(1, 1));
+			val->QueryDoubleAttribute("v12", &(*cd->intrinsicTrafo)(1, 2));
+			val->QueryDoubleAttribute("v13", &(*cd->intrinsicTrafo)(1, 3));
+			val->QueryDoubleAttribute("v20", &(*cd->intrinsicTrafo)(2, 0));
+			val->QueryDoubleAttribute("v21", &(*cd->intrinsicTrafo)(2, 1));
+			val->QueryDoubleAttribute("v22", &(*cd->intrinsicTrafo)(2, 2));
+			val->QueryDoubleAttribute("v23", &(*cd->intrinsicTrafo)(2, 3));
+			val->QueryDoubleAttribute("v30", &(*cd->intrinsicTrafo)(3, 0));
+			val->QueryDoubleAttribute("v31", &(*cd->intrinsicTrafo)(3, 1));
+			val->QueryDoubleAttribute("v32", &(*cd->intrinsicTrafo)(3, 2));
+			val->QueryDoubleAttribute("v33", &(*cd->intrinsicTrafo)(3, 3));
+		}
 
 		registeredcameras++;
 		cameraElement = cameraElement->NextSiblingElement("camera");
@@ -188,13 +216,17 @@ void mf_config2file(const char* filename, MFCaptureConfig* config)
 	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_percistency is a float between 0 and 8 "));
 
 	TiXmlElement* parameters = new TiXmlElement("depthfilterparameters");
+	parameters->SetAttribute("do_decimation", config->default_camera_settings.do_decimation);
 	parameters->SetAttribute("decimation_value", config->default_camera_settings.decimation_value);
+	parameters->SetAttribute("do_threshold", config->default_camera_settings.do_threshold);
 	parameters->SetDoubleAttribute("threshold_near", config->default_camera_settings.threshold_near);
 	parameters->SetDoubleAttribute("threshold_far", config->default_camera_settings.threshold_far);
+	parameters->SetAttribute("do_spatial", config->default_camera_settings.do_spatial);
 	parameters->SetAttribute("spatial_iterations", config->default_camera_settings.spatial_iterations);
 	parameters->SetDoubleAttribute("spatial_alpha", config->default_camera_settings.spatial_alpha);
 	parameters->SetAttribute("spatial_delta", config->default_camera_settings.spatial_delta);
 	parameters->SetAttribute("spatial_filling", config->default_camera_settings.spatial_filling);
+	parameters->SetAttribute("do_temporal", config->default_camera_settings.do_temporal);
 	parameters->SetDoubleAttribute("temporal_alpha", config->default_camera_settings.temporal_alpha);
 	parameters->SetAttribute("temporal_delta", config->default_camera_settings.temporal_delta);
 	parameters->SetAttribute("temporal_percistency", config->default_camera_settings.temporal_percistency);
