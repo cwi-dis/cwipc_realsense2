@@ -43,8 +43,10 @@ int main(int argc, char** argv)
 	}
 	count = atoi(argv[1]);
 	while (count-- > 0 && ok == 0) {
-		snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], timestamps.back());
-		ok = cwipc_write(filename, cwipc_from_pcl(capturepointclouds.back(), timestamps.back(), &error, CWIPC_API_VERSION), &error);
+		if (strcmp(argv[2], "-") != 0) {
+			snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], timestamps.back());
+			ok = cwipc_write(filename, cwipc_from_pcl(capturepointclouds.back(), timestamps.back(), &error, CWIPC_API_VERSION), &error);
+		}
 		capturepointclouds.pop_back();
 		timestamps.pop_back();
 	}
