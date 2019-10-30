@@ -70,6 +70,7 @@ extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16;	//!< Constant: 16-bit 
 _CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion);
 
 /** \brief Capture pointclouds from offline realsense2 images.
+ * \param settings Structure containing settings for the offline capturer
  * \param configFilename An option string with the filename of the camera configuration file.
  * \param errorMessage An optional pointer to a string where any error message will be stored.
  * \param apiVersion Pass in CWIPC_API_VERSION to ensure DLL compatibility.
@@ -85,6 +86,7 @@ _CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(MFOfflineSettings setti
 /** \brief Feed image data into an offline pointcloud constructor.
  * \param obj The cwipc_offline object to feed data to.
  * \param camNum Camera number from which these images were taken
+ * \param frameNum Frame number (index) of this data
  * \param colorBuffer Pointer to image data
  * \param colorSize Length of colorBuffer in bytes
  * \param depthBuffer Pointer to depth data
