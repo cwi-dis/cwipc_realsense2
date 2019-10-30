@@ -51,6 +51,8 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 		postprocessingElement->QueryBoolAttribute("depthfiltering", &(config->depth_filtering));
 		postprocessingElement->QueryBoolAttribute("backgroundremoval", &(config->background_removal));
 		postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
+		postprocessingElement->QueryDoubleAttribute("height_min", &(config->height_min));
+		postprocessingElement->QueryDoubleAttribute("height_max", &(config->height_max));
 		postprocessingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
 		postprocessingElement->QueryBoolAttribute("tiling", &(config->tiling));
 		postprocessingElement->QueryDoubleAttribute("tilingresolution", &(config->tiling_resolution));
@@ -199,6 +201,8 @@ void mf_config2file(const char* filename, MFCaptureConfig* config)
 	postprocessing->SetAttribute("depthfiltering", config->depth_filtering);
 	postprocessing->SetAttribute("backgroundremoval", config->background_removal);
 	postprocessing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
+	postprocessing->SetDoubleAttribute("height_min", config->height_min);
+	postprocessing->SetDoubleAttribute("height_max", config->height_max);
 	postprocessing->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
 	postprocessing->SetAttribute("tiling", config->tiling);
 	postprocessing->SetDoubleAttribute("tilingresolution", config->tiling_resolution);

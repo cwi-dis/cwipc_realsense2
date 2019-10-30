@@ -59,6 +59,8 @@ struct MFCaptureConfig {
 	bool background_removal = false;      // If true reduces pointcloud to forground object
 	bool greenscreen_removal = false;	  // If true include greenscreen removal
 	bool depth_filtering = false;         // If true perform post filtering on depth frame
+	double height_min = 0.0;			  // If height_min != height_max perform height filtering
+	double height_max = 0.0;			  // If height_min != height_max perform height filtering
 	double cloud_resolution = 0.0;        // Resolution of voxelized pointclouds
 	bool tiling = false;	              // If true produce tiled stream
 	double tiling_resolution = 0.01;      // Resolution of tiling process

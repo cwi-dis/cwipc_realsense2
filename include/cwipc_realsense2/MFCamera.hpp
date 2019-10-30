@@ -46,7 +46,7 @@ protected:
 	virtual void _start_capture_thread();
 	virtual void _capture_thread_main();
 	rs2::frame_queue captured_frame_queue;
-
+	void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
 private:
 	MFCameraData& camData;
 	MFCameraSettings& camSettings;
@@ -58,6 +58,9 @@ private:
 	bool do_depth_filtering;
 	bool do_background_removal;
 	bool do_greenscreen_removal;
+	bool do_height_filtering;
+	double height_min;
+	double height_max;
 
 	std::thread *grabber_thread;
 	rs2::frame_queue processing_frame_queue;

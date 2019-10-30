@@ -45,6 +45,9 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 	do_depth_filtering(configuration.depth_filtering),
 	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
+	do_height_filtering(configuration.height_min != configuration.height_max),
+	height_min(configuration.height_min),
+	height_max(configuration.height_max),
 	grabber_thread(nullptr),
 	processing_frame_queue(1),
 	pipe(ctx),
@@ -69,6 +72,9 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	do_depth_filtering(configuration.depth_filtering),
 	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
+	do_height_filtering(configuration.height_min != configuration.height_max),
+	height_min(configuration.height_min),
+	height_max(configuration.height_max),
 	grabber_thread(nullptr),
 	processing_frame_queue(1),
 	pipe(ctx),
@@ -270,6 +276,7 @@ void MFCamera::_processing_thread_main()
 					pt.x = vertices[i].x;
 					pt.y = -vertices[i].y;
 					pt.z = -z;
+					if (do_height_filtering && ( pt.y < height_min || pt.y > height_max)) continue;
 					int pi = i * 3;
 					pt.r = texture_data[pi];
 					pt.g = texture_data[pi + 1];
@@ -289,10 +296,8 @@ void MFCamera::_processing_thread_main()
 				if (vertices[i].z == 0) continue;
 
 				cwipc_pcl_point pt;
-
-				pt.x = vertices[i].x;
-				pt.y = vertices[i].y;
-				pt.z = vertices[i].z;
+				transformPoint(pt, vertices[i]);
+				if (do_height_filtering && ( pt.y < height_min || pt.y > height_max)) continue;
 				float u = texture_coordinates[i].u;
 				float v = texture_coordinates[i].v;
 				int texture_x = std::min(std::max(int(u*texture_width + .5f), 0), texture_width - 1);
@@ -309,7 +314,6 @@ void MFCamera::_processing_thread_main()
 		if (camData.cloud->size() == 0) {
 			std::cerr << "cwipc_realsense2: warning: captured empty pointcloud from camera " << camData.serial << std::endl;
 		}
-		transformPointCloud(*camData.cloud, *camData.cloud, *camData.trafo);
 		// Notify wait_for_pc that we're done.
 		processing_done = true;
 		processing_done_cv.notify_one();
@@ -317,6 +321,13 @@ void MFCamera::_processing_thread_main()
 #ifdef CWIPC_DEBUG_THREAD
 	std::cerr << "frame processing: cam=" << serial << " thread stopped" << std::endl;
 #endif
+}
+
+void MFCamera::transformPoint(cwipc_pcl_point& out, const rs2::vertex& in)
+{
+	out.x = (*camData.trafo)(0,0)*in.x + (*camData.trafo)(0,1)*in.y + (*camData.trafo)(0,2)*in.z + (*camData.trafo)(0,3);
+	out.y = (*camData.trafo)(1,0)*in.x + (*camData.trafo)(1,1)*in.y + (*camData.trafo)(1,2)*in.z + (*camData.trafo)(1,3);
+	out.z = (*camData.trafo)(2,0)*in.x + (*camData.trafo)(2,1)*in.y + (*camData.trafo)(2,2)*in.z + (*camData.trafo)(2,3);
 }
 
 void MFCamera::create_pc_from_frames()
