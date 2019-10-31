@@ -109,7 +109,7 @@ int main(int argc, char * argv[]) try
 	cwipc *prevpc = NULL;
 	while (app && !stop) {
 		cwipc *pc = src->get();
-
+		if (pc == NULL) continue;
 		cwipc_pcl_pointcloud captured_pc = pc->access_pcl_pointcloud();
 		if (!(captured_pc->size() > 0)) continue;
 
