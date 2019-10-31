@@ -41,7 +41,7 @@ float window_util::width() const { return float(_width); }
 float window_util::height() const { return float(_height); }
 
 // OpenGL commands that prep screen
-void window_util::prepare_gl(float x, float y, float z)
+void window_util::prepare_gl(float x, float y, float z, float pointSize)
 {
 	glPopMatrix();
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -62,7 +62,11 @@ void window_util::prepare_gl(float x, float y, float z)
 	glRotated(_appstate.yaw, 0, 1, 0);
 	glTranslatef(x, y, z);
 	glPushMatrix();
-	glPointSize(float(_width) / float(640));
+	if (pointSize > 0) {
+		glPointSize(0.5*pointSize*float(_width));
+	} else {
+		glPointSize(float(_width) / float(640));
+	}
 	glEnable(GL_DEPTH_TEST);
 	glBegin(GL_POINTS);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);

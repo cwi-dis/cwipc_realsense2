@@ -31,10 +31,10 @@ void printhelp() {
 }
 
 // Handle the OpenGL setup needed to display all pointclouds
-void draw_pointcloud(window_util* app, cwipc_pcl_pointcloud point_cloud)
+void draw_pointcloud(window_util* app, cwipc_pcl_pointcloud point_cloud, float pointSize)
 {
-	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
-
+	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z(), pointSize);
+	std::cerr << "xxxjack pointsize=" << pointSize << std::endl;
 	// draw the pointcloud(s)
 	for (auto pnt : point_cloud->points) {
 #ifdef SHOW_CAMERA_CONTRIBUTION_AS_COLOR
@@ -110,6 +110,7 @@ int main(int argc, char * argv[]) try
 	while (app && !stop) {
 		cwipc *pc = src->get();
 		if (pc == NULL) continue;
+		pc->_set_cellsize(-1);
 		cwipc_pcl_pointcloud captured_pc = pc->access_pcl_pointcloud();
 		if (!(captured_pc->size() > 0)) continue;
 
@@ -120,8 +121,8 @@ int main(int argc, char * argv[]) try
 		}
 		if (!do_align)
 			mergedcenter += deltacenter;
-
-		draw_pointcloud(&app, captured_pc);
+		float pointSize = pc->cellsize();
+		draw_pointcloud(&app, captured_pc, pointSize);
 		if (prevpc) prevpc->free();
 		prevpc = pc;
 	}

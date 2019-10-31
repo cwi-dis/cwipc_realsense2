@@ -96,7 +96,7 @@ bool load_data() {
 }
 
 void draw_background_planes(window_util* app, MFCapture* multiframe) {
-	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
+	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z(), 0);
 	for (int i = 0; i < multiframe->configuration.cameraData.size(); i++) {
 		MFCamera* rsd = multiframe->get_camera(multiframe->configuration.cameraData[i].serial);
 		cwipc_pcl_pointcloud bgcld(new_cwipc_pcl_pointcloud());
@@ -151,7 +151,7 @@ void draw_background_planes(window_util* app, MFCapture* multiframe) {
 // Handle the OpenGL setup needed to display all pointclouds
 void draw_pointclouds(window_util* app, MFCapture* multiframe)
 {
-	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z());
+	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z(), 0);
 	// draw the pointcloud(s)
 	if (align_mode) {
         // 'align' mode action: draw the individual pointclouds of the still

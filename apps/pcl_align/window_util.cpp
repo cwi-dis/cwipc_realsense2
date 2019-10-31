@@ -41,7 +41,7 @@ float window_util::width() const { return float(_width); }
 float window_util::height() const { return float(_height); }
 
 // OpenGL commands that prep screen
-void window_util::prepare_gl(float x, float y, float z)
+void window_util::prepare_gl(float x, float y, float z, float pointSize)
 {
 	glPopMatrix();
 	glPushAttrib(GL_ALL_ATTRIB_BITS);

@@ -40,7 +40,7 @@ public:
 	glfw_state* app_state();
 	float width() const;
 	float height() const;
-	void prepare_gl(float x, float y, float z);
+	void prepare_gl(float x, float y, float z, float pointSize);
 	void cleanup_gl();
 
 private:
