@@ -286,6 +286,16 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 	return rv;
 }
 
+float MFCapture::get_pointSize()
+{
+	float rv = 99999;
+	for (auto cam : cameras) {
+		if (cam->pointSize < rv) rv = cam->pointSize;
+	}
+	if (rv > 9999) rv = 0;
+	return rv;
+}
+
 bool MFCapture::pointcloud_available(bool wait)
 {
 	_request_new_pointcloud();

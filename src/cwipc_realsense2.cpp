@@ -103,7 +103,11 @@ public:
         uint64_t timestamp;
         cwipc_pcl_pointcloud pc = m_grabber->get_pointcloud(&timestamp);
         if (pc == NULL) return NULL;
-        return cwipc_from_pcl(pc, timestamp, NULL, CWIPC_API_VERSION);
+        cwipc *rv = cwipc_from_pcl(pc, timestamp, NULL, CWIPC_API_VERSION);
+        if (rv) {
+			rv->_set_cellsize(m_grabber->get_pointSize());
+		}
+		return rv;
     }
     
     int maxtile()

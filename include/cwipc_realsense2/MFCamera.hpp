@@ -31,6 +31,7 @@ public:
 public:
 	// This is public because MFCapture needs it when dumping the color images
 	rs2::frameset current_frameset;
+	float pointSize;
 public:
 	// These are public because pcl_align wants to access them
 	double minx;
@@ -42,6 +43,7 @@ public:
 protected:
 	bool stopped;
 	std::thread *processing_thread;
+	void _computePointSize(rs2::pipeline_profile profile);
 	void _processing_thread_main();
 	virtual void _start_capture_thread();
 	virtual void _capture_thread_main();

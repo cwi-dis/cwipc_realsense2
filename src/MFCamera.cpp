@@ -20,6 +20,8 @@
 #include "cwipc_realsense2/multiFrame.hpp"
 #endif
 
+#include <librealsense2/rsutil.h>
+
 #include "cwipc_realsense2/defs.h"
 #include "cwipc_realsense2/utils.h"
 #include "cwipc_realsense2/MFCamera.hpp"
@@ -31,7 +33,7 @@
 
 // Internal-only constructor for OfflineCamera constructor
 MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& configuration, MFCameraData& _camData)
-:	minx(0), minz(0), maxz(0),
+:	pointSize(0), minx(0), minz(0), maxz(0),
 	camera_index(_camera_index),
 	serial(_camData.serial),
 	stopped(true),
@@ -58,7 +60,7 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 }
 
 MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb)
-:	minx(0), minz(0), maxz(0),
+:	pointSize(0), minx(0), minz(0), maxz(0),
 	camera_index(_camera_index),
 	serial(_camData.serial),
 	stopped(true),
@@ -136,8 +138,43 @@ void MFCamera::start()
 	cfg.enable_stream(RS2_STREAM_DEPTH, camera_width, camera_height, RS2_FORMAT_Z16, camera_fps);
 	// xxxjack need to set things like disabling color correction and auto-exposure
 	// xxxjack need to allow setting things like laser power
-	pipe.start(cfg);		// Start streaming with the configuration just set
+	auto profile = pipe.start(cfg);		// Start streaming with the configuration just set
+	_computePointSize(profile);
 	pipe_started = true;
+}
+
+void MFCamera::_computePointSize(rs2::pipeline_profile profile)
+{
+
+	// Get the 3D distance between camera and (0,0,0) or use 1m if unreasonable
+	float tx = (*camData.trafo)(0,3);
+	float ty = (*camData.trafo)(1,3);
+	float tz = (*camData.trafo)(2,3);
+	float dist = sqrt(tx*tx + ty*ty + tz*tz);
+	if (dist == 0) dist = 1;
+
+	// Now get the intrinsics for the depth stream
+	auto stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+	auto intrinsics = stream.get_intrinsics(); // Calibration data
+
+	// Compute 2D coordinates of adjacent pixels in the middle of the field of view
+	float pixel0[2], pixel1[2];
+	pixel0[0] = camera_width / 2;
+	pixel0[1] = camera_height / 2;
+	if (do_depth_filtering && camSettings.do_decimation) {
+		pixel1[0] = pixel0[0] + camSettings.decimation_value;
+		pixel1[1] = pixel0[1] + camSettings.decimation_value;
+	} else {
+		pixel1[0] = pixel0[0] + 1;
+		pixel1[1] = pixel0[1] + 1;
+	}
+
+	// Deproject to get 3D distance
+	float point0[3], point1[3];
+	rs2_deproject_pixel_to_point(point0, &intrinsics, pixel0, dist);
+	rs2_deproject_pixel_to_point(point1, &intrinsics, pixel1, dist);
+	float rv = sqrt(pow(point1[0]-point0[0], 2)+pow(point1[1]-point0[1], 2)+pow(point1[2]-point0[2], 2));
+	pointSize = rv;
 }
 
 void MFCamera::stop()
