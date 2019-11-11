@@ -3,6 +3,7 @@
 //
 //  Created by Fons Kuijk on 23-04-18
 //
+#include <cstdlib>
 
 // Define to get (a little) debug prints
 #undef CWIPC_DEBUG
@@ -12,12 +13,6 @@
 
 #if defined(WIN32) || defined(_WIN32)
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
-#endif
-
-#if 0
-#include <chrono>
-#include <cstdint>
-#include "cwipc_realsense2/multiFrame.hpp"
 #endif
 
 #include <librealsense2/rsutil.h>
@@ -334,7 +329,7 @@ void MFCamera::_processing_thread_main()
 
 				cwipc_pcl_point pt;
 				transformPoint(pt, vertices[i]);
-				if (do_height_filtering && ( pt.y < height_min || pt.y > height_max)) continue;
+				if (do_height_filtering && (pt.y < height_min || pt.y > height_max)) continue;
 				float u = texture_coordinates[i].u;
 				float v = texture_coordinates[i].v;
 				int texture_x = std::min(std::max(int(u*texture_width + .5f), 0), texture_width - 1);
