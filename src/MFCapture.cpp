@@ -145,8 +145,13 @@ MFCapture::MFCapture(const char *configFilename)
                 sensor.set_option(RS2_OPTION_LASER_POWER, 360);
             // xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
             // suggests that this may depend on using 1280x720@30 with decimation=3. Need to check.
-            if (sensor.supports(RS2_OPTION_VISUAL_PRESET))
-                sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
+            if (sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
+                sensor.set_option(RS2_OPTION_VISUAL_PRESET,
+					configuration.density
+						? RS2_RS400_VISUAL_PRESET_HIGH_DENSITY
+						: RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY
+				);
+			}
         }
     }
 	//
