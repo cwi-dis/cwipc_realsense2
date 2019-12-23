@@ -102,17 +102,17 @@ build_win:
 # Get and install cwipc_util
     - python deployment-helpers/Deployment/getReleaseFromGitLab --cicd --project_name cwipc_util $REL_CWIPC_UTIL
     - (zipfile=$PWD/cwipc_util_win1064_*.zip && cd /cygdrive/c/dist-win && unzip $zipfile)
-    - rm -rf /cygdrive/c/dist-win/oldinstalled
-    - mv /cygdrive/c/dist-win/installed /cygdrive/c/dist-win/oldinstalled
   script:
     - mkdir -p build
     - export ziplocation=$(pwd)/cwipc_realsense2_win1064_$CI_BUILD_TAG.zip
     - export CTEST_OUTPUT_ON_FAILURE=1
     - cd build
-    - cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_PREFIX_PATH="C:/dist-win/oldinstalled" -DCMAKE_INSTALL_PREFIX="C:/dist-win/installed"
+    - cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_INSTALL_PREFIX="C:/dist-win/installed"
     - cmake --build . --config Release
     - cmake --build . --config Release --target RUN_TESTS
+    - find /cygdrive/c/dist-win -type f -print > previously-installed.txt
     - cmake --build . --config Release --target INSTALL
+    - rm `cat previously-installed.txt`
     - (cd /cygdrive/c/dist-win && zip -r $ziplocation installed)
   artifacts:
     paths:
