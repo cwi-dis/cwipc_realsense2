@@ -47,6 +47,7 @@ MFCapture::MFCapture(int dummy)
 
 MFCapture::MFCapture(const char *configFilename)
 :	numberOfPCsProduced(0),
+    no_cameras(false),
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)
 {
@@ -66,13 +67,8 @@ MFCapture::MFCapture(const char *configFilename)
 		}
 	}
 	if (camera_count == 0) {
-		// no camera connected, so we'll use a generated pointcloud instead
-		generatedPC = generate_pcl();
-		std::cerr << "cwipc_realsense2: multiFrame: No cameras found, default production is a spinning generated pointcloud of " << generatedPC->size() << " data points\n";
-		// start our run thread (which will simply rotate the generated pointcloud because there are no cameras)
-		starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-		stopped = false;
-		control_thread = new std::thread(&MFCapture::_control_thread_main, this);
+		// no camera connected, so we'll return nothing
+        no_cameras = true;
 		return;
 	}
 	//
@@ -249,6 +245,7 @@ void MFCapture::_create_cameras(rs2::device_list devs) {
 }
 
 MFCapture::~MFCapture() {
+    if (no_cameras) return;
 	uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	// Stop all cameras
 	for (auto cam : cameras)
@@ -275,6 +272,7 @@ MFCapture::~MFCapture() {
 // API function that triggers the capture and returns the merged pointcloud and timestamp
 cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 {
+    if (no_cameras) return nullptr;
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	_request_new_pointcloud();
 	// Wait for a fresh mergedPC to become available.
@@ -293,6 +291,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 
 float MFCapture::get_pointSize()
 {
+    if (no_cameras) return 0;
 	float rv = 99999;
 	for (auto cam : cameras) {
 		if (cam->pointSize < rv) rv = cam->pointSize;
@@ -303,6 +302,7 @@ float MFCapture::get_pointSize()
 
 bool MFCapture::pointcloud_available(bool wait)
 {
+    if (no_cameras) return false;
 	_request_new_pointcloud();
 	std::this_thread::yield();
 	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
@@ -322,78 +322,64 @@ void MFCapture::_control_thread_main()
 			mergedPC_want_new_cv.wait(mylock, [this]{ return mergedPC_want_new;});
 		}
 		if (stopped) break;
-		if (cameras.size() > 0) {
-			// Step one: grab frames from all cameras. This should happen as close together in time as possible,
-			// because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
-			// camera.
-			for(auto cam : cameras) {
-				if (!cam->capture_frameset()) continue;
-			}
-			// And get the best timestamp
-			uint64_t timestamp = 0;
-			for(auto cam: cameras) {
-				uint64_t camts = cam->get_capture_timestamp();
-				if (camts > timestamp) timestamp = camts;
-			}
+        assert (cameras.size() > 0);
+        // Step one: grab frames from all cameras. This should happen as close together in time as possible,
+        // because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
+        // camera.
+        for(auto cam : cameras) {
+            if (!cam->capture_frameset()) continue;
+        }
+        // And get the best timestamp
+        uint64_t timestamp = 0;
+        for(auto cam: cameras) {
+            uint64_t camts = cam->get_capture_timestamp();
+            if (camts > timestamp) timestamp = camts;
+        }
 #ifdef WITH_DUMP_VIDEO_FRAMES
-			// Step 2, if needed: dump image frames.
-			if (configuration.cwi_special_feature == "dumpvideoframes") {
-				for(auto cam : cameras) {
-					std::stringstream png_file;
-					png_file <<  "videoframe_" << timestamp - starttime << "_" << cam->camera_index << ".png";
-					cam->dump_color_frame(png_file.str());
-				}
-			}
+        // Step 2, if needed: dump image frames.
+        if (configuration.cwi_special_feature == "dumpvideoframes") {
+            for(auto cam : cameras) {
+                std::stringstream png_file;
+                png_file <<  "videoframe_" << timestamp - starttime << "_" << cam->camera_index << ".png";
+                cam->dump_color_frame(png_file.str());
+            }
+        }
 #endif // WITH_DUMP_VIDEO_FRAMES
-			// Step 3: start processing frames to pointclouds, for each camera
-			for(auto cam : cameras) {
-				cam->create_pc_from_frames();
-			}
-			// Lock mergedPC already while we are waiting for the per-camera
-			// processing threads. This so the main thread doesn't go off and do
-			// useless things if it is calling available(true).
-			std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-			// Step 4: wait for frame processing to complete.
-			for(auto cam : cameras) {
-				cam->wait_for_pc();
-			}
-			// Step 5: merge views
-			mergedPC = new_cwipc_pcl_pointcloud();
-			merge_views();
-			if (mergedPC->size() > 0) {
+        // Step 3: start processing frames to pointclouds, for each camera
+        for(auto cam : cameras) {
+            cam->create_pc_from_frames();
+        }
+        // Lock mergedPC already while we are waiting for the per-camera
+        // processing threads. This so the main thread doesn't go off and do
+        // useless things if it is calling available(true).
+        std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+        // Step 4: wait for frame processing to complete.
+        for(auto cam : cameras) {
+            cam->wait_for_pc();
+        }
+        // Step 5: merge views
+        mergedPC = new_cwipc_pcl_pointcloud();
+        merge_views();
+        if (mergedPC->size() > 0) {
 #ifdef CWIPC_DEBUG
-				std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
+            std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
 #endif
-			} else {
+        } else {
 #ifdef CWIPC_DEBUG
-				std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer got an empty pointcloud\n";
+            std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer got an empty pointcloud\n";
 #endif
-				// HACK to make sure the encoder does not get an empty pointcloud
-				cwipc_pcl_point point;
-				point.x = 1.0;
-				point.y = 1.0;
-				point.z = 1.0;
-				point.rgb = 0.0;
-				mergedPC->points.push_back(point);
-			}
-			// Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
-			mergedPC_is_fresh = true;
-			mergedPC_want_new = false;
-			mergedPC_is_fresh_cv.notify_all();
-		} else {	// return a spinning generated mathematical pointcloud
-			static float angle;
-			angle += 0.031415;
-			Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-			transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY()));
-			std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-			// Lock mergedPC while we are modifying it
-			mergedPC = new_cwipc_pcl_pointcloud();
-			transformPointCloud(*generatedPC, *mergedPC, transform);
-			// Signal that a new mergedPC is available
-			mergedPC_is_fresh = true;
-			mergedPC_want_new = false;
-			mergedPC_is_fresh_cv.notify_all();
-		}
+            // HACK to make sure the encoder does not get an empty pointcloud
+            cwipc_pcl_point point;
+            point.x = 1.0;
+            point.y = 1.0;
+            point.z = 1.0;
+            point.rgb = 0.0;
+            mergedPC->points.push_back(point);
+        }
+        // Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
+        mergedPC_is_fresh = true;
+        mergedPC_want_new = false;
+        mergedPC_is_fresh_cv.notify_all();
 	}
 #ifdef CWIPC_DEBUG_THREAD
 	std::cerr << "MFCapture: processing thread stopped" << std::endl;
@@ -403,6 +389,7 @@ void MFCapture::_control_thread_main()
 // return the merged cloud 
 cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 {
+    if (no_cameras) return nullptr;
 	// This call doesn't need a fresh pointcloud (Jack thinks), but it does need one that is
 	// consistent. So we lock, but don't wait on the condition.
 	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
@@ -464,33 +451,4 @@ MFCamera* MFCapture::get_camera(std::string serial) {
 		if (cam->serial == serial)
 			return cam;
 	return NULL;
-}
-
-// generate a mathematical pointcloud
-cwipc_pcl_pointcloud MFCapture::generate_pcl()
-{
-	cwipc_pcl_pointcloud point_cloud_ptr(new_cwipc_pcl_pointcloud());
-	uint8_t r(255), g(15), b(15);
-
-	for (float z(-1.0f); z <= 1.0f; z += 0.005f) {
-        float angle(0.0);
-		while (angle <= 360.0) {
-			cwipc_pcl_point point;
-			point.x = 0.5f*cosf(pcl::deg2rad(angle))*(1.0f - z * z);
-			point.y = sinf(pcl::deg2rad(angle))*(1.0f - z * z);
-			point.z = z;
-            uint32_t rgb = (static_cast<uint32_t>(r) << 16 | static_cast<uint32_t>(g) << 8 | static_cast<uint32_t>(b));
-			point.rgb = *reinterpret_cast<float*>(&rgb);
-			point_cloud_ptr->points.push_back(point);
-            float r = sqrt(point.x*point.x + point.y*point.y);
-            if (r > 0.0)
-                angle += 0.27/r;
-            else break;
-		}
-		if (z < 0.0) { r -= 1; g += 1; }
-		else { g -= 1; b += 1; }
-	}
-	point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
-	point_cloud_ptr->height = 1;
-	return point_cloud_ptr;
 }

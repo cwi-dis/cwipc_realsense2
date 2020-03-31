@@ -80,6 +80,10 @@ public:
         m_grabber = NULL;
     }
 
+    bool is_valid() {
+        return !m_grabber->no_cameras;
+    }
+    
     void free() 
 	{
         delete m_grabber;
@@ -232,7 +236,12 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 		return NULL;
 	}
 	if (!MFCapture_versionCheck(errorMessage)) return NULL;
-	return new cwipc_source_realsense2_impl(configFilename);
+	cwipc_source_realsense2_impl *rv = new cwipc_source_realsense2_impl(configFilename);
+    // If the grabber found cameras everything is fine
+    if (rv->is_valid()) return rv;
+    // If no cameras were found we return a synthetic pointcloud generator in stead.
+    delete rv;
+    return cwipc_synthetic(errorMessage, apiVersion);
 }
 
 cwipc_offline* cwipc_rs2offline(MFOfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion)
