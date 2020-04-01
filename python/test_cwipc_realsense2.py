@@ -70,9 +70,9 @@ class TestApi(unittest.TestCase):
             for i in range(1, nTile):
                 tileInfo = grabber.get_tileinfo_dict(i)
                 if i in (1, 2, 4, 8, 16, 32, 64, 128):
-                    # These tiles should exist and have a camera ID
+                    # These tiles should exist and have a normal and camera ID (which may be None)
                     self.assertIn('normal', tileInfo)
-                    self.assertNotEqual(tileInfo['camera'], None)
+                    self.assertIn('camera', tileInfo)
         finally:
             if grabber: grabber.free()
 
