@@ -139,5 +139,5 @@ deploy_all:
   script:
     - mkdir deliverables
     - mv cwipc_realsense2_ubuntu1804_$CI_BUILD_TAG.tgz cwipc_realsense2_osx1012_$CI_BUILD_TAG.tgz cwipc_realsense2_win1064_$CI_BUILD_TAG.zip deliverables
-    - python3 deployment-helpers/Deployment/addReleaseToGitLab --cicd --notag cwipc_realsense2_ubuntu1804_$CI_BUILD_TAG.tgz cwipc_realsense2_osx1012_$CI_BUILD_TAG.tgz cwipc_realsense2_win1064_$CI_BUILD_TAG.zip
+    - python3 deployment-helpers/Deployment/scripts/addReleaseToGitLab --cicd --notag cwipc_realsense2_ubuntu1804_$CI_BUILD_TAG.tgz cwipc_realsense2_osx1012_$CI_BUILD_TAG.tgz cwipc_realsense2_win1064_$CI_BUILD_TAG.zip
   
