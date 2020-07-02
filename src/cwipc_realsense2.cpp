@@ -232,7 +232,7 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 {
 	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
 		if (errorMessage) {
-			*errorMessage = (char *)"cwipc_synthetic: incorrect apiVersion";
+			*errorMessage = (char *)"cwipc_realsense2: incorrect apiVersion";
 		}
 		return NULL;
 	}
@@ -241,9 +241,11 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 	cwipc_source_realsense2_impl *rv = new cwipc_source_realsense2_impl(configFilename);
     mf_warning_store = NULL;
     // If the grabber found cameras everything is fine
-    if (rv->is_valid()) return rv;
-    // If no cameras were found we return a synthetic pointcloud generator in stead.
+    if (rv && rv->is_valid()) return rv;
     delete rv;
+    if (errorMessage && *errorMessage == NULL) {
+        *errorMessage = (char *)"cwipc_realsense2: no realsense cameras found, returning synthetic grabber";
+    }
     return cwipc_synthetic(errorMessage, apiVersion);
 }
 
@@ -251,7 +253,7 @@ cwipc_offline* cwipc_rs2offline(MFOfflineSettings settings, const char *configFi
 {
 	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
 		if (errorMessage) {
-			*errorMessage = (char *)"cwipc_synthetic: incorrect apiVersion";
+			*errorMessage = (char *)"cwipc_realsense2: incorrect apiVersion";
 		}
 		return NULL;
 	}

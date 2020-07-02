@@ -23,10 +23,13 @@ int main(int argc, char** argv)
 		configFile = argv[2];
 	}
 	generator = cwipc_realsense2(argv[3], &error, CWIPC_API_VERSION);
-	if (error) {
-		std::cerr << argv[0] << ": creating realsense2 grabber failed: " << error << std::endl;
-		return 1;
-	}
+    if (generator == NULL) {
+        std::cerr << argv[0] << ": creating realsense2 grabber failed: " << error << std::endl;
+        return 1;
+    }
+    if (error) {
+        std::cerr << argv[0] << ": warning while creating realsense2 grabber: " << error << std::endl;
+    }
 	cwipc_tileinfo tif;
 	generator->get_tileinfo(0, &tif);
 	generator->get_tileinfo(1, &tif);
