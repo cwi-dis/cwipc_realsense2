@@ -19,7 +19,10 @@
 #include <cstdint>
 #include "cwipc_util/api_pcl.h"
 
+struct MFCaptureConfig;
+
 _CWIPC_REALSENSE2_EXPORT void mf_log_warning(std::string warning);
+_CWIPC_REALSENSE2_EXPORT extern char **mf_warning_store;
 
 _CWIPC_REALSENSE2_EXPORT bool mf_file2config(const char* filename, MFCaptureConfig* config);
 

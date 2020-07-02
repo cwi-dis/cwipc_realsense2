@@ -18,9 +18,16 @@ typedef struct HsvColor
 	unsigned char v;
 } HsvColor;
 
+static std::string mf_most_recent_warning;
+char **mf_warning_store;
+
 void mf_log_warning(std::string warning)
 {
     std::cerr << "cwipc_realsense2: " << warning << std::endl;
+    if (mf_warning_store) {
+        mf_most_recent_warning = warning;
+        *mf_warning_store = (char *)mf_most_recent_warning.c_str();
+    }
 }
 
 

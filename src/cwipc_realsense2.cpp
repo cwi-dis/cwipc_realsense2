@@ -6,6 +6,7 @@
 #include "cwipc_util/api_pcl.h"
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
+#include "cwipc_realsense2/utils.h"
 
 #include "cwipc_realsense2/multiFrame.hpp"
 
@@ -236,7 +237,9 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 		return NULL;
 	}
 	if (!MFCapture_versionCheck(errorMessage)) return NULL;
+    mf_warning_store = errorMessage;
 	cwipc_source_realsense2_impl *rv = new cwipc_source_realsense2_impl(configFilename);
+    mf_warning_store = NULL;
     // If the grabber found cameras everything is fine
     if (rv->is_valid()) return rv;
     // If no cameras were found we return a synthetic pointcloud generator in stead.
