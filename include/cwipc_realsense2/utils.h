@@ -19,6 +19,8 @@
 #include <cstdint>
 #include "cwipc_util/api_pcl.h"
 
+_CWIPC_REALSENSE2_EXPORT void mf_log_warning(std::string warning);
+
 _CWIPC_REALSENSE2_EXPORT bool mf_file2config(const char* filename, MFCaptureConfig* config);
 
 // store the current camera transformation setting into a xml document

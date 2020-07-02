@@ -54,7 +54,7 @@ MFCapture::MFCapture(const char *configFilename)
 	// First check that no other MFCapture is active within this process (trying to catch programmer errors)
 	numberOfCapturersActive++;
 	if (numberOfCapturersActive > 1) {
-		std::cerr << "cwipc_realsense2: multiFrame: Warning: attempting to create capturer while one is already active." << std::endl;
+		mf_log_warning("multiFrame: Warning: attempting to create capturer while one is already active.");
 	}
 
 	// Determine how many realsense cameras (not platform cameras like webcams) are connected
@@ -120,7 +120,7 @@ MFCapture::MFCapture(const char *configFilename)
 			if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 				realcams.push_back(cd);
 			else
-				std::cerr << "cwipc_realsense2: multiFrame: Warning: camera " << cd.serial << " is not connected\n";
+				mf_log_warning("multiFrame: Warning: camera " + cd.serial + " is not connected");
 		}
 		// Reduce the active configuration to cameras that are connected
 		configuration.cameraData = realcams;
@@ -171,7 +171,7 @@ MFCapture::MFCapture(const char *configFilename)
 				}
 			}
 			if (!foundSensorSupportingSync) {
-				std::cerr << "cwipc_realsense2: multiFrame: Warning: camera " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << " does not support inter-camera-sync";
+                mf_log_warning(std::string("multiFrame: Warning: camera ") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) + " does not support inter-camera-sync");
 			}
 		}
 	}
@@ -210,7 +210,7 @@ MFCapture::MFCapture(const char *configFilename)
 		for (auto cam: cameras)
 			cam->start();
 	} catch(const rs2::error& e) {
-		std::cerr << "cwipc_realsense2: exception while starting camera: " << e.get_failed_function() << ": " << e.what() << std::endl;
+		mf_log_warning("exception while starting camera: " + e.get_failed_function() + ": " + e.what());
 		throw;
 	}
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -442,7 +442,7 @@ MFCameraData& MFCapture::get_camera_data(std::string serial) {
 	for (int i = 0; i < configuration.cameraData.size(); i++)
 		if (configuration.cameraData[i].serial == serial)
 			return configuration.cameraData[i];
-	std::cerr << "cwipc_realsense2: multiFrame: unknown camera " << serial << std::endl;
+	mf_log_warning("cwipc_realsense2: multiFrame: unknown camera " + serial);
 	abort();
 }
 

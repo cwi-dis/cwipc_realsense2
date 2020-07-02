@@ -18,6 +18,12 @@ typedef struct HsvColor
 	unsigned char v;
 } HsvColor;
 
+void mf_log_warning(std::string warning)
+{
+    std::cerr << "cwipc_realsense2: " << warning << std::endl;
+}
+
+
 // read and restore the camera transformation setting as stored in the configuration document
 bool mf_file2config(const char* filename, MFCaptureConfig* config)
 {
@@ -25,9 +31,7 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
-		std::cerr << "cwipc_realsense2: multiFrame: Warning: Failed to load configfile " << filename << "\n";
-		if (config->cameraData.size() > 1)
-			std::cerr << "cwipc_realsense2: multiFrame: Warning: Captured pointclouds will be merged based on unregistered cameras\n";
+        mf_log_warning(std::string("multiFrame: Warning: Failed to load configfile ") + filename + ", using default matrices");
 		return false;
 	}
 
@@ -168,11 +172,9 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 	if (config->cameraData.size() != registeredcameras)
 		loadOkay = false;
 
-	if (!loadOkay)
-		std::cerr << "cwipc_realsense2: multiFrame: Warning: the configuration file specifying " << registeredcameras
-		<< " cameras did not correspond to the setup of " << config->cameraData.size()
-		<< " cameras\n\tre-alignment may be needed!!\n";
-
+    if (!loadOkay) {
+        mf_log_warning("multiFrame: available hardware camera configuration does not match configuration file");
+    }
 	return loadOkay;
 }
 
