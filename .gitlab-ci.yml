@@ -165,5 +165,5 @@ deploy_all_untagged:
     - mv cwipc_realsense2_ubuntu1804_$CI_BUILD_TAG.tgz cwipc_realsense2_osx1012_$CI_BUILD_TAG.tgz cwipc_realsense2_win1064_$CI_BUILD_TAG.zip deliverables
     - python3 deployment-helpers/Deployment/scripts/addReleaseToGitLab --cicd --tag_name latest --release_name latest --deleterelease || true
     - python3 deployment-helpers/Deployment/scripts/addReleaseToGitLab --cicd --tag_name latest --release_name latest --deletetag || true
-    - python3 deployment-helpers/Deployment/scripts/addReleaseToGitLab --cicd --notag cwipc_realsense2_ubuntu1804_$CI_BUILD_TAG.tgz cwipc_realsense2_osx1012_$CI_BUILD_TAG.tgz cwipc_realsense2_win1064_$CI_BUILD_TAG.zip
+    - python3 deployment-helpers/Deployment/scripts/addReleaseToGitLab --cicd --tag_name latest --release_name latest --branch_to_tag "$CI_COMMIT_REF_NAME" cwipc_realsense2_ubuntu1804_$CI_BUILD_TAG.tgz cwipc_realsense2_osx1012_$CI_BUILD_TAG.tgz cwipc_realsense2_win1064_$CI_BUILD_TAG.zip
   
