@@ -5,7 +5,12 @@ from cwipc.util import CwipcError, CWIPC_API_VERSION, cwipc_tiledsource
 from cwipc.util import cwipc_tiledsource_p
 
 __all__ = [
-    "cwpic_realsense2"
+    "cwipc_offline_camera_settings",
+    "cwipc_offline_settings",
+    "RS2_FORMAT_RGB8",
+    "RS2_FORMAT_Z16",
+    "cwipc_realsense2",
+    "cwipc_rs2offline",
 ]
 
 class cwipc_offline_camera_settings(ctypes.Structure):
