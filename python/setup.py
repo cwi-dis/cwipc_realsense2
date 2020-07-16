@@ -116,7 +116,7 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['cwipc_util', 'numpy', 'open3d==0.8.0.0'],
+    install_requires=['cwipc_util', 'numpy', 'open3d'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"

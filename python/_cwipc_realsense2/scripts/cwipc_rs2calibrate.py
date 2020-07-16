@@ -63,6 +63,18 @@ POINTS_V3 = [
     (1, 0, -1, 0, 0, 0),             # Black point at 1,0,-1
     (1, 0, 1, 0, 0, 0),             # Black point at 1,0,1
 ]
+#
+# VideoLat calibration device, for frontal camera in desktop position
+POINTS_VIDEOLAT = [
+    (-0.040, 1.275,  0.000, 127, 127, 127),    # topleft back row
+    ( 0.040, 1.275,  0.000, 127, 127, 127),    # topright back row
+    (-0.015, 1.250, -0.025, 127, 127, 127),    # topleft front row
+    ( 0.015, 1.250, -0.025, 127, 127, 127),    # topright front row
+    (-0.015, 1.225, -0.025, 127, 127, 127),    # bottomleft front row
+    ( 0.015, 1.225, -0.025, 127, 127, 127),    # bottomright front row
+    (-0.040, 1.200,  0.000, 127, 127, 127),    # bottomleft back row
+    ( 0.040, 1.200,  0.000, 127, 127, 127),    # bottomright back row
+]
 
 def prompt(msg, isedit=False):
     stars = '*'*(len(msg)+2)
@@ -355,11 +367,11 @@ class FileGrabber:
         return Pointcloud.from_cwipc(pc)
             
 class Calibrator:
-    def __init__(self, distance, use_v3):
+    def __init__(self, distance, refpoints):
         self.cameraserial = []
         self.near = 0.5 * distance
         self.far = 2.0 * distance
-        self.use_v3 = use_v3
+        self.refpoints = refpoints
         self.grabber = None
         self.cameraserial = []
         self.pointclouds = []
@@ -411,7 +423,7 @@ class Calibrator:
             sys.stdout.flush()
             for i in range(len(self.pointclouds)):
                 prompt(f'Showing grabbed pointcloud from camera {i} for visual inspection')
-                self.show_points(f'Inspect grab from {self.cameraserial[i]}', self.pointclouds[i])
+                self.show_points(f'Inspect grab from {self.cameraserial[i]}', self.pointclouds[i], from000=True)
             grab_ok = ask('Can you select the balls on the cross from this pointcloud?', canretry=True)
             if not grab_ok:
                 print('* discarding 10 pointclouds')
@@ -436,11 +448,11 @@ class Calibrator:
             matrix_ok = False
             while not matrix_ok:
                 prompt(f'Pick red, orange, yellow, blue points on camera {i} pointcloud', isedit=True)
-                pc_refpoints = self.pick_points(f'Pick points on {self.cameraserial[i]}', self.pointclouds[i])
+                pc_refpoints = self.pick_points(f'Pick points on {self.cameraserial[i]}', self.pointclouds[i], from000=True)
                 info = self.align_pair(self.pointclouds[i], pc_refpoints, self.refpointcloud, refpoints, False)
                 prompt(f'Inspect resultant orientation of camera {i} pointcloud')
                 new_pc = self.pointclouds[i].transform(info)
-                self.show_points(f'Pick points on {self.cameraserial[i]}', new_pc)
+                self.show_points(f'Result from {self.cameraserial[i]}', new_pc)
                 matrix_ok = ask('Does that look good?', canretry=True)
             assert len(self.coarse_matrix) == i
             assert len(self.coarse_calibrated_pointclouds) == i
@@ -527,10 +539,7 @@ class Calibrator:
         
     def get_pointclouds(self):
         # Create the canonical pointcloud, which determines the eventual coordinate system
-        if self.use_v3:
-            self.refpointcloud = Pointcloud.from_points(POINTS_V3)
-        else:
-            self.refpointcloud = Pointcloud.from_points(POINTS_V2)
+        self.refpointcloud = Pointcloud.from_points(self.refpoints)
         # Get the number of cameras and their tile numbers
         maxtile = self.grabber.getcount()
         if DEBUG: print('maxtile', maxtile)
@@ -547,16 +556,21 @@ class Calibrator:
             joined = Pointcloud.from_join(self.pointclouds)
             joined.save('cwipc_calibrate_uncalibrated.ply')
         
-    def pick_points(self, title, pc):
+    def pick_points(self, title, pc, from000=False):
         vis = open3d.visualization.VisualizerWithEditing()
         vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
         self.winpos += 50
         vis.add_geometry(pc.get_o3d())
+        if from000:
+            viewControl = vis.get_view_control()
+            viewControl.set_front([0, 0, 0])
+            viewControl.set_lookat([0, 0, 1])
+            viewControl.set_up([0, 1, 0])
         vis.run() # user picks points
         vis.destroy_window()
         return vis.get_picked_points()
 
-    def show_points(self, title, pc):
+    def show_points(self, title, pc, from000=False):
         vis = open3d.visualization.Visualizer()
         vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
         self.winpos += 50
@@ -567,6 +581,11 @@ class Calibrator:
         axes.lines = open3d.utility.Vector2iVector([[0,1], [0,2], [0,3]])
         axes.colors = open3d.utility.Vector3dVector([[1,0,0], [0,1,0], [0,0,1]])
         vis.add_geometry(axes)
+        if from000:
+            viewControl = vis.get_view_control()
+            viewControl.set_front([0, 0, -1])
+            viewControl.set_lookat([0, 0, 1])
+            viewControl.set_up([0, -1, 0])
         vis.run()
         vis.destroy_window()
         
@@ -634,7 +653,8 @@ def main():
     parser.add_argument("--nograb", action="store", metavar="DIR", help="Don't use grabber, obtain .ply file and old config from DIR")
     parser.add_argument("--nocoarse", action="store_true", help="Skip coarse (manual) calibration step")
     parser.add_argument("--nofine", action="store_true", help="Skip fine (automatic) calibration step")
-    parser.add_argument("--crossv3", action="store_true", help="Use version 3 calibration cross (with the LEDs)")
+    parser.add_argument("--crossv3", action="store_true", help="Use version 3 calibration cross (with the LEDs) in stead of the rubber ball cross")
+    parser.add_argument("--videolat", action="store_true", help="Use videolat flattened pyramid in stead of the rubber ball cross")
     parser.add_argument("--bbox", action="store", type=float, nargs=6, metavar="N", help="Set bounding box (in meters, xmin xmax etc) for fine calibration")
     parser.add_argument("--corr", action="store", type=float, metavar="D", help="Set fine calibration max corresponding point distance", default=0.01)
     parser.add_argument("--distance", type=float, action="store", required=True, metavar="D", help="Approximate distance between cameras and subject")
@@ -645,7 +665,12 @@ def main():
         bbox = args.bbox
         assert len(bbox) == 6
         assert type(1.0*bbox[0]*bbox[1]*bbox[2]*bbox[3]*bbox[4]*bbox[5]) == float
-    prog = Calibrator(distance, args.crossv3)
+    refpoints = POINTS_V2
+    if args.crossv3:
+        refpoints = POINTS_V3
+    if args.videolat:
+        refpoints = POINTS_VIDEOLAT
+    prog = Calibrator(distance, refpoints)
     if args.nograb:
         grabber = FileGrabber(args.nograb)
     else:
