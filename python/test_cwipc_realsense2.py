@@ -1,6 +1,6 @@
 import unittest
 import cwipc
-import cwipc.realsense2
+import _cwipc_realsense2
 import os
 import sys
 import tempfile
@@ -13,9 +13,9 @@ if 0:
     # - run `python3 test_cwipc_util`
     # - Attach to python in the XCode debugger
     # - press return to python3.
-    import cwipc.realsense2
-    #cwipc.realsense2._cwipc_realsense2_dll('/Users/jack/src/VRTogether/cwipc_realsense2/build-xcode/lib/Debug/libcwipc_realsense2.dylib')
-    cwipc.realsense2._cwipc_realsense2_dll('C:/Users/vrtogether/src/VRtogether/cwipc_realsense2/build/bin/RelWithDebInfo/cwipc_realsense2.dll')
+    import _cwipc_realsense2
+    #_cwipc_realsense2._cwipc_realsense2_dll('/Users/jack/src/VRTogether/cwipc_realsense2/build-xcode/lib/Debug/libcwipc_realsense2.dylib')
+    _cwipc_realsense2._cwipc_realsense2_dll('C:/Users/vrtogether/src/VRtogether/cwipc_realsense2/build/bin/RelWithDebInfo/cwipc_realsense2.dll')
     print('Type return after attaching in XCode debugger (pid=%d) - ' % os.getpid())
     sys.stdin.readline()
 
@@ -24,7 +24,7 @@ if 0:
 #
 if 'CWIPC_TEST_DLL' in os.environ:
     filename = os.environ['CWIPC_TEST_DLL']
-    dllobj = cwipc.realsense2._cwipc_realsense2_dll(filename)
+    dllobj = _cwipc_realsense2._cwipc_realsense2_dll(filename)
 
 #
 # Find directories for test inputs and outputs
@@ -44,7 +44,7 @@ class TestApi(unittest.TestCase):
         grabber = None
         pc = None
         try:
-            grabber = cwipc.realsense2.cwipc_realsense2()
+            grabber = _cwipc_realsense2.cwipc_realsense2()
             self.assertFalse(grabber.eof())
             self.assertTrue(grabber.available(True))
             pc = grabber.get()
@@ -57,7 +57,7 @@ class TestApi(unittest.TestCase):
         """Test that we can get tileinfo from a realsense2 grabber"""
         grabber = None
         try:
-            grabber = cwipc.realsense2.cwipc_realsense2()
+            grabber = _cwipc_realsense2.cwipc_realsense2()
             nTile = grabber.maxtile()
             self.assertGreaterEqual(nTile, 1)
             # Assure the non-tiled-tile exists and points nowhere.
@@ -81,7 +81,7 @@ class TestApi(unittest.TestCase):
         grabber = None
         pc = None
         try:
-            grabber = cwipc.realsense2.cwipc_realsense2("./nonexistent.xml")
+            grabber = _cwipc_realsense2.cwipc_realsense2("./nonexistent.xml")
             self.assertFalse(grabber.eof())
             self.assertTrue(grabber.available(True))
             pc = grabber.get()
@@ -96,24 +96,24 @@ class TestApi(unittest.TestCase):
         pc = None
         try:
             conffile = os.path.join(TEST_FIXTURES_DIR, 'input', 'offlineconfig.xml')
-            settings = cwipc.realsense2.cwipc_offline_settings(
-                color=cwipc.realsense2.cwipc_offline_camera_settings(
+            settings = _cwipc_realsense2.cwipc_offline_settings(
+                color=_cwipc_realsense2.cwipc_offline_camera_settings(
                     width=640,
                     height=480,
                     bpp=3,
                     fps=60,
-                    format=cwipc.realsense2.RS2_FORMAT_RGB8()
+                    format=_cwipc_realsense2.RS2_FORMAT_RGB8()
                 ),
-                depth=cwipc.realsense2.cwipc_offline_camera_settings(
+                depth=_cwipc_realsense2.cwipc_offline_camera_settings(
                     width=640,
                     height=480,
                     bpp=2,
                     fps=60,
-                    format=cwipc.realsense2.RS2_FORMAT_Z16()
+                    format=_cwipc_realsense2.RS2_FORMAT_Z16()
                 ),
         
             )
-            converter = cwipc.realsense2.cwipc_rs2offline(settings, conffile)
+            converter = _cwipc_realsense2.cwipc_rs2offline(settings, conffile)
             grabber = converter.get_source()
             self.assertFalse(grabber.eof())
             self.assertFalse(grabber.available(True))
