@@ -116,7 +116,7 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['cwipc_util'],  # Optional
+    install_requires=['cwipc_util', 'numpy', 'open3d==0.8.0.0'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -156,9 +156,10 @@ setup(
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         'console_scripts': [
-            'cwipc_certh2config=_cwipc_realsense.scripts.cwipc_certh2config:main',
-            'cwipc_rs2offlinedir=_cwipc_realsense.scripts.cwipc_rs2offlinedir:main',
-            'cwipc_rs2offlinepy=_cwipc_realsense.scripts.cwipc_rs2offlinepy:main',
+            'cwipc_certh2config=_cwipc_realsense2.scripts.cwipc_certh2config:main',
+            'cwipc_rs2offlinedir=_cwipc_realsense2.scripts.cwipc_rs2offlinedir:main',
+            'cwipc_rs2offlinepy=_cwipc_realsense2.scripts.cwipc_rs2offlinepy:main',
+            'cwipc_rs2calibrate=_cwipc_realsense2.scripts.cwipc_rs2calibrate:main',
         ],
     },
 
