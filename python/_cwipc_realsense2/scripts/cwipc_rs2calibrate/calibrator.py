@@ -255,9 +255,9 @@ class Calibrator:
         vis.add_geometry(pc.get_o3d())
         if from000:
             viewControl = vis.get_view_control()
-            viewControl.set_front([0, 0, 0])
+            viewControl.set_front([0, 0, -1])
             viewControl.set_lookat([0, 0, 1])
-            viewControl.set_up([0, 1, 0])
+            viewControl.set_up([0, -1, 0])
         vis.run() # user picks points
         vis.destroy_window()
         return vis.get_picked_points()
