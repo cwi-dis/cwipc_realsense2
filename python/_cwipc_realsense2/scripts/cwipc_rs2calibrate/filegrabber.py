@@ -9,16 +9,16 @@ class FileGrabber:
     def __init__(self, dirname):
         self.pcFilename = os.path.join(dirname, "cwipc_calibrate_calibrated.ply")
         confFilename = os.path.join(dirname, "cameraconfig.xml")
-        self.config = CameraConfig(confFilename)
+        self.cameraconfig = CameraConfig(confFilename)
         
     def getcount(self):
-        return self.config.getcount()
+        return self.cameraconfig.getcount()
         
     def getserials(self):
-        return self.config.getserials()
+        return self.cameraconfig.getserials()
         
     def getmatrix(self, tilenum):
-        return self.config.getmatrix(tilenum)
+        return self.cameraconfig.getmatrix(tilenum)
         
     def getpointcloud(self):
         pc = cwipc.cwipc_read(self.pcFilename, 0)

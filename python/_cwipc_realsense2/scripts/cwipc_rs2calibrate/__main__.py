@@ -51,8 +51,8 @@ def main():
     parser = argparse.ArgumentParser(description="Calibrate cwipc_realsense2 capturer")
     parser.add_argument("--clean", action="store_true", help="Remove old cameraconfig.xml and calibrate from scratch")
     parser.add_argument("--reuse", action="store_true", help="Reuse existing cameraconfig.xml")
+    parser.add_argument("--nograb", action="store_true", help="Don't use grabber, obtain .ply file and old config from previous run")
     parser.add_argument("--noinspect", action="store_true", help="Don't inspect pointclouds after grabbing")
-    parser.add_argument("--nograb", action="store", metavar="DIR", help="Don't use grabber, obtain .ply file and old config from DIR")
     parser.add_argument("--nocoarse", action="store_true", help="Skip coarse (manual) calibration step")
     parser.add_argument("--nofine", action="store_true", help="Skip fine (automatic) calibration step")
     parser.add_argument("--crossv3", action="store_true", help="Use version 3 calibration cross (with the LEDs) in stead of the rubber ball cross")
@@ -73,21 +73,30 @@ def main():
     if args.videolat:
         refpoints = POINTS_VIDEOLAT
     prog = Calibrator(distance, refpoints)
+    
     if args.nograb:
         grabber = FileGrabber(args.nograb)
     else:
         grabber = LiveGrabber()
     try:
+    
         prog.open(grabber, clean=args.clean, reuse=args.reuse)
+        
         prog.grab(args.noinspect)
+        
         if args.nocoarse: 
             prog.skip_coarse()
         else:
             prog.run_coarse()
+            
+        if bbox:
+            prog.apply_bbox(bbox)
+            
         if args.nofine: 
             prog.skip_fine()
         else:
-            prog.run_fine(bbox, args.corr)
+            prog.run_fine(args.corr)
+            
         prog.save()
     finally:
         del prog

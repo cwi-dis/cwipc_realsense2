@@ -4,6 +4,7 @@ import cwipc
 import cwipc.realsense2
 
 from .pointcloud import Pointcloud
+from .cameraconfig import CameraConfig
 
 DEBUG=False
 
@@ -11,12 +12,37 @@ SKIP_FIRST_GRABS=10 # Skip this many grabs before using one. Needed for D435, it
 
 class LiveGrabber:
     def __init__(self):
+        # Check whether there is an existing cameraConfig, otherwise we invent one later
+        self.cameraconfig = CameraConfig('cameraonfig.xml')
         self.grabber = None
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         # May need to grab a few combined pointclouds and throw them away
         for i in range(SKIP_FIRST_GRABS):
             pc = self.grabber.get()
             pc.free()
+        # Now we should update cameraconfig, if needed
+        if self.cameraconfig.getserials() == ["0"]:
+            # Default config file just created by us. Overwrite
+            serials = self.getserials()
+            self.cameraconfig.setserial(0, serials[0])
+            for sn in serials[1:]:
+                self.cameraconfig.addcamera(sn)
+        else:
+            # pre-existing. Check that config file and hardware setup match
+            hwSerials = self.getserials()
+            fileSerials = self.cameraconfig.getserials()
+            ok = True
+            for sn in hwSerials:
+                if not sn in fileSerials:
+                    ok = False
+                    print(f'Camera {sn} is attached but not in cameraconfig.xml')
+            for sn in fileSerials:
+                if not sn in cameraSerials:
+                    ok = False
+                    print(f'Camera {sn} is in cameraconfig.xml but not attached')
+            if not ok:
+                print('Use --clean to calibrate this new hardware setup (or attach the right cameras)')
+                sys.exit(1)
    
     def __del__(self):
         if self.grabber: self.grabber.free()
@@ -36,12 +62,7 @@ class LiveGrabber:
         return rv
         
     def getmatrix(self, tilenum):
-        return [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1],
-        ]
+        return self.cameraconfig.getmatrix()
         
     def getcount(self):
         # Get the number of cameras and their tile numbers

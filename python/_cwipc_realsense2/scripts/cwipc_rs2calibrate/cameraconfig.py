@@ -1,29 +1,50 @@
+import copy
 import xml.etree.ElementTree as ET
+
+CONFIGFILE="""<?xml version="1.0" ?>
+<file>
+    <CameraConfig>
+        <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
+        <postprocessing density="1" height_min="0" height_max="0" depthfiltering="1" backgroundremoval="0" greenscreenremoval="0" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
+            <depthfilterparameters threshold_near="0" threshold_far="0" decimation_value="1" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+        </postprocessing>
+        <camera serial="0" backgroundx="0" backgroundy="0" backgroundz="0">
+            <trafo>
+                <values v00="1" v01="0" v02="0" v03="0" v10="0" v11="1" v12="0" v13="0" v20="0" v21="0" v22="1" v23="0" v30="0" v31="0" v32="0" v33="1"  />
+            </trafo>
+        </camera>
+    </CameraConfig>
+</file>
+"""
 
 class CameraConfig:
 
-    def __init__(self, confFilename):
+    def __init__(self, confFilename, read=True):
         self.confFilename = confFilename
         self.serials = []
         self.matrices = []
-        self.bbox = None
-        self._readConf(self.confFilename)
-        self._parseConf()
+        self.tree = None        
+        if read:
+            self._readConf(self.confFilename)
+            self._parseConf()
         
     def _readConf(self, confFilename):
         self.tree = ET.parse(confFilename)
+        
+    def copyFrom(self, other):
+        self.tree = copy.deepcopy(other.tree)
+        
+    def fillDefault(self):
+        self.tree = ET.fromstring(CONFIGFILE)
+        self._parseConf()
         
     def _parseConf(self):
         root = self.tree.getroot()
         for camElt in root.findall('CameraConfig/camera'):
             serial = camElt.attrib['serial']
             assert serial
-            trafoElts = list(camElt.iter('trafo'))
-            assert len(trafoElts) == 1
-            trafoElt = trafoElts[0]
-            valuesElts = list(trafoElt.iter('values'))
-            assert len(valuesElts) == 1
-            valuesElt = valuesElts[0]
+            trafoElt = camElt.find('trafo')
+            valuesElt = trafoElt.find('values')
             va = valuesElt.attrib
             trafo = [
                 [float(va['v00']), float(va['v01']), float(va['v02']), float(va['v03'])],
@@ -33,10 +54,9 @@ class CameraConfig:
             ]
             self.serials.append(serial)
             self.matrices.append(trafo)
-        # import pdb ; pdb.set_trace()
         
     def save(self):
-        assert 0
+        self.tree.write(self.confFilename)
         
     def getcount(self):
         return len(self.serials)
@@ -48,10 +68,57 @@ class CameraConfig:
         return self.matrices[tilenum]
         
     def addcamera(self, serial):
-        assert 0
+        root = self.tree.getroot()
+        firstCamElt = root.find('CameraConfig/camera')
+        newCamElt = copy.deepcopy(firstCamElt)
+        newCamElt.set('serial', serial)
+        ccElt = root.find('CameraConfig')
+        ccElt.append(newCamElt)
+        
+        self.serials.append(serial)
+        matrix = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+        self.matrices.append(matrix)
+        
+        self.setmatrix(len(self.serials)-1, matrix)
         
     def setmatrix(self, tilenum, matrix):
-        assert 0
+        self.matrices[tilenum] = copy.deepcopy(matrix)
+        serial = self.serials[tilenum]
+        root = self.tree.getroot()
+        camElements = root.findall(f"CameraConfig/camera[@serial=='{serial}']")
+        assert len(camElements) == 1
+        trafoElt = camElt.find('trafo')
+        valuesElt = trafoElt.find('values')
+        valueElt.set('v00', matrix[0][0])
+        valueElt.set('v01', matrix[0][1])
+        valueElt.set('v02', matrix[0][2])
+        valueElt.set('v03', matrix[0][3])
+        valueElt.set('v10', matrix[1][0])
+        valueElt.set('v11', matrix[1][1])
+        valueElt.set('v12', matrix[1][2])
+        valueElt.set('v13', matrix[1][3])
+        valueElt.set('v20', matrix[2][0])
+        valueElt.set('v21', matrix[2][1])
+        valueElt.set('v22', matrix[2][2])
+        valueElt.set('v23', matrix[2][3])
+        valueElt.set('v30', matrix[3][0])
+        valueElt.set('v31', matrix[3][1])
+        valueElt.set('v32', matrix[3][2])
+        valueElt.set('v33', matrix[3][3])
         
-    def setbbox(self, threshold_near, threshold_far, heignt_min, height_max):
-        assert 0
+    def setserial(self, tilenum, serial):
+        oldSerial = self.serials[tilenum]
+        self.serials[tilenum] = serial
+        root = self.tree.getroot()
+        camElements = root.findall(f"CameraConfig/camera[@serial=='{oldSerial}']")
+        assert len(camElements) == 1
+        camElements.set('serial', serial)
+        
+    def setbounds(self, threshold_near, threshold_far, heignt_min, height_max):
+        root = self.tree.getroot()
+        ppElt = root.find('postprocessing')
+        ppElt.set('height_min', height_min)
+        ppElt.set('height_max', height_max)
+        dfElt = ppElt.find('depthfilterparameters')
+        dfElt.set('threshold_near', threshold_near)
+        dfElt.set('threshold_far', threshold_far)
