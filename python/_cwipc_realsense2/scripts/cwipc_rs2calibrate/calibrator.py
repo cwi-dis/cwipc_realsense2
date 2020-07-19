@@ -2,6 +2,7 @@ import sys
 import os
 import numpy as np
 import open3d
+import pprint
 
 from .pointcloud import Pointcloud
 from .cameraconfig import CameraConfig
@@ -44,11 +45,9 @@ class Calibrator:
         elif clean:
             if os.path.exists('cameraconfig.xml'):
                 os.unlink('cameraconfig.xml')
-            self.writeconfig()
         elif os.path.exists('cameraconfig.xml'):
             self.ui.show_error('%s: cameraconfig.xml already exists, please supply --clean or --reuse argument' % sys.argv[0])
             sys.exit(1)
-        # Set initial config file, for filtering parameters
         self.grabber = grabber
         self.grabber.open()
         self.cameraserial = self.grabber.getserials()
@@ -113,7 +112,7 @@ class Calibrator:
         # Show result
         #
         self.ui.show_prompt('Inspect the resultant merged pointclouds of all cameras')
-        joined = Pointcloud.from_join(*tuple(self.coarse_calibrated_pointclouds))
+        joined = Pointcloud.from_join(self.coarse_calibrated_pointclouds)
         os.chdir(self.workdir)
         joined.save('cwipc_rs2calibrate_coarse.ply')
         self.ui.show_points('Inspect manual calibration result', joined)
@@ -133,7 +132,7 @@ class Calibrator:
             # Apply bounding box to pointclouds
             for i in range(len(self.coarse_calibrated_pointclouds)):
                 self.coarse_calibrated_pointclouds[i] = self.coarse_calibrated_pointclouds[i].bbox(bbox)
-        joined = Pointcloud.from_join(*tuple(self.coarse_calibrated_pointclouds))
+        joined = Pointcloud.from_join(self.coarse_calibrated_pointclouds)
         self.ui.show_prompt('Inspect pointcloud after applying bounding box')
         self.ui.show_points('Inspect bounding box result', joined)
     
@@ -150,19 +149,23 @@ class Calibrator:
             self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
             return
         # We will align everything to the first camera
+        # Note: this is wrong. We should align the pointcloud with the smallest angle
+        # to camera 0. Then we should align the next pointcloud either to 0 or to
+        # the previous one. Repeat until done.
         refPointcloud = self.coarse_calibrated_pointclouds[0]
         assert len(self.fine_calibrated_pointclouds) == 0
         self.fine_calibrated_pointclouds.append(refPointcloud)
-        
+        print(f'Fine matrix for camera {self.cameraserial[0]} is identity matrix, by definition')
         for i in range(1, len(self.coarse_calibrated_pointclouds)):
             srcPointcloud =  self.coarse_calibrated_pointclouds[i]
             newMatrix = self.align_fine(refPointcloud,srcPointcloud, correspondence)
             newPointcloud = srcPointcloud.transform(newMatrix)
             self.fine_calibrated_pointclouds.append(newPointcloud)
             self.fine_matrix[i] = newMatrix
-            # print('xxxjack new matrix', newMatrix)
+            print(f'Fine matrix for camera {self.cameraserial[i]} is:')
+            pprint.pprint(newMatrix)
         self.ui.show_prompt('Inspect the resultant merged pointclouds of all cameras')
-        joined = Pointcloud.from_join(*tuple(self.fine_calibrated_pointclouds))
+        joined = Pointcloud.from_join(self.fine_calibrated_pointclouds)
         os.chdir(self.workdir)
         joined.save('cwipc_rs2calibrate_calibrated.ply')
         self.ui.show_points('Inspect fine calibration result', joined)

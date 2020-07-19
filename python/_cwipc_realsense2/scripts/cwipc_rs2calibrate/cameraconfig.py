@@ -33,6 +33,7 @@ class CameraConfig:
         
     def copyFrom(self, other):
         self.tree = copy.deepcopy(other.tree)
+        self._parseConf()
         
     def fillDefault(self):
         self.tree = ET.fromstring(CONFIGFILE)
@@ -85,34 +86,32 @@ class CameraConfig:
         self.matrices[tilenum] = copy.deepcopy(matrix)
         serial = self.serials[tilenum]
         root = self.tree.getroot()
-        camElements = root.findall(f"CameraConfig/camera[@serial=='{serial}']")
-        assert len(camElements) == 1
+        camElt = root.find(f"CameraConfig/camera[@serial='{serial}']")
         trafoElt = camElt.find('trafo')
         valuesElt = trafoElt.find('values')
-        valueElt.set('v00', matrix[0][0])
-        valueElt.set('v01', matrix[0][1])
-        valueElt.set('v02', matrix[0][2])
-        valueElt.set('v03', matrix[0][3])
-        valueElt.set('v10', matrix[1][0])
-        valueElt.set('v11', matrix[1][1])
-        valueElt.set('v12', matrix[1][2])
-        valueElt.set('v13', matrix[1][3])
-        valueElt.set('v20', matrix[2][0])
-        valueElt.set('v21', matrix[2][1])
-        valueElt.set('v22', matrix[2][2])
-        valueElt.set('v23', matrix[2][3])
-        valueElt.set('v30', matrix[3][0])
-        valueElt.set('v31', matrix[3][1])
-        valueElt.set('v32', matrix[3][2])
-        valueElt.set('v33', matrix[3][3])
+        valuesElt.set('v00', str(matrix[0][0]))
+        valuesElt.set('v01', str(matrix[0][1]))
+        valuesElt.set('v02', str(matrix[0][2]))
+        valuesElt.set('v03', str(matrix[0][3]))
+        valuesElt.set('v10', str(matrix[1][0]))
+        valuesElt.set('v11', str(matrix[1][1]))
+        valuesElt.set('v12', str(matrix[1][2]))
+        valuesElt.set('v13', str(matrix[1][3]))
+        valuesElt.set('v20', str(matrix[2][0]))
+        valuesElt.set('v21', str(matrix[2][1]))
+        valuesElt.set('v22', str(matrix[2][2]))
+        valuesElt.set('v23', str(matrix[2][3]))
+        valuesElt.set('v30', str(matrix[3][0]))
+        valuesElt.set('v31', str(matrix[3][1]))
+        valuesElt.set('v32', str(matrix[3][2]))
+        valuesElt.set('v33', str(matrix[3][3]))
         
     def setserial(self, tilenum, serial):
         oldSerial = self.serials[tilenum]
         self.serials[tilenum] = serial
         root = self.tree.getroot()
-        camElements = root.findall(f"CameraConfig/camera[@serial=='{oldSerial}']")
-        assert len(camElements) == 1
-        camElements.set('serial', serial)
+        camElt = root.find(f"CameraConfig/camera[@serial='{oldSerial}']")
+        camElt.set('serial', serial)
         
     def setbounds(self, threshold_near, threshold_far, heignt_min, height_max):
         root = self.tree.getroot()

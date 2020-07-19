@@ -82,7 +82,10 @@ def main():
     
         prog.open(grabber, clean=args.clean, reuse=args.reuse)
         
-        prog.grab(args.noinspect)
+        noinspect = args.noinspect
+        if args.nograb and args.nocoarse:
+            noinspect = True
+        prog.grab(noinspect)
         
         if args.nocoarse: 
             prog.skip_coarse()
