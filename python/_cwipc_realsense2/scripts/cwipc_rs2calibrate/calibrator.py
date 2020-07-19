@@ -4,6 +4,7 @@ import numpy as np
 import open3d
 
 from .pointcloud import Pointcloud
+from .cameraconfig import CameraConfig
 from .ui import UI
 DEBUG=False
               
@@ -12,8 +13,11 @@ class Calibrator:
         self.ui = UI()
         self.cameraserial = []
         self.cameraconfig = None
-        self.near = 0.5 * distance
-        self.far = 2.0 * distance
+        self.near = 0
+        self.far = 0
+        if distance:
+            self.near = 0.5 * distance
+            self.far = 2.0 * distance
         self.height_min = 0
         self.height_max = 0
         self.refpoints = refpoints
@@ -36,17 +40,17 @@ class Calibrator:
         
     def open(self, grabber, clean, reuse):
         if reuse:
-            assert 0, "--reuse not yet implemented"
+            pass
         elif clean:
             if os.path.exists('cameraconfig.xml'):
                 os.unlink('cameraconfig.xml')
-        if os.path.exists('cameraconfig.xml'):
+            self.writeconfig()
+        elif os.path.exists('cameraconfig.xml'):
             self.ui.show_error('%s: cameraconfig.xml already exists, please supply --clean or --reuse argument' % sys.argv[0])
             sys.exit(1)
         # Set initial config file, for filtering parameters
-        assert 0
-        self.writeconfig()
         self.grabber = grabber
+        self.grabber.open()
         self.cameraserial = self.grabber.getserials()
         self.cameraconfig = CameraConfig('cameraconfig.xml', read=False)
         self.cameraconfig.copyFrom(self.grabber.cameraconfig)

@@ -12,9 +12,11 @@ SKIP_FIRST_GRABS=10 # Skip this many grabs before using one. Needed for D435, it
 
 class LiveGrabber:
     def __init__(self):
-        # Check whether there is an existing cameraConfig, otherwise we invent one later
-        self.cameraconfig = CameraConfig('cameraonfig.xml')
+        self.cameraconfig = None
         self.grabber = None
+        
+    def open(self):
+        self.cameraconfig = CameraConfig('cameraonfig.xml')
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         # May need to grab a few combined pointclouds and throw them away
         for i in range(SKIP_FIRST_GRABS):

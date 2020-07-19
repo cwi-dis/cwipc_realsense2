@@ -51,7 +51,7 @@ def main():
     parser = argparse.ArgumentParser(description="Calibrate cwipc_realsense2 capturer")
     parser.add_argument("--clean", action="store_true", help="Remove old cameraconfig.xml and calibrate from scratch")
     parser.add_argument("--reuse", action="store_true", help="Reuse existing cameraconfig.xml")
-    parser.add_argument("--nograb", action="store_true", help="Don't use grabber, obtain .ply file and old config from previous run")
+    parser.add_argument("--nograb", metavar="PLYFILE", action="store", help="Don't use grabber but use .ply file grabbed earlier, using cameraconfig.xml from same directory.")
     parser.add_argument("--noinspect", action="store_true", help="Don't inspect pointclouds after grabbing")
     parser.add_argument("--nocoarse", action="store_true", help="Skip coarse (manual) calibration step")
     parser.add_argument("--nofine", action="store_true", help="Skip fine (automatic) calibration step")
@@ -59,7 +59,7 @@ def main():
     parser.add_argument("--videolat", action="store_true", help="Use videolat flattened pyramid in stead of the rubber ball cross")
     parser.add_argument("--bbox", action="store", type=float, nargs=6, metavar="N", help="Set bounding box (in meters, xmin xmax etc) for fine calibration")
     parser.add_argument("--corr", action="store", type=float, metavar="D", help="Set fine calibration max corresponding point distance", default=0.01)
-    parser.add_argument("--distance", type=float, action="store", required=True, metavar="D", help="Approximate distance between cameras and subject")
+    parser.add_argument("--distance", type=float, action="store", metavar="D", help="Approximate distance between cameras and subject")
     args = parser.parse_args()
     distance = args.distance
     bbox = None

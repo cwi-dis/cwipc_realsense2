@@ -24,12 +24,14 @@ class UI:
         while not answered:
             print('* ', msg)
             if canretry:
-                print('* Press y if it is fine, n to retry, or control-C to abort')
+                print('* Press y if it is fine, n to retry, or q to abort')
             else:
-                print('* Press y if it is fine, or control-C to abort')
+                print('* Press y if it is fine, or q to abort')
             print('? ', end='')
             sys.stdout.flush()
             answer = sys.stdin.readline().strip().lower()
+            if answer == 'q':
+                sys.exit(1)
             ok = answer == 'y'
             answered = ok
             if canretry and answer == 'n':

@@ -77,7 +77,7 @@ class Pointcloud:
         return self
         
     @classmethod
-    def from_join(klass, *pointclouds):
+    def from_join(klass, pointclouds):
         """Create tiled Pointcloud from separate pointclouds"""
         allPoints = []
         tileNum = 1

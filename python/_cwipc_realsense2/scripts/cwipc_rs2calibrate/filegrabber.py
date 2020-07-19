@@ -6,8 +6,12 @@ from .pointcloud import Pointcloud
 from .cameraconfig import CameraConfig
 
 class FileGrabber:
-    def __init__(self, dirname):
-        self.pcFilename = os.path.join(dirname, "cwipc_calibrate_calibrated.ply")
+    def __init__(self, plyfile):
+        self.pcFilename = plyfile
+        self.cameraconfig = None
+        
+    def open(self):
+        dirname = os.path.dirname(self.pcFilename)
         confFilename = os.path.join(dirname, "cameraconfig.xml")
         self.cameraconfig = CameraConfig(confFilename)
         
