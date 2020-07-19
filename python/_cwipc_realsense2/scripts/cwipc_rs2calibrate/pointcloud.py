@@ -2,6 +2,7 @@ import cwipc
 import cwipc.codec
 import numpy as np
 import open3d
+import copy
 
 class Pointcloud:
     """A class that handles both cwipc pointclouds and o3d pointclouds and converts between them"""
@@ -160,3 +161,15 @@ class Pointcloud:
                 continue
             newPoints.append(p)
         return self.__class__.from_points(newPoints)
+        
+    def colored(self, rgb):
+        r, g, b = rgb
+        self._ensure_cwipc()
+        pcpoints = self.cwipc.get_points()
+        pcpoints = copy.deepcopy(pcpoints)
+        for p in pcpoints:
+            p.r = r
+            p.g = g
+            p.b = b
+        return self.__class__.from_points(pcpoints)
+        

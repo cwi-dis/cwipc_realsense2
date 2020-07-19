@@ -55,10 +55,11 @@ def main():
     parser.add_argument("--noinspect", action="store_true", help="Don't inspect pointclouds after grabbing")
     parser.add_argument("--nocoarse", action="store_true", help="Skip coarse (manual) calibration step")
     parser.add_argument("--nofine", action="store_true", help="Skip fine (automatic) calibration step")
-    parser.add_argument("--crossv3", action="store_true", help="Use version 3 calibration cross (with the LEDs) in stead of the rubber ball cross")
-    parser.add_argument("--videolat", action="store_true", help="Use videolat flattened pyramid in stead of the rubber ball cross")
-    parser.add_argument("--bbox", action="store", type=float, nargs=6, metavar="N", help="Set bounding box (in meters, xmin xmax etc) for fine calibration")
+    parser.add_argument("--crossv3", action="store_true", help="For coarse calibration, use version 3 calibration cross (with the LEDs) in stead of the v2 rubber ball cross")
+    parser.add_argument("--videolat", action="store_true", help="For coarse calibration, use videolat flattened pyramid in stead of the v2 rubber ball cross")
+    parser.add_argument("--bbox", action="store", type=float, nargs=6, metavar="N", help="Set bounding box (in meters, xmin xmax etc) before fine calibration")
     parser.add_argument("--corr", action="store", type=float, metavar="D", help="Set fine calibration max corresponding point distance", default=0.01)
+    parser.add_argument("--finspect", action="store_true", help="Visually inspect result of each fine calibration step")
     parser.add_argument("--distance", type=float, action="store", metavar="D", help="Approximate distance between cameras and subject")
     args = parser.parse_args()
     distance = args.distance
@@ -98,7 +99,7 @@ def main():
         if args.nofine: 
             prog.skip_fine()
         else:
-            prog.run_fine(args.corr)
+            prog.run_fine(args.corr, args.finspect)
             
         prog.save()
     finally:

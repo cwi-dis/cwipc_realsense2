@@ -136,7 +136,7 @@ class Calibrator:
         self.ui.show_prompt('Inspect pointcloud after applying bounding box')
         self.ui.show_points('Inspect bounding box result', joined)
     
-    def run_fine(self, correspondence):
+    def run_fine(self, correspondence, inspect):
         for i in range(len(self.cameraserial)):
             self.fine_matrix.append([
                 [1, 0, 0, 0],
@@ -155,15 +155,23 @@ class Calibrator:
         refPointcloud = self.coarse_calibrated_pointclouds[0]
         assert len(self.fine_calibrated_pointclouds) == 0
         self.fine_calibrated_pointclouds.append(refPointcloud)
-        print(f'Fine matrix for camera {self.cameraserial[0]} is identity matrix, by definition')
+        if inspect:
+            print(f'Fine matrix for camera {self.cameraserial[0]} is identity matrix, by definition')
         for i in range(1, len(self.coarse_calibrated_pointclouds)):
             srcPointcloud =  self.coarse_calibrated_pointclouds[i]
             newMatrix = self.align_fine(refPointcloud,srcPointcloud, correspondence)
             newPointcloud = srcPointcloud.transform(newMatrix)
             self.fine_calibrated_pointclouds.append(newPointcloud)
             self.fine_matrix[i] = newMatrix
-            print(f'Fine matrix for camera {self.cameraserial[i]} is:')
-            pprint.pprint(newMatrix)
+            if inspect:
+                print(f'Fine matrix for camera {self.cameraserial[i]} is:')
+                pprint.pprint(newMatrix)
+                showPCref = refPointcloud.colored((255, 0, 0))
+                showPCsrc = srcPointcloud.colored((0, 255, 0))
+                showPCdst = newPointcloud.colored((0, 0, 255))
+                joined = Pointcloud.from_join((showPCref, showPCsrc, showPCdst))
+                self.ui.show_prompt(f"Inspect alignment of {self.cameraserial[i]} (before: green, after: blue) to reference {self.cameraserial[0]} (red) ")
+                self.ui.show_points('Inspect alignment result', joined)
         self.ui.show_prompt('Inspect the resultant merged pointclouds of all cameras')
         joined = Pointcloud.from_join(self.fine_calibrated_pointclouds)
         os.chdir(self.workdir)
