@@ -36,7 +36,8 @@ class CameraConfig:
         self._parseConf()
         
     def fillDefault(self):
-        self.tree = ET.fromstring(CONFIGFILE)
+        root = ET.fromstring(CONFIGFILE)
+        self.tree = ET.ElementTree(root)
         self._parseConf()
         
     def _parseConf(self):

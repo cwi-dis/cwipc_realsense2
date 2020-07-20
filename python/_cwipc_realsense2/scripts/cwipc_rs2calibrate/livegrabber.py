@@ -4,6 +4,7 @@ import cwipc
 import cwipc.realsense2
 
 from .pointcloud import Pointcloud
+import os.path
 from .cameraconfig import CameraConfig
 
 DEBUG=False
@@ -16,7 +17,11 @@ class LiveGrabber:
         self.grabber = None
         
     def open(self):
-        self.cameraconfig = CameraConfig('cameraonfig.xml')
+        if os.path.exists('cameraconfig.xml'):
+            self.cameraconfig = CameraConfig('cameraconfig.xml')
+        else:
+            self.cameraconfig = CameraConfig('', read=False)
+            self.cameraconfig.fillDefault()
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         # May need to grab a few combined pointclouds and throw them away
         for i in range(SKIP_FIRST_GRABS):
