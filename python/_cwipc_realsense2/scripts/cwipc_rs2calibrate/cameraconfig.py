@@ -114,11 +114,11 @@ class CameraConfig:
         camElt = root.find(f"CameraConfig/camera[@serial='{oldSerial}']")
         camElt.set('serial', serial)
         
-    def setbounds(self, threshold_near, threshold_far, heignt_min, height_max):
+    def setbounds(self, threshold_near, threshold_far, height_min, height_max):
         root = self.tree.getroot()
-        ppElt = root.find('postprocessing')
-        ppElt.set('height_min', height_min)
-        ppElt.set('height_max', height_max)
+        ppElt = root.find('CameraConfig/postprocessing')
+        ppElt.set('height_min', str(height_min))
+        ppElt.set('height_max', str(height_max))
         dfElt = ppElt.find('depthfilterparameters')
-        dfElt.set('threshold_near', threshold_near)
-        dfElt.set('threshold_far', threshold_far)
+        dfElt.set('threshold_near', str(threshold_near))
+        dfElt.set('threshold_far', str(threshold_far))

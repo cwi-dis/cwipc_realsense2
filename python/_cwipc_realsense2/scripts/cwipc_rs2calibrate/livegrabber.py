@@ -69,7 +69,7 @@ class LiveGrabber:
         return rv
         
     def getmatrix(self, tilenum):
-        return self.cameraconfig.getmatrix()
+        return self.cameraconfig.getmatrix(tilenum)
         
     def getcount(self):
         # Get the number of cameras and their tile numbers
