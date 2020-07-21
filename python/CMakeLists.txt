@@ -29,7 +29,10 @@ if(Python3_FOUND)
 		COMMAND ${Python3_EXECUTABLE} test_cwipc_realsense2.py
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
-	
+	add_test(NAME test_calibrator
+		COMMAND ${Python3_EXECUTABLE} -m _cwipc_realsense2.scripts.cwipc_rs2calibrate --auto
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
 	# Ensure the cwipc_realsense2 dynamic library and cwipc python module can be found by the tests
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 		set_property(TEST run_python_tests PROPERTY ENVIRONMENT DYLD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}:$ENV{DYLD_LIBRARY_PATH})
