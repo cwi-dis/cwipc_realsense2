@@ -39,11 +39,16 @@ int main(int argc, char** argv)
 	generator->get_tileinfo(4, &tif);
 	int ok = 0;
     while (count-- > 0 && ok == 0) {
-    	cwipc *pc = generator->get();
-        if (pc == NULL) {
-            error = (char *)"grabber returned NULL";
-            ok = -1;
-            break;
+        cwipc *pc = NULL;
+        while(1) {
+            pc = generator->get();
+            if (pc == NULL) {
+                error = (char *)"grabber returned NULL";
+                ok = -1;
+                break;
+            }
+            if (pc->count() > 0) break;
+            std::cerr << argv[0] << ": warning: empty pointcloud, grabbing again" << std::endl;
         }
 		if (strcmp(argv[2], "-") != 0) {
 			snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], pc->timestamp());
