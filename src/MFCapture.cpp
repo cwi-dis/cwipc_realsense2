@@ -37,6 +37,7 @@ static int numberOfCapturersActive = 0;
 
 MFCapture::MFCapture(int dummy)
 :	numberOfPCsProduced(0),
+    no_cameras(true),
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)
 {
@@ -245,7 +246,10 @@ void MFCapture::_create_cameras(rs2::device_list devs) {
 }
 
 MFCapture::~MFCapture() {
-    if (no_cameras) return;
+    if (no_cameras) {
+        numberOfCapturersActive--;
+        return;
+    }
 	uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	// Stop all cameras
 	for (auto cam : cameras)
