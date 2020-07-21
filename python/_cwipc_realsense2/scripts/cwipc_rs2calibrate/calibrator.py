@@ -8,7 +8,13 @@ from .pointcloud import Pointcloud
 from .cameraconfig import CameraConfig
 from .ui import UI
 DEBUG=False
-              
+
+FRONTAL_MATRIX = [
+    [-0.9913142171561211, -0.06579945493198505, 0.11387078025024935, -0.011145954772718299],
+    [0.06075368651814084, -0.9970346673683885, -0.04723199805282863,  1.0583022566736195],
+    [0.11664095523701087, -0.03990368148755935, 0.9923722002178104,  -0.6241440078503737],
+    [0, 0, 0, 1]
+]    
 class Calibrator:
     def __init__(self, distance, refpoints):
         self.ui = UI()
@@ -40,11 +46,11 @@ class Calibrator:
         self.refpointcloud = None
         
     def open(self, grabber, clean, reuse):
-        if reuse:
-            pass
-        elif clean:
+        if clean:
             if os.path.exists('cameraconfig.xml'):
                 os.unlink('cameraconfig.xml')
+        elif reuse:
+            pass
         elif os.path.exists('cameraconfig.xml'):
             self.ui.show_error('%s: cameraconfig.xml already exists, please supply --clean or --reuse argument' % sys.argv[0])
             sys.exit(1)
@@ -54,6 +60,26 @@ class Calibrator:
         self.cameraconfig = CameraConfig('cameraconfig.xml', read=False)
         self.cameraconfig.copyFrom(self.grabber.cameraconfig)
 
+    def issynthetic(self):
+        return self.grabber.getserials()[0] == "synthetic"
+        
+    def auto(self):
+        self.skip_coarse()
+        self.skip_fine()
+        # If we have a single camera and no matrix we apply the frontal 1m matrix
+        if len(self.cameraserial) == 0:
+            pass
+        elif len(self.cameraserial) == 1:
+            if self.grabber.getmatrix(0) == [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]:
+                print("* Single camera setup, assume frontal camera 1m away and 1.2m high")
+                self.coarse_matrix[0] = FRONTAL_MATRIX
+            # Otherwise presume the matrix has already been set
+        else:
+            if self.grabber.getmatrix(0) == [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]:
+                # Uninitialized multi-camera setup. Cannot do automatically
+                self.ui.show_error('%s: multi-camera setup, please run calibrator manually' % sys.argv[0])
+                sys.exit(1)
+        
     def grab(self, noinspect):
         if not self.cameraserial:
             self.ui.show_error('* No realsense cameras found')

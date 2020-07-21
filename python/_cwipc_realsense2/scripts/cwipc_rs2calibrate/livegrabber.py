@@ -44,7 +44,7 @@ class LiveGrabber:
                     ok = False
                     print(f'Camera {sn} is attached but not in cameraconfig.xml')
             for sn in fileSerials:
-                if not sn in cameraSerials:
+                if not sn in hwSerials:
                     ok = False
                     print(f'Camera {sn} is in cameraconfig.xml but not attached')
             if not ok:

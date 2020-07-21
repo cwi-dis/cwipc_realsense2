@@ -1,3 +1,4 @@
+import sys
 import argparse
 
 from .calibrator import Calibrator
@@ -49,6 +50,7 @@ POINTS_VIDEOLAT = [
       
 def main():
     parser = argparse.ArgumentParser(description="Calibrate cwipc_realsense2 capturer")
+    parser.add_argument("--auto", action="store_true", help="Attempt to auto-install cameraconfig, if needed")
     parser.add_argument("--clean", action="store_true", help="Remove old cameraconfig.xml and calibrate from scratch")
     parser.add_argument("--reuse", action="store_true", help="Reuse existing cameraconfig.xml")
     parser.add_argument("--nograb", metavar="PLYFILE", action="store", help="Don't use grabber but use .ply file grabbed earlier, using cameraconfig.xml from same directory.")
@@ -81,25 +83,31 @@ def main():
         grabber = LiveGrabber()
     try:
     
-        prog.open(grabber, clean=args.clean, reuse=args.reuse)
+        prog.open(grabber, clean=args.clean, reuse=(args.reuse or args.auto))
+        if prog.issynthetic():
+            print(f'{sys.argv[0]}: no realsense cameras attached, nothing to do')
+            sys.exit(0)
         
-        noinspect = args.noinspect
-        if args.nograb and args.nocoarse:
-            noinspect = True
-        prog.grab(noinspect)
+        if args.auto:
+            prog.auto()
+        else:
+            noinspect = args.noinspect
+            if args.nograb and args.nocoarse:
+                noinspect = True
+            prog.grab(noinspect)
         
-        if args.nocoarse: 
-            prog.skip_coarse()
-        else:
-            prog.run_coarse()
+            if args.nocoarse: 
+                prog.skip_coarse()
+            else:
+                prog.run_coarse()
             
-        if bbox:
-            prog.apply_bbox(bbox)
+            if bbox:
+                prog.apply_bbox(bbox)
             
-        if args.nofine: 
-            prog.skip_fine()
-        else:
-            prog.run_fine(args.corr, args.finspect)
+            if args.nofine: 
+                prog.skip_fine()
+            else:
+                prog.run_fine(args.corr, args.finspect)
             
         prog.save()
     finally:
