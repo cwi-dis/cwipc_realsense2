@@ -251,8 +251,8 @@ void MFCamera::_processing_thread_main()
 #endif
 
 		// Calculate new pointcloud, map to the color images and get vertices and color indices
+        pointcloud.map_to(color);
 		auto points = pointcloud.calculate(depth);
-		pointcloud.map_to(color);
 		auto vertices = points.get_vertices();
 		auto texture_coordinates = points.get_texture_coordinates();
 
@@ -332,12 +332,17 @@ void MFCamera::_processing_thread_main()
 				if (do_height_filtering && (pt.y < height_min || pt.y > height_max)) continue;
 				float u = texture_coordinates[i].u;
 				float v = texture_coordinates[i].v;
-				int texture_x = std::min(std::max(int(u*texture_width + .5f), 0), texture_width - 1);
-				int texture_y = std::min(std::max(int(v*texture_height + .5f), 0), texture_height - 1);
+                int texture_x = int(0.5 + u*texture_width);
+                int texture_y = int(0.5 + v*texture_height);
+                // Unsure whether this ever happens: out-of-bounds u/v points are skipped
+                if (texture_x <= 0 || texture_x >= texture_width-1) continue;
+                if (texture_y <= 0 || texture_y >= texture_height-1) continue;
 				int idx = texture_x * texture_x_step + texture_y * texture_y_step;
 				pt.r = texture_data[idx];
 				pt.g = texture_data[idx + 1];
 				pt.b = texture_data[idx + 2];
+                // Unexpectedly, this does happen: 100% black points don't actually exist.
+                if (pt.r == 0 && pt.g == 0 && pt.b == 0) continue;
 				pt.a = camera_label;
 				if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
 					camData.cloud->push_back(pt);
@@ -345,6 +350,7 @@ void MFCamera::_processing_thread_main()
 		}
 		if (camData.cloud->size() == 0) {
 			std::cerr << "cwipc_realsense2: warning: captured empty pointcloud from camera " << camData.serial << std::endl;
+            //continue;
 		}
 		// Notify wait_for_pc that we're done.
 		processing_done = true;
