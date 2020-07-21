@@ -368,6 +368,7 @@ void MFCapture::_control_thread_main()
 #ifdef CWIPC_DEBUG
             std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer got an empty pointcloud\n";
 #endif
+#if 0
             // HACK to make sure the encoder does not get an empty pointcloud
             cwipc_pcl_point point;
             point.x = 1.0;
@@ -375,6 +376,7 @@ void MFCapture::_control_thread_main()
             point.z = 1.0;
             point.rgb = 0.0;
             mergedPC->points.push_back(point);
+#endif
         }
         // Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
         mergedPC_is_fresh = true;
