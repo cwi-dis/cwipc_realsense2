@@ -23,7 +23,9 @@ else()
 	MESSAGE("Python3 not found. Install python modules manually from ${INSTALL_PATH}")
 endif()
 
-
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	MESSAGE("Skipping Python tests on Linux for now")
+else()
 if(Python3_FOUND)
 	add_test(NAME run_python_tests
 		COMMAND ${Python3_EXECUTABLE} test_cwipc_realsense2.py
@@ -55,4 +57,5 @@ if(Python3_FOUND)
 #		set_property(TEST test_calibrator PROPERTY ENVIRONMENT CWIPC_TEST_DLL=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/cwipc_realsense2.dll)
 #		set_property(TEST test_calibrator APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS};$ENV{PYTHONPATH})
 	endif()
+endif()
 endif()
