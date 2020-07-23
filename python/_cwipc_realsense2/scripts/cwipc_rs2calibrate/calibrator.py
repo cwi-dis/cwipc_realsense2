@@ -270,7 +270,7 @@ class Calibrator:
     
     def align_fine(self, source, target, threshold):
         trans_init = np.array([[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]])
-        reg_p2p = open3d.registration.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
+        reg_p2p = open3d.registration.registration_icp(target.get_o3d(), source.get_o3d(), threshold, trans_init,
                 open3d.registration.TransformationEstimationPointToPoint())
         
         return reg_p2p.transformation
