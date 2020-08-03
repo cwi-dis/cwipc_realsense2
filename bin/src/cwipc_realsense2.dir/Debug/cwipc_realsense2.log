@@ -1,0 +1,141 @@
+﻿  Building Custom Rule C:/dev2/pilot2/cwipc_realsense2/src/CMakeLists.txt
+  CMake does not need to re-run because C:/dev2/pilot2/cwipc_realsense2/bin/src/CMakeFiles/generate.stamp is up-to-date.
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27024.1 for x64
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /IC:\dev2\install\lib\include /I"C:\Program Files\PCL 1.8.1\3rdParty\VTK\include\vtk-8.0" /I"C:\Program Files\PCL 1.8.1\include\pcl-1.8" /I"C:\Program Files\PCL 1.8.1\3rdParty\Eigen\eigen3" /I"C:\Program Files\PCL 1.8.1\3rdParty\Boost\include\boost-1_64" /I"C:\Program Files\OpenNI2\Include" /I"C:\Program Files\PCL 1.8.1\3rdParty\FLANN\include" /I\include /I"C:\Program Files (x86)\Intel RealSense SDK 2.0\include" /I"C:\dev2\pilot2\cwipc_realsense2\third-party\tinyXML" /IC:\dev2\pilot2\cwipc_realsense2\include /IC:\dev2\install\include /I"C:\Program Files\PCL 1.8.1\3rdParty\VTK\include" /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D __SSSE3__ /D __SSE2__ /D __SSE__ /D "vtkIOExport_AUTOINIT=1(vtkIOExportOpenGL)" /D "vtkRenderingContext2D_AUTOINIT=1(vtkRenderingContextOpenGL)" /D "vtkRenderingCore_INCLUDE=\"C:/dev2/pilot2/cwipc_realsense2/bin/CMakeFiles/vtkRenderingCore_AUTOINIT_vtkInteractionStyle_vtkRenderingFreeType_vtkRenderingOpenGL.h\"" /D "vtkRenderingVolume_AUTOINIT=1(vtkRenderingVolumeOpenGL)" /D BOOST_ALL_NO_LIB /D DISABLE_OPENNI /D DISABLE_ENSENSO /D DISABLE_DAVIDSDK /D DISABLE_DSSDK /D DISABLE_RSSDK /D DISABLE_PCAP /D DISABLE_PNG /D FLANN_STATIC /D "CMAKE_INTDIR=\"Debug\"" /D cwipc_realsense2_EXPORTS /D _WINDLL /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cwipc_realsense2.dir\Debug\\" /Fd"cwipc_realsense2.dir\Debug\vc141.pdb" /Gd /TP /FC /errorReport:prompt C:\dev2\pilot2\cwipc_realsense2\src\cwipc_realsense2.cpp C:\dev2\pilot2\cwipc_realsense2\src\multiFrame.cpp C:\dev2\pilot2\cwipc_realsense2\src\utils.cpp "C:\dev2\pilot2\cwipc_realsense2\third-party\tinyXML\tinystr.cpp" "C:\dev2\pilot2\cwipc_realsense2\third-party\tinyXML\tinyxml.cpp" "C:\dev2\pilot2\cwipc_realsense2\third-party\tinyXML\tinyxmlerror.cpp" "C:\dev2\pilot2\cwipc_realsense2\third-party\tinyXML\tinyxmlparser.cpp"
+  
+  cwipc_realsense2.cpp
+  Unknown compiler version - please run the configure tests and report the results
+  multiFrame.cpp
+  Unknown compiler version - please run the configure tests and report the results
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(20): warning C4273: 'multiFrame::multiFrame': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(55): note: see previous definition of '{ctor}'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(96): warning C4273: 'multiFrame::~multiFrame': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(56): note: see previous definition of '{dtor}'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(147): warning C4273: 'multiFrame::get_pointcloud': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(57): note: see previous definition of 'get_pointcloud'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(185): warning C4273: 'multiFrame::getPointCloud': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(58): note: see previous definition of 'getPointCloud'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(191): warning C4273: 'multiFrame::camera_start': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(68): note: see previous definition of 'camera_start'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(210): warning C4273: 'multiFrame::camera_action': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(69): note: see previous definition of 'camera_action'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(319): warning C4273: 'multiFrame::merge_views': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(70): note: see previous definition of 'merge_views'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(348): warning C4273: 'multiFrame::get_cameradata': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(59): note: see previous definition of 'get_cameradata'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(355): warning C4273: 'multiFrame::get_realsensedata': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(60): note: see previous definition of 'get_realsensedata'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(362): warning C4273: 'multiFrame::newrealsensedata': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(61): note: see previous definition of 'newrealsensedata'
+c:\dev2\pilot2\cwipc_realsense2\src\multiframe.cpp(369): warning C4273: 'multiFrame::generate_pcl': inconsistent dll linkage
+  c:\dev2\pilot2\cwipc_realsense2\include\cwipc_realsense2\multiframe.hpp(71): note: see previous definition of 'generate_pcl'
+  utils.cpp
+  Unknown compiler version - please run the configure tests and report the results
+  tinystr.cpp
+  tinyxml.cpp
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(381): warning C4251: 'TiXmlBase::location': struct 'TiXmlCursor' needs to have dll-interface to be used by clients of class 'TiXmlBase'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(107): note: see declaration of 'TiXmlCursor'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(769): warning C4251: 'TiXmlNode::value': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlNode'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(892): warning C4251: 'TiXmlAttribute::name': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlAttribute'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(893): warning C4251: 'TiXmlAttribute::value': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlAttribute'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1349): warning C4251: 'TiXmlDeclaration::version': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1350): warning C4251: 'TiXmlDeclaration::encoding': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1351): warning C4251: 'TiXmlDeclaration::standalone': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1559): warning C4251: 'TiXmlDocument::errorDesc': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDocument'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1561): warning C4251: 'TiXmlDocument::errorLocation': struct 'TiXmlCursor' needs to have dll-interface to be used by clients of class 'TiXmlDocument'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(107): note: see declaration of 'TiXmlCursor'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1803): warning C4251: 'TiXmlPrinter::buffer': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1804): warning C4251: 'TiXmlPrinter::indent': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1805): warning C4251: 'TiXmlPrinter::lineBreak': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+  tinyxmlerror.cpp
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(381): warning C4251: 'TiXmlBase::location': struct 'TiXmlCursor' needs to have dll-interface to be used by clients of class 'TiXmlBase'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(107): note: see declaration of 'TiXmlCursor'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(769): warning C4251: 'TiXmlNode::value': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlNode'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(892): warning C4251: 'TiXmlAttribute::name': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlAttribute'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(893): warning C4251: 'TiXmlAttribute::value': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlAttribute'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1349): warning C4251: 'TiXmlDeclaration::version': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1350): warning C4251: 'TiXmlDeclaration::encoding': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1351): warning C4251: 'TiXmlDeclaration::standalone': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1559): warning C4251: 'TiXmlDocument::errorDesc': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDocument'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1561): warning C4251: 'TiXmlDocument::errorLocation': struct 'TiXmlCursor' needs to have dll-interface to be used by clients of class 'TiXmlDocument'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(107): note: see declaration of 'TiXmlCursor'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1803): warning C4251: 'TiXmlPrinter::buffer': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1804): warning C4251: 'TiXmlPrinter::indent': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1805): warning C4251: 'TiXmlPrinter::lineBreak': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+  tinyxmlparser.cpp
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(381): warning C4251: 'TiXmlBase::location': struct 'TiXmlCursor' needs to have dll-interface to be used by clients of class 'TiXmlBase'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(107): note: see declaration of 'TiXmlCursor'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(769): warning C4251: 'TiXmlNode::value': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlNode'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(892): warning C4251: 'TiXmlAttribute::name': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlAttribute'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(893): warning C4251: 'TiXmlAttribute::value': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlAttribute'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1349): warning C4251: 'TiXmlDeclaration::version': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1350): warning C4251: 'TiXmlDeclaration::encoding': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1351): warning C4251: 'TiXmlDeclaration::standalone': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDeclaration'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1559): warning C4251: 'TiXmlDocument::errorDesc': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlDocument'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1561): warning C4251: 'TiXmlDocument::errorLocation': struct 'TiXmlCursor' needs to have dll-interface to be used by clients of class 'TiXmlDocument'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(107): note: see declaration of 'TiXmlCursor'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1803): warning C4251: 'TiXmlPrinter::buffer': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1804): warning C4251: 'TiXmlPrinter::indent': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinyxml.h(1805): warning C4251: 'TiXmlPrinter::lineBreak': class 'TiXmlString' needs to have dll-interface to be used by clients of class 'TiXmlPrinter'
+  c:\dev2\pilot2\cwipc_realsense2\third-party\tinyxml\tinystr.h(55): note: see declaration of 'TiXmlString'
+  Generating Code...
+     Creating library C:/dev2/pilot2/cwipc_realsense2/bin/lib/Debug/cwipc_realsense2.lib and object C:/dev2/pilot2/cwipc_realsense2/bin/lib/Debug/cwipc_realsense2.exp
+cwipc_realsense2.obj : warning LNK4217: locally defined symbol ??0multiFrame@@QEAA@XZ (public: __cdecl multiFrame::multiFrame(void)) imported in function "public: __cdecl cwipc_source_realsense2_impl::cwipc_source_realsense2_impl(void)" (??0cwipc_source_realsense2_impl@@QEAA@XZ)
+cwipc_realsense2.obj : warning LNK4217: locally defined symbol ??1multiFrame@@QEAA@XZ (public: __cdecl multiFrame::~multiFrame(void)) imported in function "public: void * __cdecl multiFrame::`scalar deleting destructor'(unsigned int)" (??_GmultiFrame@@QEAAPEAXI@Z)
+cwipc_realsense2.obj : warning LNK4217: locally defined symbol ?get_pointcloud@multiFrame@@QEAA?AV?$shared_ptr@V?$PointCloud@UPointXYZRGB@pcl@@@pcl@@@boost@@PEA_K@Z (public: class boost::shared_ptr<class pcl::PointCloud<struct pcl::PointXYZRGB> > __cdecl multiFrame::get_pointcloud(unsigned __int64 *)) imported in function "public: virtual class cwipc * __cdecl cwipc_source_realsense2_impl::get(void)" (?get@cwipc_source_realsense2_impl@@UEAAPEAVcwipc@@XZ)
+utils.obj : warning LNK4217: locally defined symbol ?LinkEndChild@TiXmlNode@@QEAAPEAV1@PEAV1@@Z (public: class TiXmlNode * __cdecl TiXmlNode::LinkEndChild(class TiXmlNode *)) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?NextSiblingElement@TiXmlNode@@QEAAPEAVTiXmlElement@@PEBD@Z (public: class TiXmlElement * __cdecl TiXmlNode::NextSiblingElement(char const *)) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?FirstChildElement@TiXmlNode@@QEAAPEAVTiXmlElement@@PEBD@Z (public: class TiXmlElement * __cdecl TiXmlNode::FirstChildElement(char const *)) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ??0TiXmlElement@@QEAA@PEBD@Z (public: __cdecl TiXmlElement::TiXmlElement(char const *)) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ??1TiXmlElement@@UEAA@XZ (public: virtual __cdecl TiXmlElement::~TiXmlElement(void)) imported in function "public: virtual void * __cdecl TiXmlElement::`scalar deleting destructor'(unsigned int)" (??_GTiXmlElement@@UEAAPEAXI@Z)
+utils.obj : warning LNK4217: locally defined symbol ?Attribute@TiXmlElement@@QEBAPEBDPEBD@Z (public: char const * __cdecl TiXmlElement::Attribute(char const *)const ) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?QueryIntAttribute@TiXmlElement@@QEBAHPEBDPEAH@Z (public: int __cdecl TiXmlElement::QueryIntAttribute(char const *,int *)const ) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?QueryBoolAttribute@TiXmlElement@@QEBAHPEBDPEA_N@Z (public: int __cdecl TiXmlElement::QueryBoolAttribute(char const *,bool *)const ) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?QueryDoubleAttribute@TiXmlElement@@QEBAHPEBDPEAN@Z (public: int __cdecl TiXmlElement::QueryDoubleAttribute(char const *,double *)const ) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?SetAttribute@TiXmlElement@@QEAAXPEBD0@Z (public: void __cdecl TiXmlElement::SetAttribute(char const *,char const *)) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?SetAttribute@TiXmlElement@@QEAAXPEBDH@Z (public: void __cdecl TiXmlElement::SetAttribute(char const *,int)) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?SetDoubleAttribute@TiXmlElement@@QEAAXPEBDN@Z (public: void __cdecl TiXmlElement::SetDoubleAttribute(char const *,double)) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ??0TiXmlComment@@QEAA@PEBD@Z (public: __cdecl TiXmlComment::TiXmlComment(char const *)) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ??1TiXmlComment@@UEAA@XZ (public: virtual __cdecl TiXmlComment::~TiXmlComment(void)) imported in function "public: virtual void * __cdecl TiXmlComment::`scalar deleting destructor'(unsigned int)" (??_GTiXmlComment@@UEAAPEAXI@Z)
+utils.obj : warning LNK4217: locally defined symbol ??0TiXmlDeclaration@@QEAA@PEBD00@Z (public: __cdecl TiXmlDeclaration::TiXmlDeclaration(char const *,char const *,char const *)) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ??1TiXmlDeclaration@@UEAA@XZ (public: virtual __cdecl TiXmlDeclaration::~TiXmlDeclaration(void)) imported in function "public: virtual void * __cdecl TiXmlDeclaration::`scalar deleting destructor'(unsigned int)" (??_GTiXmlDeclaration@@UEAAPEAXI@Z)
+utils.obj : warning LNK4217: locally defined symbol ??0TiXmlDocument@@QEAA@XZ (public: __cdecl TiXmlDocument::TiXmlDocument(void)) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ??0TiXmlDocument@@QEAA@PEBD@Z (public: __cdecl TiXmlDocument::TiXmlDocument(char const *)) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ??1TiXmlDocument@@UEAA@XZ (public: virtual __cdecl TiXmlDocument::~TiXmlDocument(void)) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?LoadFile@TiXmlDocument@@QEAA_NW4TiXmlEncoding@@@Z (public: bool __cdecl TiXmlDocument::LoadFile(enum TiXmlEncoding)) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?SaveFile@TiXmlDocument@@QEBA_NPEBD@Z (public: bool __cdecl TiXmlDocument::SaveFile(char const *)const ) imported in function "void __cdecl config2file(char const *,struct configdata *)" (?config2file@@YAXPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ??0TiXmlHandle@@QEAA@PEAVTiXmlNode@@@Z (public: __cdecl TiXmlHandle::TiXmlHandle(class TiXmlNode *)) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?FirstChild@TiXmlHandle@@QEBA?AV1@PEBD@Z (public: class TiXmlHandle __cdecl TiXmlHandle::FirstChild(char const *)const ) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+utils.obj : warning LNK4217: locally defined symbol ?ToElement@TiXmlHandle@@QEBAPEAVTiXmlElement@@XZ (public: class TiXmlElement * __cdecl TiXmlHandle::ToElement(void)const ) imported in function "bool __cdecl file2config(char const *,struct configdata *)" (?file2config@@YA_NPEBDPEAUconfigdata@@@Z)
+  cwipc_realsense2.vcxproj -> C:\dev2\pilot2\cwipc_realsense2\bin\bin\Debug\cwipc_realsense2.dll

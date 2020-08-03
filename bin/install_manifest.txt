@@ -1,0 +1,16 @@
+C:/dev2/pilot2/install/bin/pcl_renderer.exe
+C:/dev2/pilot2/install/bin/pcl_align.exe
+C:/dev2/pilot2/install/lib/cwipc_realsense2.lib
+C:/dev2/pilot2/install/bin/cwipc_realsense2.dll
+C:/dev2/pilot2/install/include/cwipc_realsense2/api.h
+C:/dev2/pilot2/install/include/cwipc_realsense2/defs.h
+C:/dev2/pilot2/install/include/cwipc_realsense2/multiFrame.hpp
+C:/dev2/pilot2/install/include/cwipc_realsense2/stb_image_write.h
+C:/dev2/pilot2/install/include/cwipc_realsense2/utils.h
+C:/dev2/pilot2/install/include/cwipc_realsense2/window_util.hpp
+C:/dev2/pilot2/install/lib/cmake/cwipc_realsense2/cwipc_realsense2-config.cmake
+C:/dev2/pilot2/install/lib/cmake/cwipc_realsense2/cwipc_realsense2.cmake
+C:/dev2/pilot2/install/lib/cmake/cwipc_realsense2/cwipc_realsense2-release.cmake
+C:/dev2/pilot2/install/bin/cwipc_grab.exe
+C:/dev2/pilot2/install/bin/cwipc_multigrab.exe
+C:/dev2/pilot2/install/share/cwipc_realsense2/python/test_cwipc_realsense2.py

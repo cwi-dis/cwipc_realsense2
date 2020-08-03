@@ -1,0 +1,65 @@
+﻿  Checking Build System
+  CMake is re-running because C:/dev2/pilot2/cwipc_realsense2/bin/CMakeFiles/generate.stamp is out-of-date.
+    the file 'C:/dev2/pilot2/cwipc_realsense2/CMakeLists.txt'
+    is newer than 'C:/dev2/pilot2/cwipc_realsense2/bin/CMakeFiles/generate.stamp.depend'
+    result='-1'
+  CMake Warning (dev) at CMakeLists.txt:49 (find_package):
+    Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.
+    Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy
+    command to set the policy and suppress this warning.
+  
+    Environment variable PCL_ROOT is set to:
+  
+      C:\Program Files\PCL 1.8.1
+  
+    For compatibility, CMake is ignoring the variable.
+  This warning is for project developers.  Use -Wno-dev to suppress it.
+  
+  -- Boost version: 1.64.0
+  -- Found the following Boost libraries:
+  --   system
+  --   filesystem
+  --   thread
+  --   date_time
+  --   iostreams
+  --   serialization
+  --   chrono
+  --   atomic
+  --   regex
+  -- Could NOT find openni (missing: OPENNI_LIBRARY OPENNI_INCLUDE_DIRS) 
+  ** WARNING ** io features related to openni will be disabled
+  -- Could NOT find ensenso (missing: ENSENSO_LIBRARY ENSENSO_INCLUDE_DIR) 
+  ** WARNING ** io features related to ensenso will be disabled
+  -- Could NOT find DAVIDSDK (missing: DAVIDSDK_LIBRARY DAVIDSDK_INCLUDE_DIR) 
+  ** WARNING ** io features related to davidSDK will be disabled
+  -- Could NOT find DSSDK (missing: _DSSDK_LIBRARIES) 
+  ** WARNING ** io features related to dssdk will be disabled
+  -- Could NOT find RSSDK (missing: _RSSDK_LIBRARIES) 
+  ** WARNING ** io features related to rssdk will be disabled
+  ** WARNING ** io features related to pcap will be disabled
+  ** WARNING ** io features related to png will be disabled
+  -- Could NOT find openni (missing: OPENNI_LIBRARY OPENNI_INCLUDE_DIRS) 
+  ** WARNING ** visualization features related to openni will be disabled
+  -- Could NOT find ensenso (missing: ENSENSO_LIBRARY ENSENSO_INCLUDE_DIR) 
+  ** WARNING ** visualization features related to ensenso will be disabled
+  -- Could NOT find DAVIDSDK (missing: DAVIDSDK_LIBRARY DAVIDSDK_INCLUDE_DIR) 
+  ** WARNING ** visualization features related to davidSDK will be disabled
+  -- Could NOT find DSSDK (missing: _DSSDK_LIBRARIES) 
+  ** WARNING ** visualization features related to dssdk will be disabled
+  -- Could NOT find RSSDK (missing: _RSSDK_LIBRARIES) 
+  ** WARNING ** visualization features related to rssdk will be disabled
+  -- looking for PCL_COMMON
+  -- looking for PCL_OCTREE
+  -- looking for PCL_IO
+  -- looking for PCL_KDTREE
+  -- looking for PCL_GEOMETRY
+  -- looking for PCL_SEARCH
+  -- looking for PCL_VISUALIZATION
+  -- looking for PCL_SAMPLE_CONSENSUS
+  -- looking for PCL_FILTERS
+  -- Boost version: 1.64.0
+  -- Found the following Boost libraries:
+  --   system
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/dev2/pilot2/cwipc_realsense2/bin

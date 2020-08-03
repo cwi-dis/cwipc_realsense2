@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\dev2\pilot2\cwipc_realsense2\apps\cwipc_rs2offline\cwipc_rs2offline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\dev2\pilot2\cwipc_realsense2\apps\cwipc_rs2offline\stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\dev2\pilot2\cwipc_realsense2\apps\cwipc_rs2offline\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{2F17F2DB-A772-3420-842D-6E6C4F293E1F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{FD6B26F7-A96A-3464-AA8F-17608553BDDA}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+﻿  Checking Build System
+  CMake does not need to re-run because C:/dev2/pilot2/cwipc_realsense2/bin/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/dev2/pilot2/cwipc_realsense2/bin/third-party/glfw/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/dev2/pilot2/cwipc_realsense2/bin/apps/pcl_renderer/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/dev2/pilot2/cwipc_realsense2/bin/apps/pcl_align/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/dev2/pilot2/cwipc_realsense2/bin/src/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/dev2/pilot2/cwipc_realsense2/bin/apps/cwipc_grab/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/dev2/pilot2/cwipc_realsense2/bin/python/CMakeFiles/generate.stamp is up-to-date.

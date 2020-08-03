@@ -3,6 +3,7 @@ import os
 import numpy as np
 import open3d
 import pprint
+import math
 
 from .pointcloud import Pointcloud
 from .cameraconfig import CameraConfig
@@ -179,14 +180,30 @@ class Calibrator:
         # to camera 0. Then we should align the next pointcloud either to 0 or to
         # the previous one. Repeat until done.
         refPointcloud = self.coarse_calibrated_pointclouds[0]
+        # XXXShishir: Get yaw rotation angles from coarse calibration
+        rotationAngles = np.empty(1,len(self.coarse_calibrated_pointclouds))
+        for i in range(0, len(self.coarse_calibrated_pointclouds)):
+            np.append(rotationAngles,math.atan2(self.course_matrix[i][1][0], self.course_matrix[i][0][0]))
         assert len(self.fine_calibrated_pointclouds) == 0
         self.fine_calibrated_pointclouds.append(refPointcloud)
         if inspect:
             print(f'Fine matrix for camera {self.cameraserial[0]} is identity matrix, by definition')
         for i in range(1, len(self.coarse_calibrated_pointclouds)):
             srcPointcloud =  self.coarse_calibrated_pointclouds[i]
+            refInd = 0;
+            #XXXShishir set reference point cloud based on yaw angles from coarse calibration
+            if i > 1:
+                minAngle = abs(math.atan2(math.sin(rotationAngles[i]-rotationAngles[0]), math.cos(rotationAngles[i]-rotationAngles[0])))
+                for j in range(1,i):
+                    if (abs(math.atan2(math.sin(rotationAngles[i]-rotationAngles[j]), math.cos(rotationAngles[i]-rotationAngles[j]))) < minAngle):
+                        refInd = j
+                        minAngle = abs(math.atan2(math.sin(rotationAngles[i]-rotationAngles[j]), math.cos(rotationAngles[i]-rotationAngles[j])))
+            refPointcloud = self.coarse_calibrated_pointclouds[refInd]
             newMatrix = self.align_fine(refPointcloud,srcPointcloud, correspondence)
             newPointcloud = srcPointcloud.transform(newMatrix)
+            #XXXShishir apply the transformation for the reference used to camera 1
+            #Incase the first camera use the identity matrix will be used in the transform so newPointCloud stays the same
+            newPointcloud = newPointcloud.transform(self.fine_matrix(refInd))
             self.fine_calibrated_pointclouds.append(newPointcloud)
             self.fine_matrix[i] = newMatrix
             if inspect:
