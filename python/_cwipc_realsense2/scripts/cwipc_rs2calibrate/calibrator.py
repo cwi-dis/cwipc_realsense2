@@ -183,7 +183,9 @@ class Calibrator:
         # XXXShishir: Get yaw rotation angles from coarse calibration
         rotationAngles = np.empty(1,len(self.coarse_calibrated_pointclouds))
         for i in range(0, len(self.coarse_calibrated_pointclouds)):
-            np.append(rotationAngles,math.atan2(self.course_matrix[i][1][0], self.course_matrix[i][0][0]))
+            angle = math.atan2(self.course_matrix[i][1][0], self.course_matrix[i][0][0])
+            np.append(rotationAngles,angle)
+            print(f'Rotation angle for {i} is {angle}')
         assert len(self.fine_calibrated_pointclouds) == 0
         self.fine_calibrated_pointclouds.append(refPointcloud)
         if inspect:
