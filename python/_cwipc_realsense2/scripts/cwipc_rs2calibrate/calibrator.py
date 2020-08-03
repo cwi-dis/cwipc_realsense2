@@ -181,11 +181,24 @@ class Calibrator:
         # the previous one. Repeat until done.
         refPointcloud = self.coarse_calibrated_pointclouds[0]
         # XXXShishir: Get yaw rotation angles from coarse calibration
-        rotationAngles = np.empty(1,len(self.coarse_calibrated_pointclouds))
+        camPositions = []
         for i in range(0, len(self.coarse_calibrated_pointclouds)):
-            angle = math.atan2(self.course_matrix[i][1][0], self.course_matrix[i][0][0])
-            np.append(rotationAngles,angle)
-            print(f'Rotation angle for {i} is {angle}')
+            matrix = self.grabber.getmatrix(i)
+            npMatrix = np.matrix(self.coarse_matrix[i]) @ np.matrix(matrix)
+            camVector = npMatrix @ np.array([0, 0, 0, 1])
+            print(f'xxxjack shape {np.shape(camVector)}')
+            camVector = np.array([camVector[0,0],camVector[0,1], camVector[0,2]])
+            print(f'Camera position of {i} is {camVector}')
+            camPositions.append(camVector)
+#            angle = math.atan2(self.coarse_matrix[i][1][0], self.coarse_matrix[i][0][0])
+#            rotationAngles.append(angle)
+#            print(f'Rotation angle for {i} is {angle}')
+        # xxxjack compute dot products 
+        dotProducts = []
+        for i in range(len(camPositions)):
+            dotProduct = np.dot(camPositions[0], camPositions[i])
+            print(f'Dot-product {i} is {dotProduct}')
+        assert 0
         assert len(self.fine_calibrated_pointclouds) == 0
         self.fine_calibrated_pointclouds.append(refPointcloud)
         if inspect:
@@ -205,7 +218,7 @@ class Calibrator:
             newPointcloud = srcPointcloud.transform(newMatrix)
             #XXXShishir apply the transformation for the reference used to camera 1
             #Incase the first camera use the identity matrix will be used in the transform so newPointCloud stays the same
-            newPointcloud = newPointcloud.transform(self.fine_matrix(refInd))
+            newPointcloud = newPointcloud.transform(self.fine_matrix[refInd])
             self.fine_calibrated_pointclouds.append(newPointcloud)
             self.fine_matrix[i] = newMatrix
             if inspect:
