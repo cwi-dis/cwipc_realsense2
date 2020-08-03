@@ -1,7 +1,0 @@
-# CMake generation dependency list for this directory.
-C:/Program Files/CMake/share/cmake-3.12/Modules/CMakeFindFrameworks.cmake
-C:/Program Files/CMake/share/cmake-3.12/Modules/FindPackageHandleStandardArgs.cmake
-C:/Program Files/CMake/share/cmake-3.12/Modules/FindPackageMessage.cmake
-C:/Program Files/CMake/share/cmake-3.12/Modules/FindPython/Support.cmake
-C:/Program Files/CMake/share/cmake-3.12/Modules/FindPython3.cmake
-C:/dev2/pilot2/cwipc_realsense2/python/CMakeLists.txt
