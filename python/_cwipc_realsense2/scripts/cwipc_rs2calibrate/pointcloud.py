@@ -119,7 +119,7 @@ class Pointcloud:
         alltiles = list(alltiles)
         alltiles.sort()
         for tilenum in alltiles:
-            tile_pc = cwipc.codec.cwipc_tilefilter(self.cwipc, tilenum)
+            tile_pc = cwipc.cwipc_tilefilter(self.cwipc, tilenum)
             rv.append(self.__class__.from_cwipc(tile_pc))
         return rv
         
