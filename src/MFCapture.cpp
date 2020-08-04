@@ -254,12 +254,15 @@ MFCapture::~MFCapture() {
 	// Stop all cameras
 	for (auto cam : cameras)
 		cam->stop();
+    mergedPC_is_fresh = true;
+    mergedPC_want_new = false;
+    mergedPC_is_fresh_cv.notify_all();
+    mergedPC_want_new = true;
+    mergedPC_want_new_cv.notify_all();
 	if(!stopped) {
 		// Make the control thread stop. We set want_new to make it wake up (bit of a hack, really...)
 		stopped = true;
-		mergedPC_want_new = true;
-		mergedPC_want_new_cv.notify_all();
-		control_thread->join();
+  		control_thread->join();
 	}
 	std::cerr << "cwipc_realsense2: multiFrame: stopped all cameras\n";
 	// Delete all cameras (which will stop their threads as well)
