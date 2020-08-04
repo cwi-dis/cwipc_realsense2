@@ -1,5 +1,4 @@
 import cwipc
-import cwipc.codec
 import numpy as np
 import open3d
 import copy
