@@ -3,6 +3,13 @@ import os
 import cwipc
 import cwipc.realsense2
 
+#
+# Windows search path is horrible. Work around it for testing with an environment variable
+#
+if 'CWIPC_TEST_DLL' in os.environ:
+    filename = os.environ['CWIPC_TEST_DLL']
+    dllobj = cwipc.realsense2._cwipc_realsense2_dll(filename)
+
 from .pointcloud import Pointcloud
 import os.path
 from .cameraconfig import CameraConfig
