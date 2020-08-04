@@ -181,7 +181,6 @@ class Calibrator:
         # the previous one. Repeat until done.
         refPointcloud = self.coarse_calibrated_pointclouds[0]
         self.fine_calibrated_pointclouds.append(refPointcloud)
-        # XXXShishir: Get yaw rotation angles from coarse calibration
         camPositions = []
         for i in range(0, len(self.coarse_calibrated_pointclouds)):
             matrix = self.grabber.getmatrix(i)
@@ -204,14 +203,18 @@ class Calibrator:
             for i in range(0,len(self.coarse_calibrated_pointclouds)):
                 if i not in camIndex:
                     for j in range(0,len(camIndex)):
-                        dotProducts[j][i] = np.dot(camPositions[j],camPositions[i])
+                        if i == camIndex[j]:
+                            dotProducts[j][i] = -5
+                        else:
+                            dotProducts[j][i] = np.dot(camPositions[camIndex[j]],camPositions[i])
                 else:
                     for j in range(0,len(camIndex)):
                         #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
                         dotProducts[j][i] = -5
             Idx = np.unravel_index(dotProducts.argmax(),dotProducts.shape)
-            ref_cam = Idx[0]
+            ref_cam = camIndex[Idx[0]]
             src_cam = Idx[1]
+            print(f'Now calibrating camera {src_cam} to fine align with {ref_cam}')
             refPointcloud = self.coarse_calibrated_pointclouds[ref_cam]
             srcPointcloud = self.coarse_calibrated_pointclouds[src_cam]
             initMatrix = self.align_fine(refPointcloud,srcPointcloud, correspondence)
