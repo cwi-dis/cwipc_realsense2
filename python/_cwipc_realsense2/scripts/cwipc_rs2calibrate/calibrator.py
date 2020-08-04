@@ -180,6 +180,7 @@ class Calibrator:
         # to camera 0. Then we should align the next pointcloud either to 0 or to
         # the previous one. Repeat until done.
         refPointcloud = self.coarse_calibrated_pointclouds[0]
+        self.fine_calibrated_pointclouds.append(refPointcloud)
         # XXXShishir: Get yaw rotation angles from coarse calibration
         camPositions = []
         for i in range(0, len(self.coarse_calibrated_pointclouds)):
@@ -190,37 +191,37 @@ class Calibrator:
             camVector = np.array([camVector[0,0],camVector[0,1], camVector[0,2]])
             print(f'Camera position of {i} is {camVector}')
             camPositions.append(camVector)
-#            angle = math.atan2(self.coarse_matrix[i][1][0], self.coarse_matrix[i][0][0])
-#            rotationAngles.append(angle)
-#            print(f'Rotation angle for {i} is {angle}')
-        # xxxjack compute dot products 
-        dotProducts = []
-        for i in range(len(camPositions)):
-            dotProduct = np.dot(camPositions[0], camPositions[i])
-            print(f'Dot-product {i} is {dotProduct}')
-        assert 0
-        assert len(self.fine_calibrated_pointclouds) == 0
-        self.fine_calibrated_pointclouds.append(refPointcloud)
-        if inspect:
-            print(f'Fine matrix for camera {self.cameraserial[0]} is identity matrix, by definition')
-        for i in range(1, len(self.coarse_calibrated_pointclouds)):
-            srcPointcloud =  self.coarse_calibrated_pointclouds[i]
-            refInd = 0;
-            #XXXShishir set reference point cloud based on yaw angles from coarse calibration
-            if i > 1:
-                minAngle = abs(math.atan2(math.sin(rotationAngles[i]-rotationAngles[0]), math.cos(rotationAngles[i]-rotationAngles[0])))
-                for j in range(1,i):
-                    if (abs(math.atan2(math.sin(rotationAngles[i]-rotationAngles[j]), math.cos(rotationAngles[i]-rotationAngles[j]))) < minAngle):
-                        refInd = j
-                        minAngle = abs(math.atan2(math.sin(rotationAngles[i]-rotationAngles[j]), math.cos(rotationAngles[i]-rotationAngles[j])))
-            refPointcloud = self.coarse_calibrated_pointclouds[refInd]
-            newMatrix = self.align_fine(refPointcloud,srcPointcloud, correspondence)
-            newPointcloud = srcPointcloud.transform(newMatrix)
-            #XXXShishir apply the transformation for the reference used to camera 1
-            #Incase the first camera use the identity matrix will be used in the transform so newPointCloud stays the same
-            newPointcloud = newPointcloud.transform(self.fine_matrix[refInd])
-            self.fine_calibrated_pointclouds.append(newPointcloud)
-            self.fine_matrix[i] = newMatrix
+        #Store the order of cameras being aligned
+        camIndex = []
+        #Camera 1 is used to initialize
+        camIndex.append(0)
+        #Loop till all camera clouds are fine aligned
+        while (len(self.fine_calibrated_pointclouds) < len(self.coarse_calibrated_pointclouds)):
+            #We now compare the dot product of all (fine) unaligned cameras with all (fine) aligned cameras to find the nearest camera pair
+            #we assume that this will provide the optimale oplossing for overlap of points for ICP to work with
+            #dotProducts = [ [0] * len(self.fine_calibrated_pointclouds) for _ in range(len(self.coarse_calibrated_pointclouds)) ]
+            dotProducts = np.empty((len(self.fine_calibrated_pointclouds),len(self.coarse_calibrated_pointclouds)))
+            for i in range(0,len(self.coarse_calibrated_pointclouds)):
+                if i not in camIndex:
+                    for j in range(0,len(camIndex)):
+                        dotProducts[j][i] = np.dot(camPositions[j],camPositions[i])
+                else:
+                    for j in range(0,len(camIndex)):
+                        #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
+                        dotProducts[j][i] = -5
+            Idx = np.unravel_index(dotProducts.argmax(),dotProducts.shape)
+            ref_cam = Idx[0]
+            src_cam = Idx[1]
+            refPointcloud = self.coarse_calibrated_pointclouds[ref_cam]
+            srcPointcloud = self.coarse_calibrated_pointclouds[src_cam]
+            initMatrix = self.align_fine(refPointcloud,srcPointcloud, correspondence)
+            transformMatrix = initMatrix @ self.fine_matrix[ref_cam]
+            transformPointcloud = srcPointcloud.transform(transformMatrix)
+            self.fine_calibrated_pointclouds.append(transformPointcloud)
+            self.fine_matrix.append(transformMatrix)
+            camIndex.append(src_cam)
+            newMatrix = transformMatrix
+            newPointcloud = transformPointcloud
             if inspect:
                 print(f'Fine matrix for camera {self.cameraserial[i]} is:')
                 pprint.pprint(newMatrix)
@@ -230,6 +231,10 @@ class Calibrator:
                 joined = Pointcloud.from_join((showPCref, showPCsrc, showPCdst))
                 self.ui.show_prompt(f"Inspect alignment of {self.cameraserial[i]} (before: green, after: blue) to reference {self.cameraserial[0]} (red) ")
                 self.ui.show_points('Inspect alignment result', joined)
+        #Reorder based on original camera orders
+        self.fine_calibrated_pointclouds = [self.fine_calibrated_pointclouds[i] for i in camIndex]
+        self.fine_matrix = [self.fine_matrix[i] for i in camIndex]
+        #Display results
         self.ui.show_prompt('Inspect the resultant merged pointclouds of all cameras')
         joined = Pointcloud.from_join(self.fine_calibrated_pointclouds)
         os.chdir(self.workdir)
