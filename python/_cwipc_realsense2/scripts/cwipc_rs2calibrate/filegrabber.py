@@ -11,9 +11,16 @@ class FileGrabber:
         self.cameraconfig = None
         
     def open(self):
+        if not os.path.exists(self.pcFilename):
+            print(f'File not found: {self.pcFilename}', file=sys.stderr)
+            return False
         dirname = os.path.dirname(self.pcFilename)
         confFilename = os.path.join(dirname, "cameraconfig.xml")
+        if not os.path.exists(confFilename):
+            print(f'File not found: {confFilename}', file=sys.stderr)
+            return False
         self.cameraconfig = CameraConfig(confFilename)
+        return True
         
     def getcount(self):
         return self.cameraconfig.getcount()

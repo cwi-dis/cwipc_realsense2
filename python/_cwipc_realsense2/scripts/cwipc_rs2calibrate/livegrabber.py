@@ -22,7 +22,11 @@ class LiveGrabber:
         else:
             self.cameraconfig = CameraConfig('', read=False)
             self.cameraconfig.fillDefault()
-        self.grabber = cwipc.realsense2.cwipc_realsense2()
+        try:
+            self.grabber = cwipc.realsense2.cwipc_realsense2()
+        except cwipc.CwipcError as exc:
+            print(f'Error opening camera: {exc}', file=sys.stderr)
+            return False
         # May need to grab a few combined pointclouds and throw them away
         for i in range(SKIP_FIRST_GRABS):
             pc = self.grabber.get()
@@ -49,7 +53,8 @@ class LiveGrabber:
                     print(f'Camera {sn} is in cameraconfig.xml but not attached')
             if not ok:
                 print('Use --clean to calibrate this new hardware setup (or attach the right cameras)')
-                sys.exit(1)
+                return False
+        return True
    
     def __del__(self):
         if self.grabber: self.grabber.free()

@@ -38,13 +38,22 @@ if not os.access(TEST_OUTPUT_DIR, os.W_OK):
     TEST_OUTPUT_DIR=tempfile.mkdtemp('cwipc_realsense2_test')
 
 class TestApi(unittest.TestCase):
+    
+    def _open_grabber(self):
+        try:
+            grabber = _cwipc_realsense2.cwipc_realsense2()
+        except cwipc.CwipcError as arg:
+            if str(arg) == 'cwipc_realsense2: no realsense cameras found':
+                self.skipTest(str(arg))
+            raise
+        return grabber
         
     def test_cwipc_realsense2(self):
         """Test that we can grab a realsense2 image"""
         grabber = None
         pc = None
         try:
-            grabber = _cwipc_realsense2.cwipc_realsense2()
+            grabber = self._open_grabber()
             self.assertFalse(grabber.eof())
             self.assertTrue(grabber.available(True))
             pc = grabber.get()
@@ -57,7 +66,7 @@ class TestApi(unittest.TestCase):
         """Test that we can get tileinfo from a realsense2 grabber"""
         grabber = None
         try:
-            grabber = _cwipc_realsense2.cwipc_realsense2()
+            grabber = self._open_grabber()
             nTile = grabber.maxtile()
             self.assertGreaterEqual(nTile, 1)
             # Assure the non-tiled-tile exists and points nowhere.
@@ -75,20 +84,6 @@ class TestApi(unittest.TestCase):
                     self.assertIn('camera', tileInfo)
         finally:
             if grabber: grabber.free()
-
-    def test_cwipc_realsense2_configfile(self):
-        """Test that we can grab a realsense2 image when we pass in a (non-existent) config file"""
-        grabber = None
-        pc = None
-        try:
-            grabber = _cwipc_realsense2.cwipc_realsense2("./nonexistent.xml")
-            self.assertFalse(grabber.eof())
-            self.assertTrue(grabber.available(True))
-            pc = grabber.get()
-            self._verify_pointcloud(pc)
-        finally:
-            if grabber: grabber.free()
-            if pc: pc.free()
 
     def test_cwipc_rs2offline(self):
         """Test that we can create a pointcloud from offline images"""
