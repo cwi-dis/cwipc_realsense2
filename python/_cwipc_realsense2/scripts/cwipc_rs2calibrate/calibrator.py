@@ -175,35 +175,30 @@ class Calibrator:
             self.ui.show_message('* Skipping fine-grained calibration: only one camera')
             self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
             return
-        # We will align everything to the first camera
-        # Note: this is wrong. We should align the pointcloud with the smallest angle
-        # to camera 0. Then we should align the next pointcloud either to 0 or to
-        # the previous one. Repeat until done.
         refPointcloud = self.coarse_calibrated_pointclouds[0]
         self.fine_calibrated_pointclouds.append(refPointcloud)
         camPositions = []
+        #Get positions of all camera origins in world coordinates
         for i in range(0, len(self.coarse_calibrated_pointclouds)):
             matrix = self.grabber.getmatrix(i)
             npMatrix = np.matrix(self.coarse_matrix[i]) @ np.matrix(matrix)
             camVector = npMatrix @ np.array([0, 0, 0, 1])
-            print(f'xxxjack shape {np.shape(camVector)}')
             camVector = np.array([camVector[0,0],camVector[0,1], camVector[0,2]])
-            print(f'Camera position of {i} is {camVector}')
             camPositions.append(camVector)
         #Store the order of cameras being aligned
         camIndex = []
-        #Camera 1 is used to initialize
+        #First camera is used to initialize
         camIndex.append(0)
         #Loop till all camera clouds are fine aligned
         while (len(self.fine_calibrated_pointclouds) < len(self.coarse_calibrated_pointclouds)):
             #We now compare the dot product of all (fine) unaligned cameras with all (fine) aligned cameras to find the nearest camera pair
             #we assume that this will provide the optimale oplossing for overlap of points for ICP to work with
-            #dotProducts = [ [0] * len(self.fine_calibrated_pointclouds) for _ in range(len(self.coarse_calibrated_pointclouds)) ]
             dotProducts = np.empty((len(self.fine_calibrated_pointclouds),len(self.coarse_calibrated_pointclouds)))
             for i in range(0,len(self.coarse_calibrated_pointclouds)):
                 if i not in camIndex:
                     for j in range(0,len(camIndex)):
                         if i == camIndex[j]:
+                            #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
                             dotProducts[j][i] = -5
                         else:
                             dotProducts[j][i] = np.dot(camPositions[camIndex[j]],camPositions[i])
