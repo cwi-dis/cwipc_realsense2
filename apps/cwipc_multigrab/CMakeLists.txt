@@ -11,3 +11,4 @@ target_link_libraries(cwipc_multigrab cwipc_realsense2 cwipc_util ${PCL_LIBRARIE
 install(TARGETS cwipc_multigrab RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_test(NAME cwipc_multigrab COMMAND cwipc_multigrab 10 - )
+set_tests_properties(cwipc_multigrab PROPERTIES ENVIRONMENT CWIPC_REALSENSE2_TESTING=yes)

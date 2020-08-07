@@ -83,10 +83,13 @@ def main():
         grabber = LiveGrabber()
     try:
     
-        prog.open(grabber, clean=args.clean, reuse=(args.reuse or args.auto))
-        if prog.issynthetic():
-            print(f'{sys.argv[0]}: no realsense cameras attached, nothing to do')
-            sys.exit(0)
+        ok = prog.open(grabber, clean=args.clean, reuse=(args.reuse or args.auto))
+        if not ok:
+            # Being unable to open the grabber is not an error for --auto
+            if args.auto:
+                sys.exit(0)
+            else:
+                sys.exit(1)
         
         if args.auto:
             prog.auto()

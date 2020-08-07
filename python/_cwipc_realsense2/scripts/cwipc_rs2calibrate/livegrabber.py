@@ -3,6 +3,13 @@ import os
 import cwipc
 import cwipc.realsense2
 
+#
+# Windows search path is horrible. Work around it for testing with an environment variable
+#
+if 'CWIPC_TEST_DLL' in os.environ:
+    filename = os.environ['CWIPC_TEST_DLL']
+    dllobj = cwipc.realsense2._cwipc_realsense2_dll(filename)
+
 from .pointcloud import Pointcloud
 import os.path
 from .cameraconfig import CameraConfig
@@ -22,7 +29,11 @@ class LiveGrabber:
         else:
             self.cameraconfig = CameraConfig('', read=False)
             self.cameraconfig.fillDefault()
-        self.grabber = cwipc.realsense2.cwipc_realsense2()
+        try:
+            self.grabber = cwipc.realsense2.cwipc_realsense2()
+        except cwipc.CwipcError as exc:
+            print(f'Error opening camera: {exc}', file=sys.stderr)
+            return False
         # May need to grab a few combined pointclouds and throw them away
         for i in range(SKIP_FIRST_GRABS):
             pc = self.grabber.get()
@@ -49,7 +60,8 @@ class LiveGrabber:
                     print(f'Camera {sn} is in cameraconfig.xml but not attached')
             if not ok:
                 print('Use --clean to calibrate this new hardware setup (or attach the right cameras)')
-                sys.exit(1)
+                return False
+        return True
    
     def __del__(self):
         if self.grabber: self.grabber.free()
