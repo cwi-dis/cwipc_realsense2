@@ -120,8 +120,8 @@ public:
         if (m_grabber == NULL) return 0;
         int nCamera = m_grabber->configuration.cameraData.size();
         if (nCamera <= 1) {
-            // Using a single camera or synthetic grabber. 1 tile only.
-            return 1;
+            // Using a single camera or no camera.
+            return nCamera;
         }
         return 1<<nCamera;
     }
@@ -132,13 +132,8 @@ public:
 
         int nCamera = m_grabber->configuration.cameraData.size();
 
-		if (nCamera == 0) { // The synthetic camera...
-			if (tilenum != 0) return false;
-			cwipc_tileinfo info = { {0, 0, 0}, NULL, 0};
-			if (tileinfo) {
-				*tileinfo = info;
-			}
-			return true;
+		if (nCamera == 0) { // No camera
+			return false;
 		}
         if (tilenum < 0 || tilenum >= (1<<nCamera))
 			return false;
@@ -244,9 +239,9 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
     if (rv && rv->is_valid()) return rv;
     delete rv;
     if (errorMessage && *errorMessage == NULL) {
-        *errorMessage = (char *)"cwipc_realsense2: no realsense cameras found, returning synthetic grabber";
+        *errorMessage = (char *)"cwipc_realsense2: no realsense cameras found";
     }
-    return cwipc_synthetic(errorMessage, apiVersion);
+    return NULL;
 }
 
 cwipc_offline* cwipc_rs2offline(MFOfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion)

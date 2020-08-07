@@ -55,10 +55,13 @@ class Calibrator:
             self.ui.show_error('%s: cameraconfig.xml already exists, please supply --clean or --reuse argument' % sys.argv[0])
             sys.exit(1)
         self.grabber = grabber
-        self.grabber.open()
+        ok = self.grabber.open()
+        if not ok:
+            return False
         self.cameraserial = self.grabber.getserials()
         self.cameraconfig = CameraConfig('cameraconfig.xml', read=False)
         self.cameraconfig.copyFrom(self.grabber.cameraconfig)
+        return True
 
     def issynthetic(self):
         return self.grabber.getserials()[0] == "synthetic"

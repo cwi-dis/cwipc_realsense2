@@ -11,6 +11,7 @@ __all__ = [
     "RS2_FORMAT_Z16",
     "cwipc_realsense2",
     "cwipc_rs2offline",
+    "_cwipc_realsense2_dll"
 ]
 
 class cwipc_offline_camera_settings(ctypes.Structure):
