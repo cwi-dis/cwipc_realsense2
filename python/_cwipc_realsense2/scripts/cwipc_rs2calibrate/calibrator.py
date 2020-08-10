@@ -325,5 +325,21 @@ class Calibrator:
         if self.near or self.far or self.height_min or self.height_max:
             self.cameraconfig.setbounds(self.near, self.far, self.height_min, self.height_max)
         self.cameraconfig.save()
-         
+        
+    #XXXShishir colored ICP
+    def align_fine_colored(self, source, target, threshold, nn_radius):
+        trans_init = np.identity(4)
+        #Estimate Normals with max nearest neighbors = 30
+        source.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius = nn_radius, max_nn=30))
+        target.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius = nn_radius, max_nn=30))
+        #XXXShishir ToDo: Check if downsampling is needed
+        #Applying colored ICP registration
+        reg_c = open3d.registration.registration_colored_icp(source, target, nn_radius, trans_init, open3d.registration.ICPConvergenceCriteria(relative_fitness=1e-6, relative_rmse=1e-6, max_iteration = 50 ))
+        #reg_p2p = open3d.registration.registration_icp(target.get_o3d(), source.get_o3d(), threshold, trans_init, open3d.registration.TransformationEstimationPointToPoint())    
+        return reg_c.transformation
+    #XXXShishir point to plane ICP
+    def align_fine_point2plane(self, source, target, threshold):
+        trans_init = np.identity(4)
+        reg_point2plane = open3d.registration.registration_icp(source, target, threshold, trans_init, open3d.registration.TransformationEstimationPointToPlane())
+        return reg_point2plane.transformation
   
