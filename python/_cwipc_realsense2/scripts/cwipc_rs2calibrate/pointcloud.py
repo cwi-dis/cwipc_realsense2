@@ -171,4 +171,20 @@ class Pointcloud:
             p.g = g
             p.b = b
         return self.__class__.from_points(pcpoints)
+    
+    def clean_background(self):
+        #Cleaning green background color
+        colors = np.asarray(self.get_o3d().colors)
+        npoints = len(colors)
+        background_ids = []
+        for id in range(0,npoints):
+            color = colors[id]
+            if (color[1]>color[0]) & (color[1]>color[2]):
+                background_ids.append(id)
+        pc_clean = self.get_o3d().select_by_index(background_ids,invert=True)
+        #pc_clean = self.get_o3d()
+        pc_out,l = pc_clean.remove_radius_outlier(44,0.01) #remove_radius_outlier(self, int nb_points, float radius)
+        
+        
+        return self.__class__.from_o3d(pc_clean)
         

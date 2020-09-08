@@ -167,6 +167,7 @@ class Calibrator:
         self.ui.show_points('Inspect bounding box result', joined)
     
     def run_fine(self, correspondence, inspect):
+        print("## Starting fine alignment")
         for i in range(len(self.cameraserial)):
             self.fine_matrix.append([
                 [1, 0, 0, 0],
@@ -178,7 +179,7 @@ class Calibrator:
             self.ui.show_message('* Skipping fine-grained calibration: only one camera')
             self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
             return
-        refPointcloud = self.coarse_calibrated_pointclouds[0]
+        refPointcloud = self.coarse_calibrated_pointclouds[0].clean_background()
         self.fine_calibrated_pointclouds.append(refPointcloud)
         camPositions = []
         #Get positions of all camera origins in world coordinates
@@ -213,9 +214,9 @@ class Calibrator:
             ref_cam = camIndex[Idx[0]]
             src_cam = Idx[1]
             print(f'Now calibrating camera {src_cam} to fine align with {ref_cam}')
-            refPointcloud = self.coarse_calibrated_pointclouds[ref_cam]
-            srcPointcloud = self.coarse_calibrated_pointclouds[src_cam]
-            initMatrix = self.align_fine(refPointcloud,srcPointcloud, correspondence)
+            refPointcloud = self.coarse_calibrated_pointclouds[ref_cam].clean_background()
+            srcPointcloud = self.coarse_calibrated_pointclouds[src_cam].clean_background()
+            initMatrix = self.align_fine_point2point(refPointcloud,srcPointcloud, correspondence, [camPositions[ref_cam],camPositions[src_cam]])
             transformMatrix = initMatrix @ self.fine_matrix[ref_cam]
             transformPointcloud = srcPointcloud.transform(transformMatrix)
             self.fine_calibrated_pointclouds.append(transformPointcloud)
@@ -284,35 +285,7 @@ class Calibrator:
         #
         joined = Pointcloud.from_join(self.pointclouds)
         joined.save('cwipc_rs2scalibrate_captured.ply')
-        
-
-    def align_pair(self, source, picked_id_source, target, picked_id_target, extended=False):
-        assert(len(picked_id_source)>=3 and len(picked_id_target)>=3)
-        assert(len(picked_id_source) == len(picked_id_target))
-        corr = np.zeros((len(picked_id_source),2))
-        corr[:,0] = picked_id_source
-        corr[:,1] = picked_id_target
-
-        p2p = open3d.registration.TransformationEstimationPointToPoint()
-        trans_init = p2p.compute_transformation(source.get_o3d(), target.get_o3d(),
-                 open3d.utility.Vector2iVector(corr))
-        
-        if not extended:
-            return trans_init
-
-        threshold = 0.01 # 3cm distance threshold
-        reg_p2p = open3d.registration.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
-                open3d.registration.TransformationEstimationPointToPoint())
-        
-        return reg_p2p.transformation
     
-    def align_fine(self, source, target, threshold):
-        trans_init = np.array([[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]])
-        reg_p2p = open3d.registration.registration_icp(target.get_o3d(), source.get_o3d(), threshold, trans_init,
-                open3d.registration.TransformationEstimationPointToPoint())
-        
-        return reg_p2p.transformation
-
     def writeconfig(self):
         allcaminfo = ""
         for i in range(len(self.cameraserial)):
@@ -325,6 +298,69 @@ class Calibrator:
         if self.near or self.far or self.height_min or self.height_max:
             self.cameraconfig.setbounds(self.near, self.far, self.height_min, self.height_max)
         self.cameraconfig.save()
+
+    def align_pair(self, source, picked_id_source, target, picked_id_target, extended=False):
+        assert(len(picked_id_source)>=3 and len(picked_id_target)>=3)
+        assert(len(picked_id_source) == len(picked_id_target))
+        corr = np.zeros((len(picked_id_source),2))
+        corr[:,0] = picked_id_source
+        corr[:,1] = picked_id_target
+
+        p2p = open3d.registration.TransformationEstimationPointToPoint()
+        trans_init = p2p.compute_transformation(source.get_o3d(), target.get_o3d(),
+            open3d.utility.Vector2iVector(corr))
+        
+        if not extended:
+            return trans_init
+
+        threshold = 0.01 # 3cm distance threshold
+        reg_p2p = open3d.registration.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
+            open3d.registration.TransformationEstimationPointToPoint())
+        
+        return reg_p2p.transformation
+    
+    def align_fine_point2point(self, source_pc, target_pc, threshold, cameras):
+        '''ICP alignment based on point2point - at the moment this is giving the best results'''
+        print('Align fine:')
+        source = source_pc.get_o3d()
+        target = target_pc.get_o3d()
+        
+        print(" 1. Downsampling")
+        radius_ds = 0.005
+        source_down = source.voxel_down_sample(radius_ds)
+        target_down = target.voxel_down_sample(radius_ds)
+        
+        print(" 2. Computing ICP point2point")
+        trans_init = np.identity(4)
+        reg_p2p = open3d.registration.registration_icp(target_down, source_down, threshold, trans_init,
+            open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = 2000))
+        
+        return reg_p2p.transformation
+    
+    def align_fine_point2plane(self, source_pc, target_pc, threshold, cameras):
+        '''ICP alignment based on point2plane - does not provide good results yet'''
+        source = source_pc.get_o3d()
+        target = target_pc.get_o3d()
+        
+        print("1. Downsampling")
+        radius_ds = 0.005
+        source_down = source.voxel_down_sample(radius_ds)
+        target_down = target.voxel_down_sample(radius_ds)
+        
+        print("2. Estimating normals")
+        radius_n = 0.01
+        source_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius_n, max_nn=30))
+        source_down = self.correct_normals(source_down,cameras[0])
+        
+        target_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius_n, max_nn=30))
+        target_down = self.correct_normals(target_down,cameras[1])
+        
+        print("3. Computing ICP point2plane")
+        trans_init = np.identity(4)
+        reg_point2plane = open3d.registration.registration_icp(source_down, target_down, threshold, trans_init, 
+            open3d.registration.TransformationEstimationPointToPlane(), open3d.registration.ICPConvergenceCriteria(max_iteration = 2000))
+        
+        return reg_point2plane.transformation
         
     #XXXShishir colored ICP
     def align_fine_colored(self, source, target, threshold, nn_radius):
@@ -336,10 +372,79 @@ class Calibrator:
         #Applying colored ICP registration
         reg_c = open3d.registration.registration_colored_icp(source, target, nn_radius, trans_init, open3d.registration.ICPConvergenceCriteria(relative_fitness=1e-6, relative_rmse=1e-6, max_iteration = 50 ))
         #reg_p2p = open3d.registration.registration_icp(target.get_o3d(), source.get_o3d(), threshold, trans_init, open3d.registration.TransformationEstimationPointToPoint())    
+        
         return reg_c.transformation
-    #XXXShishir point to plane ICP
-    def align_fine_point2plane(self, source, target, threshold):
-        trans_init = np.identity(4)
-        reg_point2plane = open3d.registration.registration_icp(source, target, threshold, trans_init, open3d.registration.TransformationEstimationPointToPlane())
-        return reg_point2plane.transformation
+        
+    def align_fine_rcICP(self, source, target, threshold, cameras):
+        '''colored ICP recursive with different voxel radius'- does not provide good results yet'''
+        source = source.get_o3d()
+        target = target.get_o3d()
+        voxel_radius = [0.015, 0.01, 0.005]
+        max_iter = [10, 30, 50]
+        current_transformation = np.identity(4)
+        print("3. Colored point cloud registration")
+        for scale in range(3):
+            iter = max_iter[scale]
+            radius = voxel_radius[scale]
+            print([iter, radius, scale])
+
+            print("3-1. Downsample with a voxel size %.2f" % radius)
+            source_down = source.voxel_down_sample(radius)
+            #open3d.visualization.draw_geometries([source_down])
+            target_down = target.voxel_down_sample(radius)
+
+            print("3-2. Estimate normal.")
+            source_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius=radius * 2, max_nn=30))
+            source_down = self.correct_normals(source_down,cameras[0])
+            target_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius=radius * 2, max_nn=30))
+            target_down = self.correct_normals(target_down,cameras[1])
+            
+            #open3d.visualization.draw_geometries([source_down])
+            print("3-3. Applying colored point cloud registration")
+            result_icp = open3d.registration.registration_colored_icp(
+                source_down, target_down, radius, current_transformation,
+                open3d.registration.ICPConvergenceCriteria(relative_fitness=1e-6,relative_rmse=1e-6,max_iteration=iter))
+            current_transformation = result_icp.transformation
+            print("DONE")
+        
+        return current_transformation
+    
+    def correct_normals(self,pc,cameraPos):
+        '''corrects the direction of the normals based on the camera position'''
+        points = np.asarray(pc.points)
+        normals = np.asarray(pc.normals)
+        
+        count = 0
+        for k in range(len(points)):
+            v1 = cameraPos - points[k]
+            v2 = normals[k]
+            #print("v1:",v1,"v2:",v2)
+            #flip de normal vector if it is not pointing towards the sensor:
+            angle = angle_between(v1,v2)
+            if angle > math.pi/2 or angle < -math.pi/2:
+                normals[k][0] = -normals[k][0]
+                normals[k][1] = -normals[k][1]
+                normals[k][2] = -normals[k][2]
+                count += 1
+        print("# Corrected",count,"normals")
+        pc.normals = open3d.utility.Vector3dVector(normals)
+        
+        return pc
   
+def unit_vector(vector):
+    ''' Returns the unit vector of the vector.  '''
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    ''' Returns the angle in radians between vectors 'v1' and 'v2'::
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    '''
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))  
+        
