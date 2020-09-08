@@ -338,7 +338,7 @@ class Calibrator:
         return reg_p2p.transformation
     
     def align_fine_point2plane(self, source_pc, target_pc, threshold, cameras):
-        '''ICP alignment based on point2plane - does not provide good results yet'''
+        '''ICP alignment based on point2plane'''
         source = source_pc.get_o3d()
         target = target_pc.get_o3d()
         
@@ -348,7 +348,7 @@ class Calibrator:
         target_down = target.voxel_down_sample(radius_ds)
         
         print("2. Estimating normals")
-        radius_n = 0.01
+        radius_n = 0.02
         source_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius_n, max_nn=30))
         source_down = self.correct_normals(source_down,cameras[0])
         
@@ -357,8 +357,8 @@ class Calibrator:
         
         print("3. Computing ICP point2plane")
         trans_init = np.identity(4)
-        reg_point2plane = open3d.registration.registration_icp(source_down, target_down, threshold, trans_init, 
-            open3d.registration.TransformationEstimationPointToPlane(), open3d.registration.ICPConvergenceCriteria(max_iteration = 2000))
+        reg_point2plane = open3d.registration.registration_icp(target_down, source_down, threshold, trans_init, 
+            open3d.registration.TransformationEstimationPointToPlane(), open3d.registration.ICPConvergenceCriteria(max_iteration = 50))
         
         return reg_point2plane.transformation
         
@@ -366,6 +366,7 @@ class Calibrator:
     def align_fine_colored(self, source, target, threshold, nn_radius):
         trans_init = np.identity(4)
         #Estimate Normals with max nearest neighbors = 30
+        nn_radius = 0.02
         source.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius = nn_radius, max_nn=30))
         target.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius = nn_radius, max_nn=30))
         #XXXShishir ToDo: Check if downsampling is needed
@@ -376,11 +377,11 @@ class Calibrator:
         return reg_c.transformation
         
     def align_fine_rcICP(self, source, target, threshold, cameras):
-        '''colored ICP recursive with different voxel radius'- does not provide good results yet'''
+        '''colored ICP recursive with different voxel radius'''
         source = source.get_o3d()
         target = target.get_o3d()
-        voxel_radius = [0.015, 0.01, 0.005]
-        max_iter = [10, 30, 50]
+        voxel_radius = [0.02, 0.01, 0.005]
+        max_iter = [50, 30, 10]
         current_transformation = np.identity(4)
         print("3. Colored point cloud registration")
         for scale in range(3):
@@ -402,7 +403,7 @@ class Calibrator:
             #open3d.visualization.draw_geometries([source_down])
             print("3-3. Applying colored point cloud registration")
             result_icp = open3d.registration.registration_colored_icp(
-                source_down, target_down, radius, current_transformation,
+                target_down, source_down, radius, current_transformation,
                 open3d.registration.ICPConvergenceCriteria(relative_fitness=1e-6,relative_rmse=1e-6,max_iteration=iter))
             current_transformation = result_icp.transformation
             print("DONE")
