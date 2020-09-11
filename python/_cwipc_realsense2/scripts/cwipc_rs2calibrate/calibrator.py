@@ -37,7 +37,7 @@ class Calibrator:
         self.refpointcloud = None
         self.coarse_matrix = []
         self.fine_matrix = []
-        self.workdir = os.getcwd() # o3d visualizer can change directory??!?
+        self.workdir = os.getcwd() # open3d visualizer can change directory??!?
         sys.stdout.flush()
         
     def __del__(self):
@@ -179,8 +179,7 @@ class Calibrator:
             self.ui.show_message('* Skipping fine-grained calibration: only one camera')
             self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
             return
-        refPointcloud = self.coarse_calibrated_pointclouds[0].clean_background()
-        self.fine_calibrated_pointclouds.append(refPointcloud)
+            
         camPositions = []
         #Get positions of all camera origins in world coordinates
         for i in range(0, len(self.coarse_calibrated_pointclouds)):
@@ -189,53 +188,67 @@ class Calibrator:
             camVector = npMatrix @ np.array([0, 0, 0, 1])
             camVector = np.array([camVector[0,0],camVector[0,1], camVector[0,2]])
             camPositions.append(camVector)
-        #Store the order of cameras being aligned
-        camIndex = []
-        #First camera is used to initialize
-        camIndex.append(0)
-        #Loop till all camera clouds are fine aligned
-        while (len(self.fine_calibrated_pointclouds) < len(self.coarse_calibrated_pointclouds)):
-            #We now compare the dot product of all (fine) unaligned cameras with all (fine) aligned cameras to find the nearest camera pair
-            #we assume that this will provide the optimale oplossing for overlap of points for ICP to work with
-            dotProducts = np.empty((len(self.fine_calibrated_pointclouds),len(self.coarse_calibrated_pointclouds)))
-            for i in range(0,len(self.coarse_calibrated_pointclouds)):
-                if i not in camIndex:
-                    for j in range(0,len(camIndex)):
-                        if i == camIndex[j]:
+        #print("Camera positions: ",camPositions)
+        
+        cumulative = True
+        if cumulative:
+            color_correction = True #Enables/disables extra step of alignment based on color
+            self.fine_matrix = self.align_fine_cumulative(self.coarse_calibrated_pointclouds,camPositions,color_correction)
+            for i in range(len(camPositions)):
+                transformMatrix = self.fine_matrix[i]
+                pc = self.coarse_calibrated_pointclouds[i].clean_background()
+                transformedPointcloud = pc.transform(transformMatrix)
+                self.fine_calibrated_pointclouds.append(transformedPointcloud)
+        else:
+            refPointcloud = self.coarse_calibrated_pointclouds[0].clean_background()
+            self.fine_calibrated_pointclouds.append(refPointcloud)
+            #Store the order of cameras being aligned
+            camIndex = []
+            #First camera is used to initialize
+            camIndex.append(0)
+            #Loop till all camera clouds are fine aligned
+            while (len(self.fine_calibrated_pointclouds) < len(self.coarse_calibrated_pointclouds)):
+                #We now compare the dot product of all (fine) unaligned cameras with all (fine) aligned cameras to find the nearest camera pair
+                #we assume that this will provide the optimale oplossing for overlap of points for ICP to work with
+                dotProducts = np.empty((len(self.fine_calibrated_pointclouds),len(self.coarse_calibrated_pointclouds)))
+                for i in range(0,len(self.coarse_calibrated_pointclouds)):
+                    if i not in camIndex:
+                        for j in range(0,len(camIndex)):
+                            if i == camIndex[j]:
+                                #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
+                                dotProducts[j][i] = -5
+                            else:
+                                dotProducts[j][i] = np.dot(camPositions[camIndex[j]],camPositions[i])
+                    else:
+                        for j in range(0,len(camIndex)):
                             #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
                             dotProducts[j][i] = -5
-                        else:
-                            dotProducts[j][i] = np.dot(camPositions[camIndex[j]],camPositions[i])
-                else:
-                    for j in range(0,len(camIndex)):
-                        #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
-                        dotProducts[j][i] = -5
-            Idx = np.unravel_index(dotProducts.argmax(),dotProducts.shape)
-            ref_cam = camIndex[Idx[0]]
-            src_cam = Idx[1]
-            print(f'Now calibrating camera {src_cam} to fine align with {ref_cam}')
-            refPointcloud = self.coarse_calibrated_pointclouds[ref_cam].clean_background()
-            srcPointcloud = self.coarse_calibrated_pointclouds[src_cam].clean_background()
-            initMatrix = self.align_fine_point2point(refPointcloud,srcPointcloud, correspondence, [camPositions[ref_cam],camPositions[src_cam]])
-            transformMatrix = initMatrix @ self.fine_matrix[ref_cam]
-            transformPointcloud = srcPointcloud.transform(transformMatrix)
-            self.fine_calibrated_pointclouds.append(transformPointcloud)
-            self.fine_matrix.append(transformMatrix)
-            camIndex.append(src_cam)
-            newMatrix = transformMatrix
-            newPointcloud = transformPointcloud
-            if inspect:
-                print(f'Fine matrix for camera {self.cameraserial[i]} is:')
-                pprint.pprint(newMatrix)
-                showPCref = refPointcloud.colored((255, 0, 0))
-                showPCsrc = srcPointcloud.colored((0, 255, 0))
-                showPCdst = newPointcloud.colored((0, 0, 255))
-                joined = Pointcloud.from_join((showPCref, showPCsrc, showPCdst))
-                self.ui.show_prompt(f"Inspect alignment of {self.cameraserial[i]} (before: green, after: blue) to reference {self.cameraserial[0]} (red) ")
-                self.ui.show_points('Inspect alignment result', joined)
-        #Reorder based on original camera orders
-        self.fine_calibrated_pointclouds = [self.fine_calibrated_pointclouds[i] for i in camIndex]
-        self.fine_matrix = [self.fine_matrix[i] for i in camIndex]
+                Idx = np.unravel_index(dotProducts.argmax(),dotProducts.shape)
+                ref_cam = camIndex[Idx[0]]
+                src_cam = Idx[1]
+                print(f'Now calibrating camera {src_cam} to fine align with {ref_cam}')
+                refPointcloud = self.coarse_calibrated_pointclouds[ref_cam].clean_background()
+                srcPointcloud = self.coarse_calibrated_pointclouds[src_cam].clean_background()
+                initMatrix = self.align_fine_point2point(refPointcloud,srcPointcloud, correspondence, [camPositions[ref_cam],camPositions[src_cam]])
+                transformMatrix = initMatrix @ self.fine_matrix[ref_cam]
+                transformPointcloud = srcPointcloud.transform(transformMatrix)
+                self.fine_calibrated_pointclouds.append(transformPointcloud)
+                self.fine_matrix.append(transformMatrix)
+                camIndex.append(src_cam)
+                newMatrix = transformMatrix
+                newPointcloud = transformPointcloud
+                if inspect:
+                    print(f'Fine matrix for camera {self.cameraserial[i]} is:')
+                    pprint.pprint(newMatrix)
+                    showPCref = refPointcloud.colored((255, 0, 0))
+                    showPCsrc = srcPointcloud.colored((0, 255, 0))
+                    showPCdst = newPointcloud.colored((0, 0, 255))
+                    joined = Pointcloud.from_join((showPCref, showPCsrc, showPCdst))
+                    self.ui.show_prompt(f"Inspect alignment of {self.cameraserial[i]} (before: green, after: blue) to reference {self.cameraserial[0]} (red) ")
+                    self.ui.show_points('Inspect alignment result', joined)
+            #Reorder based on original camera orders
+            self.fine_calibrated_pointclouds = [self.fine_calibrated_pointclouds[i] for i in camIndex]
+            self.fine_matrix = [self.fine_matrix[i] for i in camIndex]
         #Display results
         self.ui.show_prompt('Inspect the resultant merged pointclouds of all cameras')
         joined = Pointcloud.from_join(self.fine_calibrated_pointclouds)
@@ -350,10 +363,10 @@ class Calibrator:
         print("2. Estimating normals")
         radius_n = 0.02
         source_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius_n, max_nn=30))
-        source_down = self.correct_normals(source_down,cameras[0])
+        source_down = correct_normals(source_down,cameras[0])
         
         target_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius_n, max_nn=30))
-        target_down = self.correct_normals(target_down,cameras[1])
+        target_down = correct_normals(target_down,cameras[1])
         
         print("3. Computing ICP point2plane")
         trans_init = np.identity(4)
@@ -396,9 +409,9 @@ class Calibrator:
 
             print("3-2. Estimate normal.")
             source_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius=radius * 2, max_nn=30))
-            source_down = self.correct_normals(source_down,cameras[0])
+            source_down = correct_normals(source_down,cameras[0])
             target_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius=radius * 2, max_nn=30))
-            target_down = self.correct_normals(target_down,cameras[1])
+            target_down = correct_normals(target_down,cameras[1])
             
             #open3d.visualization.draw_geometries([source_down])
             print("3-3. Applying colored point cloud registration")
@@ -410,7 +423,92 @@ class Calibrator:
         
         return current_transformation
     
-    def correct_normals(self,pc,cameraPos):
+    def align_fine_cumulative(self, pointclouds,cam_pos,color_correction):
+        '''Given all the point clouds and its camera positions, it computes the transformations for the fine alignment. If(color_correction) it performs an extra step of colored ICP'''
+        cam_order = get_cameras_order(cam_pos)
+        pcs = [] #list of ordered pcs
+        transformations = [] #list of ordered transformations
+        for i in range(len(cam_order)):
+            pcs.append(pointclouds[cam_order[i]].clean_background().get_o3d())
+            transformations.append(np.identity(4))
+        radius_ds = 0.005 #voxel downsampling radius
+        tpc = pcs[0] #the target pc
+        tpc_down = tpc.voxel_down_sample(radius_ds) #downsampled version
+        aligned_pc = open3d.geometry.PointCloud()
+        for i in range(1,len(pcs)):
+            init_transf = np.identity(4)
+            src_pc_down = pcs[i].voxel_down_sample(radius_ds)
+            reg_p2p = open3d.registration.registration_icp(src_pc_down, tpc_down, 0.02, init_transf,
+                open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = 5000))
+            transformations[i] = reg_p2p.transformation @ transformations[i]
+            tf_pc = pcs[i].transform(reg_p2p.transformation)
+            tpc += tf_pc
+            tpc_down = tpc.voxel_down_sample(radius_ds)
+            aligned_pc += tf_pc
+            print("-Aligned pc",i)
+
+        #Extra step to fine align first cam
+        aligned_pc_down = aligned_pc.voxel_down_sample(radius_ds)
+        init_transf = np.identity(4)
+        reg_p2p = open3d.registration.registration_icp(pcs[0].voxel_down_sample(radius_ds), aligned_pc_down, 0.02, init_transf,
+            open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = 5000))
+        transformations[0] = reg_p2p.transformation @ transformations[0]
+        tf_pc = pcs[0].transform(reg_p2p.transformation)
+        aligned_pc += tf_pc
+        print("-Aligned pc",0)
+
+        if(color_correction):
+            print("# Applying correction based on color")
+            pcs_down = [] #list of downsampled point clouds
+            for i in range(len(cam_order)):
+                pc = pcs[i]
+                pc_down = pc.voxel_down_sample(radius_ds)
+                pc_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius=0.02, max_nn=30))
+                pcs_down.append(correct_normals(pc_down,cam_pos[i]))
+
+            for i in range(len(pcs_down)):
+                p0 = pcs_down[i]
+                aux = open3d.geometry.PointCloud()
+                for j in range(len(pcs_down)):
+                    if j!= i:
+                        aux = aux + pcs_down[j]
+                init_transf = np.identity(4)
+                result_icp = open3d.registration.registration_colored_icp(p0, aux, 0.02, init_transf,
+                    open3d.registration.ICPConvergenceCriteria(relative_fitness=1e-6,relative_rmse=1e-6,max_iteration=20))
+                pcs_down[i] = p0.transform(result_icp.transformation)
+                transformations[i] = result_icp.transformation @ transformations[i]
+
+        final_pc = open3d.geometry.PointCloud()
+        tup = [] #tuple list to recover original order
+        for i in range(len(cam_order)):
+            final_pc += pointclouds[cam_order[i]].clean_background().get_o3d().transform(transformations[i])
+            tup.append((cam_order[i],transformations[i]))
+        #open3d.visualization.draw_geometries([final_pc])
+
+        ordered_tup = sorted(tup, key=lambda x: x[0]) #sort tuple (cam_id,transformation) by cam_id to recover original order
+        return [i[1] for i in ordered_tup] #return transformations in original order
+    
+def unit_vector(vector):
+    ''' Returns the unit vector of the vector.  '''
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    ''' Returns the angle in radians between vectors 'v1' and 'v2'::
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    '''
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    angle = np.arccos(np.dot(v1_u, v2_u)) 
+    if(v1_u[0]*v2_u[2] - v1_u[2]*v2_u[0] > 0):
+        angle = -angle;
+    return angle
+
+def correct_normals(pc,cameraPos):
         '''corrects the direction of the normals based on the camera position'''
         points = np.asarray(pc.points)
         normals = np.asarray(pc.normals)
@@ -427,25 +525,23 @@ class Calibrator:
                 normals[k][1] = -normals[k][1]
                 normals[k][2] = -normals[k][2]
                 count += 1
-        print("# Corrected",count,"normals")
+        print("- Corrected",count,"normals")
         pc.normals = open3d.utility.Vector3dVector(normals)
         
         return pc
-  
-def unit_vector(vector):
-    ''' Returns the unit vector of the vector.  '''
-    return vector / np.linalg.norm(vector)
-
-def angle_between(v1, v2):
-    ''' Returns the angle in radians between vectors 'v1' and 'v2'::
-            >>> angle_between((1, 0, 0), (0, 1, 0))
-            1.5707963267948966
-            >>> angle_between((1, 0, 0), (1, 0, 0))
-            0.0
-            >>> angle_between((1, 0, 0), (-1, 0, 0))
-            3.141592653589793
-    '''
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))  
+    
+def get_cameras_order(camPositions):
+    '''Given the camera positions it returns the circular order of the cameras'''
+    centroid = [0.0,0.0,0.0]
+    for i in range(len(camPositions)):
+        centroid += camPositions[i]
+    centroid /= len(camPositions)
+    v_0 = camPositions[0]-centroid
+    tup = []
+    for i in range(len(camPositions)):
+        v1 = camPositions[i]-centroid
+        angle = math.degrees(angle_between(v_0,v1))
+        tup.append((i,angle))
+    ordered_tup = sorted(tup, key=lambda x: x[1]) #sort tuple (id,angle) by angle
+    return [i[0] for i in ordered_tup]
         

@@ -185,6 +185,5 @@ class Pointcloud:
         #pc_clean = self.get_o3d()
         pc_out,l = pc_clean.remove_radius_outlier(44,0.01) #remove_radius_outlier(self, int nb_points, float radius)
         
-        
-        return self.__class__.from_o3d(pc_clean)
+        return self.__class__.from_o3d(pc_out)
         
