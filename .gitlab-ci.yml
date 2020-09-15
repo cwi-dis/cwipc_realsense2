@@ -29,10 +29,10 @@ build_linux:
     - apt-get install -y librealsense2-dev
 # Install Deployment repo and dependencies
     - apt-get install -y python3-pip
-    - python3 -m pip install requests mechanize pillow numpy open3d
     - mkdir deployment-helpers
     - cd deployment-helpers
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+    - python3 -m pip install -r Deployment/scripts/requirements.txt
     - cd ..
 # Get and install cwipc_util
     - if [ "$CI_COMMIT_TAG" = "" ]; then REL_CWIPC_UTIL="--release_name latest"; else REL_CWIPC_UTIL="--release_name $CI_COMMIT_TAG"; fi
@@ -66,10 +66,11 @@ build_osx:
     - brew install homebrew/core/glfw3 || true # brew upgrade homebrew/core/glfw3
     - brew install librealsense || true # brew upgrade librealsense
 # Install Deployment repo and dependencies
-    - python3 -m pip install requests mechanize pillow numpy open3d
+    - python3 -m pip install pillow numpy open3d
     - mkdir deployment-helpers
     - cd deployment-helpers
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+    - python3 -m pip install -r Deployment/scripts/requirements.txt
     - cd ..
 # Get and install cwipc_util
     - if [ "$CI_COMMIT_TAG" = "" ]; then REL_CWIPC_UTIL="--release_name latest"; else REL_CWIPC_UTIL="--release_name $CI_COMMIT_TAG"; fi
@@ -99,10 +100,11 @@ build_win:
     - rm -rf /cygdrive/c/dist-win/installed
     - mkdir -p /cygdrive/c/dist-win/installed
 # Install Deployment repo and dependencies
-    - python -m pip install requests mechanize pillow numpy open3d
+    - python -m pip install pillow numpy open3d
     - mkdir deployment-helpers
     - cd deployment-helpers
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+    - python -m pip install -r Deployment/scripts/requirements.txt
     - cd ..
 # Get and install cwipc_util
     - if [ "$CI_COMMIT_TAG" = "" ]; then REL_CWIPC_UTIL="--release_name latest"; else REL_CWIPC_UTIL="--release_name $CI_COMMIT_TAG"; fi
@@ -139,10 +141,10 @@ deploy_all:
   before_script:
   - apt-get update
   - apt-get install -y python3-pip
-  - python3 -m pip install requests
   - mkdir deployment-helpers
   - cd deployment-helpers
   - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+  - python3 -m pip install -r Deployment/scripts/requirements.txt
   - cd ..
   script:
     - mkdir deliverables
@@ -164,10 +166,10 @@ deploy_all_untagged:
   before_script:
   - apt-get update
   - apt-get install -y python3-pip
-  - python3 -m pip install requests
   - mkdir deployment-helpers
   - cd deployment-helpers
   - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+  - python3 -m pip install -r Deployment/scripts/requirements.txt
   - cd ..
   script:
     - mkdir deliverables
