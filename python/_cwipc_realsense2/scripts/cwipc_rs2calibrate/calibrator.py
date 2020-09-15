@@ -167,19 +167,8 @@ class Calibrator:
         self.ui.show_points('Inspect bounding box result', joined)
     
     def run_fine(self, correspondence, inspect):
-        print("## Starting fine alignment")
-        for i in range(len(self.cameraserial)):
-            self.fine_matrix.append([
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1],
-            ])
-        if len(self.coarse_calibrated_pointclouds) <= 1:
-            self.ui.show_message('* Skipping fine-grained calibration: only one camera')
-            self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
-            return
-            
+        print("# Starting fine alignment")
+        
         camPositions = []
         #Get positions of all camera origins in world coordinates
         for i in range(0, len(self.coarse_calibrated_pointclouds)):
@@ -188,73 +177,117 @@ class Calibrator:
             camVector = npMatrix @ np.array([0, 0, 0, 1])
             camVector = np.array([camVector[0,0],camVector[0,1], camVector[0,2]])
             camPositions.append(camVector)
-        #print("Camera positions: ",camPositions)
+         
+        compute_align_fine = True
+        while compute_align_fine:
+            self.fine_matrix = []
+            self.fine_calibrated_pointclouds = []
+            for i in range(len(self.cameraserial)):
+                self.fine_matrix.append([
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                ])
+            if len(self.coarse_calibrated_pointclouds) <= 1:
+                self.ui.show_message('* Skipping fine-grained calibration: only one camera')
+                self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
+                return
         
-        cumulative = True
-        if cumulative:
-            color_correction = True #Enables/disables extra step of alignment based on color
-            self.fine_matrix = self.align_fine_cumulative(self.coarse_calibrated_pointclouds,camPositions,color_correction)
-            for i in range(len(camPositions)):
-                transformMatrix = self.fine_matrix[i]
-                pc = self.coarse_calibrated_pointclouds[i].clean_background()
-                transformedPointcloud = pc.transform(transformMatrix)
-                self.fine_calibrated_pointclouds.append(transformedPointcloud)
-        else:
-            refPointcloud = self.coarse_calibrated_pointclouds[0].clean_background()
-            self.fine_calibrated_pointclouds.append(refPointcloud)
-            #Store the order of cameras being aligned
-            camIndex = []
-            #First camera is used to initialize
-            camIndex.append(0)
-            #Loop till all camera clouds are fine aligned
-            while (len(self.fine_calibrated_pointclouds) < len(self.coarse_calibrated_pointclouds)):
-                #We now compare the dot product of all (fine) unaligned cameras with all (fine) aligned cameras to find the nearest camera pair
-                #we assume that this will provide the optimale oplossing for overlap of points for ICP to work with
-                dotProducts = np.empty((len(self.fine_calibrated_pointclouds),len(self.coarse_calibrated_pointclouds)))
-                for i in range(0,len(self.coarse_calibrated_pointclouds)):
-                    if i not in camIndex:
-                        for j in range(0,len(camIndex)):
-                            if i == camIndex[j]:
+            print("* Select alignment method:\n\t 1 - cumulative\n\t 2 - ICP point2point\n\t 3 - ICP point2plane\n\t 4 - ICP colored")
+            method = sys.stdin.readline().strip().lower()
+            
+            if method == '1': #cumulative
+                print("## Computing alignment using cumulative method:")
+                color_correction = True #Enables/disables extra step of alignment based on color
+                print("* Apply color correction? (y, n)")
+                cc = sys.stdin.readline().strip().lower()
+                if cc == 'n':
+                    color_correction = False
+                self.fine_matrix = self.align_fine_cumulative(self.coarse_calibrated_pointclouds,camPositions,color_correction)
+                for i in range(len(camPositions)):
+                    transformMatrix = self.fine_matrix[i]
+                    pc = self.coarse_calibrated_pointclouds[i].clean_background()
+                    transformedPointcloud = pc.transform(transformMatrix)
+                    self.fine_calibrated_pointclouds.append(transformedPointcloud)
+            else:
+                refPointcloud = self.coarse_calibrated_pointclouds[0].clean_background()
+                self.fine_calibrated_pointclouds.append(refPointcloud)
+                #Store the order of cameras being aligned
+                camIndex = []
+                #First camera is used to initialize
+                camIndex.append(0)
+                
+                if method == '2' or method == '3':
+                    if method == '2':
+                        print("* Choose number of iterations of ICP algorithm (Default 2000) :")
+                    if method == '3':
+                        print("* Choose number of iterations of ICP algorithm (Default 50) :")
+                    iter = int(sys.stdin.readline().strip().lower())
+                
+                #Loop till all camera clouds are fine aligned
+                while (len(self.fine_calibrated_pointclouds) < len(self.coarse_calibrated_pointclouds)):
+                    #We now compare the dot product of all (fine) unaligned cameras with all (fine) aligned cameras to find the nearest camera pair
+                    #we assume that this will provide the optimale oplossing for overlap of points for ICP to work with
+                    dotProducts = np.empty((len(self.fine_calibrated_pointclouds),len(self.coarse_calibrated_pointclouds)))
+                    for i in range(0,len(self.coarse_calibrated_pointclouds)):
+                        if i not in camIndex:
+                            for j in range(0,len(camIndex)):
+                                if i == camIndex[j]:
+                                    #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
+                                    dotProducts[j][i] = -5
+                                else:
+                                    dotProducts[j][i] = np.dot(camPositions[camIndex[j]],camPositions[i])
+                        else:
+                            for j in range(0,len(camIndex)):
                                 #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
                                 dotProducts[j][i] = -5
-                            else:
-                                dotProducts[j][i] = np.dot(camPositions[camIndex[j]],camPositions[i])
-                    else:
-                        for j in range(0,len(camIndex)):
-                            #Arbitrary high negative number so we ignore cameras that are already (fine) aligned
-                            dotProducts[j][i] = -5
-                Idx = np.unravel_index(dotProducts.argmax(),dotProducts.shape)
-                ref_cam = camIndex[Idx[0]]
-                src_cam = Idx[1]
-                print(f'Now calibrating camera {src_cam} to fine align with {ref_cam}')
-                refPointcloud = self.coarse_calibrated_pointclouds[ref_cam].clean_background()
-                srcPointcloud = self.coarse_calibrated_pointclouds[src_cam].clean_background()
-                initMatrix = self.align_fine_point2point(refPointcloud,srcPointcloud, correspondence, [camPositions[ref_cam],camPositions[src_cam]])
-                transformMatrix = initMatrix @ self.fine_matrix[ref_cam]
-                transformPointcloud = srcPointcloud.transform(transformMatrix)
-                self.fine_calibrated_pointclouds.append(transformPointcloud)
-                self.fine_matrix.append(transformMatrix)
-                camIndex.append(src_cam)
-                newMatrix = transformMatrix
-                newPointcloud = transformPointcloud
-                if inspect:
-                    print(f'Fine matrix for camera {self.cameraserial[i]} is:')
-                    pprint.pprint(newMatrix)
-                    showPCref = refPointcloud.colored((255, 0, 0))
-                    showPCsrc = srcPointcloud.colored((0, 255, 0))
-                    showPCdst = newPointcloud.colored((0, 0, 255))
-                    joined = Pointcloud.from_join((showPCref, showPCsrc, showPCdst))
-                    self.ui.show_prompt(f"Inspect alignment of {self.cameraserial[i]} (before: green, after: blue) to reference {self.cameraserial[0]} (red) ")
-                    self.ui.show_points('Inspect alignment result', joined)
-            #Reorder based on original camera orders
-            self.fine_calibrated_pointclouds = [self.fine_calibrated_pointclouds[i] for i in camIndex]
-            self.fine_matrix = [self.fine_matrix[i] for i in camIndex]
-        #Display results
-        self.ui.show_prompt('Inspect the resultant merged pointclouds of all cameras')
-        joined = Pointcloud.from_join(self.fine_calibrated_pointclouds)
-        os.chdir(self.workdir)
+                    Idx = np.unravel_index(dotProducts.argmax(),dotProducts.shape)
+                    ref_cam = camIndex[Idx[0]]
+                    src_cam = Idx[1]
+                    print(f' -Now calibrating camera {src_cam} to fine align with {ref_cam}')
+                    refPointcloud = self.coarse_calibrated_pointclouds[ref_cam].clean_background()
+                    srcPointcloud = self.coarse_calibrated_pointclouds[src_cam].clean_background()
+                    if method == '3':
+                        print("## Computing alignment using ICP point2plane:")
+                        initMatrix = self.align_fine_point2plane(refPointcloud,srcPointcloud, correspondence, [camPositions[ref_cam],camPositions[src_cam]], iter)
+                    elif method == '4':
+                        print("## Computing alignment using ICP colored:")
+                        initMatrix = self.align_fine_rcICP(refPointcloud,srcPointcloud, correspondence, [camPositions[ref_cam],camPositions[src_cam]])
+                    else: #method == '2':
+                        print("## Computing alignment using ICP point2point:")
+                        initMatrix = self.align_fine_point2point(refPointcloud,srcPointcloud, correspondence, [camPositions[ref_cam],camPositions[src_cam]], iter)
+                    transformMatrix = initMatrix @ self.fine_matrix[ref_cam]
+                    transformPointcloud = srcPointcloud.transform(transformMatrix)
+                    self.fine_calibrated_pointclouds.append(transformPointcloud)
+                    self.fine_matrix.append(transformMatrix)
+                    camIndex.append(src_cam)
+                    newMatrix = transformMatrix
+                    newPointcloud = transformPointcloud
+                    if inspect:
+                        print(f'Fine matrix for camera {self.cameraserial[i]} is:')
+                        pprint.pprint(newMatrix)
+                        showPCref = refPointcloud.colored((255, 0, 0))
+                        showPCsrc = srcPointcloud.colored((0, 255, 0))
+                        showPCdst = newPointcloud.colored((0, 0, 255))
+                        joined = Pointcloud.from_join((showPCref, showPCsrc, showPCdst))
+                        self.ui.show_prompt(f"Inspect alignment of {self.cameraserial[i]} (before: green, after: blue) to reference {self.cameraserial[0]} (red) ")
+                        self.ui.show_points('Inspect alignment result', joined)
+                #Reorder based on original camera orders
+                self.fine_calibrated_pointclouds = [self.fine_calibrated_pointclouds[i] for i in camIndex]
+                self.fine_matrix = [self.fine_matrix[i] for i in camIndex]
+            #Display results
+            self.ui.show_prompt('Inspect the resultant merged pointclouds of all cameras')
+            joined = Pointcloud.from_join(self.fine_calibrated_pointclouds)
+            os.chdir(self.workdir)
+            self.ui.show_points('Inspect fine calibration result', joined)
+            print("* Would you like to try another calibration? (y,n)")
+            retry = sys.stdin.readline().strip().lower()
+            if retry == 'n':
+                compute_align_fine = False
+        
         joined.save('cwipc_rs2calibrate_calibrated.ply')
-        self.ui.show_points('Inspect fine calibration result', joined)
+        print("Result saved as cwipc_rs2calibrate_calibrated.ply")
         
     def skip_fine(self):
         for i in range(len(self.cameraserial)):
@@ -332,7 +365,7 @@ class Calibrator:
         
         return reg_p2p.transformation
     
-    def align_fine_point2point(self, source_pc, target_pc, threshold, cameras):
+    def align_fine_point2point(self, source_pc, target_pc, threshold, cameras, iter):
         '''ICP alignment based on point2point - at the moment this is giving the best results'''
         print('Align fine:')
         source = source_pc.get_o3d()
@@ -346,11 +379,11 @@ class Calibrator:
         print(" 2. Computing ICP point2point")
         trans_init = np.identity(4)
         reg_p2p = open3d.registration.registration_icp(target_down, source_down, threshold, trans_init,
-            open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = 2000))
+            open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = iter))
         
         return reg_p2p.transformation
     
-    def align_fine_point2plane(self, source_pc, target_pc, threshold, cameras):
+    def align_fine_point2plane(self, source_pc, target_pc, threshold, cameras, iter):
         '''ICP alignment based on point2plane'''
         source = source_pc.get_o3d()
         target = target_pc.get_o3d()
@@ -371,7 +404,7 @@ class Calibrator:
         print("3. Computing ICP point2plane")
         trans_init = np.identity(4)
         reg_point2plane = open3d.registration.registration_icp(target_down, source_down, threshold, trans_init, 
-            open3d.registration.TransformationEstimationPointToPlane(), open3d.registration.ICPConvergenceCriteria(max_iteration = 50))
+            open3d.registration.TransformationEstimationPointToPlane(), open3d.registration.ICPConvergenceCriteria(max_iteration = iter))
         
         return reg_point2plane.transformation
         
@@ -435,11 +468,15 @@ class Calibrator:
         tpc = pcs[0] #the target pc
         tpc_down = tpc.voxel_down_sample(radius_ds) #downsampled version
         aligned_pc = open3d.geometry.PointCloud()
+        
+        print("* Choose number of iterations of ICP algorithm (Default 2000) :")
+        iter = int(sys.stdin.readline().strip().lower())
+        
         for i in range(1,len(pcs)):
             init_transf = np.identity(4)
             src_pc_down = pcs[i].voxel_down_sample(radius_ds)
             reg_p2p = open3d.registration.registration_icp(src_pc_down, tpc_down, 0.02, init_transf,
-                open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = 5000))
+                open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = iter))
             transformations[i] = reg_p2p.transformation @ transformations[i]
             tf_pc = pcs[i].transform(reg_p2p.transformation)
             tpc += tf_pc
@@ -451,7 +488,7 @@ class Calibrator:
         aligned_pc_down = aligned_pc.voxel_down_sample(radius_ds)
         init_transf = np.identity(4)
         reg_p2p = open3d.registration.registration_icp(pcs[0].voxel_down_sample(radius_ds), aligned_pc_down, 0.02, init_transf,
-            open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = 5000))
+            open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = iter))
         transformations[0] = reg_p2p.transformation @ transformations[0]
         tf_pc = pcs[0].transform(reg_p2p.transformation)
         aligned_pc += tf_pc
