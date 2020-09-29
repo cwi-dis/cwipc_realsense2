@@ -17,15 +17,12 @@ FRONTAL_MATRIX = [
     [0, 0, 0, 1]
 ]    
 class Calibrator:
-    def __init__(self, distance, refpoints):
+    def __init__(self, refpoints):
         self.ui = UI()
         self.cameraserial = []
         self.cameraconfig = None
         self.near = 0
         self.far = 0
-        if distance:
-            self.near = 0.5 * distance
-            self.far = 2.0 * distance
         self.height_min = 0
         self.height_max = 0
         self.refpoints = refpoints
@@ -45,6 +42,14 @@ class Calibrator:
         self.pointclouds = None
         self.coarse_calibrated_pointclouds = None
         self.refpointcloud = None
+        
+    def setheight(self, height_min, height_max):
+        self.height_min = height_min
+        self.height_max = height_max
+        
+    def setdepth(self, near, far):
+        self.near = near
+        self.far = far
         
     def open(self, grabber, clean, reuse):
         if clean:
@@ -75,8 +80,16 @@ class Calibrator:
             pass
         elif len(self.cameraserial) == 1:
             if self.grabber.getmatrix(0) == [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]:
-                print("* Single camera setup, assume frontal camera 1m away and 1.2m high")
+                print("* Single camera setup, assume horizontal frontal camera")
                 self.coarse_matrix[0] = FRONTAL_MATRIX
+                if self.near == 0 and self.far == 0:
+                    print("* Assuming near and far of 40cm and 1.2m")
+                    self.near = 0.4
+                    self.far = 1.2
+                if self.height_min == 0 and self.height_max == 0:
+                    print("* Assuming height of 70cm to 170cm")
+                    self.height_min = 0.7
+                    self.height_max = 1.7
             # Otherwise presume the matrix has already been set
         else:
             if self.grabber.getmatrix(0) == [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]:
@@ -322,8 +335,10 @@ class Calibrator:
             npMatrix = np.matrix(self.fine_matrix[i]) @ np.matrix(self.coarse_matrix[i]) @ np.matrix(matrix)
             matrix = npMatrix.tolist()
             self.cameraconfig.setmatrix(i, matrix)
-        if self.near or self.far or self.height_min or self.height_max:
-            self.cameraconfig.setbounds(self.near, self.far, self.height_min, self.height_max)
+        if self.near or self.far:
+            self.cameraconfig.setdistance(self.near, self.far)
+        if self.height_min or self.height_max:
+            self.cameraconfig.setheight(self.height_min, self.height_max)
         self.cameraconfig.save()
          
   
