@@ -6,7 +6,7 @@ CONFIGFILE="""<?xml version="1.0" ?>
     <CameraConfig>
         <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
         <postprocessing density="1" height_min="0" height_max="0" depthfiltering="1" backgroundremoval="0" greenscreenremoval="0" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
-            <depthfilterparameters threshold_near="0" threshold_far="0" decimation_value="1" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+            <depthfilterparameters threshold_near="0.2" threshold_far="4" do_decimation="0" decimation_value="1" spatial_iterations="1" spatial_alpha="0.5" spatial_delta="20" spatial_filling="1" do_temporal="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
         </postprocessing>
         <camera serial="0" backgroundx="0" backgroundy="0" backgroundz="0">
             <trafo>
@@ -114,11 +114,15 @@ class CameraConfig:
         camElt = root.find(f"CameraConfig/camera[@serial='{oldSerial}']")
         camElt.set('serial', serial)
         
-    def setbounds(self, threshold_near, threshold_far, height_min, height_max):
+    def setdistance(self, threshold_near, threshold_far):
+        root = self.tree.getroot()
+        ppElt = root.find('CameraConfig/postprocessing')
+        dfElt = ppElt.find('depthfilterparameters')
+        dfElt.set('threshold_near', str(threshold_near))
+        dfElt.set('threshold_far', str(threshold_far))
+        
+    def setheight(self, height_min, height_max):
         root = self.tree.getroot()
         ppElt = root.find('CameraConfig/postprocessing')
         ppElt.set('height_min', str(height_min))
         ppElt.set('height_max', str(height_max))
-        dfElt = ppElt.find('depthfilterparameters')
-        dfElt.set('threshold_near', str(threshold_near))
-        dfElt.set('threshold_far', str(threshold_far))

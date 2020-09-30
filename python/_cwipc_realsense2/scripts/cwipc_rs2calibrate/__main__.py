@@ -50,6 +50,9 @@ POINTS_VIDEOLAT = [
       
 def main():
     parser = argparse.ArgumentParser(description="Calibrate cwipc_realsense2 capturer")
+    def twofloats(s):
+        f1, f2 = s.split(',')
+        return float(f1), float(f2)
     parser.add_argument("--auto", action="store_true", help="Attempt to auto-install cameraconfig, if needed")
     parser.add_argument("--clean", action="store_true", help="Remove old cameraconfig.xml and calibrate from scratch")
     parser.add_argument("--reuse", action="store_true", help="Reuse existing cameraconfig.xml")
@@ -62,9 +65,9 @@ def main():
     parser.add_argument("--bbox", action="store", type=float, nargs=6, metavar="N", help="Set bounding box (in meters, xmin xmax etc) before fine calibration")
     parser.add_argument("--corr", action="store", type=float, metavar="D", help="Set fine calibration max corresponding point distance", default=0.01)
     parser.add_argument("--finspect", action="store_true", help="Visually inspect result of each fine calibration step")
-    parser.add_argument("--distance", type=float, action="store", metavar="D", help="Approximate distance between cameras and subject")
+    parser.add_argument("--depth", type=twofloats, action="store", metavar="MIN,MAX", help="Near and far distance in meters between camera(s) and subject")
+    parser.add_argument("--height", type=twofloats, action="store", metavar="MIN,MAX", help="Min and max Y value in meters, sets height filter for pointclouds")
     args = parser.parse_args()
-    distance = args.distance
     bbox = None
     if args.bbox:
         bbox = args.bbox
@@ -75,8 +78,11 @@ def main():
         refpoints = POINTS_V3
     if args.videolat:
         refpoints = POINTS_VIDEOLAT
-    prog = Calibrator(distance, refpoints)
-    
+    prog = Calibrator(refpoints)
+    if args.height:
+        prog.setheight(*args.height)
+    if args.depth:
+        prog.setdepth(*args.depth)
     if args.nograb:
         grabber = FileGrabber(args.nograb)
     else:
