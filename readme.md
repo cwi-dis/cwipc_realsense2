@@ -198,6 +198,7 @@ Action keys for alignment of camera clouds are:
 ## Expected input: *cameraconfig.xml*
 
 The configuration file *cameraconfig.xml* specifies system parameters type of processing, parameters for depth filtering and camera data.
+
 - System parameters are width, heigth and framerate for usb2 and usb3 connections and the number of output buffers (an int).
 - The processing that can be switched on/of is depthfiltering (for denoising depth values), backgroundremoval, greenscreenremoval and tiling (not available yet) this goes with parameter `tileresolution`. The parameter `cloudresolution` if not 0 can be used to reduce cloudsize.
 - Parameters for depth filtering.
@@ -258,3 +259,61 @@ Below is an example config file.
 
 By setting the environment variable `CWI_CAPTURE_FEATURE` to *dumpvideoframes* the capturer will write out the video frames as .pgn files named "videoframe\_*timestamp*\_*cameraindex*.png"
 
+## Calibrating alignment
+
+Aligning multiple cameras is a bit of a black art. Here is an attempt at a description, we assume 4 cameras in the rest of this text, but other numbers of cameras should work just fine. There is a program `cwipc_rs2calibrate` that helps with the procedure.
+
+- Mount your cameras in four corners, looking in. For capturing people mounting them at a 90 degree angle works best. Spacing the cameras about 3 meters apart seems to work. But again: other configurations should also work.
+- Add sync cables to the cameras.
+- Build a calibration cross. V3 is best, if you build V2 then don't supply the `--crossv3` argument to the commands below.
+- Create a working directory and go there:
+
+  ```
+  mkdir calibration
+  cd calibration
+  ```
+- Place the cross at the origin, upright, and with the "front arm" pointing in the "natural viewing direction".
+- Run the following command to grab the first set of 4 pointclouds, still completely unaligned:
+  
+  ```
+  cwipc_rs2calibrate --nocoarse --nofine --depth 0.5,3
+  ```
+  The numbers `0.5` and `3` are the minimum and maximum
+  distance from the camera at which points will be captured _for future captures_, in meters. 
+  You will be shown a preview of each camera capture, visually inspect these previews to ascertain you can select the points of the cross.
+- Optionally, if there is too much background, do another capture with the previously given depths (which should get rid of background, making it easier to select the points):
+
+  ```
+  cwipc_rs2calibrate --nocoarse --nofine --reuse
+  ```
+- Now you can do the coarse calibration. In this procedure, you select the colored points on the reference pointcloud, and then on each per-camera pointcloud you select the same points (in the same order). This step will create a per-camera rotation and translation matrix that will somewhat align each camera with the wanted coordinate system. You will be shown 10 pointclouds:
+	- Reference pointcloud. Here you select the colored balls or LEDs in the order you want.
+	- Captured pointcloud of camera 1. Here you select the balls/LEDs in the same order as for the reference pointcloud.
+	- Translated/rotated pointcloud from camera 1 to world coordinates. Inspect that it is as you wanted.
+	- The previous two steps are repeated for every camera.
+	- As the last step you are shown the fused pointcloud of all cameras.
+  
+  During the coarse calibration you can also set the minimum and maximum height of your future fused captured pointclouds (again in meters, with 0 being ground level). This allows you to remove floor and ceiling from your captures.
+  
+  Here is the command to run the coarse calibration step:
+  
+  ```
+  cwipc_rs2calibrate --reuse --nograb cwipc_rs2scalibrate_captured.ply --noinspect --nofine --crossv3 --height 0.05,2.2
+  ```
+- You can now use the viewer to look at live captures:
+
+  ```
+  cwipc_view
+  ```
+  You can use commands _01248_ to select a certain camera (tile), space to pause/resume, _w_ to save a pointcloud.
+- Now you can do fine calibration. Remove the cross and put a human being there. Use `cwipc_view` to inspect what the cameras see. Once you have a good picture use `w` to save a pointcloud, the file will  be named something like `pointcloud_123456789.ply`. You may want to inspect it after capturing with something like `meshlab`.
+- Do the fine calibration on the captured human. This should snap the 4 pointclouds together by doing very small rotations and translations. This is currently an interactive process where you select an algorithm and some parameters. After each run you get shown the results. Continue until you get something you like.
+
+	You should _not_ run this step in `bash` but use the Windows command prompt, at the moment, because in `bash` the interactivity will not work.
+	
+	```
+	cwipc_rs2calibrate --reuse --nograb pointcloud_123456789.ply --noinspect --nocoarse
+	```
+
+- You can always rerun the fine calibration. If you ever want to rerun the coarse calibration you should pass the `--clean` argument to the first step (the capturing) so the old calibration is ignored.
+- All information from the calibration process is contained in the `cameraconfig.xml` file. You can now copy this from your temporary calibration working directory to where you want to use it (and keep the calibration working directory with all its plyfiles for future reference).
