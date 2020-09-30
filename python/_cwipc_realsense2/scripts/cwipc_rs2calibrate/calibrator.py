@@ -394,7 +394,7 @@ class Calibrator:
         target_down = target.voxel_down_sample(radius_ds)
         
         print("2. Estimating normals")
-        radius_n = 0.02
+        radius_n = 0.03
         source_down.estimate_normals(open3d.geometry.KDTreeSearchParamHybrid(radius_n, max_nn=30))
         source_down = correct_normals(source_down,cameras[0])
         
@@ -463,6 +463,7 @@ class Calibrator:
         transformations = [] #list of ordered transformations
         for i in range(len(cam_order)):
             pcs.append(pointclouds[cam_order[i]].clean_background().get_o3d())
+            #print(len(pointclouds[cam_order[i]].get_o3d().points),"->",len(pcs[-1].points))
             transformations.append(np.identity(4))
         radius_ds = 0.005 #voxel downsampling radius
         tpc = pcs[0] #the target pc
@@ -530,17 +531,13 @@ def unit_vector(vector):
     return vector / np.linalg.norm(vector)
 
 def angle_between(v1, v2):
-    ''' Returns the angle in radians between vectors 'v1' and 'v2'::
+    ''' Returns the signed angle in radians between vectors 'v1' and 'v2'::
             >>> angle_between((1, 0, 0), (0, 1, 0))
             1.5707963267948966
-            >>> angle_between((1, 0, 0), (1, 0, 0))
-            0.0
-            >>> angle_between((1, 0, 0), (-1, 0, 0))
-            3.141592653589793
     '''
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
-    angle = np.arccos(np.dot(v1_u, v2_u)) 
+    angle = np.arccos(np.minimum(1, np.dot(v1_u, v2_u))) #np.minimum is used because sometimes dot product was out of the interval [-1,1] and was throwing errors.
     if(v1_u[0]*v2_u[2] - v1_u[2]*v2_u[0] > 0):
         angle = -angle;
     return angle
