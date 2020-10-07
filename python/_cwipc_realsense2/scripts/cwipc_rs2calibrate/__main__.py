@@ -46,7 +46,15 @@ POINTS_VIDEOLAT = [
     (-0.040, 1.200,  0.000, 127, 127, 127),    # bottomleft back row
     ( 0.040, 1.200,  0.000, 127, 127, 127),    # bottomright back row
 ]
-
+#
+# Rubiks cube
+RH = 0.028 # Half the width/height/depth of the cube
+POINTS_RUBIK = [
+    (-RH, 1+RH, 0, 127, 127, 127),  # topleft
+    (+RH, 1+RH, 0, 127, 127, 127),  # topright
+    (-RH, 1-RH, 0, 127, 127, 127),  # botleft
+    (+RH, 1-RH, 0, 127, 127, 127),  # botright
+]
       
 def main():
     parser = argparse.ArgumentParser(description="Calibrate cwipc_realsense2 capturer")
@@ -62,6 +70,7 @@ def main():
     parser.add_argument("--nofine", action="store_true", help="Skip fine (automatic) calibration step")
     parser.add_argument("--crossv3", action="store_true", help="For coarse calibration, use version 3 calibration cross (with the LEDs) in stead of the v2 rubber ball cross")
     parser.add_argument("--videolat", action="store_true", help="For coarse calibration, use videolat flattened pyramid in stead of the v2 rubber ball cross")
+    parser.add_argument("--rubik", action="store_true", help="For coarse calibration, use Rubiks cube, points on forward-looking face")
     parser.add_argument("--bbox", action="store", type=float, nargs=6, metavar="N", help="Set bounding box (in meters, xmin xmax etc) before fine calibration")
     parser.add_argument("--corr", action="store", type=float, metavar="D", help="Set fine calibration max corresponding point distance", default=0.01)
     parser.add_argument("--finspect", action="store_true", help="Visually inspect result of each fine calibration step")
@@ -78,6 +87,8 @@ def main():
         refpoints = POINTS_V3
     if args.videolat:
         refpoints = POINTS_VIDEOLAT
+    if args.rubik:
+        refpoints = POINTS_RUBIK
     prog = Calibrator(refpoints)
     if args.height:
         prog.setheight(*args.height)
