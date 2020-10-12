@@ -3,7 +3,7 @@ import os
 import cwipc
 
 from .pointcloud import Pointcloud
-from .cameraconfig import CameraConfig
+from .cameraconfig import CameraConfig, DEFAULT_FILENAME
 
 class FileGrabber:
     def __init__(self, plyfile):
@@ -15,7 +15,7 @@ class FileGrabber:
             print(f'File not found: {self.pcFilename}', file=sys.stderr)
             return False
         dirname = os.path.dirname(self.pcFilename)
-        confFilename = os.path.join(dirname, "cameraconfig.xml")
+        confFilename = os.path.join(dirname, DEFAULT_FILENAME)
         if not os.path.exists(confFilename):
             print(f'File not found: {confFilename}', file=sys.stderr)
             return False

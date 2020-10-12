@@ -6,7 +6,7 @@ import pprint
 import math
 
 from .pointcloud import Pointcloud
-from .cameraconfig import CameraConfig
+from .cameraconfig import CameraConfig, DEFAULT_FILENAME
 from .ui import UI
 DEBUG=False
 
@@ -53,11 +53,11 @@ class Calibrator:
         
     def open(self, grabber, clean, reuse):
         if clean:
-            if os.path.exists('cameraconfig.xml'):
-                os.unlink('cameraconfig.xml')
+            if os.path.exists(DEFAULT_FILENAME):
+                os.unlink(DEFAULT_FILENAME)
         elif reuse:
             pass
-        elif os.path.exists('cameraconfig.xml'):
+        elif os.path.exists(DEFAULT_FILENAME):
             self.ui.show_error('%s: cameraconfig.xml already exists, please supply --clean or --reuse argument' % sys.argv[0])
             sys.exit(1)
         self.grabber = grabber
@@ -65,7 +65,7 @@ class Calibrator:
         if not ok:
             return False
         self.cameraserial = self.grabber.getserials()
-        self.cameraconfig = CameraConfig('cameraconfig.xml', read=False)
+        self.cameraconfig = CameraConfig(DEFAULT_FILENAME, read=False)
         self.cameraconfig.copyFrom(self.grabber.cameraconfig)
         return True
 
