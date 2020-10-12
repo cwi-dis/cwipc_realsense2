@@ -55,7 +55,7 @@ MFCapture::MFCapture(const char *configFilename)
 	// First check that no other MFCapture is active within this process (trying to catch programmer errors)
 	numberOfCapturersActive++;
 	if (numberOfCapturersActive > 1) {
-		mf_log_warning("multiFrame: Warning: attempting to create capturer while one is already active.");
+		mf_log_warning("cwipc_realsense2: Warning: attempting to create capturer while one is already active.");
 	}
 
 	// Determine how many realsense cameras (not platform cameras like webcams) are connected
@@ -121,7 +121,7 @@ MFCapture::MFCapture(const char *configFilename)
 			if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 				realcams.push_back(cd);
 			else
-				mf_log_warning("multiFrame: Warning: camera " + cd.serial + " is not connected");
+				mf_log_warning("cwipc_realsense2: Warning: camera " + cd.serial + " is not connected");
 		}
 		// Reduce the active configuration to cameras that are connected
 		configuration.cameraData = realcams;
@@ -172,7 +172,7 @@ MFCapture::MFCapture(const char *configFilename)
 				}
 			}
 			if (!foundSensorSupportingSync) {
-                mf_log_warning(std::string("multiFrame: Warning: camera ") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) + " does not support inter-camera-sync");
+                mf_log_warning(std::string("cwipc_realsense2: Warning: camera ") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) + " does not support inter-camera-sync");
 			}
 		}
 	}
@@ -264,12 +264,12 @@ MFCapture::~MFCapture() {
 		stopped = true;
   		control_thread->join();
 	}
-	std::cerr << "cwipc_realsense2: multiFrame: stopped all cameras\n";
+	std::cerr << "cwipc_realsense2: stopped all cameras\n";
 	// Delete all cameras (which will stop their threads as well)
 	for (auto cam : cameras)
 		delete cam;
 	cameras.clear();
-	std::cerr << "cwipc_realsense2: multiFrame: deleted all cameras\n";
+	std::cerr << "cwipc_realsense2: deleted all cameras\n";
 	// Print some minimal statistics of this run
 	float deltaT = (stopTime - starttime) / 1000.0;
 	std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
@@ -369,11 +369,11 @@ void MFCapture::_control_thread_main()
         merge_views();
         if (mergedPC->size() > 0) {
 #ifdef CWIPC_DEBUG
-            std::cerr << "cwipc_realsense2: multiFrame: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
+            std::cerr << "cwipc_realsense2: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
 #endif
         } else {
 #ifdef CWIPC_DEBUG
-            std::cerr << "cwipc_realsense2: multiFrame: Warning: capturer got an empty pointcloud\n";
+            std::cerr << "cwipc_realsense2: Warning: capturer got an empty pointcloud\n";
 #endif
 #if 0
             // HACK to make sure the encoder does not get an empty pointcloud
@@ -433,7 +433,7 @@ void MFCapture::merge_views()
 
 	if (configuration.cloud_resolution > 0) {
 #ifdef CWIPC_DEBUG
-		std::cerr << "cwipc_realsense2: multiFrame: Points before reduction: " << mergedPC->size() << std::endl;
+		std::cerr << "cwipc_realsense2: Points before reduction: " << mergedPC->size() << std::endl;
 #endif
 		pcl::VoxelGrid<cwipc_pcl_point> grd;
 		grd.setInputCloud(mergedPC);
@@ -442,7 +442,7 @@ void MFCapture::merge_views()
 		grd.filter(*mergedPC);
 
 #ifdef CWIPC_DEBUG
-		std::cerr << "cwipc_realsense2: multiFrame: Points after reduction: " << mergedPC->size() << std::endl;
+		std::cerr << "cwipc_realsense2: Points after reduction: " << mergedPC->size() << std::endl;
 #endif
 	}
 }
@@ -451,7 +451,7 @@ MFCameraData& MFCapture::get_camera_data(std::string serial) {
 	for (int i = 0; i < configuration.cameraData.size(); i++)
 		if (configuration.cameraData[i].serial == serial)
 			return configuration.cameraData[i];
-	mf_log_warning("cwipc_realsense2: multiFrame: unknown camera " + serial);
+	mf_log_warning("cwipc_realsense2: unknown camera " + serial);
 	abort();
 }
 
