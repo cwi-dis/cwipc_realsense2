@@ -295,12 +295,6 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 				align_mode = true;
 			}
 		}
-        else if (key == 66) {    // key = "b": toggle background removal
-            if (multiframe->configuration.background_removal)
-                multiframe->configuration.background_removal = false;
-            else
-                multiframe->configuration.background_removal = true;
-        }
 		else if (key == 67) {	// key = "c": toggle still or life alignment
 			if (life_align)
 				life_align = false;

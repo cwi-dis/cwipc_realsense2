@@ -40,7 +40,6 @@ MFCamera::MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& config
 	camera_height(0),
 	camera_fps(0),
 	do_depth_filtering(configuration.depth_filtering),
-	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
 	do_height_filtering(configuration.height_min != configuration.height_max),
 	height_min(configuration.height_min),
@@ -67,7 +66,6 @@ MFCamera::MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camer
 	camera_height(high_speed_connection ? configuration.usb3_height : configuration.usb2_height),
 	camera_fps(high_speed_connection ? configuration.usb3_fps : configuration.usb2_fps),
 	do_depth_filtering(configuration.depth_filtering),
-	do_background_removal(configuration.background_removal),
 	do_greenscreen_removal(configuration.greenscreen_removal),
 	do_height_filtering(configuration.height_min != configuration.height_max),
 	height_min(configuration.height_min),
@@ -267,60 +265,7 @@ void MFCamera::_processing_thread_main()
 		// Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
 		camData.cloud->clear();
 		camData.cloud->reserve(points.size());
-#ifdef WITH_MANUAL_BACKGROUND_REMOVAL
-		// Note by Jack: this code is currently not correct, hasn't been updated
-		// for the texture coordinate mapping.
-		if (do_background_removal) {
 
-			// Set the background removal window
-			if (camData.background.z > 0.0) {
-				maxz = camData.background.z;
-				minz = 0.0;
-				if (camData.background.x != 0.0) {
-					minx = camData.background.x;
-				}
-				else {
-					for (int i = 0; i < points.size(); i++) {
-						double minz = 100;
-						if (vertices[i].z != 0 && minz > vertices[i].z) {
-							minz = vertices[i].z;
-							minx = vertices[i].x;
-						}
-					}
-				}
-			}
-			else {
-				minz = 100.0;
-				for (int i = 0; i < points.size(); i++) {
-					if (vertices[i].z != 0 && minz > vertices[i].z) {
-						minz = vertices[i].z;
-						minx = vertices[i].x;
-					}
-				}
-				maxz = 0.8f + minz;
-			}
-			// Make PointCloud
-			for (int i = 0; i < points.size(); i++) {
-				double x = minx - vertices[i].x; x *= x;
-				double z = vertices[i].z;
-				if (minz < z && z < maxz - x) { // Simple background removal, horizontally parabolic, vertically straight.
-					cwipc_pcl_point pt;
-					pt.x = vertices[i].x;
-					pt.y = -vertices[i].y;
-					pt.z = -z;
-					if (do_height_filtering && ( pt.y < height_min || pt.y > height_max)) continue;
-					int pi = i * 3;
-					pt.r = texture_data[pi];
-					pt.g = texture_data[pi + 1];
-					pt.b = texture_data[pi + 2];
-					pt.a = camera_label;
-					if (!do_greenscreen_removal || mf_noChromaRemoval(&pt)) // chromakey removal
-						camData.cloud->push_back(pt);
-				}
-			}
-		}
-		else
-#endif // WITH_MANUAL_BACKGROUND_REMOVAL
 		{
 			// Make PointCloud
 			for (int i = 0; i < points.size(); i++) {

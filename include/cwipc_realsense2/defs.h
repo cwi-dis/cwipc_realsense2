@@ -56,7 +56,6 @@ struct MFCaptureConfig {
 	int usb2_fps = 15;
 
 	// processing data
-	bool background_removal = false;      // If true reduces pointcloud to forground object
 	bool greenscreen_removal = false;	  // If true include greenscreen removal
 	bool depth_filtering = false;         // If true perform post filtering on depth frame
 	double height_min = 0.0;			  // If height_min != height_max perform height filtering
