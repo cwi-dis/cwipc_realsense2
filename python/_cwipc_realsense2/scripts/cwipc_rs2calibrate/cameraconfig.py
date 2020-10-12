@@ -1,6 +1,8 @@
 import copy
 import xml.etree.ElementTree as ET
 
+DEFAULT_FILENAME="cameraconfig.xml"
+
 CONFIGFILE="""<?xml version="1.0" ?>
 <file>
     <CameraConfig>
