@@ -1,5 +1,5 @@
-#ifndef cwipc_realsense_MFCamera_hpp
-#define cwipc_realsense_MFCamera_hpp
+#ifndef cwipc_realsense_RS2Camera_hpp
+#define cwipc_realsense_RS2Camera_hpp
 #pragma once
 
 #include <thread>
@@ -10,15 +10,15 @@
 
 #include "defs.h"
 
-class MFCamera {
+class RS2Camera {
 private:
-	MFCamera(const MFCamera&);	// Disable copy constructor
-	MFCamera& operator=(const MFCamera&);	// Disable assignment
+	RS2Camera(const RS2Camera&);	// Disable copy constructor
+	RS2Camera& operator=(const RS2Camera&);	// Disable assignment
 protected:
-	MFCamera(int _camera_index, rs2::context& ctx, MFCaptureConfig& configuration, MFCameraData& _camData);
+	RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& configuration, RS2CameraData& _camData);
 public:
-	MFCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, std::string _usb="0");
-	virtual ~MFCamera();
+	RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraData& _camData, std::string _usb="0");
+	virtual ~RS2Camera();
 
 	void start();
 	virtual void start_capturer();
@@ -29,7 +29,7 @@ public:
 	void dump_color_frame(const std::string& filename);
 	uint64_t get_capture_timestamp();
 public:
-	// This is public because MFCapture needs it when dumping the color images
+	// This is public because RS2Capture needs it when dumping the color images
 	rs2::frameset current_frameset;
 	float pointSize;
 public:
@@ -50,8 +50,8 @@ protected:
 	rs2::frame_queue captured_frame_queue;
 	void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
 private:
-	MFCameraData& camData;
-	MFCameraSettings& camSettings;
+	RS2CameraData& camData;
+	RS2CameraSettings& camSettings;
 	bool high_speed_connection;
 
 	int camera_width;
@@ -84,4 +84,4 @@ private:
 	void _init_filters();
 
 };
-#endif // cwipc_realsense_MFCamera_hpp
+#endif // cwipc_realsense_RS2Camera_hpp

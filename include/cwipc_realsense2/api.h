@@ -81,7 +81,7 @@ _CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configF
  * cameras.
  */
 
-_CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(MFOfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion);
+_CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(RS2OfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion);
 
 /** \brief Feed image data into an offline pointcloud constructor.
  * \param obj The cwipc_offline object to feed data to.

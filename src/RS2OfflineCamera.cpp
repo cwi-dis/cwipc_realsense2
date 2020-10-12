@@ -16,10 +16,10 @@
 
 #include "cwipc_realsense2/defs.h"
 #include "cwipc_realsense2/utils.h"
-#include "cwipc_realsense2/MFOfflineCamera.hpp"
+#include "cwipc_realsense2/RS2OfflineCamera.hpp"
 
-MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, MFOfflineSettings& settings)
-:	MFCamera(_camera_index, ctx, configuration, _camData),
+RS2OfflineCamera::RS2OfflineCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraData& _camData, RS2OfflineSettings& settings)
+:	RS2Camera(_camera_index, ctx, configuration, _camData),
 	depth_width(settings.depth.width),
 	depth_height(settings.depth.height),
 	depth_bpp(settings.depth.bpp),
@@ -105,21 +105,21 @@ MFOfflineCamera::MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configurati
 	depth_stream.register_extrinsics_to(color_stream, depth_to_color_extrinsics);
 }
 
-MFOfflineCamera::~MFOfflineCamera()
+RS2OfflineCamera::~RS2OfflineCamera()
 {
 }
 
-void MFOfflineCamera::_start_capture_thread()
+void RS2OfflineCamera::_start_capture_thread()
 {
 	// No capture thread needed for offline processing
 }
 
-void MFOfflineCamera::_capture_thread_main()
+void RS2OfflineCamera::_capture_thread_main()
 {
 	assert(0);
 }
 
-bool MFOfflineCamera::feed_image_data(int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
+bool RS2OfflineCamera::feed_image_data(int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
 {
 	// frameNum is ignored, because sometimes we have to feed a frame multiple times
 
@@ -156,7 +156,7 @@ bool MFOfflineCamera::feed_image_data(int frameNum, void *colorBuffer, size_t co
 		}
 	}
 #ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "MFOfflineCamera: fed camera " << serial << " framenum " << frameNum << " as " << feedFrameNum << std::endl;
+	std::cerr << "RS2OfflineCamera: fed camera " << serial << " framenum " << frameNum << " as " << feedFrameNum << std::endl;
 #endif
 	return true;
 }

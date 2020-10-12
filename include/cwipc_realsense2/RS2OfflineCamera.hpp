@@ -1,5 +1,5 @@
-#ifndef cwipc_realsense_MFOfflineCamera_hpp
-#define cwipc_realsense_MFOfflineCamera_hpp
+#ifndef cwipc_realsense_RS2OfflineCamera_hpp
+#define cwipc_realsense_RS2OfflineCamera_hpp
 #pragma once
 
 #include <thread>
@@ -10,15 +10,15 @@
 #include <librealsense2/hpp/rs_internal.hpp>
 
 #include "defs.h"
-#include "cwipc_realsense2/MFCamera.hpp"
+#include "cwipc_realsense2/RS2Camera.hpp"
 
-class MFOfflineCamera : public MFCamera {
+class RS2OfflineCamera : public RS2Camera {
 private:
-	MFOfflineCamera(const MFOfflineCamera&);	// Disable copy constructor
-	MFOfflineCamera& operator=(const MFOfflineCamera&);	// Disable assignment
+	RS2OfflineCamera(const RS2OfflineCamera&);	// Disable copy constructor
+	RS2OfflineCamera& operator=(const RS2OfflineCamera&);	// Disable assignment
 public:
-	MFOfflineCamera(rs2::context& ctx, MFCaptureConfig& configuration, int _camera_index, MFCameraData& _camData, MFOfflineSettings& settings);
-	~MFOfflineCamera();
+	RS2OfflineCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraData& _camData, RS2OfflineSettings& settings);
+	~RS2OfflineCamera();
 
 	void _start_capture_thread();
 	void _capture_thread_main();
@@ -38,4 +38,4 @@ private:
 	rs2::syncer sync;
 	int feedFrameNum;
 };
-#endif // cwipc_realsense_MFOfflineCamera_hpp
+#endif // cwipc_realsense_RS2OfflineCamera_hpp

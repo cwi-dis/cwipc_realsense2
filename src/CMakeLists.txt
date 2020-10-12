@@ -12,10 +12,10 @@ add_library(cwipc_realsense2
 	SHARED 
 	cwipc_realsense2.cpp 
 	multiFrame.cpp 
-	MFCapture.cpp 
-	MFCamera.cpp 
-	MFOffline.cpp 
-	MFOfflineCamera.cpp 
+	RS2Capture.cpp 
+	RS2Camera.cpp 
+	RS2Offline.cpp 
+	RS2OfflineCamera.cpp 
 	utils.cpp 
 	cwipc_pcl_additions.cpp 
 	${TINY_SRC}
@@ -27,10 +27,10 @@ target_sources(cwipc_realsense2
 	"../include/cwipc_realsense2/offlinedefs.h"
 	"../include/cwipc_realsense2/utils.h"
 	"../include/cwipc_realsense2/multiFrame.hpp"
-	"../include/cwipc_realsense2/MFCapture.hpp"
-	"../include/cwipc_realsense2/MFCamera.hpp"
-	"../include/cwipc_realsense2/MFOffline.hpp"
-	"../include/cwipc_realsense2/MFOfflineCamera.hpp"
+	"../include/cwipc_realsense2/RS2Capture.hpp"
+	"../include/cwipc_realsense2/RS2Camera.hpp"
+	"../include/cwipc_realsense2/RS2Offline.hpp"
+	"../include/cwipc_realsense2/RS2OfflineCamera.hpp"
 	"../include/cwipc_realsense2/window_util.hpp"
 	"../include/cwipc_realsense2/stb_image_write.h"
 	"../include/cwipc_realsense2/api.h"

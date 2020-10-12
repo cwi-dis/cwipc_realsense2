@@ -38,10 +38,10 @@
 
 using namespace std::chrono;
 #endif
-#include "cwipc_realsense2/MFCapture.hpp"
-#include "cwipc_realsense2/MFCamera.hpp"
-#include "cwipc_realsense2/MFOffline.hpp"
-#include "cwipc_realsense2/MFOfflineCamera.hpp"
+#include "cwipc_realsense2/RS2Capture.hpp"
+#include "cwipc_realsense2/RS2Camera.hpp"
+#include "cwipc_realsense2/RS2Offline.hpp"
+#include "cwipc_realsense2/RS2OfflineCamera.hpp"
 
-bool MFCapture_versionCheck(char **errorMessage);
+bool cwipc_rs2_versionCheck(char **errorMessage);
 #endif /* cwipw_realsense_multiFrame_hpp */

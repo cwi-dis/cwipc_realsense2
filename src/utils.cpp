@@ -18,27 +18,27 @@ typedef struct HsvColor
 	unsigned char v;
 } HsvColor;
 
-static std::string mf_most_recent_warning;
-char **mf_warning_store;
+static std::string cwipc_rs2_most_recent_warning;
+char **cwipc_rs2_warning_store;
 
-void mf_log_warning(std::string warning)
+void cwipc_rs2_log_warning(std::string warning)
 {
     std::cerr << "cwipc_realsense2: " << warning << std::endl;
-    if (mf_warning_store) {
-        mf_most_recent_warning = warning;
-        *mf_warning_store = (char *)mf_most_recent_warning.c_str();
+    if (cwipc_rs2_warning_store) {
+        cwipc_rs2_most_recent_warning = warning;
+        *cwipc_rs2_warning_store = (char *)cwipc_rs2_most_recent_warning.c_str();
     }
 }
 
 
 // read and restore the camera transformation setting as stored in the configuration document
-bool mf_file2config(const char* filename, MFCaptureConfig* config)
+bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 {
 	TiXmlDocument doc(filename);
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
-        mf_log_warning(std::string("multiFrame: Warning: Failed to load configfile ") + filename + ", using default matrices");
+        cwipc_rs2_log_warning(std::string("multiFrame: Warning: Failed to load configfile ") + filename + ", using default matrices");
 		return false;
 	}
 
@@ -97,7 +97,7 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 	while (cameraElement)
 	{
 		const char * serial = cameraElement->Attribute("serial");
-		MFCameraData* cd;
+		RS2CameraData* cd;
 
 		int i = 0;
 		while (i < config->cameraData.size()) {
@@ -112,7 +112,7 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 			if (!allnewcameras)
 				loadOkay = false;
 
-			cd = new MFCameraData();
+			cd = new RS2CameraData();
 			boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
 			boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
 			intrinsicTrafo->setIdentity();
@@ -179,13 +179,13 @@ bool mf_file2config(const char* filename, MFCaptureConfig* config)
 		loadOkay = false;
 
     if (!loadOkay) {
-        mf_log_warning("multiFrame: available hardware camera configuration does not match configuration file");
+        cwipc_rs2_log_warning("multiFrame: available hardware camera configuration does not match configuration file");
     }
 	return loadOkay;
 }
 
 // store the current camera transformation setting into a xml document
-void mf_config2file(const char* filename, MFCaptureConfig* config)
+void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 {
 	TiXmlDocument doc;
 	doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
@@ -246,7 +246,7 @@ void mf_config2file(const char* filename, MFCaptureConfig* config)
 	postprocessing->LinkEndChild(parameters);
 
 	cameraconfig->LinkEndChild(new TiXmlComment(" backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane "));
-	for (MFCameraData cd : config->cameraData) {
+	for (RS2CameraData cd : config->cameraData) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
 		cam->SetDoubleAttribute("backgroundx", cd.background.x);
@@ -374,7 +374,7 @@ HsvColor rgbToHsv(cwipc_pcl_point* pnt)
 	return hsv;
 }
 
-bool mf_noChromaRemoval(cwipc_pcl_point* p)
+bool cwipc_rs2_noChromaRemoval(cwipc_pcl_point* p)
 {
 	HsvColor hsv = rgbToHsv(p);
 

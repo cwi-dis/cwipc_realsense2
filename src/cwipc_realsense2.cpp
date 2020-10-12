@@ -64,15 +64,15 @@ cwipc_vector* cross_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result
 class cwipc_source_realsense2_impl : public cwipc_tiledsource {
 friend class cwipc_source_rs2offline_impl;
 protected:
-    MFCapture *m_grabber;
-    cwipc_source_realsense2_impl(MFCapture *obj)
+    RS2Capture *m_grabber;
+    cwipc_source_realsense2_impl(RS2Capture *obj)
     : m_grabber(obj)
     {}
 public:
     cwipc_source_realsense2_impl(const char *configFilename=NULL)
 		: m_grabber(NULL)
 	{ 
-		m_grabber = new MFCapture(configFilename); 
+		m_grabber = new RS2Capture(configFilename); 
 	}
 
     ~cwipc_source_realsense2_impl()
@@ -186,11 +186,11 @@ public:
 class cwipc_source_rs2offline_impl : public cwipc_offline
 {
 protected:
-	MFOffline *m_offline;
+	RS2Offline *m_offline;
 	cwipc_source_realsense2_impl *m_source;
 public:
-    cwipc_source_rs2offline_impl(MFOfflineSettings& settings, const char *configFilename=NULL)
-	:	m_offline(new MFOffline(settings, configFilename)),
+    cwipc_source_rs2offline_impl(RS2OfflineSettings& settings, const char *configFilename=NULL)
+	:	m_offline(new RS2Offline(settings, configFilename)),
 		m_source(new cwipc_source_realsense2_impl(m_offline))
 	{
 	}
@@ -231,10 +231,10 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 		}
 		return NULL;
 	}
-	if (!MFCapture_versionCheck(errorMessage)) return NULL;
-    mf_warning_store = errorMessage;
+	if (!cwipc_rs2_versionCheck(errorMessage)) return NULL;
+    cwipc_rs2_warning_store = errorMessage;
 	cwipc_source_realsense2_impl *rv = new cwipc_source_realsense2_impl(configFilename);
-    mf_warning_store = NULL;
+    cwipc_rs2_warning_store = NULL;
     // If the grabber found cameras everything is fine
     if (rv && rv->is_valid()) return rv;
     delete rv;
@@ -244,7 +244,7 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
     return NULL;
 }
 
-cwipc_offline* cwipc_rs2offline(MFOfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion)
+cwipc_offline* cwipc_rs2offline(RS2OfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion)
 {
 	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
 		if (errorMessage) {
@@ -252,7 +252,7 @@ cwipc_offline* cwipc_rs2offline(MFOfflineSettings settings, const char *configFi
 		}
 		return NULL;
 	}
-	if (!MFCapture_versionCheck(errorMessage)) return NULL;
+	if (!cwipc_rs2_versionCheck(errorMessage)) return NULL;
 	return new cwipc_source_rs2offline_impl(settings, configFilename);
 }
 

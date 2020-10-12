@@ -17,18 +17,18 @@
 
 #include "cwipc_realsense2/defs.h"
 #include "cwipc_realsense2/utils.h"
-#include "cwipc_realsense2/MFOffline.hpp"
-#include "cwipc_realsense2/MFOfflineCamera.hpp"
+#include "cwipc_realsense2/RS2Offline.hpp"
+#include "cwipc_realsense2/RS2OfflineCamera.hpp"
 
-MFOffline::MFOffline(MFOfflineSettings& settings, const char *configFilename)
-:	MFCapture(1)
+RS2Offline::RS2Offline(RS2OfflineSettings& settings, const char *configFilename)
+:	RS2Capture(1)
 {
-	bool ok = mf_file2config(configFilename, &configuration);
+	bool ok = cwipc_rs2_file2config(configFilename, &configuration);
 	assert(ok);
 	int camera_index = 0;
-	for (MFCameraData& cd : configuration.cameraData) {
+	for (RS2CameraData& cd : configuration.cameraData) {
 		cd.cloud = new_cwipc_pcl_pointcloud();
-		auto cam = new MFOfflineCamera(ctx, configuration, camera_index, cd, settings);
+		auto cam = new RS2OfflineCamera(ctx, configuration, camera_index, cd, settings);
 		feeders.push_back(cam);
 		cameras.push_back(cam);
 		camera_index++;
@@ -36,14 +36,14 @@ MFOffline::MFOffline(MFOfflineSettings& settings, const char *configFilename)
 	for (auto cam: cameras)
 		cam->start_capturer();
 	stopped = false;
-	control_thread = new std::thread(&MFOffline::_control_thread_main, this);
+	control_thread = new std::thread(&RS2Offline::_control_thread_main, this);
 }
 
-MFOffline::~MFOffline() {
+RS2Offline::~RS2Offline() {
 
 }
 
-bool MFOffline::feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
+bool RS2Offline::feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
 {
 	if (camNum < 0 || camNum > feeders.size()) return false;
 	auto cam = feeders[camNum];

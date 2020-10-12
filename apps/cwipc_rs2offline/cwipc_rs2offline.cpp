@@ -12,7 +12,7 @@
 int main(int argc, char** argv)
 {
     bool ok;
-    MFOfflineSettings settings = {
+    RS2OfflineSettings settings = {
 		{
 			640,
 			480,

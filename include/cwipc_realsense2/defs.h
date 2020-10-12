@@ -20,7 +20,7 @@
 #include "cwipc_util/api_pcl.h"
 #include "offlinedefs.h"
 
-struct MFCameraSettings {
+struct RS2CameraSettings {
 	bool do_decimation = false;
 	int decimation_value = 1;             // int value between 2 and 8
 	bool do_threshold = true;
@@ -37,7 +37,7 @@ struct MFCameraSettings {
 	int temporal_percistency = 3;         // val between 0 and 8
 };
 
-struct MFCameraData {
+struct RS2CameraData {
 	std::string serial;		// Serial number of this camera
 	boost::shared_ptr<Eigen::Affine3d> trafo;	//!< Transformation matrix from camera coorindates to world coordinates
 	boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo;	//!< offline only: matrix to convert color to depth coordinates
@@ -46,7 +46,7 @@ struct MFCameraData {
 	cwipc_pcl_pointcloud cloud;	//!< Pointcloud most recently captured
 };
 
-struct MFCaptureConfig {
+struct RS2CaptureConfig {
 	// system data
 	int usb3_width = 1280;
 	int usb3_height = 720;
@@ -69,10 +69,10 @@ struct MFCaptureConfig {
 	// special features
 	std::string cwi_special_feature = ""; // Specifier for temporary development specific feature
 
-	MFCameraSettings default_camera_settings;
+	RS2CameraSettings default_camera_settings;
 	// realsense specific post processing filtering
 
 	// per camera data
-	std::vector<MFCameraData> cameraData;
+	std::vector<RS2CameraData> cameraData;
 };
 #endif /* cwipc_realsense2_defs_h */

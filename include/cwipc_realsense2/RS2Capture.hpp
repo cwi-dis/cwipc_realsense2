@@ -1,5 +1,5 @@
-#ifndef cwipc_realsense_MFCapture_hpp
-#define cwipc_realsense_MFCapture_hpp
+#ifndef cwipc_realsense_RS2Capture_hpp
+#define cwipc_realsense_RS2Capture_hpp
 #pragma once
 
 #include <thread>
@@ -18,31 +18,31 @@
 #endif
 #endif
 
-class MFCamera;
+class RS2Camera;
 
-class CWIPC_DLL_ENTRY MFCapture {
+class CWIPC_DLL_ENTRY RS2Capture {
 protected:
-	MFCapture(int dummy);
+	RS2Capture(int dummy);
 public:
 	// methods
-	MFCapture(const char *configFilename=NULL);
-	virtual ~MFCapture();
+	RS2Capture(const char *configFilename=NULL);
+	virtual ~RS2Capture();
 	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
 	bool pointcloud_available(bool wait);					  // Returns true if a pointcloud is available
 	cwipc_pcl_pointcloud get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
-	MFCameraData& get_camera_data(std::string serial);
-	MFCamera* get_camera(std::string serial);
+	RS2CameraData& get_camera_data(std::string serial);
+	RS2Camera* get_camera(std::string serial);
 	float get_pointSize();
 
 	// variables
-    MFCaptureConfig configuration;
+    RS2CaptureConfig configuration;
 	uint64_t starttime;
 	int numberOfPCsProduced;
     bool no_cameras;                        // True of no cameras attached
 protected:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
 	virtual void _create_cameras(rs2::device_list devs);
-	std::vector<MFCamera*> cameras;                // Storage of camera specifics
+	std::vector<RS2Camera*> cameras;                // Storage of camera specifics
 	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
 	bool stopped;
 	std::thread *control_thread;
@@ -57,4 +57,4 @@ private:
 	bool mergedPC_want_new;                                   // Set to true to request a new pointcloud
 	std::condition_variable mergedPC_want_new_cv;             // Condition variable for signalling we want a new pointcloud
 };
-#endif // cwipc_realsense_MFCapture_hpp
+#endif // cwipc_realsense_RS2Capture_hpp

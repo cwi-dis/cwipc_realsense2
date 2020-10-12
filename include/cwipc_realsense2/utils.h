@@ -19,16 +19,16 @@
 #include <cstdint>
 #include "cwipc_util/api_pcl.h"
 
-struct MFCaptureConfig;
+struct RS2CaptureConfig;
 
-_CWIPC_REALSENSE2_EXPORT void mf_log_warning(std::string warning);
-_CWIPC_REALSENSE2_EXPORT extern char **mf_warning_store;
+_CWIPC_REALSENSE2_EXPORT void cwipc_rs2_log_warning(std::string warning);
+_CWIPC_REALSENSE2_EXPORT extern char **cwipc_rs2_warning_store;
 
-_CWIPC_REALSENSE2_EXPORT bool mf_file2config(const char* filename, MFCaptureConfig* config);
+_CWIPC_REALSENSE2_EXPORT bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config);
 
 // store the current camera transformation setting into a xml document
-_CWIPC_REALSENSE2_EXPORT void mf_config2file(const char* filename, MFCaptureConfig* config);
+_CWIPC_REALSENSE2_EXPORT void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config);
 
-_CWIPC_REALSENSE2_EXPORT bool mf_noChromaRemoval(cwipc_pcl_point* p);
+_CWIPC_REALSENSE2_EXPORT bool cwipc_rs2_noChromaRemoval(cwipc_pcl_point* p);
 
 #endif /* cwipw_realsense_utils_h */

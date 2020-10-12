@@ -7,7 +7,7 @@
 #ifndef cwipc_realsense2_offlinedefs_h
 #define cwipc_realsense2_offlinedefs_h
 
-struct MFOfflineCameraSettings {
+struct RS2OfflineCameraSettings {
 	int width;
 	int height;
 	int bpp;
@@ -15,9 +15,9 @@ struct MFOfflineCameraSettings {
 	int format;
 };
 
-struct MFOfflineSettings {
-	struct MFOfflineCameraSettings color;
-	struct MFOfflineCameraSettings depth;
+struct RS2OfflineSettings {
+	struct RS2OfflineCameraSettings color;
+	struct RS2OfflineCameraSettings depth;
 };
 
 #endif /* cwipc_realsense2_offlinedefs_h */

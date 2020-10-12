@@ -23,7 +23,7 @@ int aligncamera = -1;
 cwipc_pcl_pointcloud mergeded_pc;
 Eigen::Vector4f mergedcenter;	// Needed to automatically center the merged cloud
 Eigen::Vector4f cloudcenter;	// Needed to be able to rotate around the cloud's centre of mass
-MFCaptureConfig configCopy;			// Still copy of the configuration data of multiFrame
+RS2CaptureConfig configCopy;			// Still copy of the configuration data of multiFrame
 std::string ext(".ply");
 
 void printhelp() {
@@ -73,7 +73,7 @@ void cloud2file(cwipc_pcl_pointcloud pntcld, std::string filename)
 	myfile.close();
 }
 
-void makeFreezeCopy(MFCapture* multiframe)
+void makeFreezeCopy(RS2Capture* multiframe)
 {
 	configCopy = multiframe->configuration;
 }
@@ -83,7 +83,7 @@ bool load_data() {
 
 	configCopy.cameraData.clear();
 
-	if (!mf_file2config("cameraconfig.xml", &configCopy))
+	if (!cwipc_rs2_file2config("cameraconfig.xml", &configCopy))
 		return false;
 
 	for (int i = 0; i < configCopy.cameraData.size(); i++) {
@@ -95,10 +95,10 @@ bool load_data() {
 	return true;
 }
 
-void draw_background_planes(window_util* app, MFCapture* multiframe) {
+void draw_background_planes(window_util* app, RS2Capture* multiframe) {
 	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z(), 0);
 	for (int i = 0; i < multiframe->configuration.cameraData.size(); i++) {
-		MFCamera* rsd = multiframe->get_camera(multiframe->configuration.cameraData[i].serial);
+		RS2Camera* rsd = multiframe->get_camera(multiframe->configuration.cameraData[i].serial);
 		cwipc_pcl_pointcloud bgcld(new_cwipc_pcl_pointcloud());
 
 		// generate raster on backgrounf=d
@@ -149,7 +149,7 @@ void draw_background_planes(window_util* app, MFCapture* multiframe) {
 }
 
 // Handle the OpenGL setup needed to display all pointclouds
-void draw_pointclouds(window_util* app, MFCapture* multiframe)
+void draw_pointclouds(window_util* app, RS2Capture* multiframe)
 {
 	app->prepare_gl(-mergedcenter.x(), -mergedcenter.y(), -mergedcenter.z(), 0);
 	// draw the pointcloud(s)
@@ -218,7 +218,7 @@ void draw_pointclouds(window_util* app, MFCapture* multiframe)
 }
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
-void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
+void register_glfw_callbacks(window_util* app, RS2Capture* multiframe)
 {
 	app->on_left_mouse = [&](bool pressed) {
 		app->app_state()->ml = pressed;
@@ -344,7 +344,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 			}
 		}
 		else if (key == 81) {	// key = "q": Quit program
-            multiframe->~MFCapture();
+            multiframe->~RS2Capture();
 			exit(0);
 		}
 		else if (key == 82) {	// key = "r": Rotate
@@ -352,7 +352,7 @@ void register_glfw_callbacks(window_util* app, MFCapture* multiframe)
 		}
 		else if (key == 83) {	// key = "s": Save config and snapshots to file
 			// saving transformations
-			mf_config2file("cameraconfig.xml", &configCopy);
+			cwipc_rs2_config2file("cameraconfig.xml", &configCopy);
 
 			if (!loaded_mode) {	// save the clouds themselves
 				if (align_mode)
@@ -433,7 +433,7 @@ int main(int argc, char * argv[]) try
 	// Create a simple OpenGL window for rendering:
 	window_util app(2560, 1440, "RealSense Multicamera Capturing");
 	// Construct a capturing object
-	MFCapture multiframe;
+	RS2Capture multiframe;
 
 	// register callbacks to allow manipulation of the PointCloud
     register_glfw_callbacks(&app, &multiframe);

@@ -1,5 +1,5 @@
 //
-//  multiFrame.cpp
+//  RS2Capture.cpp
 //
 //  Created by Fons Kuijk on 23-04-18
 //
@@ -28,14 +28,14 @@
 
 #include "cwipc_realsense2/defs.h"
 #include "cwipc_realsense2/utils.h"
-#include "cwipc_realsense2/MFCapture.hpp"
-#include "cwipc_realsense2/MFCamera.hpp"
+#include "cwipc_realsense2/RS2Capture.hpp"
+#include "cwipc_realsense2/RS2Camera.hpp"
 
-// Static variable used to print a warning message when we re-create an MFCapture
+// Static variable used to print a warning message when we re-create an RS2Capture
 // if there is another one open.
 static int numberOfCapturersActive = 0;
 
-MFCapture::MFCapture(int dummy)
+RS2Capture::RS2Capture(int dummy)
 :	numberOfPCsProduced(0),
     no_cameras(true),
 	mergedPC_is_fresh(false),
@@ -46,16 +46,16 @@ MFCapture::MFCapture(int dummy)
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-MFCapture::MFCapture(const char *configFilename)
+RS2Capture::RS2Capture(const char *configFilename)
 :	numberOfPCsProduced(0),
     no_cameras(false),
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)
 {
-	// First check that no other MFCapture is active within this process (trying to catch programmer errors)
+	// First check that no other RS2Capture is active within this process (trying to catch programmer errors)
 	numberOfCapturersActive++;
 	if (numberOfCapturersActive > 1) {
-		mf_log_warning("cwipc_realsense2: Warning: attempting to create capturer while one is already active.");
+		cwipc_rs2_log_warning("cwipc_realsense2: Warning: attempting to create capturer while one is already active.");
 	}
 
 	// Determine how many realsense cameras (not platform cameras like webcams) are connected
@@ -73,17 +73,17 @@ MFCapture::MFCapture(const char *configFilename)
 		return;
 	}
 	//
-	// Enumerate over all connected cameras, create their default MFCameraData structures
+	// Enumerate over all connected cameras, create their default RS2CameraData structures
 	// and set any hardware options (for example for sync).
-	// We will create the actual MFCamera objects later, after we have read the configuration file.
+	// We will create the actual RS2Camera objects later, after we have read the configuration file.
 	//
 	for (auto dev : devs) {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) continue;
 		// Found a realsense camera. Create a default data entry for it.
 #ifdef CWIPC_DEBUG
-		std::cout << "MFCapture: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+		std::cout << "cwipc_realsense2: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 #endif
-		MFCameraData cd;
+		RS2CameraData cd;
 		cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 		boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 		default_trafo->setIdentity();
@@ -103,11 +103,11 @@ MFCapture::MFCapture(const char *configFilename)
 	if (configFilename == NULL) {
 		configFilename = "cameraconfig.xml";
 	}
-	if (!mf_file2config(configFilename, &configuration)) {
+	if (!cwipc_rs2_file2config(configFilename, &configuration)) {
 
 		// the configuration file did not fully match the current situation so we have to update the admin
 		std::vector<std::string> serials;
-		std::vector<MFCameraData> realcams;
+		std::vector<RS2CameraData> realcams;
 
 		// collect serial numbers of all connected cameras
 		for (auto dev : devs) {
@@ -117,11 +117,11 @@ MFCapture::MFCapture(const char *configFilename)
 		}
 
 		// collect all camera's in the config that are connected
-		for (MFCameraData cd : configuration.cameraData) {
+		for (RS2CameraData cd : configuration.cameraData) {
 			if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 				realcams.push_back(cd);
 			else
-				mf_log_warning("cwipc_realsense2: Warning: camera " + cd.serial + " is not connected");
+				cwipc_rs2_log_warning("cwipc_realsense2: Warning: camera " + cd.serial + " is not connected");
 		}
 		// Reduce the active configuration to cameras that are connected
 		configuration.cameraData = realcams;
@@ -172,7 +172,7 @@ MFCapture::MFCapture(const char *configFilename)
 				}
 			}
 			if (!foundSensorSupportingSync) {
-                mf_log_warning(std::string("cwipc_realsense2: Warning: camera ") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) + " does not support inter-camera-sync");
+                cwipc_rs2_log_warning(std::string("cwipc_realsense2: Warning: camera ") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) + " does not support inter-camera-sync");
 			}
 		}
 	}
@@ -211,7 +211,7 @@ MFCapture::MFCapture(const char *configFilename)
 		for (auto cam: cameras)
 			cam->start();
 	} catch(const rs2::error& e) {
-		mf_log_warning("exception while starting camera: " + e.get_failed_function() + ": " + e.what());
+		cwipc_rs2_log_warning("exception while starting camera: " + e.get_failed_function() + ": " + e.what());
 		throw;
 	}
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -224,28 +224,28 @@ MFCapture::MFCapture(const char *configFilename)
 	// start our run thread (which will drive the capturers and merge the pointclouds)
 	//
 	stopped = false;
-	control_thread = new std::thread(&MFCapture::_control_thread_main, this);
+	control_thread = new std::thread(&RS2Capture::_control_thread_main, this);
 }
 
-void MFCapture::_create_cameras(rs2::device_list devs) {
+void RS2Capture::_create_cameras(rs2::device_list devs) {
 	const std::string platform_camera_name = "Platform Camera";
 	for (auto dev : devs) {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) continue;
 #ifdef CWIPC_DEBUG
-		std::cout << "MFCapture: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+		std::cout << "cwipc_realsense2: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 #endif
 		// Found a realsense camera. Create a default data entry for it.
 		std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 		std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
 
-		MFCameraData& cd = get_camera_data(serial);
+		RS2CameraData& cd = get_camera_data(serial);
 		int camera_index = cameras.size();
-		auto cam = new MFCamera(ctx, configuration, camera_index, cd, camUsb);
+		auto cam = new RS2Camera(ctx, configuration, camera_index, cd, camUsb);
 		cameras.push_back(cam);
 	}
 }
 
-MFCapture::~MFCapture() {
+RS2Capture::~RS2Capture() {
     if (no_cameras) {
         numberOfCapturersActive--;
         return;
@@ -277,7 +277,7 @@ MFCapture::~MFCapture() {
 }
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp
-cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
+cwipc_pcl_pointcloud RS2Capture::get_pointcloud(uint64_t *timestamp)
 {
     if (no_cameras) return nullptr;
 	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -296,7 +296,7 @@ cwipc_pcl_pointcloud MFCapture::get_pointcloud(uint64_t *timestamp)
 	return rv;
 }
 
-float MFCapture::get_pointSize()
+float RS2Capture::get_pointSize()
 {
     if (no_cameras) return 0;
 	float rv = 99999;
@@ -307,7 +307,7 @@ float MFCapture::get_pointSize()
 	return rv;
 }
 
-bool MFCapture::pointcloud_available(bool wait)
+bool RS2Capture::pointcloud_available(bool wait)
 {
     if (no_cameras) return false;
 	_request_new_pointcloud();
@@ -318,10 +318,10 @@ bool MFCapture::pointcloud_available(bool wait)
 	return mergedPC_is_fresh;
 }
 
-void MFCapture::_control_thread_main()
+void RS2Capture::_control_thread_main()
 {
 #ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "MFCapture: processing thread started" << std::endl;
+	std::cerr << "cwipc_realsense2: processing thread started" << std::endl;
 #endif
 	while(!stopped) {
 		{
@@ -391,12 +391,12 @@ void MFCapture::_control_thread_main()
         mergedPC_is_fresh_cv.notify_all();
 	}
 #ifdef CWIPC_DEBUG_THREAD
-	std::cerr << "MFCapture: processing thread stopped" << std::endl;
+	std::cerr << "cwipc_realsense2: processing thread stopped" << std::endl;
 #endif
 }
 
 // return the merged cloud 
-cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
+cwipc_pcl_pointcloud RS2Capture::get_mostRecentPointCloud()
 {
     if (no_cameras) return nullptr;
 	// This call doesn't need a fresh pointcloud (Jack thinks), but it does need one that is
@@ -405,7 +405,7 @@ cwipc_pcl_pointcloud MFCapture::get_mostRecentPointCloud()
 	return mergedPC;
 }
 
-void MFCapture::_request_new_pointcloud()
+void RS2Capture::_request_new_pointcloud()
 {
 	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
 	if (!mergedPC_want_new && !mergedPC_is_fresh) {
@@ -414,19 +414,19 @@ void MFCapture::_request_new_pointcloud()
 	}
 }
 
-void MFCapture::merge_views()
+void RS2Capture::merge_views()
 {
 	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
 	mergedPC->clear();
 	// Pre-allocate space in the merged pointcloud
 	size_t nPoints = 0;
-	for (MFCameraData cd : configuration.cameraData) {
+	for (RS2CameraData cd : configuration.cameraData) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 		nPoints += cam_cld->size();
 	}
 	mergedPC->reserve(nPoints);
 	// Now merge all pointclouds
-	for (MFCameraData cd : configuration.cameraData) {
+	for (RS2CameraData cd : configuration.cameraData) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 		*mergedPC += *cam_cld;
 	}
@@ -447,15 +447,15 @@ void MFCapture::merge_views()
 	}
 }
 
-MFCameraData& MFCapture::get_camera_data(std::string serial) {
+RS2CameraData& RS2Capture::get_camera_data(std::string serial) {
 	for (int i = 0; i < configuration.cameraData.size(); i++)
 		if (configuration.cameraData[i].serial == serial)
 			return configuration.cameraData[i];
-	mf_log_warning("cwipc_realsense2: unknown camera " + serial);
+	cwipc_rs2_log_warning("cwipc_realsense2: unknown camera " + serial);
 	abort();
 }
 
-MFCamera* MFCapture::get_camera(std::string serial) {
+RS2Camera* RS2Capture::get_camera(std::string serial) {
 	for (auto cam : cameras)
 		if (cam->serial == serial)
 			return cam;

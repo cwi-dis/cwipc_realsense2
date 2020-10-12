@@ -10,7 +10,7 @@
 
 #include "cwipc_realsense2/multiFrame.hpp"
 
-bool MFCapture_versionCheck(char **errorMessage)
+bool cwipc_rs2_versionCheck(char **errorMessage)
 {
 	int version = rs2_get_api_version(nullptr);
 	if ((version/100) == (RS2_API_VERSION/100)) return true;
