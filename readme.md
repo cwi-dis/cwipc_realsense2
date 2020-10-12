@@ -261,7 +261,7 @@ By setting the environment variable `CWI_CAPTURE_FEATURE` to *dumpvideoframes* t
 
 ## Calibrating alignment
 
-Aligning multiple cameras is a bit of a black art. Here is an attempt at a description, we assume 4 cameras in the rest of this text, but other numbers of cameras should work just fine. There is a program `cwipc_rs2calibrate` that helps with the procedure.
+Aligning multiple cameras is a bit of a black art. Here is an attempt at a description, we assume 4 cameras in the rest of this text, but other numbers of cameras should work just fine. There is a program `cwipc_calibrate` included in `cwipc_util` that helps with the procedure.
 
 - Mount your cameras in four corners, looking in. For capturing people mounting them at a 90 degree angle works best. Spacing the cameras about 3 meters apart seems to work. But again: other configurations should also work.
 - Add sync cables to the cameras.
@@ -276,7 +276,7 @@ Aligning multiple cameras is a bit of a black art. Here is an attempt at a descr
 - Run the following command to grab the first set of 4 pointclouds, still completely unaligned:
   
   ```
-  cwipc_rs2calibrate --nocoarse --nofine --depth 0.5,3
+  cwipc_calibrate --nocoarse --nofine --depth 0.5,3
   ```
   The numbers `0.5` and `3` are the minimum and maximum
   distance from the camera at which points will be captured _for future captures_, in meters. 
@@ -284,7 +284,7 @@ Aligning multiple cameras is a bit of a black art. Here is an attempt at a descr
 - Optionally, if there is too much background, do another capture with the previously given depths (which should get rid of background, making it easier to select the points):
 
   ```
-  cwipc_rs2calibrate --nocoarse --nofine --reuse
+  cwipc_calibrate --nocoarse --nofine --reuse
   ```
 - Now you can do the coarse calibration. In this procedure, you select the colored points on the reference pointcloud, and then on each per-camera pointcloud you select the same points (in the same order). This step will create a per-camera rotation and translation matrix that will somewhat align each camera with the wanted coordinate system. You will be shown 10 pointclouds:
 	- Reference pointcloud. Here you select the colored balls or LEDs in the order you want.
@@ -298,7 +298,7 @@ Aligning multiple cameras is a bit of a black art. Here is an attempt at a descr
   Here is the command to run the coarse calibration step:
   
   ```
-  cwipc_rs2calibrate --reuse --nograb cwipc_rs2scalibrate_captured.ply --noinspect --nofine --crossv3 --height 0.05,2.2
+  cwipc_calibrate --reuse --nograb cwipc_calibrate_captured.ply --noinspect --nofine --crossv3 --height 0.05,2.2
   ```
 - You can now use the viewer to look at live captures:
 
@@ -312,7 +312,7 @@ Aligning multiple cameras is a bit of a black art. Here is an attempt at a descr
 	You should _not_ run this step in `bash` but use the Windows command prompt, at the moment, because in `bash` the interactivity will not work.
 	
 	```
-	cwipc_rs2calibrate --reuse --nograb pointcloud_123456789.ply --noinspect --nocoarse
+	cwipc_calibrate --reuse --nograb pointcloud_123456789.ply --noinspect --nocoarse
 	```
 
 - You can always rerun the fine calibration. If you ever want to rerun the coarse calibration you should pass the `--clean` argument to the first step (the capturing) so the old calibration is ignored.
