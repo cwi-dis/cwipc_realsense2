@@ -121,8 +121,8 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 			cd = &config->cameraData.back();
 		}
 
-        std::string type = cameraElement->Attribute("type");
-        if (type != "") {
+        const char *type = cameraElement->Attribute("type");
+        if (type != NULL && *type != '\0') {
             cd->type = type;
         }
         
