@@ -64,11 +64,7 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 		postprocessingElement->QueryDoubleAttribute("height_min", &(config->height_min));
 		postprocessingElement->QueryDoubleAttribute("height_max", &(config->height_max));
 		postprocessingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
-		postprocessingElement->QueryBoolAttribute("tiling", &(config->tiling));
 		postprocessingElement->QueryBoolAttribute("density", &(config->density));
-		postprocessingElement->QueryDoubleAttribute("tilingresolution", &(config->tiling_resolution));
-		const char* method = postprocessingElement->Attribute("tilingmethod");
-		if (method) config->tiling_method.assign(method);
         
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
@@ -208,10 +204,7 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 	postprocessing->SetDoubleAttribute("height_min", config->height_min);
 	postprocessing->SetDoubleAttribute("height_max", config->height_max);
 	postprocessing->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
-	postprocessing->SetAttribute("tiling", config->tiling);
 	postprocessing->SetAttribute("density", config->density);
-	postprocessing->SetDoubleAttribute("tilingresolution", config->tiling_resolution);
-	postprocessing->SetAttribute("tilingmethod", config->tiling_method.c_str());
 	cameraconfig->LinkEndChild(postprocessing);
 
 	postprocessing->LinkEndChild(new TiXmlComment(" For information on depth filtering parameters see librealsense/doc/post-processing-filters.md "));
