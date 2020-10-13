@@ -176,7 +176,13 @@ This project produces a dll named `cwipc_realsense2.dll` that gives access to th
 
 For those interested, a pointcloud in PCL format can be obtained from the `void** pointcloud` by casting: `captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloud<PointXYZRGB>>*>(pointcloud)`
 
-#### 2) The apps: *pcl_renderer* and *pcl_align*
+#### 2) The tools: *cwipc_grab* and *cwipc_multigrab*
+
+These command line tools grab pointclouds and store them in a given directory as ply-files. Multigrab delays conversion and writing until all poiontclouds have been grabbed, and may therefore get a higher framerate when capturing not too many frames.
+
+#### 3) The apps: *pcl_renderer* and *pcl_align*
+
+**Note** These two apps are now considered legacy. Use `cwipc_view` and `cwipc_calibrate` from the `cwipc_util` repository in stead.
 
 For visual inspection of the result, the project generates two applications *pcl_renderer* and  *pcl_align* that both open a window showing the pointcloud.
 
@@ -265,7 +271,11 @@ Aligning multiple cameras is a bit of a black art. Here is an attempt at a descr
 
 - Mount your cameras in four corners, looking in. For capturing people mounting them at a 90 degree angle works best. Spacing the cameras about 3 meters apart seems to work. But again: other configurations should also work.
 - Add sync cables to the cameras.
-- Build a calibration cross. V3 is best, if you build V2 then don't supply the `--crossv3` argument to the commands below.
+- Build a calibration device. _Cross V3_ is best, but there are a number of alternatives:
+	- _Cross V2_ does not have LEDs, and may be easier to build.
+	- _A4 paper_ is even easier, but does not work very well when viewed from the side. In `cwipc_util/doc/target-a4.pdf` there is a file you can print double-sided that will help you.
+	
+  You can run `cwipc_calibrate --list` to see all supported calibration devices.
 - Create a working directory and go there:
 
   ```
@@ -287,8 +297,8 @@ Aligning multiple cameras is a bit of a black art. Here is an attempt at a descr
   cwipc_calibrate --nocoarse --nofine --reuse
   ```
 - Now you can do the coarse calibration. In this procedure, you select the colored points on the reference pointcloud, and then on each per-camera pointcloud you select the same points (in the same order). This step will create a per-camera rotation and translation matrix that will somewhat align each camera with the wanted coordinate system. You will be shown 10 pointclouds:
-	- Reference pointcloud. Here you select the colored balls or LEDs in the order you want.
-	- Captured pointcloud of camera 1. Here you select the balls/LEDs in the same order as for the reference pointcloud.
+	- Reference pointcloud. Here you select the colored balls or LEDs or corners of the A4 sheet in the order you want.
+	- Captured pointcloud of camera 1. Here you select the balls/LEDs/corners in the same order as for the reference pointcloud.
 	- Translated/rotated pointcloud from camera 1 to world coordinates. Inspect that it is as you wanted.
 	- The previous two steps are repeated for every camera.
 	- As the last step you are shown the fused pointcloud of all cameras.
