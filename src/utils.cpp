@@ -38,7 +38,7 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
-        cwipc_rs2_log_warning(std::string("multiFrame: Warning: Failed to load configfile ") + filename + ", using default matrices");
+        cwipc_rs2_log_warning(std::string("cwipc_realsense2: Warning: Failed to load configfile ") + filename + ", using default matrices");
 		return false;
 	}
 
@@ -113,6 +113,11 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 			boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
 			intrinsicTrafo->setIdentity();
 			cd->serial = cameraElement->Attribute("serial");
+            cd->type = cameraElement->Attribute("type");
+            if (cd->type != "realsense") {
+                loadOkay = false;
+                cwipc_rs2_log_warning(std::string("cwipc_realsense2: camera has incorrect type ") + cd->type);
+            }
 			cd->trafo = trafo;
 			cd->intrinsicTrafo = intrinsicTrafo;
 			cd->cameraposition = { 0, 0, 0 };
@@ -238,6 +243,7 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 	for (RS2CameraData cd : config->cameraData) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
+        cam->SetAttribute("type", cd.type.c_str());
 		cameraconfig->LinkEndChild(cam);
 
 		TiXmlElement* trafo = new TiXmlElement("trafo");
