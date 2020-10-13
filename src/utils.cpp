@@ -119,14 +119,10 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 			cd->serial = cameraElement->Attribute("serial");
 			cd->trafo = trafo;
 			cd->intrinsicTrafo = intrinsicTrafo;
-			cd->background = { 0, 0, 0 };
 			cd->cameraposition = { 0, 0, 0 };
 			config->cameraData.push_back(*cd);
 			cd = &config->cameraData.back();
 		}
-		cameraElement->QueryDoubleAttribute("backgroundx", &(cd->background.x));
-		cameraElement->QueryDoubleAttribute("backgroundy", &(cd->background.y));
-		cameraElement->QueryDoubleAttribute("backgroundz", &(cd->background.z));
 
 		TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
 		if (trafo) {
@@ -249,9 +245,6 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 	for (RS2CameraData cd : config->cameraData) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
-		cam->SetDoubleAttribute("backgroundx", cd.background.x);
-		cam->SetDoubleAttribute("backgroundy", cd.background.y);
-		cam->SetDoubleAttribute("backgroundz", cd.background.z);
 		cameraconfig->LinkEndChild(cam);
 
 		TiXmlElement* trafo = new TiXmlElement("trafo");

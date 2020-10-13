@@ -90,7 +90,6 @@ RS2Capture::RS2Capture(const char *configFilename)
 		cd.trafo = default_trafo;
 		cd.intrinsicTrafo = default_trafo;
 		cd.cloud = new_cwipc_pcl_pointcloud();
-		cd.background = { 0, 0, 0 };
 		cd.cameraposition = { 0, 0, 0 };
 		configuration.cameraData.push_back(cd);
 	}

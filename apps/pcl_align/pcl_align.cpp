@@ -374,45 +374,6 @@ void register_glfw_callbacks(window_util* app, RS2Capture* multiframe)
 			if (aligncamera >= 0)
 			pcl::compute3DCentroid(*configCopy.cameraData[aligncamera].cloud, cloudcenter);
 		}
-		else if (key == 265) {   // key = "arrow up" shift fixed background
-			if (aligncamera >= 0) {
-				if (multiframe->configuration.cameraData[aligncamera].background.z == 0.0)
-					multiframe->configuration.cameraData[aligncamera].background.z = multiframe->get_camera(multiframe->configuration.cameraData[aligncamera].serial)->maxz * 1.25;
-				multiframe->configuration.cameraData[aligncamera].background.z *= 1.25;
-			}
-		}
-		else if (key == 264) {   // key = "arrow down" shift fixed background
-			if (aligncamera >= 0) {
-				if (multiframe->configuration.cameraData[aligncamera].background.z == 0.0)
-					multiframe->configuration.cameraData[aligncamera].background.z = multiframe->get_camera(multiframe->configuration.cameraData[aligncamera].serial)->maxz * 0.8;
-				multiframe->configuration.cameraData[aligncamera].background.z *= 0.8;
-			}
-		}
-		else if (key == 263) {   // key = "arrow left" shift fixed background
-			if (aligncamera >= 0) {
-				if (multiframe->configuration.cameraData[aligncamera].background.z != 0.0) {
-					if (multiframe->configuration.cameraData[aligncamera].background.x == 0.0)
-						multiframe->configuration.cameraData[aligncamera].background.x = multiframe->get_camera(multiframe->configuration.cameraData[aligncamera].serial)->minx - 0.1;
-					multiframe->configuration.cameraData[aligncamera].background.x -= 0.1;
-				}
-			}
-		}
-		else if (key == 262) {   // key = "arrow right" shift fixed background
-			if (aligncamera >= 0) {
-				if (multiframe->configuration.cameraData[aligncamera].background.z != 0.0) {
-					if (multiframe->configuration.cameraData[aligncamera].background.x == 0.0)
-						multiframe->configuration.cameraData[aligncamera].background.x = multiframe->get_camera(multiframe->configuration.cameraData[aligncamera].serial)->minx + 0.1;
-					multiframe->configuration.cameraData[aligncamera].background.x += 0.1;
-				}
-			}
-		}
-		else if (key == 90) {   // key = "z" return to adaptive background
-			if (aligncamera >= 0) {
-				multiframe->configuration.cameraData[aligncamera].background.x = 0.0;
-				multiframe->configuration.cameraData[aligncamera].background.y = 0.0;
-				multiframe->configuration.cameraData[aligncamera].background.z = 0.0;
-			}
-		}
 		else if (key == 73) {	// key =\"i": dump frames for icp processing
 			for (int i = 0; i < configCopy.cameraData.size(); i++) {
 				cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
