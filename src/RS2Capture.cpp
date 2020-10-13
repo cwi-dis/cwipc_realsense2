@@ -55,7 +55,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 	// First check that no other RS2Capture is active within this process (trying to catch programmer errors)
 	numberOfCapturersActive++;
 	if (numberOfCapturersActive > 1) {
-		cwipc_rs2_log_warning("cwipc_realsense2: Warning: attempting to create capturer while one is already active.");
+		cwipc_rs2_log_warning("Attempting to create capturer while one is already active.");
 	}
 
 	// Determine how many realsense cameras (not platform cameras like webcams) are connected
@@ -120,7 +120,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 			if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 				realcams.push_back(cd);
 			else
-				cwipc_rs2_log_warning("cwipc_realsense2: Warning: camera " + cd.serial + " is not connected");
+				cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
 		}
 		// Reduce the active configuration to cameras that are connected
 		configuration.cameraData = realcams;
@@ -171,7 +171,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 				}
 			}
 			if (!foundSensorSupportingSync) {
-                cwipc_rs2_log_warning(std::string("cwipc_realsense2: Warning: camera ") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) + " does not support inter-camera-sync");
+                cwipc_rs2_log_warning("Camera " + std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) + " does not support inter-camera-sync");
 			}
 		}
 	}
@@ -210,7 +210,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 		for (auto cam: cameras)
 			cam->start();
 	} catch(const rs2::error& e) {
-		cwipc_rs2_log_warning("exception while starting camera: " + e.get_failed_function() + ": " + e.what());
+		cwipc_rs2_log_warning("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
 		throw;
 	}
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -238,6 +238,9 @@ void RS2Capture::_create_cameras(rs2::device_list devs) {
 		std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
 
 		RS2CameraData& cd = get_camera_data(serial);
+        if (cd.type != "realsense") {
+            cwipc_rs2_log_warning("Camera " + serial + " is type " + cd.type + " in stead of realsense");
+        }
 		int camera_index = cameras.size();
 		auto cam = new RS2Camera(ctx, configuration, camera_index, cd, camUsb);
 		cameras.push_back(cam);
@@ -450,7 +453,7 @@ RS2CameraData& RS2Capture::get_camera_data(std::string serial) {
 	for (int i = 0; i < configuration.cameraData.size(); i++)
 		if (configuration.cameraData[i].serial == serial)
 			return configuration.cameraData[i];
-	cwipc_rs2_log_warning("cwipc_realsense2: unknown camera " + serial);
+	cwipc_rs2_log_warning("Unknown camera " + serial);
 	abort();
 }
 

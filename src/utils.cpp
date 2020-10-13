@@ -23,7 +23,7 @@ char **cwipc_rs2_warning_store;
 
 void cwipc_rs2_log_warning(std::string warning)
 {
-    std::cerr << "cwipc_realsense2: " << warning << std::endl;
+    std::cerr << "cwipc_realsense2: Warning: " << warning << std::endl;
     if (cwipc_rs2_warning_store) {
         cwipc_rs2_most_recent_warning = warning;
         *cwipc_rs2_warning_store = (char *)cwipc_rs2_most_recent_warning.c_str();
@@ -38,7 +38,7 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
-        cwipc_rs2_log_warning(std::string("cwipc_realsense2: Warning: Failed to load configfile ") + filename + ", using default matrices");
+        cwipc_rs2_log_warning(std::string("Failed to load configfile ") + filename + ", using default matrices");
 		return false;
 	}
 
@@ -53,7 +53,8 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 		systemElement->QueryIntAttribute("usb2fps", &(config->usb2_fps));
 		systemElement->QueryIntAttribute("usb3width", &(config->usb3_width));
 		systemElement->QueryIntAttribute("usb3height", &(config->usb3_height));
-		systemElement->QueryIntAttribute("usb3fps", &(config->usb3_fps));
+        systemElement->QueryIntAttribute("usb3fps", &(config->usb3_fps));
+        systemElement->QueryBoolAttribute("usb2allowed", &(config->usb2allowed));
 	}
 
     // get the processing related information
@@ -113,11 +114,6 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 			boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
 			intrinsicTrafo->setIdentity();
 			cd->serial = cameraElement->Attribute("serial");
-            cd->type = cameraElement->Attribute("type");
-            if (cd->type != "realsense") {
-                loadOkay = false;
-                cwipc_rs2_log_warning(std::string("cwipc_realsense2: camera has incorrect type ") + cd->type);
-            }
 			cd->trafo = trafo;
 			cd->intrinsicTrafo = intrinsicTrafo;
 			cd->cameraposition = { 0, 0, 0 };
@@ -125,6 +121,11 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 			cd = &config->cameraData.back();
 		}
 
+        std::string type = cameraElement->Attribute("type");
+        if (type != "") {
+            cd->type = type;
+        }
+        
 		TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
 		if (trafo) {
 			TiXmlElement *val = trafo->FirstChildElement("values");
@@ -176,7 +177,7 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 		loadOkay = false;
 
     if (!loadOkay) {
-        cwipc_rs2_log_warning("multiFrame: available hardware camera configuration does not match configuration file");
+        cwipc_rs2_log_warning("Available hardware camera configuration does not match configuration file");
     }
 	return loadOkay;
 }
@@ -199,7 +200,8 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 	system->SetAttribute("usb2fps", config->usb2_fps);
 	system->SetAttribute("usb3width", config->usb3_width);
 	system->SetAttribute("usb3height", config->usb3_height);
-	system->SetAttribute("usb3fps", config->usb3_fps);
+    system->SetAttribute("usb3fps", config->usb3_fps);
+    system->SetAttribute("usb2allowed", config->usb2allowed);
 	cameraconfig->LinkEndChild(system);
 
 	cameraconfig->LinkEndChild(new TiXmlComment(" 'cloudresolution' and 'tileresolution' are specified in meters "));

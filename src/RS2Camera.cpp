@@ -79,6 +79,9 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
 #ifdef CWIPC_DEBUG
 		std::cout << "cwipc_realsense2: creating camera " << serial << std::endl;
 #endif
+    if (!high_speed_connection && !configuration.usb2allowed) {
+        cwipc_rs2_log_warning("Camera " + serial + " connected to USB2");
+    }
 	_init_filters();
 }
 

@@ -39,7 +39,7 @@ struct RS2CameraSettings {
 
 struct RS2CameraData {
 	std::string serial;		// Serial number of this camera
-    std::string type;       // Camera type (must be realsense)
+    std::string type = "realsense";       // Camera type (must be realsense)
 	boost::shared_ptr<Eigen::Affine3d> trafo;	//!< Transformation matrix from camera coorindates to world coordinates
 	boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo;	//!< offline only: matrix to convert color to depth coordinates
 	cwipc_vector cameraposition;	//!< Position of this camera in real world coordinates
@@ -54,6 +54,7 @@ struct RS2CaptureConfig {
 	int usb2_width = 640;
 	int usb2_height = 480;
 	int usb2_fps = 15;
+    bool usb2allowed = false;                    // true if USB2 is allowed
 
 	// processing data
 	bool greenscreen_removal = false;	  // If true include greenscreen removal
