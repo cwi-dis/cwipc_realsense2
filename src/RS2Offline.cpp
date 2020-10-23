@@ -37,6 +37,7 @@ RS2Offline::RS2Offline(RS2OfflineSettings& settings, const char *configFilename)
 		cam->start_capturer();
 	stopped = false;
 	control_thread = new std::thread(&RS2Offline::_control_thread_main, this);
+	_cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Offline::control_thread");
 }
 
 RS2Offline::~RS2Offline() {

@@ -224,6 +224,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 	//
 	stopped = false;
 	control_thread = new std::thread(&RS2Capture::_control_thread_main, this);
+	_cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Capture::control_thread");
 }
 
 void RS2Capture::_create_cameras(rs2::device_list devs) {

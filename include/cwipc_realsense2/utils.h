@@ -31,4 +31,14 @@ _CWIPC_REALSENSE2_EXPORT void cwipc_rs2_config2file(const char* filename, RS2Cap
 
 _CWIPC_REALSENSE2_EXPORT bool cwipc_rs2_noChromaRemoval(cwipc_pcl_point* p);
 
+#ifdef _WIN32
+#include <thread>
+#include <Windows.h>
+inline void _cwipc_setThreadName(std::thread* thr, const wchar_t* name) {
+	HANDLE threadHandle = static_cast<HANDLE>(thr->native_handle());
+	SetThreadDescription(threadHandle, name);
+}
+#else
+inline void _cwpic_setThreadName(std::thread* thr, const wchar_t* name) {}
+#endif
 #endif /* cwipw_realsense_utils_h */

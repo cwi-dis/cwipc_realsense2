@@ -191,11 +191,13 @@ void RS2Camera::start_capturer()
 	stopped = false;
 	_start_capture_thread();
 	processing_thread = new std::thread(&RS2Camera::_processing_thread_main, this);
+	_cwipc_setThreadName(processing_thread, L"cwipc_realsense2::RS2Camera::processing_thread");
 }
 
 void RS2Camera::_start_capture_thread()
 {
 	grabber_thread = new std::thread(&RS2Camera::_capture_thread_main, this);
+	_cwipc_setThreadName(grabber_thread, L"cwipc_realsense2::RS2Camera::capture_thread");
 }
 
 void RS2Camera::_capture_thread_main()
