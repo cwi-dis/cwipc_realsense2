@@ -44,6 +44,11 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 
 	TiXmlHandle docHandle(&doc);
 	TiXmlElement* configElement = docHandle.FirstChild("file").FirstChild("CameraConfig").ToElement();
+    int version = -1;
+    configElement->QueryIntAttribute("version", &version);
+    if (version != 2) {
+        cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + " is not version 2");
+    }
 
 	// get the system related information
 	TiXmlElement* systemElement = configElement->FirstChildElement("system");
@@ -55,6 +60,11 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 		systemElement->QueryIntAttribute("usb3height", &(config->usb3_height));
         systemElement->QueryIntAttribute("usb3fps", &(config->usb3_fps));
         systemElement->QueryBoolAttribute("usb2allowed", &(config->usb2allowed));
+        systemElement->QueryBoolAttribute("density_preferred", &(config->density));
+        systemElement->QueryIntAttribute("exposure", &(config->exposure));
+        systemElement->QueryIntAttribute("whitebalance", &(config->whitebalance));
+        systemElement->QueryIntAttribute("backlight_compensation", &(config->backlight_compensation));
+        systemElement->QueryIntAttribute("laser_power", &(config->laser_power));
 	}
 
     // get the processing related information
@@ -64,9 +74,7 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 		postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
 		postprocessingElement->QueryDoubleAttribute("height_min", &(config->height_min));
 		postprocessingElement->QueryDoubleAttribute("height_max", &(config->height_max));
-		postprocessingElement->QueryDoubleAttribute("cloudresolution", &(config->cloud_resolution));
-		postprocessingElement->QueryBoolAttribute("density", &(config->density));
-        
+
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
 			parameterElement->QueryBoolAttribute("do_decimation", &(config->default_camera_settings.do_decimation));
@@ -192,7 +200,8 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 	doc.LinkEndChild(root);
 
 	TiXmlElement* cameraconfig = new TiXmlElement("CameraConfig");
-	root->LinkEndChild(cameraconfig);
+    cameraconfig->SetAttribute("version", 2);
+    root->LinkEndChild(cameraconfig);
 
 	TiXmlElement* system = new TiXmlElement("system");
 	system->SetAttribute("usb2width", config->usb2_width);
@@ -202,6 +211,11 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 	system->SetAttribute("usb3height", config->usb3_height);
     system->SetAttribute("usb3fps", config->usb3_fps);
     system->SetAttribute("usb2allowed", config->usb2allowed);
+    system->SetAttribute("exposure", config->exposure);
+    system->SetAttribute("whitebalance", config->whitebalance);
+    system->SetAttribute("backlight_compensation", config->backlight_compensation);
+    system->SetAttribute("laser_power", config->laser_power);
+    system->SetAttribute("density_preferred", config->density);
 	cameraconfig->LinkEndChild(system);
 
 	cameraconfig->LinkEndChild(new TiXmlComment(" 'cloudresolution' and 'tileresolution' are specified in meters "));
@@ -210,8 +224,6 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 	postprocessing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
 	postprocessing->SetDoubleAttribute("height_min", config->height_min);
 	postprocessing->SetDoubleAttribute("height_max", config->height_max);
-	postprocessing->SetDoubleAttribute("cloudresolution", config->cloud_resolution);
-	postprocessing->SetAttribute("density", config->density);
 	cameraconfig->LinkEndChild(postprocessing);
 
 	postprocessing->LinkEndChild(new TiXmlComment(" For information on depth filtering parameters see librealsense/doc/post-processing-filters.md "));

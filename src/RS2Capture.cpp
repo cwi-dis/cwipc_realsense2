@@ -130,15 +130,31 @@ RS2Capture::RS2Capture(const char *configFilename)
         auto allSensors = dev.query_sensors();
         for (auto sensor : allSensors) {
             // Options for color sensor (but may work inadvertantly on dept sensors too?)
-            if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-            if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
-                sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 0);
-            if (sensor.supports(RS2_OPTION_BACKLIGHT_COMPENSATION))
-                sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, 0);
+            if (configuration.exposure >= 0) {
+                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+                if (sensor.supports(RS2_OPTION_EXPOSURE))
+                    sensor.set_option(RS2_OPTION_EXPOSURE, configuration.exposure);
+            } else {
+                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
+            }
+            if (configuration.whitebalance >= 0) {
+                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
+                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 0);
+                if (sensor.supports(RS2_OPTION_WHITE_BALANCE))
+                    sensor.set_option(RS2_OPTION_WHITE_BALANCE, configuration.whitebalance);
+            } else {
+                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
+                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 1);
+            }
+            if (configuration.backlight_compensation >= 0) {
+                if (sensor.supports(RS2_OPTION_BACKLIGHT_COMPENSATION))
+                    sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.backlight_compensation);
+            }
             // Options for depth sensor
-            if (sensor.supports(RS2_OPTION_LASER_POWER))
-                sensor.set_option(RS2_OPTION_LASER_POWER, 360);
+            if (sensor.supports(RS2_OPTION_LASER_POWER) && configuration.laser_power >= 0)
+                sensor.set_option(RS2_OPTION_LASER_POWER, configuration.laser_power);
             // xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
             // suggests that this may depend on using 1280x720@30 with decimation=3. Need to check.
             if (sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
@@ -434,20 +450,6 @@ void RS2Capture::merge_views()
 		*mergedPC += *cam_cld;
 	}
 
-	if (configuration.cloud_resolution > 0) {
-#ifdef CWIPC_DEBUG
-		std::cerr << "cwipc_realsense2: Points before reduction: " << mergedPC->size() << std::endl;
-#endif
-		pcl::VoxelGrid<cwipc_pcl_point> grd;
-		grd.setInputCloud(mergedPC);
-		grd.setLeafSize(configuration.cloud_resolution, configuration.cloud_resolution, configuration.cloud_resolution);
-		grd.setSaveLeafLayout(true);
-		grd.filter(*mergedPC);
-
-#ifdef CWIPC_DEBUG
-		std::cerr << "cwipc_realsense2: Points after reduction: " << mergedPC->size() << std::endl;
-#endif
-	}
 }
 
 RS2CameraData& RS2Capture::get_camera_data(std::string serial) {

@@ -61,8 +61,11 @@ struct RS2CaptureConfig {
 	bool depth_filtering = false;         // If true perform post filtering on depth frame
 	double height_min = 0.0;			  // If height_min != height_max perform height filtering
 	double height_max = 0.0;			  // If height_min != height_max perform height filtering
-	double cloud_resolution = 0.0;        // Resolution of voxelized pointclouds
 	bool density = false;			  	  // Grab with high density (alternative is high accuracy)
+    int exposure = -1;                    // Set exposure for both color and depth. -1 is auto.
+    int whitebalance = -1;                // Set whitebalance for color camera. -1 is auto.
+    int backlight_compensation = -1;      // Set backlight compesnation for color camera. -1 is don't change.
+    int laser_power = 360;                // Laser power. -1 is don't change.
 
 	// special features
 	std::string cwi_special_feature = ""; // Specifier for temporary development specific feature
