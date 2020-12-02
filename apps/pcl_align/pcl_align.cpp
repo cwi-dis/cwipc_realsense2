@@ -307,12 +307,6 @@ void register_glfw_callbacks(window_util* app, RS2Capture* multiframe)
             else
 				depth_plane = true;
         }
-		else if (key == 70) {	// key = "f": toggle depth filter
-			if (multiframe->configuration.depth_filtering)
-				multiframe->configuration.depth_filtering = false;
-			else
-				multiframe->configuration.depth_filtering = true;
-		}
 		else if (key == 72) {	// key = "h": print help
 			printhelp();
 		}

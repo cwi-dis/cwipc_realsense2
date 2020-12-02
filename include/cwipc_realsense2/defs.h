@@ -58,7 +58,6 @@ struct RS2CaptureConfig {
 
 	// processing data
 	bool greenscreen_removal = false;	  // If true include greenscreen removal
-	bool depth_filtering = false;         // If true perform post filtering on depth frame
 	double height_min = 0.0;			  // If height_min != height_max perform height filtering
 	double height_max = 0.0;			  // If height_min != height_max perform height filtering
 	bool density = false;			  	  // Grab with high density (alternative is high accuracy)

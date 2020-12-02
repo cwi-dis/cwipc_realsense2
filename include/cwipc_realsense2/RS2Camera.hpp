@@ -57,7 +57,6 @@ private:
 	int camera_width;
 	int camera_height;
 	int camera_fps;
-	bool do_depth_filtering;
 	bool do_greenscreen_removal;
 	bool do_height_filtering;
 	double height_min;

@@ -70,7 +70,6 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
     // get the processing related information
     TiXmlElement* postprocessingElement = configElement->FirstChildElement("postprocessing");
     if (postprocessingElement) {
-		postprocessingElement->QueryBoolAttribute("depthfiltering", &(config->depth_filtering));
 		postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
 		postprocessingElement->QueryDoubleAttribute("height_min", &(config->height_min));
 		postprocessingElement->QueryDoubleAttribute("height_max", &(config->height_max));
@@ -220,7 +219,6 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 
 	cameraconfig->LinkEndChild(new TiXmlComment(" 'cloudresolution' and 'tileresolution' are specified in meters "));
 	TiXmlElement* postprocessing = new TiXmlElement("postprocessing");
-	postprocessing->SetAttribute("depthfiltering", config->depth_filtering);
 	postprocessing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
 	postprocessing->SetDoubleAttribute("height_min", config->height_min);
 	postprocessing->SetDoubleAttribute("height_max", config->height_max);

@@ -39,7 +39,6 @@ RS2Camera::RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& con
 	camera_width(0),
 	camera_height(0),
 	camera_fps(0),
-	do_depth_filtering(configuration.depth_filtering),
 	do_greenscreen_removal(configuration.greenscreen_removal),
 	do_height_filtering(configuration.height_min != configuration.height_max),
 	height_min(configuration.height_min),
@@ -65,7 +64,6 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
 	camera_width(high_speed_connection ? configuration.usb3_width : configuration.usb2_width),
 	camera_height(high_speed_connection ? configuration.usb3_height : configuration.usb2_height),
 	camera_fps(high_speed_connection ? configuration.usb3_fps : configuration.usb2_fps),
-	do_depth_filtering(configuration.depth_filtering),
 	do_greenscreen_removal(configuration.greenscreen_removal),
 	do_height_filtering(configuration.height_min != configuration.height_max),
 	height_min(configuration.height_min),
@@ -95,7 +93,6 @@ RS2Camera::~RS2Camera()
 
 void RS2Camera::_init_filters()
 {
-	if (!do_depth_filtering) return;
 	if (camSettings.do_decimation) {
 		dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, camSettings.decimation_value);
 	}
@@ -157,7 +154,7 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile)
 	float pixel0[2], pixel1[2];
 	pixel0[0] = camera_width / 2;
 	pixel0[1] = camera_height / 2;
-	if (do_depth_filtering && camSettings.do_decimation) {
+	if (camSettings.do_decimation) {
 		pixel1[0] = pixel0[0] + camSettings.decimation_value;
 		pixel1[1] = pixel0[1] + camSettings.decimation_value;
 	} else {
@@ -232,6 +229,7 @@ void RS2Camera::_processing_thread_main()
 
 		std::lock_guard<std::mutex> lock(processing_mutex);
 
+        bool do_depth_filtering = camSettings.do_decimation || camSettings.do_threshold || camSettings.do_spatial || camSettings.do_temporal;
 		if (do_depth_filtering) {
 			processing_frameset = processing_frameset.apply_filter(aligner);
 			if (camSettings.do_decimation) processing_frameset = processing_frameset.apply_filter(dec_filter);
