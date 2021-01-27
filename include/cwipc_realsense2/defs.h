@@ -26,6 +26,8 @@ struct RS2CameraSettings {
 	bool do_threshold = true;
 	double threshold_near = 0.15;         // float, near point for distance threshold
 	double threshold_far = 6.0;           // float, far point for distance threshold
+    int depth_x_erosion = 0;              // How many valid depth pixels to remove in camera x direction
+    int depth_y_erosion = 0;              // How many valid depth pixels to remove in camera y direction
 	bool do_spatial = true;
 	int spatial_iterations = 2;           // int val between 1 and 5
 	double spatial_alpha = 0.5;          // val between 0.25 and 1.0

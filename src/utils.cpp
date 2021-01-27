@@ -81,6 +81,8 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 			parameterElement->QueryBoolAttribute("do_threshold", &(config->default_camera_settings.do_threshold));
 			parameterElement->QueryDoubleAttribute("threshold_near", &(config->default_camera_settings.threshold_near));
 			parameterElement->QueryDoubleAttribute("threshold_far", &(config->default_camera_settings.threshold_far));
+            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->default_camera_settings.depth_x_erosion));
+            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->default_camera_settings.depth_y_erosion));
 			parameterElement->QueryBoolAttribute("do_spatial", &(config->default_camera_settings.do_spatial));
 			parameterElement->QueryIntAttribute("spatial_iterations", &(config->default_camera_settings.spatial_iterations));
 			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->default_camera_settings.spatial_alpha));

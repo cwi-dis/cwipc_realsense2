@@ -247,6 +247,9 @@ void RS2Camera::_processing_thread_main()
 		rs2::video_frame color = processing_frameset.get_color_frame();
 		assert(depth);
 		assert(color);
+        if (camSettings.depth_x_erosion >0 || camSettings.depth_y_erosion > 0) {
+            _erode_depth(depth, camSettings.depth_x_erosion, camSettings.depth_y_erosion);
+        }
 #ifdef CWIPC_DEBUG
 		std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif
@@ -307,6 +310,37 @@ void RS2Camera::_processing_thread_main()
 #ifdef CWIPC_DEBUG_THREAD
 	std::cerr << "frame processing: cam=" << serial << " thread stopped" << std::endl;
 #endif
+}
+
+void RS2Camera::_erode_depth(rs2::depth_frame depth_frame, int x_delta, int y_delta)
+{
+    uint16_t *depth_values = (uint16_t *)depth_frame.get_data();
+    assert(depth_frame.get_bytes_per_pixel() == 2);
+    int width = depth_frame.get_width();
+    int height = depth_frame.get_height();
+    int16_t min_depth = (int16_t)(camSettings.threshold_near * 1000);
+    int16_t max_depth = (int16_t)(camSettings.threshold_far * 1000);
+    int16_t *z_values = (int16_t *)malloc(width * height*sizeof(int16_t));
+    // Pass one: Copy Z values to temporary buffer.
+    memcpy(z_values, depth_values, width * height*sizeof(int16_t));
+    // Pass two: loop for zero pixels in temp buffer, and clear out x/y pixels adjacent in depth buffer
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            if (z_values[x + y] != 0) continue;
+            // Zero depth at (x, y). Clear out pixels
+            for (int ix = x - x_delta; ix <= x + x_delta; ix++) {
+                if (ix < 0 || ix >= width ) continue;
+                int i_pc = (ix + y * width);
+                depth_values[i_pc] = 0;
+            }
+            for (int iy = y - y_delta; iy <= y + y_delta; iy++) {
+                if (iy < 0 || iy >= height) continue;
+                int i_pc = (x + iy * width);
+                depth_values[i_pc] = 0;
+            }
+        }
+    }
+    free(z_values);
 }
 
 void RS2Camera::transformPoint(cwipc_pcl_point& out, const rs2::vertex& in)
