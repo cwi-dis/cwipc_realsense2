@@ -326,7 +326,7 @@ void RS2Camera::_erode_depth(rs2::depth_frame depth_frame, int x_delta, int y_de
     // Pass two: loop for zero pixels in temp buffer, and clear out x/y pixels adjacent in depth buffer
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
-            if (z_values[x + y] != 0) continue;
+            if (z_values[x + y*width] != 0) continue;
             // Zero depth at (x, y). Clear out pixels
             for (int ix = x - x_delta; ix <= x + x_delta; ix++) {
                 if (ix < 0 || ix >= width ) continue;
