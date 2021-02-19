@@ -85,7 +85,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 #endif
 		RS2CameraData cd;
 		cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-		boost::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
+		pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 		default_trafo->setIdentity();
 		cd.trafo = default_trafo;
 		cd.intrinsicTrafo = default_trafo;

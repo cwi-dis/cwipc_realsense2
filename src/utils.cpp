@@ -119,8 +119,8 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 				loadOkay = false;
 
 			cd = new RS2CameraData();
-			boost::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
-			boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
+			pcl::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
+			pcl::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
 			intrinsicTrafo->setIdentity();
 			cd->serial = cameraElement->Attribute("serial");
 			cd->trafo = trafo;

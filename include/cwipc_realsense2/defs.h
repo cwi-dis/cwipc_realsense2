@@ -42,8 +42,8 @@ struct RS2CameraSettings {
 struct RS2CameraData {
 	std::string serial;		// Serial number of this camera
     std::string type = "realsense";       // Camera type (must be realsense)
-	boost::shared_ptr<Eigen::Affine3d> trafo;	//!< Transformation matrix from camera coorindates to world coordinates
-	boost::shared_ptr<Eigen::Affine3d> intrinsicTrafo;	//!< offline only: matrix to convert color to depth coordinates
+	pcl::shared_ptr<Eigen::Affine3d> trafo;	//!< Transformation matrix from camera coorindates to world coordinates
+	pcl::shared_ptr<Eigen::Affine3d> intrinsicTrafo;	//!< offline only: matrix to convert color to depth coordinates
 	cwipc_vector cameraposition;	//!< Position of this camera in real world coordinates
 	cwipc_pcl_pointcloud cloud;	//!< Pointcloud most recently captured
 };
