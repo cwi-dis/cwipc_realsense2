@@ -10,13 +10,13 @@ cmake_minimum_required(VERSION 3.10.0)
 project(cwipc_realsense2)
 
 # Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+# set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
-set(CMAKE_VERBOSE_MAKEFILE on)
+# set(CMAKE_VERBOSE_MAKEFILE on)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMakeFiles)
 
-option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
+# option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 
 include(CTest)
