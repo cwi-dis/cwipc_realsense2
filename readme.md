@@ -1,9 +1,8 @@
 # cwipc_realsense2
 
-This project has software for capturing point clouds using RealSense cameras. The software turns RealSense depth- and colorframes into a PCL pointcloud. It goes with apps to visualize the 3D pointcloud captured. The software runs with zero one or more RealSense cameras. If no cameras are found, pointclouds will be generated. If more depth cameras are connected, a configuration file named *cameraconfig.xml* to specify the merge conditions is expected (for details see: *Expected input*).
+This project has software for capturing point clouds using RealSense cameras. The software turns RealSense depth- and colorframes into a cwipc pointcloud.
 
-[TOC]
-
+It requires the cwipc_util library.
 
 ## Installing
 
@@ -14,12 +13,10 @@ For use within VRtogether you can get pre-built zipfiles (or tgzfiles for Mac/Li
 
 ### Windows
 
-- Install PCL 1.8 from <https://github.com/PointCloudLibrary/pcl/releases/download/pcl-1.8.1/PCL-1.8.1-AllInOne-msvc2017-win64.exe>. Make sure you select the "add to %PATH% for all users" option.
-- Install _librealsense2_ from <https://github.com/IntelRealSense/librealsense/releases>. Get **v2.25** recent _Intel.RealSense.SDK.exe_. Make sure you select the "add to %PATH% for all users" option.
-	- Note the bold **v2.25** in the previous line. Probably *v2.25.X* is fine, but other versions may lead to crashes (while things appear to start up fine).
-- Create a folder where you will install _all_ VRtogether DLLs and EXEs, for example `C:\vrtogether\installed`.
-- Extract the `cwipc_util_win1064_vX.Y.zip` file into `c:\vrtogether`. This zipfile has everything inside a toplevel `installed` folder, so by extracting in this place it will create `bin`, `lib` and `include` folders inside the `C:\vrtogether\installed` folder.
-- Extract both zipfiles (for _cwipc\_util_ and _cwipc\_realsense2_) in `c:\vrtogether`. The zipfiles have everything (`bin`, `lib`, etc) relative to a toplevel `installed` folder, so this should make everything end up in the correct place.
+- Install cwipc_util (and its dependencies PCL and others).
+
+- Install _librealsense2_ from <https://github.com/IntelRealSense/librealsense/releases>. You need the librealsense version that matches cwipc_realsense, currently 2.41.
+- Extract the `cwipc_util_win1064_vX.Y.zip` file into the same place you extracted cwipc_util. Check that the DLLs are right next to each other in `installed/bin`
 - Add the `c:\vrtogether\installed\bin` folder to the `%PATH%` system environment variable.
 
 ### OSX
@@ -40,10 +37,10 @@ For use within VRtogether you can get pre-built zipfiles (or tgzfiles for Mac/Li
   [sudo] tar xfv .../cwipc_realsense2_osx1012_vX.Y.tgz
   ```
   
-### Ubuntu 18.04
+### Ubuntu 20.04
 
 - Install _PCL_ with `apt-get install libpcl-dev`.
-- Install _librealsense_ following instructions at <https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md> for Ubuntu 18.04.
+- Install _librealsense_ following instructions at <https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md> for Ubuntu 20.04.
 - Extract both gzipped tar files (for _cwipc\_util_ and _cwipc\_realsense2_) in the `/usr/local` directory:
 
   ```
@@ -54,154 +51,22 @@ For use within VRtogether you can get pre-built zipfiles (or tgzfiles for Mac/Li
 
 
 
-## Building
+## Building from source
 
 The directory `cwipc_realsense2` that is the root of this repository should be put on your system where you cloned all other repos. The CMake setup should be able to find all dependencies needed.
 
-### Windows
+It is assumed that if you build cwipc_realsense2 from source you also build cwipc_util from source. So the instructions here assume that you have already followed the cwipc_util instructions.
 
-#### Required installs:
+## Build instructions (all platforms)
 
-- You need Windows 10 64bit.
-- You need Visual Studio 2017, community edition.
-- You need CMake.
-- You need Intel Realsense SDK. Add the location of its 64 bit dll (e.g. `C:\Program Files (x86)\Intel RealSense SDK 2.0\bin\x64`) to your `PATH`
-- You need PCL 1.8.1, as can be found on <https://github.com/PointCloudLibrary/pcl/releases/tag/pcl-1.8.1>, use the AllInOne win64 installer.
-- You need cwipc_util
-	- for example from <https://github.com/cwi-dis/cwipc_util> ...
-	- ... or from <https://baltig.viaccess-orca.com:8443/VRT/nativeclient-group/cwipc_util>
-	- Use CMake and Visual Studio to build according to instructions there. (Set `CMAKE_INSTALL_PREFIX` to the installation directory. Suggested is `.../DIR/installed` where `DIR` is the directory where you have cloned all the repos.) ...
-	- ... or use a prebuilt installer if available.
-	- Anyway, remember the installation directory (the suggested `.../DIR/installed`). 
-	- And remember to add that directory to your system environment variable `PATH`.
+- You need everything needed by the cwipc_util build instructions.
+- You need Intel Realsense SDK from <https://github.com/IntelRealSense/librealsense>. On windows: manually add the location of its 64 bit dll (e.g. `C:\Program Files (x86)\Intel RealSense SDK 2.0\bin\x64`) to your `PATH`
+- After you have built cwipc_util you follow the same sequence of commands for cwipc_realsense2.
 
-#### Building:
-
-- Create a `build` subdirectory (suggested is `.../DIR/cwipc_realsense2/build` where `DIR` is the directory where you have cloned all the repos).
-Start *CMake*, point it to your source and build directory, and run *CMake->Configure*.
-	- A number of errors are expected and harmless:
-		- *DAVIDSDK* not found
-		- *DSSDK* not found
-		- *ENSENSO* not found
-		- *OPENNI* not found
-		- *RSSDK* not found
-	- Set `CMAKE_INSTALL_PREFIX` to the installation directory (the `.../DIR/installed` from above).
-	- Run *CMake->Configure* again. There should be no more errors.
-	- Next run *CMake->Generate* and *CMake->Open Project*.
-
-- Build the resultant Visual Studio solution.
-- The outputs are going to end up in the `build/bin` subdirectory.
-	- More exact locations to be provided...
-	- TBD: copy the outputs to a known location (for subsequent installing)
-
-### MacOS
-
-#### Required installs:
-
-- You need XCode.
-- Install Homebrew, from <https://brew.sh>
-- Install a few dependencies needed by our software and some of the third party libraries:
-
-  ```
-  brew install cmake
-  brew install homebrew/core/glfw3
-  ```
-  
-- Then install the Intel RealSense SDK.
-	- Look at <https://github.com/IntelRealSense/librealsense> and follow install instructions there for Mac.
-	- I had to manually add the *libusb* search path the the XCode project (*cmake* did something wrong)
-	- **This may fail on OSX 10.14...**, alternatively build with makefiles:
-		- `mkdir build-makefiles`
-		- `cd build-makefiles`
-		- `LIBRARY_PATH=/usr/local/lib cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G "Unix Makefiles"`
-		- `LIBRARY_PATH=/usr/local/lib make`
-		- `make install`
-		- Manually edit `/usr/local/lib/pkgconfig/realsense2.pc` and fix `libdir`.
-- Install the PCL, easiest using brew: 
-
-  ```
-  brew install pcl
-  ```
-  
-  - This may not work if your brew already uses PCL 1.9.x. Remove the too-new pcl, manually edit the formula and try to re-install again:
-
-	  ```
-	  brew uninstall pcl
-	  cd /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula
-	  git log pcl.rb
-	  # Note the commit of the last 1.8.1 formula, use that in the next line
-	  git checkout baea3606fce5d96720f631f37d62662ea73d7798 -- pcl.rb
-	  cd
-	  brew install pcl
-	  ```
-  
-
-#### Building:
-
-- Now build our software. In this directory, *cwipc_realsense2*, create `build`, go there.
-- Run `cmake ..`.
-	- That invocation creates Makefiles. To create an *Xcode* project use `cmake .. -G Xcode`.
-	- dynamic library is in _build/src/libcwipc_realsense2.dylib_, test programs are in _build/renderer/pcl\_renderer_ and _pcl\_align_.
-	- TBD: copy the outputs to a known location (for subsequent installing)
-
-### Linux
-
-#### Required installs:
-
-- You need Ubuntu 18.04 (16.04 linuxes may work too)
-- Install the Intel RealSense SDK following instructions for Linux from <https://github.com/IntelRealSense/librealsense>.
-- Install _cmake_ with `sudo apt-get install cmake`.
-- Install PCL (in the standard repos for 18.04), libusb:
-
-  ```
-  sudo apt-get install libpcl-dev libpcl-common1.8 libpcl-io1.8
-  sudo apt-get install libusb-1.0 libusb-dev
-  sudo apt-get install libglfw3 libglfw3-dev
-  ```
-  
-
-#### Building:
-
-- - In this directory, *cwipc_realsense2*, create `build`, go there.
-- Run `cmake ..`.
-	- More exact locations to be provided...
-	- TBD: copy the outputs to a known location (for subsequent installing)
-
-
-## Expected output: DLL and Apps
-
-#### 1) The dll file: *cwipc_realsense2.dll*
-
-This project produces a dll named `cwipc_realsense2.dll` that gives access to the PCL formatted pointcloud. The function to get a pointcloud together with a timestamp can be found in the .dll is `getPointCloud(long * timestamp, void ** pointcloud)`
-
-For those interested, a pointcloud in PCL format can be obtained from the `void** pointcloud` by casting: `captured_pc = *reinterpret_cast<boost::shared_ptr<PointCloud<PointXYZRGB>>*>(pointcloud)`
-
-#### 2) The tools: *cwipc_grab* and *cwipc_multigrab*
-
-These command line tools grab pointclouds and store them in a given directory as ply-files. Multigrab delays conversion and writing until all poiontclouds have been grabbed, and may therefore get a higher framerate when capturing not too many frames.
-
-#### 3) The apps: *pcl_renderer* and *pcl_align*
-
-**Note** These two apps are now considered legacy. Use `cwipc_view` and `cwipc_calibrate` from the `cwipc_util` repository in stead.
-
-For visual inspection of the result, the project generates two applications *pcl_renderer* and  *pcl_align* that both open a window showing the pointcloud.
-
-*Pcl_renderer* serves as an example on how to make use of the dll and also is a means to test the capturing software. For this it accesses the capturing software using the public API only (using the function `getPointCloud(long * timestamp, void ** pointcloud)`). The pointcloud rendered by this application will automatically be centered with the view origin.
-To examine the pointcloud the user can use the mouse: rightclick and move to rotate the pointcloud, and use the mouse wheel to zoom. The *esc* button will reset the position of the (fused) pointcloud.
-
-*Pcl_align* serves another purpose. It can be used to produce a snapshot of the individual cameras and can be used to manually align the cameras by manipulating the individual transformation settings. When done, it can write out these settings to a file (*cameraconfiguration.xml*).
-Action keys for alignment of camera clouds are:
-
-- "a" to toggle between *life* and *alignment mode*;
-- "1-9" to select the camera to align;
-- "r" to start cloud rotate mode;
-- "t" to start cloud translate mode;
-- "esc" to reset the cloud transformation (in *alignment mode* of the active camera)";
-- "s" to save the current configuration in *camaraconfig.xml* and snapshots of each camera in .ply files;
-- "h" to print the help;
-- "q" to quit;
 
 ## Expected input: *cameraconfig.xml*
+
+**Note** this section is outdated, not all of the information here is correct.
 
 The configuration file *cameraconfig.xml* specifies system parameters type of processing, parameters for depth filtering and camera data.
 
@@ -266,6 +131,8 @@ Below is an example config file.
 By setting the environment variable `CWI_CAPTURE_FEATURE` to *dumpvideoframes* the capturer will write out the video frames as .pgn files named "videoframe\_*timestamp*\_*cameraindex*.png"
 
 ## Calibrating alignment
+
+**Note** This section is outdated and incorrect.
 
 Aligning multiple cameras is a bit of a black art. Here is an attempt at a description, we assume 4 cameras in the rest of this text, but other numbers of cameras should work just fine. There is a program `cwipc_calibrate` included in `cwipc_util` that helps with the procedure.
 
