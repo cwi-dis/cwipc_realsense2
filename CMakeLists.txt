@@ -9,14 +9,9 @@ cmake_minimum_required(VERSION 3.10.0)
 
 project(cwipc_realsense2)
 
-# Save the command line compile commands in the build output
-# set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-# View the makefile commands during build
-# set(CMAKE_VERBOSE_MAKEFILE on)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMakeFiles)
 
-# option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 
 include(CTest)
@@ -35,7 +30,7 @@ include_directories(${cwipc_util_INCLUDE_DIRS})
 link_directories(${cwipc_util_LIBRARY_DIRS})
 
 #
-# Find PCL. Either 1.7 or 1.8 using pkgconfig, or using cmake finder.
+# Find PCL. 1.11 has been tested.
 #
 find_package(PCL REQUIRED COMPONENTS common io visualization filters) 
 include_directories(${PCL_INCLUDE_DIRS})
@@ -58,17 +53,6 @@ include_directories(third-party/tinyXML)
 
 if(NOT WIN32)
 	list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
-endif()
-
-
-if(BUILD_GRAPHICAL_EXAMPLES)
-	if(PKG_CONFIG_FOUND)
-		pkg_check_modules(GLFW glfw3)
-	endif()
-	if(NOT GLFW_FOUND)
-		add_subdirectory(third-party/glfw)
-	endif()
-	
 endif()
 
 include_directories(include)
