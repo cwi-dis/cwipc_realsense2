@@ -7,6 +7,7 @@ build_linux:
   stage: build
   tags:
     - ubuntu2004
+    - vrtogether
   except: 
   - /latest/
   variables:
@@ -31,7 +32,7 @@ build_linux:
     - apt-get install -y python3-pip
     - mkdir deployment-helpers
     - cd deployment-helpers
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/VRTogether_EU/Deployment/Deployment
     - python3 -m pip install -r Deployment/scripts/requirements.txt
     - cd ..
 # Get and install cwipc_util
@@ -60,6 +61,7 @@ build_osx:
   stage: build
   tags:
   - osx1014
+  - vrtogether
   except: 
   - /latest/
   before_script:
@@ -72,7 +74,7 @@ build_osx:
     - python3 -m pip install pillow numpy open3d
     - mkdir deployment-helpers
     - cd deployment-helpers
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/VRTogether_EU/Deployment/Deployment
     - python3 -m pip install -r Deployment/scripts/requirements.txt
     - cd ..
 # Get and install cwipc_util
@@ -100,6 +102,7 @@ build_win:
   stage: build
   tags:
     - win10
+    - vrtogether
   except: 
   - /latest/
   before_script:
@@ -109,7 +112,7 @@ build_win:
     - python -m pip install pillow numpy open3d
     - mkdir deployment-helpers
     - cd deployment-helpers
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/VRTogether_EU/Deployment/Deployment
     - python -m pip install -r Deployment/scripts/requirements.txt
     - cd ..
 # Get and install cwipc_util
@@ -139,6 +142,7 @@ deploy_all:
   stage: deploy
   tags:
     - linux
+    - vrtogether
   only: 
     - tags
   except: 
@@ -152,7 +156,7 @@ deploy_all:
   - apt-get install -y python3-pip
   - mkdir deployment-helpers
   - cd deployment-helpers
-  - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+  - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/VRTogether_EU/Deployment/Deployment
   - python3 -m pip install -r Deployment/scripts/requirements.txt
   - cd ..
   script:
@@ -165,6 +169,7 @@ deploy_all_untagged:
   stage: deploy
   tags:
     - linux
+    - vrtogether
   except: 
     - tags
     - /latest/
@@ -177,7 +182,7 @@ deploy_all_untagged:
   - apt-get install -y python3-pip
   - mkdir deployment-helpers
   - cd deployment-helpers
-  - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment
+  - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/VRTogether_EU/Deployment/Deployment
   - python3 -m pip install -r Deployment/scripts/requirements.txt
   - cd ..
   script:
