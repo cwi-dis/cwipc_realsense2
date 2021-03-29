@@ -119,6 +119,7 @@ build_win:
     - if [ "$CI_COMMIT_TAG" = "" ]; then REL_CWIPC_UTIL="--release_name latest"; else REL_CWIPC_UTIL="--release_name $CI_COMMIT_TAG"; fi
     - python deployment-helpers/Deployment/scripts/getReleaseFromGitLab --cicd --project_name cwipc_util $REL_CWIPC_UTIL
     - (zipfile=$PWD/cwipc_util_win1064_*.zip && cd /cygdrive/c/dist-win && unzip $zipfile)
+    - (cd /cygdrive/c/dist-win/installed/share/cwipc_util/python && python setup.py install)
   script:
     - mkdir -p build
     - export ziplocation=$(pwd)/cwipc_realsense2_win1064_$CI_BUILD_TAG.zip
