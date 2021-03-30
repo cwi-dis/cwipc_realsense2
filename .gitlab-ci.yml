@@ -79,7 +79,7 @@ build_osx:
     - cd ..
 # Get and install cwipc_util
     - if [ "$CI_COMMIT_TAG" = "" ]; then REL_CWIPC_UTIL="--release_name latest"; else REL_CWIPC_UTIL="--release_name $CI_COMMIT_TAG"; fi
-    - python3 deployment-helpers/Deployment/scripts/getReleaseFromGitLab --debug --cicd --project_name cwipc_util $REL_CWIPC_UTIL
+    - python3 deployment-helpers/Deployment/scripts/getReleaseFromGitLab --cicd --project_name cwipc_util $REL_CWIPC_UTIL
     - tar --directory /usr/local -xvmf cwipc_util_osx1014_*.tgz
   script:
     - mkdir -p build
