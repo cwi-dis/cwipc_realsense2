@@ -198,7 +198,8 @@ RS2Capture::RS2Capture(const char *configFilename)
 	// Create an empty pointcloud just in case anyone calls get_mostRecentPointcloud() before one is generated.
 	mergedPC = new_cwipc_pcl_pointcloud();
 
-	// optionally set request for cwi_special_feature
+	// optionally set auxiliary data features
+    
 	char* feature_request;
 	feature_request = getenv("CWI_CAPTURE_FEATURE");
 	if (feature_request != NULL)
@@ -361,16 +362,15 @@ void RS2Capture::_control_thread_main()
             uint64_t camts = cam->get_capture_timestamp();
             if (camts > timestamp) timestamp = camts;
         }
-#ifdef WITH_DUMP_VIDEO_FRAMES
-        // Step 2, if needed: dump image frames.
-        if (configuration.cwi_special_feature == "dumpvideoframes") {
-            for(auto cam : cameras) {
-                std::stringstream png_file;
-                png_file <<  "videoframe_" << timestamp - starttime << "_" << cam->camera_index << ".png";
-                cam->dump_color_frame(png_file.str());
+
+        // step 2 : create pointcloud, and save rgb/depth frames if wanted
+        mergedPC = new_cwipc_pcl_pointcloud();
+
+        if (want_auxdata_rgb || want_auxdata_depth) {
+            for (auto cam : cameras) {
+                cam->save_auxdata(mergedPC, want_auxdata_rgb, want_auxdata_depth);
             }
         }
-#endif // WITH_DUMP_VIDEO_FRAMES
         // Step 3: start processing frames to pointclouds, for each camera
         for(auto cam : cameras) {
             cam->create_pc_from_frames();
@@ -384,7 +384,6 @@ void RS2Capture::_control_thread_main()
             cam->wait_for_pc();
         }
         // Step 5: merge views
-        mergedPC = new_cwipc_pcl_pointcloud();
         merge_views();
         if (mergedPC->size() > 0) {
 #ifdef CWIPC_DEBUG

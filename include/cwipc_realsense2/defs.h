@@ -69,8 +69,9 @@ struct RS2CaptureConfig {
     int laser_power = 360;                // Laser power. -1 is don't change.
 
 	// special features
-	std::string cwi_special_feature = ""; // Specifier for temporary development specific feature
-
+    bool want_auxdata_rgb = false;
+    bool want_auxdata_depth = false;
+    
 	RS2CameraSettings default_camera_settings;
 	// realsense specific post processing filtering
 

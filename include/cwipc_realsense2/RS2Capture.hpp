@@ -39,6 +39,8 @@ public:
 	uint64_t starttime;
 	int numberOfPCsProduced;
     bool no_cameras;                        // True of no cameras attached
+    bool want_auxdata_rgb;
+    bool want_auxdata_depth;
 protected:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
 	virtual void _create_cameras(rs2::device_list devs);

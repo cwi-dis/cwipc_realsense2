@@ -72,7 +72,9 @@ public:
     cwipc_source_realsense2_impl(const char *configFilename=NULL)
 		: m_grabber(NULL)
 	{ 
-		m_grabber = new RS2Capture(configFilename); 
+		m_grabber = new RS2Capture(configFilename);
+        if (auxiliary_data_requested("rgb")) m_grabber->want_auxdata_rgb = true;
+        if (auxiliary_data_requested("depth")) m_grabber->want_auxdata_depth = true;
 	}
 
     ~cwipc_source_realsense2_impl()
