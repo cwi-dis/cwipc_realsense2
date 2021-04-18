@@ -8,7 +8,11 @@
 #include "cwipc_realsense2/api.h"
 #include "cwipc_realsense2/utils.h"
 
-#include "cwipc_realsense2/multiFrame.hpp"
+//#include "cwipc_realsense2/multiFrame.hpp"
+#include "cwipc_realsense2/RS2Capture.hpp"
+#include "cwipc_realsense2/RS2Camera.hpp"
+#include "cwipc_realsense2/RS2Offline.hpp"
+#include "cwipc_realsense2/RS2OfflineCamera.hpp"
 
 // Global variables (constants, really)
 
@@ -16,7 +20,19 @@
 _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16 = RS2_FORMAT_Z16;
 _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_RGB8 = RS2_FORMAT_RGB8;
 
-cwipc_vector* add_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
+static bool rs2_versioncheck(char **errorMessage)
+{
+    int version = rs2_get_api_version(nullptr);
+    if ((version/100) == (RS2_API_VERSION/100)) return true;
+    if (errorMessage) {
+        static char errorBuf[80];
+        sprintf(errorBuf, "Built against librealsense %d but %d is installed.", RS2_API_VERSION, version);
+        *errorMessage = errorBuf;
+    }
+    return false;
+}
+
+static cwipc_vector* add_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
 	if (result) {
 		result->x = a.x + b.x;
 		result->y = a.y + b.y;
@@ -24,7 +40,7 @@ cwipc_vector* add_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) 
 	}
 	return result;
 }
-cwipc_vector* diff_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
+static cwipc_vector* diff_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
 	if (result) {
 		result->x = a.x - b.x;
 		result->y = a.y - b.y;
@@ -32,10 +48,10 @@ cwipc_vector* diff_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result)
 	}
 	return result;
 }
-double len_vector(cwipc_vector v) {
+static double len_vector(cwipc_vector v) {
 	return v.x * v.x + v.y * v.y + v.z * v.z;
 }
-cwipc_vector* mult_vector(double factor, cwipc_vector *v) {
+static cwipc_vector* mult_vector(double factor, cwipc_vector *v) {
 	if (v) {
 		v->x *= factor;
 		v->y *= factor;
@@ -43,16 +59,18 @@ cwipc_vector* mult_vector(double factor, cwipc_vector *v) {
 	}
 	return v;
 }
-cwipc_vector* norm_vector(cwipc_vector *v) {
+static cwipc_vector* norm_vector(cwipc_vector *v) {
 	double len = len_vector(*v);
 	if (len > 0)
 		mult_vector(1.0/len, v);
 	return v;
 }
-double dot_vectors(cwipc_vector a, cwipc_vector b) {
+
+static double dot_vectors(cwipc_vector a, cwipc_vector b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
-cwipc_vector* cross_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
+
+static cwipc_vector* cross_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
 	if (result) {
 		result->x = a.y*b.z - a.z*b.y;
 		result->y = a.z*b.x - a.x*b.z;
@@ -233,7 +251,7 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 		}
 		return NULL;
 	}
-	if (!cwipc_rs2_versionCheck(errorMessage)) return NULL;
+	if (!rs2_versioncheck(errorMessage)) return NULL;
     cwipc_rs2_warning_store = errorMessage;
 	cwipc_source_realsense2_impl *rv = new cwipc_source_realsense2_impl(configFilename);
     cwipc_rs2_warning_store = NULL;
@@ -254,7 +272,7 @@ cwipc_offline* cwipc_rs2offline(RS2OfflineSettings settings, const char *configF
 		}
 		return NULL;
 	}
-	if (!cwipc_rs2_versionCheck(errorMessage)) return NULL;
+	if (!rs2_versioncheck(errorMessage)) return NULL;
 	return new cwipc_source_rs2offline_impl(settings, configFilename);
 }
 

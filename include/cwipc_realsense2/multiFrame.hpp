@@ -43,5 +43,4 @@ using namespace std::chrono;
 #include "cwipc_realsense2/RS2Offline.hpp"
 #include "cwipc_realsense2/RS2OfflineCamera.hpp"
 
-bool cwipc_rs2_versionCheck(char **errorMessage);
 #endif /* cwipw_realsense_multiFrame_hpp */

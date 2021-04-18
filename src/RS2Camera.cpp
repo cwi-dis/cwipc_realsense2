@@ -378,7 +378,7 @@ RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
         void* pointer = malloc(size);
         if (pointer) {
             memcpy(pointer, color.get_data(), size);
-            cwipc_auxiliary_data ap = pc->access_auxiliary_data();
+            cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
             ap->_add(name, pointer, size, ::free);
         }
     }
@@ -390,7 +390,7 @@ RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
         void* pointer = malloc(size);
         if (pointer) {
             memcpy(pointer, depth.get_data(), size);
-            cwipc_auxiliary_data ap = pc->access_auxiliary_data();
+            cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
             ap->_add(name, pointer, size, ::free);
         }
     }

@@ -200,11 +200,13 @@ RS2Capture::RS2Capture(const char *configFilename)
 
 	// optionally set auxiliary data features
     
+#ifdef xxxjack
 	char* feature_request;
 	feature_request = getenv("CWI_CAPTURE_FEATURE");
 	if (feature_request != NULL)
 		configuration.cwi_special_feature = feature_request;
-
+#endif
+    
 	// find camerapositions
 	for (int i = 0; i < configuration.cameraData.size(); i++) {
 		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
@@ -368,7 +370,7 @@ void RS2Capture::_control_thread_main()
 
         if (want_auxdata_rgb || want_auxdata_depth) {
             for (auto cam : cameras) {
-                cam->save_auxdata(mergedPC, want_auxdata_rgb, want_auxdata_depth);
+                // xxxjack cam->save_auxdata(mergedPC, want_auxdata_rgb, want_auxdata_depth);
             }
         }
         // Step 3: start processing frames to pointclouds, for each camera
