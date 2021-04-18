@@ -15,10 +15,10 @@
 #define CWIPC_DLL_ENTRY __declspec(dllexport)
 #endif
 
-#include "cwipc_realsense2/defs.h"
-#include "cwipc_realsense2/utils.h"
-#include "cwipc_realsense2/RS2Offline.hpp"
-#include "cwipc_realsense2/RS2OfflineCamera.hpp"
+#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/utils.h"
+#include "cwipc_realsense2/private/RS2Offline.hpp"
+#include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
 RS2Offline::RS2Offline(RS2OfflineSettings& settings, const char *configFilename)
 :	RS2Capture(1)

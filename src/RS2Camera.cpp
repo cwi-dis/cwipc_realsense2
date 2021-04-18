@@ -17,13 +17,13 @@
 
 #include <librealsense2/rsutil.h>
 
-#include "cwipc_realsense2/defs.h"
-#include "cwipc_realsense2/utils.h"
-#include "cwipc_realsense2/RS2Camera.hpp"
+#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/utils.h"
+#include "cwipc_realsense2/private/RS2Camera.hpp"
 
 #ifdef WITH_DUMP_VIDEO_FRAMES
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "cwipc_realsense2/stb_image_write.h"
+#include "cwipc_realsense2/private/stb_image_write.h"
 #endif
 
 // Internal-only constructor for OfflineCamera constructor

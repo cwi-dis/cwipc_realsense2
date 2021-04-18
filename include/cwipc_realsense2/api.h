@@ -2,7 +2,7 @@
 #define cwipc_realsense_api_h
 
 #include "cwipc_util/api.h"
-#include "offlinedefs.h"
+#include "private/offlinedefs.h"
 
 /* Ensure we have the right dllexport or dllimport on windows */
 #ifndef _CWIPC_REALSENSE2_EXPORT

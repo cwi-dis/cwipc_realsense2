@@ -8,7 +8,7 @@
 
 #include <librealsense2/rs.hpp>
 
-#include "defs.h"
+#include "cwipc_realsense2/private/defs.h"
 
 class RS2Camera {
 private:

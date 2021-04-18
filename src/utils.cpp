@@ -6,8 +6,8 @@
 #if defined(WIN32) || defined(_WIN32)
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
-#include "cwipc_realsense2/defs.h"
-#include "cwipc_realsense2/utils.h"
+#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/utils.h"
 
 #include "tinyxml.h"
 

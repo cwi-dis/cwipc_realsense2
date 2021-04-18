@@ -6,13 +6,12 @@
 #include "cwipc_util/api_pcl.h"
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
-#include "cwipc_realsense2/utils.h"
+#include "cwipc_realsense2/private/utils.h"
 
-//#include "cwipc_realsense2/multiFrame.hpp"
-#include "cwipc_realsense2/RS2Capture.hpp"
-#include "cwipc_realsense2/RS2Camera.hpp"
-#include "cwipc_realsense2/RS2Offline.hpp"
-#include "cwipc_realsense2/RS2OfflineCamera.hpp"
+#include "cwipc_realsense2/private/RS2Capture.hpp"
+#include "cwipc_realsense2/private/RS2Camera.hpp"
+#include "cwipc_realsense2/private/RS2Offline.hpp"
+#include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
 // Global variables (constants, really)
 

@@ -20,10 +20,10 @@
 
 #include <chrono>
 
-#include "cwipc_realsense2/defs.h"
-#include "cwipc_realsense2/utils.h"
-#include "cwipc_realsense2/RS2Capture.hpp"
-#include "cwipc_realsense2/RS2Camera.hpp"
+#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/utils.h"
+#include "cwipc_realsense2/private/RS2Capture.hpp"
+#include "cwipc_realsense2/private/RS2Camera.hpp"
 
 // Static variable used to print a warning message when we re-create an RS2Capture
 // if there is another one open.

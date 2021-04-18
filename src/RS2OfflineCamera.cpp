@@ -14,9 +14,9 @@
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
 
-#include "cwipc_realsense2/defs.h"
-#include "cwipc_realsense2/utils.h"
-#include "cwipc_realsense2/RS2OfflineCamera.hpp"
+#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/utils.h"
+#include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
 RS2OfflineCamera::RS2OfflineCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraData& _camData, RS2OfflineSettings& settings)
 :	RS2Camera(_camera_index, ctx, configuration, _camData),

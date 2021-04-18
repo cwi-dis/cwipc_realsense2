@@ -8,9 +8,9 @@
 
 #include <librealsense2/rs.hpp>
 
-#include "defs.h"
-#include "cwipc_realsense2/RS2Capture.hpp"
-#include "cwipc_realsense2/RS2OfflineCamera.hpp"
+#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/RS2Capture.hpp"
+#include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
 #ifndef CWIPC_DLL_ENTRY
 #if defined(WIN32) || defined(_WIN32)
