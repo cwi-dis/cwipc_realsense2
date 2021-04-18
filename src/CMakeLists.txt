@@ -11,7 +11,6 @@ cmake_minimum_required(VERSION 3.10.0)
 add_library(cwipc_realsense2 
 	SHARED 
 	cwipc_realsense2.cpp 
-	multiFrame.cpp 
 	RS2Capture.cpp 
 	RS2Camera.cpp 
 	RS2Offline.cpp 
@@ -26,7 +25,6 @@ target_sources(cwipc_realsense2
 	"../include/cwipc_realsense2/defs.h"
 	"../include/cwipc_realsense2/offlinedefs.h"
 	"../include/cwipc_realsense2/utils.h"
-	"../include/cwipc_realsense2/multiFrame.hpp"
 	"../include/cwipc_realsense2/RS2Capture.hpp"
 	"../include/cwipc_realsense2/RS2Camera.hpp"
 	"../include/cwipc_realsense2/RS2Offline.hpp"

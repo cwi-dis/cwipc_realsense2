@@ -19,12 +19,6 @@
 #endif
 
 #include <chrono>
-#if 0
-#include <cstdint>
-#include "cwipc_realsense2/multiFrame.hpp"
-#include "cwipc_realsense2/api.h"
-#include "cwipc_realsense2/utils.h"
-#endif
 
 #include "cwipc_realsense2/defs.h"
 #include "cwipc_realsense2/utils.h"
