@@ -21,11 +21,6 @@
 #include "cwipc_realsense2/private/utils.h"
 #include "cwipc_realsense2/private/RS2Camera.hpp"
 
-#ifdef WITH_DUMP_VIDEO_FRAMES
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "cwipc_realsense2/private/stb_image_write.h"
-#endif
-
 // Internal-only constructor for OfflineCamera constructor
 RS2Camera::RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& configuration, RS2CameraData& _camData)
 :	pointSize(0), minx(0), minz(0), maxz(0),

@@ -30,7 +30,6 @@ target_sources(cwipc_realsense2
 	"../include/cwipc_realsense2/private/RS2Offline.hpp"
 	"../include/cwipc_realsense2/private/RS2OfflineCamera.hpp"
 	"../include/cwipc_realsense2/private/window_util.hpp"
-	"../include/cwipc_realsense2/private/stb_image_write.h"
 	"../include/cwipc_realsense2/api.h"
 )
 
