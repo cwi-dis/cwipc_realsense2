@@ -18,7 +18,6 @@
 // Definitions of types used across cwipc_realsense2, cwipc_codec and cwipc_util.
 //
 #include "cwipc_util/api_pcl.h"
-#include "offlinedefs.h"
 
 struct RS2CameraSettings {
 	bool do_decimation = false;
@@ -78,4 +77,5 @@ struct RS2CaptureConfig {
 	// per camera data
 	std::vector<RS2CameraData> cameraData;
 };
+
 #endif /* cwipc_realsense2_defs_h */

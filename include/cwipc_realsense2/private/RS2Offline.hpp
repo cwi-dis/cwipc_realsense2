@@ -8,6 +8,7 @@
 
 #include <librealsense2/rs.hpp>
 
+#include "cwipc_realsense2/api.h"
 #include "cwipc_realsense2/private/defs.h"
 #include "cwipc_realsense2/private/RS2Capture.hpp"
 #include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
@@ -24,7 +25,7 @@ class CWIPC_DLL_ENTRY RS2Offline : public RS2Capture {
 
 public:
 	// methods
-	RS2Offline(RS2OfflineSettings& settings, const char *configFilename=NULL);
+	RS2Offline(cwipc_rs2offline_settings& settings, const char *configFilename=NULL);
 	bool feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize);
 	~RS2Offline();
 private:

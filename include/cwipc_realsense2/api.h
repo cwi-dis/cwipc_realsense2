@@ -2,7 +2,6 @@
 #define cwipc_realsense_api_h
 
 #include "cwipc_util/api.h"
-#include "private/offlinedefs.h"
 
 /* Ensure we have the right dllexport or dllimport on windows */
 #ifndef _CWIPC_REALSENSE2_EXPORT
@@ -12,6 +11,23 @@
 #define _CWIPC_REALSENSE2_EXPORT 
 #endif
 #endif
+
+/** \brief Per-stream settings for offline grabber
+ */
+struct cwipc_rs2offline_camerasettings {
+    int width;
+    int height;
+    int bpp;
+    int fps;
+    int format;
+};
+
+/** \brief settings for the offline grabber
+ */
+struct cwipc_rs2offline_settings {
+    struct cwipc_rs2offline_camerasettings color;
+    struct cwipc_rs2offline_camerasettings depth;
+};
 
 #ifdef __cplusplus
 /** \brief Converter to create pointclouds from streams of RGB and D images
@@ -81,7 +97,7 @@ _CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configF
  * cameras.
  */
 
-_CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(RS2OfflineSettings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion);
+_CWIPC_REALSENSE2_EXPORT cwipc_offline* cwipc_rs2offline(cwipc_rs2offline_settings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion);
 
 /** \brief Feed image data into an offline pointcloud constructor.
  * \param obj The cwipc_offline object to feed data to.

@@ -12,7 +12,7 @@
 int main(int argc, char** argv)
 {
     bool ok;
-    RS2OfflineSettings settings = {
+    cwipc_rs2offline_settings settings = {
 		{
 			640,
 			480,

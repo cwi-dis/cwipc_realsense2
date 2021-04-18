@@ -23,7 +23,6 @@ add_library(cwipc_realsense2
 target_sources(cwipc_realsense2
 	PRIVATE
 	"../include/cwipc_realsense2/private/defs.h"
-	"../include/cwipc_realsense2/private/offlinedefs.h"
 	"../include/cwipc_realsense2/private/utils.h"
 	"../include/cwipc_realsense2/private/RS2Capture.hpp"
 	"../include/cwipc_realsense2/private/RS2Camera.hpp"

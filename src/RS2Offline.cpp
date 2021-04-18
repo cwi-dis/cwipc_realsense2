@@ -20,7 +20,7 @@
 #include "cwipc_realsense2/private/RS2Offline.hpp"
 #include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
-RS2Offline::RS2Offline(RS2OfflineSettings& settings, const char *configFilename)
+RS2Offline::RS2Offline(cwipc_rs2offline_settings& settings, const char *configFilename)
 :	RS2Capture(1)
 {
 	bool ok = cwipc_rs2_file2config(configFilename, &configuration);
