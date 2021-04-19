@@ -145,8 +145,9 @@ RS2Capture::RS2Capture(const char *configFilename)
                     sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.backlight_compensation);
             }
             // Options for depth sensor
-            if (sensor.supports(RS2_OPTION_LASER_POWER) && configuration.laser_power >= 0)
+            if (sensor.supports(RS2_OPTION_LASER_POWER) && configuration.laser_power >= 0) {
                 sensor.set_option(RS2_OPTION_LASER_POWER, configuration.laser_power);
+            }
             // xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
             // suggests that this may depend on using 1280x720@30 with decimation=3. Need to check.
             if (sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
@@ -358,7 +359,7 @@ void RS2Capture::_control_thread_main()
         }
 
         // step 2 : create pointcloud, and save rgb/depth frames if wanted
-        if (mergedPC) {
+        if (mergedPC && mergedPC_is_fresh) {
             mergedPC->free();
             mergedPC = nullptr;
         }
@@ -438,12 +439,17 @@ void RS2Capture::merge_views()
 	size_t nPoints = 0;
 	for (auto cam : cameras) {
 		cwipc_pcl_pointcloud cam_cld = cam->get_current_pointcloud();
+        if (cam_cld == 0) {
+            cwipc_rs2_log_warning("Camera " + cam->serial + " has NULL cloud");
+            continue;
+        }
 		nPoints += cam_cld->size();
 	}
 	aligned_cld->reserve(nPoints);
 	// Now merge all pointclouds
 	for (auto cam : cameras) {
 		cwipc_pcl_pointcloud cam_cld = cam->get_current_pointcloud();
+        if (cam_cld == NULL) continue;
 		*aligned_cld += *cam_cld;
 	}
     // No need to merge aux_data: already inserted into mergedPC by each camera
