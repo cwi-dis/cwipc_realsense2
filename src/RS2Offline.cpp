@@ -26,7 +26,6 @@ RS2Offline::RS2Offline(cwipc_rs2offline_settings& settings, const char *configFi
 	assert(ok);
 	int camera_index = 0;
 	for (RS2CameraData& cd : configuration.camera_data) {
-		cd.cloud = new_cwipc_pcl_pointcloud();
 		auto cam = new RS2OfflineCamera(ctx, configuration, camera_index, cd, settings);
 		feeders.push_back(cam);
 		cameras.push_back(cam);

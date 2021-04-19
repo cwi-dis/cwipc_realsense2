@@ -28,6 +28,7 @@ public:
 	void wait_for_pc();
     void save_auxdata(cwipc *pc, bool rgb, bool depth);
 	uint64_t get_capture_timestamp();
+    cwipc_pcl_pointcloud get_current_pointcloud() { return current_pointcloud; }
 public:
 	// This is public because RS2Capture needs it when dumping the color images
 	rs2::frameset current_frameset;
@@ -54,6 +55,7 @@ private:
 	RS2CameraData& camData;
 	RS2CameraConfig& camSettings;
 	bool high_speed_connection;
+    cwipc_pcl_pointcloud current_pointcloud;
 
 	int camera_width;
 	int camera_height;

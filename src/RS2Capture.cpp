@@ -82,7 +82,6 @@ RS2Capture::RS2Capture(const char *configFilename)
 		default_trafo->setIdentity();
 		cd.trafo = default_trafo;
 		cd.intrinsicTrafo = default_trafo;
-		cd.cloud = new_cwipc_pcl_pointcloud();
 		cd.cameraposition = { 0, 0, 0 };
 		configuration.camera_data.push_back(cd);
 	}
@@ -433,14 +432,14 @@ void RS2Capture::merge_views()
 	mergedPC->clear();
 	// Pre-allocate space in the merged pointcloud
 	size_t nPoints = 0;
-	for (RS2CameraData cd : configuration.camera_data) {
-		cwipc_pcl_pointcloud cam_cld = cd.cloud;
+	for (auto cam : cameras) {
+		cwipc_pcl_pointcloud cam_cld = cam->get_current_pointcloud();
 		nPoints += cam_cld->size();
 	}
 	mergedPC->reserve(nPoints);
 	// Now merge all pointclouds
-	for (RS2CameraData cd : configuration.camera_data) {
-		cwipc_pcl_pointcloud cam_cld = cd.cloud;
+	for (auto cam : cameras) {
+		cwipc_pcl_pointcloud cam_cld = cam->get_current_pointcloud();
 		*mergedPC += *cam_cld;
 	}
 
