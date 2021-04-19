@@ -19,7 +19,7 @@
 //
 #include "cwipc_util/api_pcl.h"
 
-struct RS2CameraSettings {
+struct RS2CameraConfig {
 	bool do_decimation = false;
 	int decimation_value = 1;             // int value between 2 and 8
 	bool do_threshold = true;
@@ -71,11 +71,11 @@ struct RS2CaptureConfig {
     bool want_auxdata_rgb = false;
     bool want_auxdata_depth = false;
     
-	RS2CameraSettings default_camera_settings;
+	RS2CameraConfig camera_config;
 	// realsense specific post processing filtering
 
 	// per camera data
-	std::vector<RS2CameraData> cameraData;
+	std::vector<RS2CameraData> camera_data;
 };
 
 #endif /* cwipc_realsense2_defs_h */

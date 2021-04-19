@@ -85,7 +85,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 		cd.intrinsicTrafo = default_trafo;
 		cd.cloud = new_cwipc_pcl_pointcloud();
 		cd.cameraposition = { 0, 0, 0 };
-		configuration.cameraData.push_back(cd);
+		configuration.camera_data.push_back(cd);
 	}
 
 	//
@@ -110,14 +110,14 @@ RS2Capture::RS2Capture(const char *configFilename)
 		}
 
 		// collect all camera's in the config that are connected
-		for (RS2CameraData cd : configuration.cameraData) {
+		for (RS2CameraData cd : configuration.camera_data) {
 			if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
 				realcams.push_back(cd);
 			else
 				cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
 		}
 		// Reduce the active configuration to cameras that are connected
-		configuration.cameraData = realcams;
+		configuration.camera_data = realcams;
 	}
     // Set various camera hardware parameters (white balance and such)
     for (auto dev : devs) {
@@ -202,18 +202,18 @@ RS2Capture::RS2Capture(const char *configFilename)
 #endif
     
 	// find camerapositions
-	for (int i = 0; i < configuration.cameraData.size(); i++) {
+	for (int i = 0; i < configuration.camera_data.size(); i++) {
 		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
 		cwipc_pcl_point pt;
 		pt.x = 0;
 		pt.y = 0;
 		pt.z = 0;
 		pcptr->push_back(pt);
-		transformPointCloud(*pcptr, *pcptr, *configuration.cameraData[i].trafo);
+		transformPointCloud(*pcptr, *pcptr, *configuration.camera_data[i].trafo);
 		cwipc_pcl_point pnt = pcptr->points[0];
-		configuration.cameraData[i].cameraposition.x = pnt.x;
-		configuration.cameraData[i].cameraposition.y = pnt.y;
-		configuration.cameraData[i].cameraposition.z = pnt.z;
+		configuration.camera_data[i].cameraposition.x = pnt.x;
+		configuration.camera_data[i].cameraposition.y = pnt.y;
+		configuration.camera_data[i].cameraposition.z = pnt.z;
 	}
 
 	//
@@ -434,13 +434,13 @@ void RS2Capture::merge_views()
 	mergedPC->clear();
 	// Pre-allocate space in the merged pointcloud
 	size_t nPoints = 0;
-	for (RS2CameraData cd : configuration.cameraData) {
+	for (RS2CameraData cd : configuration.camera_data) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 		nPoints += cam_cld->size();
 	}
 	mergedPC->reserve(nPoints);
 	// Now merge all pointclouds
-	for (RS2CameraData cd : configuration.cameraData) {
+	for (RS2CameraData cd : configuration.camera_data) {
 		cwipc_pcl_pointcloud cam_cld = cd.cloud;
 		*mergedPC += *cam_cld;
 	}
@@ -448,9 +448,9 @@ void RS2Capture::merge_views()
 }
 
 RS2CameraData& RS2Capture::get_camera_data(std::string serial) {
-	for (int i = 0; i < configuration.cameraData.size(); i++)
-		if (configuration.cameraData[i].serial == serial)
-			return configuration.cameraData[i];
+	for (int i = 0; i < configuration.camera_data.size(); i++)
+		if (configuration.camera_data[i].serial == serial)
+			return configuration.camera_data[i];
 	cwipc_rs2_log_warning("Unknown camera " + serial);
 	abort();
 }

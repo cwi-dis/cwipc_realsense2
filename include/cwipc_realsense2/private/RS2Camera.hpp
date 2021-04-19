@@ -52,7 +52,7 @@ protected:
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 private:
 	RS2CameraData& camData;
-	RS2CameraSettings& camSettings;
+	RS2CameraConfig& camSettings;
 	bool high_speed_connection;
 
 	int camera_width;

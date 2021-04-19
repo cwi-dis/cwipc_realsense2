@@ -137,7 +137,7 @@ public:
     int maxtile()
     {
         if (m_grabber == NULL) return 0;
-        int nCamera = m_grabber->configuration.cameraData.size();
+        int nCamera = m_grabber->configuration.camera_data.size();
         if (nCamera <= 1) {
             // Using a single camera or no camera.
             return nCamera;
@@ -149,7 +149,7 @@ public:
         if (m_grabber == NULL)
 			return false;
 
-        int nCamera = m_grabber->configuration.cameraData.size();
+        int nCamera = m_grabber->configuration.camera_data.size();
 
 		if (nCamera == 0) { // No camera
 			return false;
@@ -161,14 +161,14 @@ public:
 		cwipc_vector camcenter = { 0, 0, 0 };
 
 		// calculate the center of all cameras
-		for (auto camdat : m_grabber->configuration.cameraData) {
+		for (auto camdat : m_grabber->configuration.camera_data) {
 			add_vectors(camcenter, camdat.cameraposition, &camcenter);
 		}
 		mult_vector(1.0 / nCamera, &camcenter);
 
 		// calculate normalized direction vectors from the center towards each camera
 		std::vector<cwipc_vector> camera_directions;
-		for (auto camdat : m_grabber->configuration.cameraData) {
+		for (auto camdat : m_grabber->configuration.camera_data) {
 			cwipc_vector normal;
 			diff_vectors(camdat.cameraposition, camcenter, &normal);
 			norm_vector(&normal);
@@ -179,7 +179,7 @@ public:
 		int ncontribcam = 0;
 		int lastcontribcamid = 0;
 		cwipc_vector tile_direction = { 0, 0, 0 };
-		for (int i = 0; i < m_grabber->configuration.cameraData.size(); i++) {
+		for (int i = 0; i < m_grabber->configuration.camera_data.size(); i++) {
 			uint8_t camera_label = (uint8_t)1 << i;
 			if (tilenum == 0 || (tilenum & camera_label)) {
 				add_vectors(tile_direction, camera_directions[i], &tile_direction);
@@ -195,7 +195,7 @@ public:
 			tileinfo->ncamera = ncontribcam;
 			if (ncontribcam == 1) {
 				// A single camera contributed to this
-				tileinfo->camera = (char *)m_grabber->configuration.cameraData[lastcontribcamid].serial.c_str();
+				tileinfo->camera = (char *)m_grabber->configuration.camera_data[lastcontribcamid].serial.c_str();
 			}
 		}
 		return true;
