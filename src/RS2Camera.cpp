@@ -93,7 +93,7 @@ RS2Camera::RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& con
 	captured_frame_queue(1),
 	camData(_camData),
 	camSettings(configuration.camera_config),
-    current_pointcloud(new_cwipc_pcl_pointcloud()),
+    current_pointcloud(nullptr),
 	high_speed_connection(true),
 	camera_width(0),
 	camera_height(0),
@@ -119,7 +119,7 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
 	captured_frame_queue(1),
 	camData(_camData),
 	camSettings(configuration.camera_config),
-    current_pointcloud(new_cwipc_pcl_pointcloud()),
+    current_pointcloud(nullptr),
 	high_speed_connection(_usb[0] == '3'),
 	camera_width(high_speed_connection ? configuration.usb3_width : configuration.usb2_width),
 	camera_height(high_speed_connection ? configuration.usb3_height : configuration.usb2_height),
@@ -173,6 +173,16 @@ void RS2Camera::_init_filters()
 		temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, camSettings.temporal_delta);
 		temp_filter.set_option(RS2_OPTION_HOLES_FILL, camSettings.temporal_percistency);
 	}
+}
+
+void RS2Camera::_init_pointcloud(int size)
+{
+    if (current_pointcloud == nullptr) {
+        current_pointcloud = new_cwipc_pcl_pointcloud();
+    }
+    current_pointcloud->clear();
+    current_pointcloud->reserve(size);
+
 }
 
 bool RS2Camera::capture_frameset()
@@ -329,8 +339,7 @@ void RS2Camera::_processing_thread_main()
 		const uint8_t camera_label = (uint8_t)1 << camera_index;
 
 		// Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
-		current_pointcloud->clear();
-        current_pointcloud->reserve(points.size());
+        _init_pointcloud(points.size());
 
 		{
 			// Make PointCloud

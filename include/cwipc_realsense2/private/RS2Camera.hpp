@@ -44,6 +44,7 @@ public:
 protected:
 	bool stopped;
 	std::thread *processing_thread;
+    void _init_pointcloud(int size);
 	void _computePointSize(rs2::pipeline_profile profile);
 	void _processing_thread_main();
 	virtual void _start_capture_thread();
