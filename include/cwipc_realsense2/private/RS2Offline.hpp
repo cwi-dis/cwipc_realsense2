@@ -9,7 +9,7 @@
 #include <librealsense2/rs.hpp>
 
 #include "cwipc_realsense2/api.h"
-#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/RS2Config.hpp"
 #include "cwipc_realsense2/private/RS2Capture.hpp"
 #include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 

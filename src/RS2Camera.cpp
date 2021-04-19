@@ -17,8 +17,7 @@
 
 #include <librealsense2/rsutil.h>
 
-#include "cwipc_realsense2/private/defs.h"
-#include "cwipc_realsense2/private/utils.h"
+#include "cwipc_realsense2/private/RS2Config.hpp"
 #include "cwipc_realsense2/private/RS2Camera.hpp"
 
 // Internal-only constructor for OfflineCamera constructor

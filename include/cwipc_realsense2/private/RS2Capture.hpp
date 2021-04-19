@@ -8,7 +8,7 @@
 
 #include <librealsense2/rs.hpp>
 
-#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/RS2Config.hpp"
 
 #ifndef CWIPC_DLL_ENTRY
 #if defined(WIN32) || defined(_WIN32)

@@ -10,7 +10,7 @@
 #include <librealsense2/hpp/rs_internal.hpp>
 
 #include "cwipc_realsense2/api.h"
-#include "cwipc_realsense2/private/defs.h"
+#include "cwipc_realsense2/private/RS2Config.hpp"
 #include "cwipc_realsense2/private/RS2Camera.hpp"
 
 class RS2OfflineCamera : public RS2Camera {

@@ -6,8 +6,8 @@
 #include "cwipc_util/api_pcl.h"
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
-#include "cwipc_realsense2/private/utils.h"
 
+#include "cwipc_realsense2/private/RS2Config.hpp"
 #include "cwipc_realsense2/private/RS2Capture.hpp"
 #include "cwipc_realsense2/private/RS2Camera.hpp"
 #include "cwipc_realsense2/private/RS2Offline.hpp"

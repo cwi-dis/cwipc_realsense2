@@ -15,15 +15,14 @@ add_library(cwipc_realsense2
 	RS2Camera.cpp 
 	RS2Offline.cpp 
 	RS2OfflineCamera.cpp 
-	utils.cpp 
+	RS2Config.cpp 
 	cwipc_pcl_additions.cpp 
 	${TINY_SRC}
 )
 
 target_sources(cwipc_realsense2
 	PRIVATE
-	"../include/cwipc_realsense2/private/defs.h"
-	"../include/cwipc_realsense2/private/utils.h"
+	"../include/cwipc_realsense2/private/RS2Config.hpp"
 	"../include/cwipc_realsense2/private/RS2Capture.hpp"
 	"../include/cwipc_realsense2/private/RS2Camera.hpp"
 	"../include/cwipc_realsense2/private/RS2Offline.hpp"
