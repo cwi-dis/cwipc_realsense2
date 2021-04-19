@@ -20,6 +20,70 @@
 #include "cwipc_realsense2/private/RS2Config.hpp"
 #include "cwipc_realsense2/private/RS2Camera.hpp"
 
+
+typedef struct HsvColor
+{
+    unsigned char h;
+    unsigned char s;
+    unsigned char v;
+} HsvColor;
+
+// Helper function - Return HSV color of a point
+static HsvColor rgbToHsv(cwipc_pcl_point* pnt)
+{
+    HsvColor hsv;
+    unsigned char rgbMin, rgbMax;
+
+    rgbMin = pnt->r < pnt->g ? (pnt->r < pnt->b ? pnt->r : pnt->b) : (pnt->g < pnt->b ? pnt->g : pnt->b);
+    rgbMax = pnt->r > pnt->g ? (pnt->r > pnt->b ? pnt->r : pnt->b) : (pnt->g > pnt->b ? pnt->g : pnt->b);
+
+    hsv.v = rgbMax;
+    if (hsv.v == 0)
+    {
+        hsv.h = 0;
+        hsv.s = 0;
+        return hsv;
+    }
+
+    hsv.s = 255 * ((long)(rgbMax - rgbMin)) / hsv.v;
+    if (hsv.s == 0)
+    {
+        hsv.h = 0;
+        return hsv;
+    }
+
+    if (rgbMax == pnt->r)
+        hsv.h = 0 + 43 * (pnt->g - pnt->b) / (rgbMax - rgbMin);
+    else if (rgbMax == pnt->g)
+        hsv.h = 85 + 43 * (pnt->b - pnt->r) / (rgbMax - rgbMin);
+    else
+        hsv.h = 171 + 43 * (pnt->r - pnt->g) / (rgbMax - rgbMin);
+
+    return hsv;
+}
+
+// Helper function: return true if point doesn't have to be greenscreen-removed
+static bool isNotGreen(cwipc_pcl_point* p)
+{
+    HsvColor hsv = rgbToHsv(p);
+
+    if (hsv.h >= 60 && hsv.h <= 130) {
+        if (hsv.s >= 0.15 && hsv.v >= 0.15) {
+            // reducegreen
+            if ((p->r * p->b) != 0 && (p->g * p->g) / (p->r * p->b) > 1.5) {
+                p->r *= 1.4;
+                p->b *= 1.4;
+            }
+            else {
+                p->r *= 1.2;
+                p->b *= 1.2;
+            }
+        }
+        return !(hsv.s >= 0.4 && hsv.v >= 0.3);
+    }
+    return true;
+}
+
 // Internal-only constructor for OfflineCamera constructor
 RS2Camera::RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& configuration, RS2CameraData& _camData)
 :	pointSize(0), minx(0), minz(0), maxz(0),
@@ -289,7 +353,7 @@ void RS2Camera::_processing_thread_main()
                 // Unexpectedly, this does happen: 100% black points don't actually exist.
                 if (pt.r == 0 && pt.g == 0 && pt.b == 0) continue;
 				pt.a = camera_label;
-				if (!do_greenscreen_removal || cwipc_rs2_noChromaRemoval(&pt)) // chromakey removal
+				if (!do_greenscreen_removal || isNotGreen(&pt)) // chromakey removal
 					camData.cloud->push_back(pt);
 			}
 		}

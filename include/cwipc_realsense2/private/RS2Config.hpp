@@ -99,8 +99,6 @@ _CWIPC_REALSENSE2_EXPORT bool cwipc_rs2_file2config(const char* filename, RS2Cap
 // store the current camera transformation setting into a xml document
 _CWIPC_REALSENSE2_EXPORT void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config);
 
-_CWIPC_REALSENSE2_EXPORT bool cwipc_rs2_noChromaRemoval(cwipc_pcl_point* p);
-
 #ifdef _WIN32
 #include <Windows.h>
 inline void _cwipc_setThreadName(std::thread* thr, const wchar_t* name) {
