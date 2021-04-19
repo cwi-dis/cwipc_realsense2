@@ -90,8 +90,9 @@ public:
 		: m_grabber(NULL)
 	{ 
 		m_grabber = new RS2Capture(configFilename);
-        if (auxiliary_data_requested("rgb")) m_grabber->want_auxdata_rgb = true;
-        if (auxiliary_data_requested("depth")) m_grabber->want_auxdata_depth = true;
+        m_grabber->request_image_auxdata(
+             auxiliary_data_requested("rgb"),
+                                         auxiliary_data_requested("depth"));
 	}
 
     ~cwipc_source_realsense2_impl()

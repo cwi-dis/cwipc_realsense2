@@ -31,6 +31,10 @@ public:
 	uint64_t starttime;
 	int numberOfPCsProduced;
     bool no_cameras;                        // True of no cameras attached
+    void request_image_auxdata(bool _rgb, bool _depth) {
+        want_auxdata_rgb = _rgb;
+        want_auxdata_depth = _depth;
+    }
     bool want_auxdata_rgb;
     bool want_auxdata_depth;
 protected:
