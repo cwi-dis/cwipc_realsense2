@@ -13,15 +13,7 @@
 #include "cwipc_realsense2/private/RS2Capture.hpp"
 #include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
-#ifndef CWIPC_DLL_ENTRY
-#if defined(WIN32) || defined(_WIN32)
-#define CWIPC_DLL_ENTRY __declspec(dllimport)
-#else
-#define CWIPC_DLL_ENTRY 
-#endif
-#endif
-
-class CWIPC_DLL_ENTRY RS2Offline : public RS2Capture {
+class RS2Offline : public RS2Capture {
 
 public:
 	// methods

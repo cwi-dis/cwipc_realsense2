@@ -10,17 +10,9 @@
 
 #include "cwipc_realsense2/private/RS2Config.hpp"
 
-#ifndef CWIPC_DLL_ENTRY
-#if defined(WIN32) || defined(_WIN32)
-#define CWIPC_DLL_ENTRY __declspec(dllimport)
-#else
-#define CWIPC_DLL_ENTRY 
-#endif
-#endif
-
 class RS2Camera;
 
-class CWIPC_DLL_ENTRY RS2Capture {
+class RS2Capture {
 protected:
 	RS2Capture(int dummy);
 public:

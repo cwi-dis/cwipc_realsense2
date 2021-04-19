@@ -7,14 +7,6 @@
 #ifndef cwipc_realsense2_rs2config_h
 #define cwipc_realsense2_rs2config_h
 
-#ifndef _CWIPC_REALSENSE2_EXPORT
-#if defined(WIN32) || defined(_WIN32)
-#define _CWIPC_REALSENSE2_EXPORT __declspec(dllimport)
-#else
-#define _CWIPC_REALSENSE2_EXPORT 
-#endif
-#endif
-
 #include <cstdint>
 #include <thread>
 
@@ -91,13 +83,13 @@ struct RS2CaptureConfig {
 
 struct RS2CaptureConfig;
 
-_CWIPC_REALSENSE2_EXPORT void cwipc_rs2_log_warning(std::string warning);
-_CWIPC_REALSENSE2_EXPORT extern char **cwipc_rs2_warning_store;
+void cwipc_rs2_log_warning(std::string warning);
+extern char **cwipc_rs2_warning_store;
 
-_CWIPC_REALSENSE2_EXPORT bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config);
+bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config);
 
 // store the current camera transformation setting into a xml document
-_CWIPC_REALSENSE2_EXPORT void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config);
+void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config);
 
 #ifdef _WIN32
 #include <Windows.h>
