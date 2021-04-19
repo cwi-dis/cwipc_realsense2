@@ -90,9 +90,6 @@ public:
 		: m_grabber(NULL)
 	{ 
 		m_grabber = new RS2Capture(configFilename);
-        m_grabber->request_image_auxdata(
-             auxiliary_data_requested("rgb"),
-                                         auxiliary_data_requested("depth"));
 	}
 
     ~cwipc_source_realsense2_impl()
@@ -105,31 +102,31 @@ public:
         return !m_grabber->no_cameras;
     }
     
-    void free() 
+    void free() override
 	{
         delete m_grabber;
         m_grabber = NULL;
     }
 
-    bool eof() 
+    bool eof() override
 	{
     	return false;
     }
 
-    bool available(bool wait)
+    bool available(bool wait) override
 	{
     	if (m_grabber == NULL) return false;
     	return m_grabber->pointcloud_available(wait);
     }
 
-    cwipc* get()
+    cwipc* get() override
 	{
         if (m_grabber == NULL) return NULL;
         cwipc* rv = m_grabber->get_pointcloud();
         return rv;
     }
     
-    int maxtile()
+    int maxtile() override
     {
         if (m_grabber == NULL) return 0;
         int nCamera = m_grabber->configuration.camera_data.size();
@@ -140,7 +137,7 @@ public:
         return 1<<nCamera;
     }
     
-    bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo) {
+    bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo) override {
         if (m_grabber == NULL)
 			return false;
 
@@ -194,6 +191,13 @@ public:
 			}
 		}
 		return true;
+    }
+    
+    void request_auxiliary_data(const std::string& name) override {
+        cwipc_tiledsource::request_auxiliary_data(name);
+        m_grabber->request_image_auxdata(
+            auxiliary_data_requested("rgb"),
+            auxiliary_data_requested("depth"));
     }
 };
 

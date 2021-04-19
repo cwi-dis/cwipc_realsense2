@@ -30,6 +30,8 @@ static int numberOfCapturersActive = 0;
 
 RS2Capture::RS2Capture(int dummy)
 :	numberOfPCsProduced(0),
+    want_auxdata_rgb(false),
+    want_auxdata_depth(false),
     no_cameras(true),
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)
@@ -41,6 +43,8 @@ RS2Capture::RS2Capture(int dummy)
 
 RS2Capture::RS2Capture(const char *configFilename)
 :	numberOfPCsProduced(0),
+    want_auxdata_rgb(false),
+    want_auxdata_depth(false),
     no_cameras(false),
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)

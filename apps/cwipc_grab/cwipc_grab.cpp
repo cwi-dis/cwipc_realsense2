@@ -6,6 +6,8 @@
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
 
+#undef DEBUG_AUXDATA
+
 int main(int argc, char** argv)
 {
     //char *message = NULL;
@@ -33,6 +35,10 @@ int main(int argc, char** argv)
     if (error) {
         std::cerr << argv[0] << ": warning while creating realsense2 grabber: " << error << std::endl;
     }
+#ifdef DEBUG_AUXDATA
+    generator->request_auxiliary_data("rgb");
+    generator->request_auxiliary_data("depth");
+#endif
 	cwipc_tileinfo tif;
 	generator->get_tileinfo(0, &tif);
 	generator->get_tileinfo(1, &tif);
@@ -56,7 +62,18 @@ int main(int argc, char** argv)
 			snprintf(filename, sizeof(filename), "%s/pointcloud-%lld.ply", argv[2], pc->timestamp());
 			ok = cwipc_write(filename, pc, &error);
 		}
-		pc->free();
+#ifdef DEBUG_AUXDATA
+        cwipc_auxiliary_data* ap = pc->access_auxiliary_data();
+        if (ap == nullptr) {
+            std::cerr << argv[0] << ": access_auxiliary_data: returned null pointer" << std::endl;
+        } else {
+            std::cerr << argv[0] << ": auxdata: " << ap->count() << " items:" << std::endl;
+            for (int i=0; i<ap->count(); i++) {
+                std::cerr << argv[0] << "auxdata: item " << i << " name=" << ap->name(i) << ", size=" << (int)ap->size(i) << std::endl;
+            }
+        }
+#endif
+        pc->free();
     }
     generator->free();
     if (ok < 0) {
