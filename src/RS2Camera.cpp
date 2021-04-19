@@ -182,7 +182,6 @@ void RS2Camera::_init_pointcloud(int size)
     }
     current_pointcloud->clear();
     current_pointcloud->reserve(size);
-
 }
 
 bool RS2Camera::capture_frameset()
@@ -340,7 +339,7 @@ void RS2Camera::_processing_thread_main()
 
 		// Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
         _init_pointcloud(points.size());
-
+        cwipc_pcl_pointcloud pcl_pointcloud = current_pointcloud;
 		{
 			// Make PointCloud
 			for (int i = 0; i < points.size(); i++) {
@@ -365,10 +364,10 @@ void RS2Camera::_processing_thread_main()
                 if (pt.r == 0 && pt.g == 0 && pt.b == 0) continue;
 				pt.a = camera_label;
 				if (!do_greenscreen_removal || isNotGreen(&pt)) // chromakey removal
-                    current_pointcloud->push_back(pt);
+                    pcl_pointcloud->push_back(pt);
 			}
 		}
-		if (current_pointcloud->size() == 0) {
+		if (pcl_pointcloud->size() == 0) {
 			std::cerr << "cwipc_realsense2: warning: captured empty pointcloud from camera " << camData.serial << std::endl;
             //continue;
 		}

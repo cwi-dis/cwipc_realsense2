@@ -35,7 +35,7 @@ RS2Capture::RS2Capture(int dummy)
 	mergedPC_want_new(false)
 {
 	numberOfCapturersActive++;
-	mergedPC = new_cwipc_pcl_pointcloud();
+	mergedPC = nullptr;
 	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
@@ -187,8 +187,6 @@ RS2Capture::RS2Capture(const char *configFilename)
 	// Now we have all the configuration information. Open the cameras.
 	_create_cameras(devs);
 
-	// Create an empty pointcloud just in case anyone calls get_mostRecentPointcloud() before one is generated.
-	mergedPC = new_cwipc_pcl_pointcloud();
 
 	// optionally set auxiliary data features
     
@@ -291,14 +289,13 @@ RS2Capture::~RS2Capture() {
 }
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp
-cwipc_pcl_pointcloud RS2Capture::get_pointcloud(uint64_t *timestamp)
+cwipc* RS2Capture::get_pointcloud()
 {
     if (no_cameras) return nullptr;
-	*timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	_request_new_pointcloud();
 	// Wait for a fresh mergedPC to become available.
 	// Note we keep the return value while holding the lock, so we can start the next grab/process/merge cycle before returning.
-	cwipc_pcl_pointcloud rv;
+	cwipc* rv;
 	{
 		std::unique_lock<std::mutex> mylock(mergedPC_mutex);
 		mergedPC_is_fresh_cv.wait(mylock, [this]{return mergedPC_is_fresh; });
@@ -356,13 +353,21 @@ void RS2Capture::_control_thread_main()
             uint64_t camts = cam->get_capture_timestamp();
             if (camts > timestamp) timestamp = camts;
         }
+        if (timestamp == 0) {
+            timestamp =  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        }
 
         // step 2 : create pointcloud, and save rgb/depth frames if wanted
-        mergedPC = new_cwipc_pcl_pointcloud();
+        if (mergedPC) {
+            mergedPC->free();
+            mergedPC = nullptr;
+        }
+        cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
+        mergedPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
 
         if (want_auxdata_rgb || want_auxdata_depth) {
             for (auto cam : cameras) {
-                // xxxjack cam->save_auxdata(mergedPC, want_auxdata_rgb, want_auxdata_depth);
+                cam->save_auxdata(mergedPC, want_auxdata_rgb, want_auxdata_depth);
             }
         }
         // Step 3: start processing frames to pointclouds, for each camera
@@ -379,7 +384,7 @@ void RS2Capture::_control_thread_main()
         }
         // Step 5: merge views
         merge_views();
-        if (mergedPC->size() > 0) {
+        if (mergedPC->access_pcl_pointcloud()->size() > 0) {
 #ifdef CWIPC_DEBUG
             std::cerr << "cwipc_realsense2: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
 #endif
@@ -408,7 +413,7 @@ void RS2Capture::_control_thread_main()
 }
 
 // return the merged cloud 
-cwipc_pcl_pointcloud RS2Capture::get_mostRecentPointCloud()
+cwipc* RS2Capture::get_mostRecentPointCloud()
 {
     if (no_cameras) return nullptr;
 	// This call doesn't need a fresh pointcloud (Jack thinks), but it does need one that is
@@ -428,21 +433,20 @@ void RS2Capture::_request_new_pointcloud()
 
 void RS2Capture::merge_views()
 {
-	cwipc_pcl_pointcloud aligned_cld(new_cwipc_pcl_pointcloud());
-	mergedPC->clear();
+	cwipc_pcl_pointcloud aligned_cld(mergedPC->access_pcl_pointcloud());
 	// Pre-allocate space in the merged pointcloud
 	size_t nPoints = 0;
 	for (auto cam : cameras) {
 		cwipc_pcl_pointcloud cam_cld = cam->get_current_pointcloud();
 		nPoints += cam_cld->size();
 	}
-	mergedPC->reserve(nPoints);
+	aligned_cld->reserve(nPoints);
 	// Now merge all pointclouds
 	for (auto cam : cameras) {
 		cwipc_pcl_pointcloud cam_cld = cam->get_current_pointcloud();
-		*mergedPC += *cam_cld;
+		*aligned_cld += *cam_cld;
 	}
-
+    // No need to merge aux_data: already inserted into mergedPC by each camera
 }
 
 RS2CameraData& RS2Capture::get_camera_data(std::string serial) {

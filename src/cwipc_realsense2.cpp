@@ -124,14 +124,8 @@ public:
     cwipc* get()
 	{
         if (m_grabber == NULL) return NULL;
-        uint64_t timestamp;
-        cwipc_pcl_pointcloud pc = m_grabber->get_pointcloud(&timestamp);
-        if (pc == NULL) return NULL;
-        cwipc *rv = cwipc_from_pcl(pc, timestamp, NULL, CWIPC_API_VERSION);
-        if (rv) {
-			rv->_set_cellsize(m_grabber->get_pointSize());
-		}
-		return rv;
+        cwipc* rv = m_grabber->get_pointcloud();
+        return rv;
     }
     
     int maxtile()

@@ -19,9 +19,9 @@ public:
 	// methods
 	RS2Capture(const char *configFilename=NULL);
 	virtual ~RS2Capture();
-	cwipc_pcl_pointcloud get_pointcloud(uint64_t *timestamp); // API function that returns the merged pointcloud and timestamp
+	cwipc* get_pointcloud(); // API function that returns the merged pointcloud
 	bool pointcloud_available(bool wait);					  // Returns true if a pointcloud is available
-	cwipc_pcl_pointcloud get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
+	cwipc* get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
 	RS2CameraData& get_camera_data(std::string serial);
 	RS2Camera* get_camera(std::string serial);
 	float get_pointSize();
@@ -44,7 +44,7 @@ protected:
 private:
 	void merge_views();                       // Internal: merge all camera's pointclouds into one
 	void _request_new_pointcloud();           // Internal: request a new pointcloud to be grabbed and processed
-	cwipc_pcl_pointcloud mergedPC;                            // Merged pointcloud
+	cwipc* mergedPC;                            // Merged pointcloud
 	std::mutex mergedPC_mutex;                                // Lock for all mergedPC-related dta structures
 	bool mergedPC_is_fresh;                                   // True if mergedPC contains a freshly-created pointcloud
 	std::condition_variable mergedPC_is_fresh_cv;             // Condition variable for signalling freshly-created pointcloud
