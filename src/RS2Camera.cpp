@@ -440,26 +440,44 @@ RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
 {
     if (rgb) {
         std::string name = "rgb." + serial;
-        rs2::video_frame color = current_frameset.get_color_frame();
+        rs2::video_frame image = current_frameset.get_color_frame();
         //const void* pointer = color.get_data();
-        const size_t size = color.get_data_size();
+        const size_t size = image.get_data_size();
+        int width = image.get_width();
+        int height = image.get_height();
+        int stride = image.get_stride_in_bytes();
+        int bpp = image.get_bytes_per_pixel();
+        std::string description =
+            "width="+std::to_string(width)+
+            ",height="+std::to_string(height)+
+            ",stride="+std::to_string(stride)+
+            ",bpp="+std::to_string(bpp);
         void* pointer = malloc(size);
         if (pointer) {
-            memcpy(pointer, color.get_data(), size);
+            memcpy(pointer, image.get_data(), size);
             cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
-            ap->_add(name, pointer, size, ::free);
+            ap->_add(name, description, pointer, size, ::free);
         }
     }
     if (depth) {
         std::string name = "depth." + serial;
-        rs2::video_frame depth = current_frameset.get_depth_frame();
-        //const void* pointer = depth.get_data();
-        const size_t size = depth.get_data_size();
+        rs2::video_frame image = current_frameset.get_depth_frame();
+        //const void* pointer = color.get_data();
+        const size_t size = image.get_data_size();
+        int width = image.get_width();
+        int height = image.get_height();
+        int stride = image.get_stride_in_bytes();
+        int bpp = image.get_bytes_per_pixel();
+        std::string description =
+            "width="+std::to_string(width)+
+            ",height="+std::to_string(height)+
+            ",stride="+std::to_string(stride)+
+            ",bpp="+std::to_string(bpp);
         void* pointer = malloc(size);
         if (pointer) {
-            memcpy(pointer, depth.get_data(), size);
+            memcpy(pointer, image.get_data(), size);
             cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
-            ap->_add(name, pointer, size, ::free);
+            ap->_add(name, description, pointer, size, ::free);
         }
     }
 }

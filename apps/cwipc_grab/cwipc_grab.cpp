@@ -6,7 +6,7 @@
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
 
-#undef DEBUG_AUXDATA
+#define DEBUG_AUXDATA
 
 int main(int argc, char** argv)
 {
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
         } else {
             std::cerr << argv[0] << ": auxdata: " << ap->count() << " items:" << std::endl;
             for (int i=0; i<ap->count(); i++) {
-                std::cerr << argv[0] << "auxdata: item " << i << " name=" << ap->name(i) << ", size=" << (int)ap->size(i) << std::endl;
+                std::cerr << argv[0] << "auxdata: item " << i << " name=" << ap->name(i) << ", size=" << (int)ap->size(i) << ", description=" << ap->description(i) << std::endl;
             }
         }
 #endif
