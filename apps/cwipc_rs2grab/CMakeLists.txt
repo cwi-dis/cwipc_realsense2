@@ -8,7 +8,7 @@ include_directories(
 )
 target_link_libraries(cwipc_rs2grab cwipc_realsense2 cwipc_util ${PCL_LIBRARIES})
 
-install(TARGETS cwipc_rs2grab RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+# install(TARGETS cwipc_rs2grab RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_test(NAME cwipc_rs2grab COMMAND cwipc_rs2grab 2 . )
 set_tests_properties(cwipc_rs2grab PROPERTIES ENVIRONMENT CWIPC_REALSENSE2_TESTING=yes)
