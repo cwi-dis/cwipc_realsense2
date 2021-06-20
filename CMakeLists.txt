@@ -25,10 +25,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}
 #
 # Find cwipc_util
 #
-find_package(cwipc_util REQUIRED)
-include_directories(${cwipc_util_INCLUDE_DIRS})
-link_directories(${cwipc_util_LIBRARY_DIRS})
-
+if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+	find_package(cwipc_util REQUIRED)
+	include_directories(${cwipc_util_INCLUDE_DIRS})
+	link_directories(${cwipc_util_LIBRARY_DIRS})
+endif()
 #
 # Find PCL. 1.11 has been tested.
 #
