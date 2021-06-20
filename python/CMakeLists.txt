@@ -28,30 +28,20 @@ if(Python3_FOUND)
 		COMMAND ${Python3_EXECUTABLE} test_cwipc_realsense2.py
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
-#	add_test(NAME test_calibrator
-#		COMMAND ${Python3_EXECUTABLE} -m _cwipc_realsense2.scripts.cwipc_rs2calibrate --auto
-#		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#	)
 	# Ensure the cwipc_realsense2 dynamic library and cwipc python module can be found by the tests
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 		set_property(TEST cwipc_realsense2_python_tests PROPERTY ENVIRONMENT DYLD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}:$ENV{DYLD_LIBRARY_PATH})
 		set_property(TEST cwipc_realsense2_python_tests APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS}:$ENV{PYTHONPATH})
-#		set_property(TEST test_calibrator PROPERTY ENVIRONMENT DYLD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}:$ENV{DYLD_LIBRARY_PATH})
-#		set_property(TEST test_calibrator APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS}:$ENV{PYTHONPATH})
 	endif()
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         # On Linux we have to add /usr/local/lib to the Library search path too... Sillyness in Python ctypes is to blame...
         set_property(TEST cwipc_realsense2_python_tests PROPERTY ENVIRONMENT LD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}:${cwipc_util_LIBRARY_DIRS}:$ENV{LD_LIBRARY_PATH})
 		set_property(TEST cwipc_realsense2_python_tests APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS}:$ENV{PYTHONPATH})
-#        set_property(TEST test_calibrator PROPERTY ENVIRONMENT LD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}:${cwipc_util_LIBRARY_DIRS}:$ENV{LD_LIBRARY_PATH})
-#		set_property(TEST test_calibrator APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS}:$ENV{PYTHONPATH})
 	endif()
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 		# Jack doesn't understand why modifying PATH doesn't seem to work on Windows...
 		# Jack doesn't understand why we need the "Release" here, which should already be in CMAKE_RUNTIME_OUTPUT_DIRECTORY...
 		set_property(TEST cwipc_realsense2_python_tests PROPERTY ENVIRONMENT CWIPC_TEST_DLL=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/cwipc_realsense2.dll)
 		set_property(TEST cwipc_realsense2_python_tests APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS};$ENV{PYTHONPATH})
-#		set_property(TEST test_calibrator PROPERTY ENVIRONMENT CWIPC_TEST_DLL=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/cwipc_realsense2.dll)
-#		set_property(TEST test_calibrator APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS};$ENV{PYTHONPATH})
 	endif()
 endif()
