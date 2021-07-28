@@ -100,6 +100,7 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 		int i = 0;
 		while (i < config->camera_data.size()) {
 			if (config->camera_data[i].serial == serial) {
+				cameraElement->QueryBoolAttribute("disabled", &(config->camera_data[i].disabled));
 				cd = &config->camera_data[i];
 				break;
 			}
@@ -115,6 +116,7 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
 			pcl::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
 			intrinsicTrafo->setIdentity();
 			cd->serial = cameraElement->Attribute("serial");
+			cameraElement->QueryBoolAttribute("disabled", &cd->disabled);
 			cd->trafo = trafo;
 			cd->intrinsicTrafo = intrinsicTrafo;
 			cd->cameraposition = { 0, 0, 0 };

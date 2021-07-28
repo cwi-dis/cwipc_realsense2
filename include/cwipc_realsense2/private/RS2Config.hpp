@@ -42,6 +42,7 @@ struct RS2CameraConfig {
 };
 
 struct RS2CameraData {
+	bool disabled = false;	// to easily disable cameras without altering too much the cameraconfig
 	std::string serial;		// Serial number of this camera
     std::string type = "realsense";       // Camera type (must be realsense)
 	pcl::shared_ptr<Eigen::Affine3d> trafo;	//!< Transformation matrix from camera coorindates to world coordinates

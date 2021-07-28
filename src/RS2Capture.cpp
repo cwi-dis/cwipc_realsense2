@@ -113,10 +113,13 @@ RS2Capture::RS2Capture(const char *configFilename)
 
 		// collect all camera's in the config that are connected
 		for (RS2CameraData cd : configuration.camera_data) {
-			if ((find(serials.begin(), serials.end(), cd.serial) != serials.end()))
-				realcams.push_back(cd);
-			else
+			if ((find(serials.begin(), serials.end(), cd.serial) != serials.end())) {
+				if(!cd.disabled)
+					realcams.push_back(cd);
+			}
+			else {
 				cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
+			}
 		}
 		// Reduce the active configuration to cameras that are connected
 		configuration.camera_data = realcams;
@@ -257,8 +260,12 @@ void RS2Capture::_create_cameras(rs2::device_list devs) {
             cwipc_rs2_log_warning("Camera " + serial + " is type " + cd.type + " in stead of realsense");
         }
 		int camera_index = cameras.size();
-		auto cam = new RS2Camera(ctx, configuration, camera_index, cd, camUsb);
-		cameras.push_back(cam);
+		if (cd.disabled) {
+			// xxxnacho do we need to close the device, like the kinect case?
+		}else{
+			auto cam = new RS2Camera(ctx, configuration, camera_index, cd, camUsb);
+			cameras.push_back(cam);
+		}
 	}
 }
 
