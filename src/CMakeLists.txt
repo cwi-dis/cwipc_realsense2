@@ -49,7 +49,6 @@ install(FILES ${PROJECT_SOURCE_DIR}/CMakeFiles/cwipc_realsense2-config.cmake DES
 
 install(EXPORT cwipc_realsense2 DESTINATION lib/cmake/cwipc_realsense2)
 
-# Set library pkgconfig file for facilitating 3rd party integration
-# install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/cwipc_realsense.pc"
-#         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-# )
+if(WIN32)
+	install(FILES $<TARGET_PDB_FILE:cwipc_realsense2> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+endif()
