@@ -33,7 +33,7 @@ endif()
 #
 # Find PCL. 1.11 has been tested.
 #
-find_package(PCL REQUIRED COMPONENTS common io visualization filters) 
+find_package(PCL 1.11 REQUIRED COMPONENTS common io filters) 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
