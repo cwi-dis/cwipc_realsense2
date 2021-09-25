@@ -6,6 +6,7 @@
 #
 #  minimum required cmake version: 3.10.0
 cmake_minimum_required(VERSION 3.10.0)
+cmake_policy(SET CMP0074 NEW)
 
 project(cwipc_realsense2)
 
