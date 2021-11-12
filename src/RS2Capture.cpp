@@ -471,7 +471,8 @@ RS2CameraData& RS2Capture::get_camera_data(std::string serial) {
 		if (configuration.camera_data[i].serial == serial)
 			return configuration.camera_data[i];
 	cwipc_rs2_log_warning("Unknown camera " + serial);
-	abort();
+	static RS2CameraData empty;
+	return empty;
 }
 
 RS2Camera* RS2Capture::get_camera(std::string serial) {
