@@ -3,6 +3,7 @@ import ctypes.util
 import warnings
 from cwipc.util import CwipcError, CWIPC_API_VERSION, cwipc_tiledsource
 from cwipc.util import cwipc_tiledsource_p
+from cwipc.util import _cwipc_dll_search_path_collection
 
 __all__ = [
     "cwipc_offline_camera_settings",
@@ -12,6 +13,22 @@ __all__ = [
     "cwipc_realsense2",
     "cwipc_rs2offline",
     "_cwipc_realsense2_dll"
+]
+
+#
+# This is a workaround for the change in DLL loading semantics on Windows since Python 3.8
+# Python no longer uses the PATH environment variable to load dependent dlls but only
+# its own set. For that reason we list here a set of dependencies that we know are needed,
+# find those on PATH, and add the directories where those DLLs are located while loading our
+# DLL.
+# The list does not have to be complete, as long as at least one DLL from each directory needed
+# is listed.
+# Dependencies of cwipc_util are automatically added.
+# NOTE: this list must be kept up-to-date otherwise loading DLLs will fail with
+# an obscure message "Python could not find module .... or one of its dependencies"
+#
+_WINDOWS_NEEDED_DLLS=[
+    "realsense2",
 ]
 
 class cwipc_offline_camera_settings(ctypes.Structure):
@@ -46,7 +63,8 @@ def _cwipc_realsense2_dll(libname=None):
         if not libname:
             raise RuntimeError('Dynamic library cwipc_realsense2 not found')
     assert libname
-    _cwipc_realsense2_dll_reference = ctypes.CDLL(libname)
+    with _cwipc_dll_search_path_collection(_WINDOWS_NEEDED_DLLS):
+        _cwipc_realsense2_dll_reference = ctypes.CDLL(libname)
     
     _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_realsense2.restype = cwipc_tiledsource_p
