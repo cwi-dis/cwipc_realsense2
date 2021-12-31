@@ -183,11 +183,12 @@ public:
 		
 		if (tileinfo) {
 			tileinfo->normal = tile_direction;
-			tileinfo->camera = NULL;
+			tileinfo->cameraName = NULL;
 			tileinfo->ncamera = ncontribcam;
+            tileinfo->cameraMask = tilenum;
 			if (ncontribcam == 1) {
 				// A single camera contributed to this
-				tileinfo->camera = (char *)m_grabber->configuration.camera_data[lastcontribcamid].serial.c_str();
+				tileinfo->cameraName = (char *)m_grabber->configuration.camera_data[lastcontribcamid].serial.c_str();
 			}
 		}
 		return true;
