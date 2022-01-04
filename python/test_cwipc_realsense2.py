@@ -72,7 +72,8 @@ class TestApi(unittest.TestCase):
             # Assure the non-tiled-tile exists and points nowhere.
             tileInfo = grabber.get_tileinfo_dict(0)
             self.assertIn('normal', tileInfo)
-            self.assertIn('camera', tileInfo)
+            self.assertIn('cameraName', tileInfo)
+            self.assertIn('cameraMask', tileInfo)
             self.assertIn('ncamera', tileInfo)
             # Untrue if multiple realsenses connected: self.assertLessEqual(tileInfo['ncamera'], 1)
             # Test some minimal conditions for other tiles
