@@ -18,11 +18,6 @@ option(BUILD_SHARED_LIBS "Build shared library" ON)
 include(CTest)
 include(GNUInstallDirs)
 
-# Ensure all executable, dll/so and link-library outputs end up in the same directories
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE})
-
 #
 # Find cwipc_util
 #
