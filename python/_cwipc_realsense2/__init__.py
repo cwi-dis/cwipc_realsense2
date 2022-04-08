@@ -27,7 +27,7 @@ __all__ = [
 # NOTE: this list must be kept up-to-date otherwise loading DLLs will fail with
 # an obscure message "Python could not find module .... or one of its dependencies"
 #
-_WINDOWS_NEEDED_DLLS=[
+_WINDOWS_NEEDED_DLLS=[ # NOT USED AT THE TIME. CAUSING DLL Loading problems
     "realsense2",
 ]
 
@@ -63,7 +63,7 @@ def _cwipc_realsense2_dll(libname=None):
         if not libname:
             raise RuntimeError('Dynamic library cwipc_realsense2 not found')
     assert libname
-    with _cwipc_dll_search_path_collection(_WINDOWS_NEEDED_DLLS):
+    with _cwipc_dll_search_path_collection(None):
         _cwipc_realsense2_dll_reference = ctypes.CDLL(libname)
     
     _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
