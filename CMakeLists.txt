@@ -4,8 +4,7 @@
 # Copyright (C) 2018 by CWI. All rights reserved.
 # ======================================================
 #
-#  minimum required cmake version: 3.10.0
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.16.0)
 cmake_policy(SET CMP0074 NEW)
 
 project(cwipc_realsense2)
@@ -22,6 +21,7 @@ include(GNUInstallDirs)
 # Find cwipc_util
 #
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+	message(WARNING Building cwipc_realsense2 outside cwipc umbrella is not tested)
 	find_package(cwipc_util REQUIRED)
 	include_directories(${cwipc_util_INCLUDE_DIRS})
 	link_directories(${cwipc_util_LIBRARY_DIRS})
@@ -39,8 +39,6 @@ add_definitions(${PCL_DEFINITIONS})
 # Find realsense (either with pkgconfig or with cmake)
 #
 find_package(REALSENSE2 REQUIRED)
-include_directories(${REALSENSE2_INCLUDE_DIRS})
-link_directories(${REALSENSE2_LIBRARY_DIRS})
 
 # we need the thirdparty tinyXML for the test programs.
 include(third-party/tinyXML/CMakeLists.txt)
@@ -59,3 +57,4 @@ add_subdirectory(apps/cwipc_rs2grab)
 add_subdirectory(apps/cwipc_rs2multigrab)
 add_subdirectory(apps/cwipc_rs2offline)
 add_subdirectory(python)
+add_subdirectory(tests)

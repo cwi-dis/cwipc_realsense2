@@ -1,55 +1,48 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.16.0)
+cmake_policy(SET CMP0074 NEW)
 
-set(INSTALL_PATH ${CMAKE_INSTALL_DATADIR}/cwipc_realsense2/python)
-set(DEST_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${INSTALL_PATH})
+# Setup venv-based Python
 
-# This is gross. We need to set the directory where the cwipc module can be found while building with submodules.
-if(NOT CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
-	get_filename_component(cwipc_util_PYTHON_DIRS ${PROJECT_SOURCE_DIR}/../cwipc_util/python ABSOLUTE)
-endif()
+include(SetupCwipcPythonVenv)
 
-find_package(Python3 COMPONENTS Interpreter)
+#
+# It is expected that CMAKE_PYWHEELS_INSTALL_DIRECTORY and CMAKE_PYWHEELS_OUTPUT_DIRECTORY
+# have been set already.
+#
 
-# Unfortunately Ubuntu 18.04 doesn't have the Python3 package (introduced in cmake 3.12 or so). Work around it.
-if(NOT Python3_FOUND)
-    find_program(PY3INTERPRETER python3)
-    if(PY3INTERPRETER)
-        set(Python3_EXECUTABLE ${PY3INTERPRETER})
-        set(Python3_FOUND TRUE)
-    endif()
-endif()
+#
+# Building.
+#
 
-install(FILES test_cwipc_realsense2.py setup.py DESTINATION ${INSTALL_PATH})
-install(DIRECTORY _cwipc_realsense2 DESTINATION ${INSTALL_PATH} PATTERN "__pycache__" EXCLUDE PATTERN "*.pyc" EXCLUDE)
-if(Python3_FOUND)
-	install(CODE "MESSAGE(\"Installing Python modules with ${DEST_INSTALL_PATH}/setup.py\")")
-	install(CODE "execute_process(COMMAND \"${Python3_EXECUTABLE}\" setup.py install WORKING_DIRECTORY \"${DEST_INSTALL_PATH}\" )")
-else()
-	MESSAGE("Python3 not found. Install python modules manually from ${INSTALL_PATH}")
-endif()
+# Create Python wheel in the staging area
 
-if(Python3_FOUND)
-	add_test(NAME cwipc_realsense2_python_tests
-		COMMAND ${Python3_EXECUTABLE} test_cwipc_realsense2.py
-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+cwipc_build_wheel(SOURCEDIR ${CMAKE_CURRENT_SOURCE_DIR} WHEELDIR ${CMAKE_PYWHEELS_OUTPUT_DIRECTORY})
+file(COPY test_cwipc_realsense2.py DESTINATION ${CMAKE_PYWHEELS_OUTPUT_DIRECTORY})
+
+#
+# Installation.
+#
+
+# Copy the whole Python staging subdirectory to the installation (so all scripts are available for inspection and testing)
+# Also install the wheel into the current system Python.
+
+install(FILES test_cwipc_realsense2.py DESTINATION ${CMAKE_PYWHEELS_INSTALL_DIRECTORY})
+cwipc_install_wheel(NAME "cwipc_realsense2" WHEELDIR ${CMAKE_PYWHEELS_OUTPUT_DIRECTORY})
+
+#
+# Testing.
+#
+
+# setup test environment (installs module into venv)
+
+add_test(NAME _python_setup_cwipc_realsense2
+	COMMAND ${Python3_EXECUTABLE} setup.py install WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	)
-	set_tests_properties(cwipc_realsense2_python_tests PROPERTIES RUN_SERIAL TRUE)
-	# Ensure the cwipc_realsense2 dynamic library and cwipc python module can be found by the tests
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-		set_property(TEST cwipc_realsense2_python_tests PROPERTY ENVIRONMENT DYLD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}:$ENV{DYLD_LIBRARY_PATH})
-		set_property(TEST cwipc_realsense2_python_tests APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS}:$ENV{PYTHONPATH})
-	endif()
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        # On Linux we have to add /usr/local/lib to the Library search path too... Sillyness in Python ctypes is to blame...
-        set_property(TEST cwipc_realsense2_python_tests PROPERTY ENVIRONMENT LD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}:${cwipc_util_LIBRARY_DIRS}:$ENV{LD_LIBRARY_PATH})
-		set_property(TEST cwipc_realsense2_python_tests APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS}:$ENV{PYTHONPATH})
-	endif()
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-		string(REPLACE ";" "\\;" prevpath "$ENV{PATH}")
-		set_property(
-			TEST cwipc_realsense2_python_tests
-			APPEND PROPERTY ENVIRONMENT "PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/;${prevpath}"
-		)
-		set_property(TEST cwipc_realsense2_python_tests APPEND PROPERTY ENVIRONMENT PYTHONPATH=${cwipc_util_PYTHON_DIRS};$ENV{PYTHONPATH})
-	endif()
-endif()
+set_tests_properties(_python_setup_cwipc_realsense2 PROPERTIES FIXTURES_SETUP venv)
+
+
+add_test(NAME cwipc_realsense2_python_tests
+	COMMAND ${Python3_EXECUTABLE} ${CMAKE_PYWHEELS_OUTPUT_DIRECTORY}/test_cwipc_realsense2.py
+	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+cwipc_python_test(TEST cwipc_realsense2_python_tests FIXTURES_REQUIRED venv)
