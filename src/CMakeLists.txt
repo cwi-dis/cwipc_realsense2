@@ -4,8 +4,7 @@
 # Copyright (C) 2018 by CWI. All rights reserved.
 # ======================================================
 #
-#  minimum required cmake version: 3.10.0
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.16.0)
 
 
 add_library(cwipc_realsense2 
@@ -31,14 +30,14 @@ target_sources(cwipc_realsense2
 )
 
 target_link_libraries(cwipc_realsense2 PUBLIC cwipc_util)
-target_link_libraries(cwipc_realsense2 PRIVATE realsense2 ${PCL_LIBRARIES})
+target_link_libraries(cwipc_realsense2 PRIVATE ${PCL_LIBRARIES} REALSENSE2::REALSENSE2)
 
 install(TARGETS cwipc_realsense2
     EXPORT cwipc_realsense2
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cwipc_realsense2"
+    PUBLIC_HEADER DESTINATION "include/cwipc_realsense2"
 )
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/cwipc_realsense2

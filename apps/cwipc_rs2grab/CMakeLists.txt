@@ -1,12 +1,12 @@
 
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.16.0)
 
 add_executable(cwipc_rs2grab cwipc_rs2grab.cpp)
 include_directories(
 	"../../include"
 	${PCL_INCLUDE_DIRS}
 )
-target_link_libraries(cwipc_rs2grab cwipc_realsense2 cwipc_util ${PCL_LIBRARIES})
+target_link_libraries(cwipc_rs2grab cwipc_realsense2 cwipc_util)
 
 # install(TARGETS cwipc_rs2grab RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

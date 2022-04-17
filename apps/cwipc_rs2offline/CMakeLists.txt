@@ -1,12 +1,12 @@
 
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.16.0)
 
 add_executable(cwipc_rs2offline cwipc_rs2offline.cpp stb_image.h)
 include_directories(
 	"../../include"
 	${PCL_INCLUDE_DIRS}
 )
-target_link_libraries(cwipc_rs2offline cwipc_realsense2 cwipc_util ${PCL_LIBRARIES})
+target_link_libraries(cwipc_rs2offline cwipc_realsense2 cwipc_util)
 
 install(TARGETS cwipc_rs2offline RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
