@@ -36,9 +36,9 @@ cwipc_install_wheel(NAME "cwipc_realsense2" WHEELDIR ${CMAKE_PYWHEELS_OUTPUT_DIR
 # setup test environment (installs module into venv)
 
 add_test(NAME _python_setup_cwipc_realsense2
-	COMMAND ${Python3_EXECUTABLE} setup.py install WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+	COMMAND ${Python3_EXECUTABLE} -m pip install --upgrade --find-links=${CMAKE_PYWHEELS_OUTPUT_DIRECTORY} cwipc_realsense2
 	)
-set_tests_properties(_python_setup_cwipc_realsense2 PROPERTIES FIXTURES_SETUP venv)
+set_tests_properties(_python_setup_cwipc_realsense2 PROPERTIES FIXTURES_SETUP venv RUN_SERIAL TRUE)
 
 
 add_test(NAME cwipc_realsense2_python_tests
