@@ -2,6 +2,7 @@
 #if defined(WIN32) || defined(_WIN32)
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
+#include <inttypes.h>
 
 #include "cwipc_util/api_pcl.h"
 #include "cwipc_util/api.h"
@@ -246,7 +247,9 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 {
 	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
 		if (errorMessage) {
-			*errorMessage = (char *)"cwipc_realsense2: incorrect apiVersion";
+			char* msgbuf = (char*)malloc(1024);
+			snprintf(msgbuf, 1024, "cwipc_realsense2: incorrect apiVersion 0x%08" PRIx64 " expected 0x%08" PRIx64 "..0x%08" PRIx64 "", apiVersion, CWIPC_API_VERSION_OLD, CWIPC_API_VERSION);
+			*errorMessage = msgbuf;
 		}
 		return NULL;
 	}
@@ -267,7 +270,9 @@ cwipc_offline* cwipc_rs2offline(cwipc_rs2offline_settings settings, const char *
 {
 	if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
 		if (errorMessage) {
-			*errorMessage = (char *)"cwipc_realsense2: incorrect apiVersion";
+			char* msgbuf = (char*)malloc(1024);
+			snprintf(msgbuf, 1024, "cwipc_rs2offline: incorrect apiVersion 0x%08" PRIx64 " expected 0x%08" PRIx64 "..0x%08" PRIx64 "", apiVersion, CWIPC_API_VERSION_OLD, CWIPC_API_VERSION);
+			*errorMessage = msgbuf;
 		}
 		return NULL;
 	}
