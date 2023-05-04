@@ -26,7 +26,7 @@ static bool rs2_versioncheck(char **errorMessage)
     if ((version/100) == (RS2_API_VERSION/100)) return true;
     if (errorMessage) {
         static char errorBuf[80];
-        sprintf(errorBuf, "Built against librealsense %d but %d is installed.", RS2_API_VERSION, version);
+        snprintf(errorBuf, sizeof(errorBuf), "Built against librealsense %d but %d is installed.", RS2_API_VERSION, version);
         *errorMessage = errorBuf;
     }
     return false;
