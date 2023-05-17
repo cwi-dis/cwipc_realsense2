@@ -58,102 +58,21 @@ RS2Capture::RS2Capture(const char *configFilename)
 	if (!_apply_config(configFilename)) {
 		_apply_default_config();
 	}
-	rs2::device_list devs = ctx.query_devices();
 	// Set various camera hardware parameters (white balance and such)
-    for (auto dev : devs) {
-        auto allSensors = dev.query_sensors();
-        for (auto sensor : allSensors) {
-            // Options for color sensor (but may work inadvertantly on dept sensors too?)
-            if (configuration.exposure >= 0) {
-                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-                if (sensor.supports(RS2_OPTION_EXPOSURE))
-                    sensor.set_option(RS2_OPTION_EXPOSURE, configuration.exposure);
-            } else {
-                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
-            }
-            if (configuration.whitebalance >= 0) {
-                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
-                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 0);
-                if (sensor.supports(RS2_OPTION_WHITE_BALANCE))
-                    sensor.set_option(RS2_OPTION_WHITE_BALANCE, configuration.whitebalance);
-            } else {
-                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
-                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 1);
-            }
-            if (configuration.backlight_compensation >= 0) {
-                if (sensor.supports(RS2_OPTION_BACKLIGHT_COMPENSATION))
-                    sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.backlight_compensation);
-            }
-            // Options for depth sensor
-            if (sensor.supports(RS2_OPTION_LASER_POWER) && configuration.laser_power >= 0) {
-                sensor.set_option(RS2_OPTION_LASER_POWER, configuration.laser_power);
-            }
-            // xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
-            // suggests that this may depend on using 1280x720@30 with decimation=3. Need to check.
-            if (sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
-                sensor.set_option(RS2_OPTION_VISUAL_PRESET,
-					configuration.density
-						? RS2_RS400_VISUAL_PRESET_HIGH_DENSITY
-						: RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY
-				);
-			}
-        }
-    }
+	_setup_camera_hardware_parameters();
+
 	//
 	// Set sync mode, if needed
 	//
-#ifdef WITH_INTER_CAM_SYNC
-	bool master_set = false;
-	for(auto dev : devs) {
-		if (camera_count > 1) {
-			auto allSensors = dev.query_sensors();
-			bool foundSensorSupportingSync = false;
-			for (auto sensor : allSensors) {
-				if (sensor.supports(RS2_OPTION_INTER_CAM_SYNC_MODE)) {
-					foundSensorSupportingSync = true;
-					if (!master_set) {
-						sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 1);
-						master_set = true;
-					} else {
-						sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 2);
-					}
-				}
-			}
-			if (!foundSensorSupportingSync) {
-                cwipc_rs2_log_warning("Camera " + std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) + " does not support inter-camera-sync");
-			}
-		}
-	}
-#endif // WITH_INTER_CAM_SYNC
+	_setup_camera_sync();
+
 	// Now we have all the configuration information. Open the cameras.
-	_create_cameras(devs);
+	_create_cameras();
 
 
-	// optionally set auxiliary data features
+	_find_camera_positions();
     
-#ifdef xxxjack
-	char* feature_request;
-	feature_request = getenv("CWI_CAPTURE_FEATURE");
-	if (feature_request != NULL)
-		configuration.cwi_special_feature = feature_request;
-#endif
-    
-	// find camerapositions
-	for (int i = 0; i < configuration.camera_data.size(); i++) {
-		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
-		cwipc_pcl_point pt;
-		pt.x = 0;
-		pt.y = 0;
-		pt.z = 0;
-		pcptr->push_back(pt);
-		transformPointCloud(*pcptr, *pcptr, *configuration.camera_data[i].trafo);
-		cwipc_pcl_point pnt = pcptr->points[0];
-		configuration.camera_data[i].cameraposition.x = pnt.x;
-		configuration.camera_data[i].cameraposition.y = pnt.y;
-		configuration.camera_data[i].cameraposition.z = pnt.z;
-	}
+
 
 	//
 	// start the cameras
@@ -177,6 +96,98 @@ RS2Capture::RS2Capture(const char *configFilename)
 	stopped = false;
 	control_thread = new std::thread(&RS2Capture::_control_thread_main, this);
 	_cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Capture::control_thread");
+}
+
+void RS2Capture::_setup_camera_hardware_parameters() {
+	rs2::device_list devs = ctx.query_devices();
+	for (auto dev : devs) {
+		auto allSensors = dev.query_sensors();
+		for (auto sensor : allSensors) {
+			// Options for color sensor (but may work inadvertantly on dept sensors too?)
+			if (configuration.exposure >= 0) {
+				if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+					sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+				if (sensor.supports(RS2_OPTION_EXPOSURE))
+					sensor.set_option(RS2_OPTION_EXPOSURE, configuration.exposure);
+			}
+			else {
+				if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+					sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
+			}
+			if (configuration.whitebalance >= 0) {
+				if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
+					sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 0);
+				if (sensor.supports(RS2_OPTION_WHITE_BALANCE))
+					sensor.set_option(RS2_OPTION_WHITE_BALANCE, configuration.whitebalance);
+			}
+			else {
+				if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
+					sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 1);
+			}
+			if (configuration.backlight_compensation >= 0) {
+				if (sensor.supports(RS2_OPTION_BACKLIGHT_COMPENSATION))
+					sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.backlight_compensation);
+			}
+			// Options for depth sensor
+			if (sensor.supports(RS2_OPTION_LASER_POWER) && configuration.laser_power >= 0) {
+				sensor.set_option(RS2_OPTION_LASER_POWER, configuration.laser_power);
+			}
+			// xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
+			// suggests that this may depend on using 1280x720@30 with decimation=3. Need to check.
+			if (sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
+				sensor.set_option(RS2_OPTION_VISUAL_PRESET,
+					configuration.density
+					? RS2_RS400_VISUAL_PRESET_HIGH_DENSITY
+					: RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY
+				);
+			}
+		}
+	}
+}
+
+void RS2Capture::_setup_camera_sync() {
+#ifdef WITH_INTER_CAM_SYNC
+	rs2::device_list devs = ctx.query_devices();
+	bool master_set = false;
+	for (auto dev : devs) {
+		if (camera_count > 1) {
+			auto allSensors = dev.query_sensors();
+			bool foundSensorSupportingSync = false;
+			for (auto sensor : allSensors) {
+				if (sensor.supports(RS2_OPTION_INTER_CAM_SYNC_MODE)) {
+					foundSensorSupportingSync = true;
+					if (!master_set) {
+						sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 1);
+						master_set = true;
+					}
+					else {
+						sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 2);
+					}
+				}
+			}
+			if (!foundSensorSupportingSync) {
+				cwipc_rs2_log_warning("Camera " + std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) + " does not support inter-camera-sync");
+			}
+		}
+	}
+#endif // WITH_INTER_CAM_SYNC
+}
+
+void RS2Capture::_find_camera_positions() {
+	// find camerapositions
+	for (int i = 0; i < configuration.camera_data.size(); i++) {
+		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
+		cwipc_pcl_point pt;
+		pt.x = 0;
+		pt.y = 0;
+		pt.z = 0;
+		pcptr->push_back(pt);
+		transformPointCloud(*pcptr, *pcptr, *configuration.camera_data[i].trafo);
+		cwipc_pcl_point pnt = pcptr->points[0];
+		configuration.camera_data[i].cameraposition.x = pnt.x;
+		configuration.camera_data[i].cameraposition.y = pnt.y;
+		configuration.camera_data[i].cameraposition.z = pnt.z;
+	}
 }
 
 int RS2Capture::_count_devices() {
@@ -260,7 +271,8 @@ void RS2Capture::_apply_default_config() {
 
 }
 
-void RS2Capture::_create_cameras(rs2::device_list devs) {
+void RS2Capture::_create_cameras() {
+	rs2::device_list devs = ctx.query_devices();
 	const std::string platform_camera_name = "Platform Camera";
 	for (auto dev : devs) {
 		if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) continue;

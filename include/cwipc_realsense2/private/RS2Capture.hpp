@@ -18,6 +18,9 @@ protected:
 	int _count_devices();
 	bool _apply_config(const char* configFilename);
 	void _apply_default_config();
+	void _find_camera_positions();
+	void _setup_camera_sync();
+	void _setup_camera_hardware_parameters();
 public:
 	// methods
 	RS2Capture(const char *configFilename=NULL);
@@ -43,7 +46,7 @@ public:
 protected:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
 	std::list<rs2::device> rs2_cameras; // librealsense2 cameras that we use
-	virtual void _create_cameras(rs2::device_list devs);
+	virtual void _create_cameras();
 	std::vector<RS2Camera*> cameras;                // Storage of camera specifics
 	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
 	bool stopped;
