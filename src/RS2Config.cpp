@@ -10,6 +10,10 @@
 
 #include "tinyxml.h"
 
+#include <fstream>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 static std::string cwipc_rs2_most_recent_warning;
 char **cwipc_rs2_warning_store;
 
@@ -22,9 +26,32 @@ void cwipc_rs2_log_warning(std::string warning)
     }
 }
 
+void from_json(const json& j, RS2CaptureConfig* config) {
+    
+}
+
 bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config) {
-	std::cerr << "cwipc_realsense2: json config not implemented yet" << std::endl;
-	return false;
+    json json_data;
+    try {
+        std::ifstream f(filename);
+        if (!f.is_open()) {
+            cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + " not found");
+            return false;
+        }
+        json_data = json::parse(f);
+
+        int version = 0;
+        json_data.at("version").get_to(version);
+        if (version != 3) {
+            cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + " is not version 3");
+        }
+        from_json(json_data, config);
+    }
+    catch (const std::exception& e) {
+        cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + ": exception " + e.what() );
+        return false;
+    }
+	return true;
 }
 
 bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {

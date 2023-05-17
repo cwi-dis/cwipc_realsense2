@@ -31,6 +31,7 @@ target_sources(cwipc_realsense2
 
 target_link_libraries(cwipc_realsense2 PUBLIC cwipc_util)
 target_link_libraries(cwipc_realsense2 PRIVATE ${PCL_LIBRARIES} REALSENSE2::REALSENSE2)
+target_link_libraries(cwipc_realsense2 PRIVATE nlohmann_json::nlohmann_json)
 
 install(TARGETS cwipc_realsense2
     EXPORT cwipc_realsense2
