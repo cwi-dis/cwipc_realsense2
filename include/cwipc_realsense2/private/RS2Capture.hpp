@@ -15,6 +15,9 @@ class RS2Camera;
 class RS2Capture {
 protected:
 	RS2Capture(int dummy);
+	int _count_devices();
+	bool _apply_config(const char* configFilename);
+	void _apply_default_config();
 public:
 	// methods
 	RS2Capture(const char *configFilename=NULL);
@@ -30,7 +33,7 @@ public:
     RS2CaptureConfig configuration;
 	uint64_t starttime;
 	int numberOfPCsProduced;
-    bool no_cameras;                        // True of no cameras attached
+	int camera_count; // number of cameras
     void request_image_auxdata(bool _rgb, bool _depth) {
         want_auxdata_rgb = _rgb;
         want_auxdata_depth = _depth;
@@ -39,6 +42,7 @@ public:
     bool want_auxdata_depth;
 protected:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
+	std::list<rs2::device> rs2_cameras; // librealsense2 cameras that we use
 	virtual void _create_cameras(rs2::device_list devs);
 	std::vector<RS2Camera*> cameras;                // Storage of camera specifics
 	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.

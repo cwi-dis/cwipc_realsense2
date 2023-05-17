@@ -32,7 +32,7 @@ RS2Capture::RS2Capture(int dummy)
 :	numberOfPCsProduced(0),
     want_auxdata_rgb(false),
     want_auxdata_depth(false),
-    no_cameras(true),
+    camera_count(0),
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)
 {
@@ -45,7 +45,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 :	numberOfPCsProduced(0),
     want_auxdata_rgb(false),
     want_auxdata_depth(false),
-    no_cameras(false),
+    camera_count(0),
 	mergedPC_is_fresh(false),
 	mergedPC_want_new(false)
 {
@@ -54,77 +54,12 @@ RS2Capture::RS2Capture(const char *configFilename)
 	if (numberOfCapturersActive > 1) {
 		cwipc_rs2_log_warning("Attempting to create capturer while one is already active.");
 	}
-
-	// Determine how many realsense cameras (not platform cameras like webcams) are connected
-	const std::string platform_camera_name = "Platform Camera";
+	camera_count = _count_devices();
+	if (!_apply_config(configFilename)) {
+		_apply_default_config();
+	}
 	rs2::device_list devs = ctx.query_devices();
-	int camera_count = 0;
-	for(auto dev: devs) {
-		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
-			camera_count++;
-		}
-	}
-	if (camera_count == 0) {
-		// no camera connected, so we'll return nothing
-        no_cameras = true;
-		return;
-	}
-	//
-	// Enumerate over all connected cameras, create their default RS2CameraData structures
-	// and set any hardware options (for example for sync).
-	// We will create the actual RS2Camera objects later, after we have read the configuration file.
-	//
-	for (auto dev : devs) {
-		if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) continue;
-		// Found a realsense camera. Create a default data entry for it.
-#ifdef CWIPC_DEBUG
-		std::cout << "cwipc_realsense2: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-#endif
-		RS2CameraData cd;
-		cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-		pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
-		default_trafo->setIdentity();
-		cd.trafo = default_trafo;
-		cd.intrinsicTrafo = default_trafo;
-		cd.cameraposition = { 0, 0, 0 };
-		configuration.camera_data.push_back(cd);
-	}
-
-	//
-	// Read the configuration. We do this only now because for historical reasons the configuration
-	// reader is also the code that checks whether the configuration file contents match the actual
-	// current hardware setup. To be fixed at some point.
-	//
-	if (configFilename == NULL) {
-		configFilename = "cameraconfig.xml";
-	}
-	if (!cwipc_rs2_file2config(configFilename, &configuration)) {
-
-		// the configuration file did not fully match the current situation so we have to update the admin
-		std::vector<std::string> serials;
-		std::vector<RS2CameraData> realcams;
-
-		// collect serial numbers of all connected cameras
-		for (auto dev : devs) {
-			if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
-				serials.push_back(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
-			}
-		}
-
-		// collect all camera's in the config that are connected
-		for (RS2CameraData cd : configuration.camera_data) {
-			if ((find(serials.begin(), serials.end(), cd.serial) != serials.end())) {
-				if(!cd.disabled)
-					realcams.push_back(cd);
-			}
-			else {
-				cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
-			}
-		}
-		// Reduce the active configuration to cameras that are connected
-		configuration.camera_data = realcams;
-	}
-    // Set various camera hardware parameters (white balance and such)
+	// Set various camera hardware parameters (white balance and such)
     for (auto dev : devs) {
         auto allSensors = dev.query_sensors();
         for (auto sensor : allSensors) {
@@ -244,6 +179,87 @@ RS2Capture::RS2Capture(const char *configFilename)
 	_cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Capture::control_thread");
 }
 
+int RS2Capture::_count_devices() {
+	// Determine how many realsense cameras (not platform cameras like webcams) are connected
+	const std::string platform_camera_name = "Platform Camera";
+	rs2::device_list devs = ctx.query_devices();
+	int camera_count = 0;
+	for (auto dev : devs) {
+		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
+			camera_count++;
+		}
+	}
+	return camera_count;
+
+}
+
+bool RS2Capture::_apply_config(const char* configFilename) {
+
+	//
+	// Read the configuration. We do this only now because for historical reasons the configuration
+	// reader is also the code that checks whether the configuration file contents match the actual
+	// current hardware setup. To be fixed at some point.
+	//
+	if (configFilename == NULL) {
+		configFilename = "cameraconfig.xml";
+	}
+	return cwipc_rs2_file2config(configFilename, &configuration);
+}
+
+void RS2Capture::_apply_default_config() {
+	// Determine how many realsense cameras (not platform cameras like webcams) are connected
+	const std::string platform_camera_name = "Platform Camera";
+	rs2::device_list devs = ctx.query_devices();
+	
+	//
+	// Enumerate over all connected cameras, create their default RS2CameraData structures
+	// and set any hardware options (for example for sync).
+	// We will create the actual RS2Camera objects later, after we have read the configuration file.
+	//
+	for (auto dev : devs) {
+		if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) continue;
+		// Found a realsense camera. Create a default data entry for it.
+#ifdef CWIPC_DEBUG
+		std::cout << "cwipc_realsense2: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+#endif
+		RS2CameraData cd;
+		cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+		pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
+		default_trafo->setIdentity();
+		cd.trafo = default_trafo;
+		cd.intrinsicTrafo = default_trafo;
+		cd.cameraposition = { 0, 0, 0 };
+		configuration.camera_data.push_back(cd);
+	}
+#ifdef xxxjack_old
+
+	// the configuration file did not fully match the current situation so we have to update the admin
+	std::vector<std::string> serials;
+	std::vector<RS2CameraData> realcams;
+
+	// collect serial numbers of all connected cameras
+	for (auto dev : devs) {
+		if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
+			serials.push_back(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
+		}
+	}
+
+	// collect all camera's in the config that are connected
+	for (RS2CameraData cd : configuration.camera_data) {
+		if ((find(serials.begin(), serials.end(), cd.serial) != serials.end())) {
+			if (!cd.disabled)
+				realcams.push_back(cd);
+		}
+		else {
+			cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
+		}
+	}
+	// Reduce the active configuration to cameras that are connected
+	configuration.camera_data = realcams;
+#endif
+
+}
+
 void RS2Capture::_create_cameras(rs2::device_list devs) {
 	const std::string platform_camera_name = "Platform Camera";
 	for (auto dev : devs) {
@@ -270,7 +286,7 @@ void RS2Capture::_create_cameras(rs2::device_list devs) {
 }
 
 RS2Capture::~RS2Capture() {
-    if (no_cameras) {
+    if (camera_count == 0) {
         numberOfCapturersActive--;
         return;
     }
@@ -303,7 +319,7 @@ RS2Capture::~RS2Capture() {
 // API function that triggers the capture and returns the merged pointcloud and timestamp
 cwipc* RS2Capture::get_pointcloud()
 {
-    if (no_cameras) return nullptr;
+    if (camera_count == 0) return nullptr;
 	_request_new_pointcloud();
 	// Wait for a fresh mergedPC to become available.
 	// Note we keep the return value while holding the lock, so we can start the next grab/process/merge cycle before returning.
@@ -321,7 +337,7 @@ cwipc* RS2Capture::get_pointcloud()
 
 float RS2Capture::get_pointSize()
 {
-    if (no_cameras) return 0;
+    if (camera_count == 0) return 0;
 	float rv = 99999;
 	for (auto cam : cameras) {
 		if (cam->pointSize < rv) rv = cam->pointSize;
@@ -332,7 +348,7 @@ float RS2Capture::get_pointSize()
 
 bool RS2Capture::pointcloud_available(bool wait)
 {
-    if (no_cameras) return false;
+    if (camera_count == 0) return false;
 	_request_new_pointcloud();
 	std::this_thread::yield();
 	std::unique_lock<std::mutex> mylock(mergedPC_mutex);
@@ -427,7 +443,7 @@ void RS2Capture::_control_thread_main()
 // return the merged cloud 
 cwipc* RS2Capture::get_mostRecentPointCloud()
 {
-    if (no_cameras) return nullptr;
+    if (camera_count == 0) return nullptr;
 	// This call doesn't need a fresh pointcloud (Jack thinks), but it does need one that is
 	// consistent. So we lock, but don't wait on the condition.
 	std::unique_lock<std::mutex> mylock(mergedPC_mutex);

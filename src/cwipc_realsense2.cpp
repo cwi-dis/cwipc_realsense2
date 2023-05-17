@@ -100,7 +100,7 @@ public:
     }
 
     bool is_valid() {
-        return !m_grabber->no_cameras;
+        return m_grabber->camera_count > 0;
     }
     
     void free() override
