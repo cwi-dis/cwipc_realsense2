@@ -22,10 +22,12 @@ void cwipc_rs2_log_warning(std::string warning)
     }
 }
 
+bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config) {
+	std::cerr << "cwipc_realsense2: json config not implemented yet" << std::endl;
+	return false;
+}
 
-// read and restore the camera transformation setting as stored in the configuration document
-bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
-{
+bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
 	TiXmlDocument doc(filename);
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
@@ -183,6 +185,18 @@ bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
         cwipc_rs2_log_warning("Available hardware camera configuration does not match configuration file");
     }
 	return loadOkay;
+}
+
+// read and restore the camera transformation setting as stored in the configuration document
+bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
+{
+	std::string sFilename(filename);
+	std::cerr << "xxxjack filename=" << sFilename << std::endl;
+	if (sFilename.substr(sFilename.find_last_of(".")+1) == "json") {
+		return cwipc_rs2_jsonfile2config(filename, config);
+	} else {
+		return cwipc_rs2_xmlfile2config(filename, config);
+	}
 }
 
 // store the current camera transformation setting into a xml document
