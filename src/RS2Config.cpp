@@ -14,6 +14,9 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#define _MY_JSON_GET(jsonobj, name, config, attr) if (jsonobj.contains(#name)) jsonobj.at(#name).get_to(config.attr)
+#define _MY_JSON_PUT(jsonobj, name, config, attr) jsonobj[#name] = config.attr
+
 static std::string cwipc_rs2_most_recent_warning;
 char **cwipc_rs2_warning_store;
 
@@ -27,37 +30,41 @@ void cwipc_rs2_log_warning(std::string warning)
 }
 
 void from_json(const json& json_data, RS2CaptureConfig& config) {
+    
     json system_data = json_data.at("system");
-    if (system_data.contains("usb2width")) system_data.at("usb2width").get_to(config.usb2_width);
-    if (system_data.contains("usb2height")) system_data.at("usb2height").get_to(config.usb2_height);
-    if (system_data.contains("usb2fps")) system_data.at("usb2fps").get_to(config.usb2_fps);
-    if (system_data.contains("usb3width")) system_data.at("usb3width").get_to(config.usb3_width);
-    if (system_data.contains("usb3height")) system_data.at("usb3height").get_to(config.usb3_height);
-    if (system_data.contains("usb3fps")) system_data.at("usb3fps").get_to(config.usb3_fps);
-    if (system_data.contains("usb2allowed")) system_data.at("usb2allowed").get_to(config.usb2allowed);
-    if (system_data.contains("density_preferred")) system_data.at("density_preferred").get_to(config.density);
-    if (system_data.contains("exposure")) system_data.at("exposure").get_to(config.exposure);
-    if (system_data.contains("whitebalance")) system_data.at("whitebalance").get_to(config.whitebalance);
-    if (system_data.contains("backlight_compensation")) system_data.at("backlight_compensation").get_to(config.backlight_compensation);
-    if (system_data.contains("laser_power")) system_data.at("laser_power").get_to(config.laser_power);
+    _MY_JSON_GET(system_data, usb2width, config, usb2_width);
+    _MY_JSON_GET(system_data, usb2height, config, usb2_height);
+    _MY_JSON_GET(system_data, usb2fps, config, usb2_fps);
+    _MY_JSON_GET(system_data, usb3width, config, usb3_width);
+    _MY_JSON_GET(system_data, usb3height, config, usb3_height);
+    _MY_JSON_GET(system_data, usb3fps, config, usb3_fps);
+    _MY_JSON_GET(system_data, usb2allowed, config, usb2allowed);
+    _MY_JSON_GET(system_data, density_preferred, config, density);
+    _MY_JSON_GET(system_data, exposure, config, exposure);
+    _MY_JSON_GET(system_data, whitebalance, config, whitebalance);
+    _MY_JSON_GET(system_data, backlight_compensation, config, backlight_compensation);
+    _MY_JSON_GET(system_data, laser_power, config, laser_power);
 }
 
 void to_json(json& json_data, const RS2CaptureConfig& config) {
+    
     json_data["version"] = 3;
     json_data["type"] = "realsense";
+    
     json system_data;
-    system_data["usb2width"] = config.usb2_width;
-    system_data["usb2height"] = config.usb2_height;
-    system_data["usb2fps"] = config.usb2_fps;
-    system_data["usb3width"] = config.usb3_width;
-    system_data["usb3height"] = config.usb3_height;
-    system_data["usb3fps"] = config.usb3_fps;
-    system_data["usb2allowed"] = config.usb2allowed;
-    system_data["density_preferred"] = config.density;
-    system_data["exposure"] = config.exposure;
-    system_data["whitebalance"] = config.whitebalance;
-    system_data["backlight_compensation"] = config.backlight_compensation;
-    system_data["laser_power"] = config.laser_power;
+    _MY_JSON_PUT(system_data, usb2width, config, usb2_width);
+    _MY_JSON_PUT(system_data, usb2height, config, usb2_height);
+    _MY_JSON_PUT(system_data, usb2fps, config, usb2_fps);
+    _MY_JSON_PUT(system_data, usb3width, config, usb3_width);
+    _MY_JSON_PUT(system_data, usb3height, config, usb3_height);
+    _MY_JSON_PUT(system_data, usb3fps, config, usb3_fps);
+    _MY_JSON_PUT(system_data, usb2allowed, config, usb2allowed);
+    _MY_JSON_PUT(system_data, density_preferred, config, density);
+    _MY_JSON_PUT(system_data, exposure, config, exposure);
+    _MY_JSON_PUT(system_data, whitebalance, config, whitebalance);
+    _MY_JSON_PUT(system_data, backlight_compensation, config, backlight_compensation);
+    _MY_JSON_PUT(system_data, laser_power, config, laser_power);
+
     json_data["system"] = system_data;
 }
 
