@@ -30,6 +30,7 @@ void cwipc_rs2_log_warning(std::string warning)
 }
 
 void from_json(const json& json_data, RS2CaptureConfig& config) {
+    // version and type should already have been checked.
     
     json system_data = json_data.at("system");
     _MY_JSON_GET(system_data, usb2width, config, usb2_width);
@@ -44,12 +45,94 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(system_data, whitebalance, config, whitebalance);
     _MY_JSON_GET(system_data, backlight_compensation, config, backlight_compensation);
     _MY_JSON_GET(system_data, laser_power, config, laser_power);
+    
+    json postprocessing = json_data.at("postprocessing");
+    _MY_JSON_GET(postprocessing, greenscreenremoval, config, greenscreen_removal);
+    _MY_JSON_GET(postprocessing, height_min, config, height_min);
+    _MY_JSON_GET(postprocessing, height_max, config, height_max);
+
+    json depthfilterparameters = postprocessing.at("depthfilterparameters");
+    _MY_JSON_GET(depthfilterparameters, do_decimation, config.camera_config, do_decimation);
+    _MY_JSON_GET(depthfilterparameters, decimation_value, config.camera_config, decimation_value);
+    _MY_JSON_GET(depthfilterparameters, do_threshold, config.camera_config, do_threshold);
+    _MY_JSON_GET(depthfilterparameters, threshold_near, config.camera_config, threshold_near);
+    _MY_JSON_GET(depthfilterparameters, threshold_far, config.camera_config, threshold_far);
+    _MY_JSON_GET(depthfilterparameters, do_spatial, config.camera_config, do_spatial);
+    _MY_JSON_GET(depthfilterparameters, spatial_iterations, config.camera_config, spatial_iterations);
+    _MY_JSON_GET(depthfilterparameters, spatial_alpha, config.camera_config, spatial_alpha);
+    _MY_JSON_GET(depthfilterparameters, spatial_delta, config.camera_config, spatial_delta);
+    _MY_JSON_GET(depthfilterparameters, spatial_filling, config.camera_config, spatial_filling);
+    _MY_JSON_GET(depthfilterparameters, do_temporal, config.camera_config, do_temporal);
+    _MY_JSON_GET(depthfilterparameters, temporal_alpha, config.camera_config, temporal_alpha);
+    _MY_JSON_GET(depthfilterparameters, temporal_delta, config.camera_config, temporal_delta);
+    _MY_JSON_GET(depthfilterparameters, temporal_percistency, config.camera_config, temporal_percistency);
+    
+    json cameras = json_data.at("camera");
+    int camera_index = 0;
+    for(json::iterator it=cameras.begin(); it != cameras.end(); it++) {
+        json camera = *it;
+        RS2CameraData cd;
+        pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
+        default_trafo->setIdentity();
+        cd.trafo = default_trafo;
+        cd.intrinsicTrafo = default_trafo;
+        _MY_JSON_GET(camera, serial, cd, serial);
+        _MY_JSON_GET(camera, type, cd, type);
+        if (camera.contains("trafo")) {
+            for(int x=0; x<4; x++) {
+                for(int y=0; y<4; y++) {
+                    (*cd.trafo)(x, y) = camera["trafo"][x][y];
+                }
+            }
+        }
+        // xxxjack should check whether the camera with this serial already exists
+        config.camera_data.push_back(cd);
+        camera_index++;
+    }
 }
 
 void to_json(json& json_data, const RS2CaptureConfig& config) {
     
-    json_data["version"] = 3;
-    json_data["type"] = "realsense";
+    json cameras;
+    int camera_index = 0;
+    for (RS2CameraData cd : config.camera_data) {
+        json camera;
+        _MY_JSON_PUT(camera, serial, cd, serial);
+        _MY_JSON_PUT(camera, type, cd, type);
+        camera["trafo"] = {
+            {(*cd.trafo)(0, 0), (*cd.trafo)(0, 1), (*cd.trafo)(0, 2), (*cd.trafo)(0, 3)},
+            {(*cd.trafo)(1, 0), (*cd.trafo)(1, 1), (*cd.trafo)(1, 2), (*cd.trafo)(1, 3)},
+            {(*cd.trafo)(2, 0), (*cd.trafo)(2, 1), (*cd.trafo)(2, 2), (*cd.trafo)(2, 3)},
+            {(*cd.trafo)(3, 0), (*cd.trafo)(3, 1), (*cd.trafo)(3, 2), (*cd.trafo)(3, 3)},
+        };
+        cameras[camera_index] = camera;
+        camera_index++;
+    }
+    json_data["cameras"] = cameras;
+
+    json depthfilterparameters;
+    _MY_JSON_PUT(depthfilterparameters, do_decimation, config.camera_config, do_decimation);
+    _MY_JSON_PUT(depthfilterparameters, decimation_value, config.camera_config, decimation_value);
+    _MY_JSON_PUT(depthfilterparameters, do_threshold, config.camera_config, do_threshold);
+    _MY_JSON_PUT(depthfilterparameters, threshold_near, config.camera_config, threshold_near);
+    _MY_JSON_PUT(depthfilterparameters, threshold_far, config.camera_config, threshold_far);
+    _MY_JSON_PUT(depthfilterparameters, do_spatial, config.camera_config, do_spatial);
+    _MY_JSON_PUT(depthfilterparameters, spatial_iterations, config.camera_config, spatial_iterations);
+    _MY_JSON_PUT(depthfilterparameters, spatial_alpha, config.camera_config, spatial_alpha);
+    _MY_JSON_PUT(depthfilterparameters, spatial_delta, config.camera_config, spatial_delta);
+    _MY_JSON_PUT(depthfilterparameters, spatial_filling, config.camera_config, spatial_filling);
+    _MY_JSON_PUT(depthfilterparameters, do_temporal, config.camera_config, do_temporal);
+    _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.camera_config, temporal_alpha);
+    _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.camera_config, temporal_delta);
+    _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.camera_config, temporal_percistency);
+ 
+    json postprocessing;
+    postprocessing["depthfilterparameters"] = depthfilterparameters;
+
+    _MY_JSON_PUT(postprocessing, greenscreenremoval, config, greenscreen_removal);
+    _MY_JSON_PUT(postprocessing, height_min, config, height_min);
+    _MY_JSON_PUT(postprocessing, height_max, config, height_max);
+    json_data["postprocessing"] = postprocessing;
     
     json system_data;
     _MY_JSON_PUT(system_data, usb2width, config, usb2_width);
@@ -64,8 +147,46 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(system_data, whitebalance, config, whitebalance);
     _MY_JSON_PUT(system_data, backlight_compensation, config, backlight_compensation);
     _MY_JSON_PUT(system_data, laser_power, config, laser_power);
-
     json_data["system"] = system_data;
+    
+    json_data["version"] = 3;
+    json_data["type"] = "realsense";
+
+   
+
+#if 0
+   
+
+    cameraconfig->LinkEndChild(new TiXmlComment(" backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane "));
+    for (RS2CameraData cd : config->camera_data) {
+        TiXmlElement* cam = new TiXmlElement("camera");
+        cam->SetAttribute("serial", cd.serial.c_str());
+        cam->SetAttribute("type", cd.type.c_str());
+        cameraconfig->LinkEndChild(cam);
+
+        TiXmlElement* trafo = new TiXmlElement("trafo");
+        cam->LinkEndChild(trafo);
+
+        TiXmlElement* val = new TiXmlElement("values");
+        val->SetDoubleAttribute("v00", (*cd.trafo)(0, 0));
+        val->SetDoubleAttribute("v01", (*cd.trafo)(0, 1));
+        val->SetDoubleAttribute("v02", (*cd.trafo)(0, 2));
+        val->SetDoubleAttribute("v03", (*cd.trafo)(0, 3));
+        val->SetDoubleAttribute("v10", (*cd.trafo)(1, 0));
+        val->SetDoubleAttribute("v11", (*cd.trafo)(1, 1));
+        val->SetDoubleAttribute("v12", (*cd.trafo)(1, 2));
+        val->SetDoubleAttribute("v13", (*cd.trafo)(1, 3));
+        val->SetDoubleAttribute("v20", (*cd.trafo)(2, 0));
+        val->SetDoubleAttribute("v21", (*cd.trafo)(2, 1));
+        val->SetDoubleAttribute("v22", (*cd.trafo)(2, 2));
+        val->SetDoubleAttribute("v23", (*cd.trafo)(2, 3));
+        val->SetDoubleAttribute("v30", (*cd.trafo)(3, 0));
+        val->SetDoubleAttribute("v31", (*cd.trafo)(3, 1));
+        val->SetDoubleAttribute("v32", (*cd.trafo)(3, 2));
+        val->SetDoubleAttribute("v33", (*cd.trafo)(3, 3));
+        trafo->LinkEndChild(val);
+    }
+#endif
 }
 
 bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config) {
