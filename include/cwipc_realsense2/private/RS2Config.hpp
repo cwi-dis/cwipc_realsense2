@@ -21,6 +21,7 @@
 // Definitions of types used across cwipc_realsense2, cwipc_codec and cwipc_util.
 //
 #include "cwipc_util/api_pcl.h"
+#include "cwipc_util/internal.h"
 
 struct RS2CameraProcessingParameters {
 	bool do_decimation = false;
@@ -41,7 +42,7 @@ struct RS2CameraProcessingParameters {
 	int temporal_percistency = 3;         // val between 0 and 8
 };
 
-struct RS2CameraConfig {
+struct RS2CameraConfig : CwipcBaseCameraConfig {
 	bool disabled = false;	// to easily disable cameras without altering too much the cameraconfig
 	std::string serial;		// Serial number of this camera
     std::string type = "realsense";       // Camera type (must be realsense)
@@ -50,7 +51,7 @@ struct RS2CameraConfig {
 	cwipc_vector cameraposition;	//!< Position of this camera in real world coordinates
 };
 
-struct RS2CaptureConfig {
+struct RS2CaptureConfig : CwipcBaseCaptureConfig {
 	// system data
 	int usb3_width = 1280;
 	int usb3_height = 720;
