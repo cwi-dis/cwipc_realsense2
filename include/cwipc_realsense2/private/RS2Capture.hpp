@@ -28,7 +28,7 @@ public:
 	cwipc* get_pointcloud(); // API function that returns the merged pointcloud
 	bool pointcloud_available(bool wait);					  // Returns true if a pointcloud is available
 	cwipc* get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
-	RS2CameraData& get_camera_data(std::string serial);
+	RS2CameraConfig& get_camera_data(std::string serial);
 	RS2Camera* get_camera(std::string serial);
 	float get_pointSize();
 

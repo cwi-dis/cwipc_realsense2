@@ -130,7 +130,7 @@ public:
     int maxtile() override
     {
         if (m_grabber == NULL) return 0;
-        int nCamera = m_grabber->configuration.camera_data.size();
+        int nCamera = m_grabber->configuration.all_camera_configs.size();
         if (nCamera <= 1) {
             // Using a single camera or no camera.
             return nCamera;
@@ -142,7 +142,7 @@ public:
         if (m_grabber == NULL)
 			return false;
 
-        int nCamera = m_grabber->configuration.camera_data.size();
+        int nCamera = m_grabber->configuration.all_camera_configs.size();
 
 		if (nCamera == 0) { // No camera
 			return false;
@@ -154,14 +154,14 @@ public:
 		cwipc_vector camcenter = { 0, 0, 0 };
 
 		// calculate the center of all cameras
-		for (auto camdat : m_grabber->configuration.camera_data) {
+		for (auto camdat : m_grabber->configuration.all_camera_configs) {
 			add_vectors(camcenter, camdat.cameraposition, &camcenter);
 		}
 		mult_vector(1.0 / nCamera, &camcenter);
 
 		// calculate normalized direction vectors from the center towards each camera
 		std::vector<cwipc_vector> camera_directions;
-		for (auto camdat : m_grabber->configuration.camera_data) {
+		for (auto camdat : m_grabber->configuration.all_camera_configs) {
 			cwipc_vector normal;
 			diff_vectors(camdat.cameraposition, camcenter, &normal);
 			norm_vector(&normal);
@@ -172,7 +172,7 @@ public:
 		int ncontribcam = 0;
 		int lastcontribcamid = 0;
 		cwipc_vector tile_direction = { 0, 0, 0 };
-		for (int i = 0; i < m_grabber->configuration.camera_data.size(); i++) {
+		for (int i = 0; i < m_grabber->configuration.all_camera_configs.size(); i++) {
 			uint8_t camera_label = (uint8_t)1 << i;
 			if (tilenum == 0 || (tilenum & camera_label)) {
 				add_vectors(tile_direction, camera_directions[i], &tile_direction);
@@ -189,7 +189,7 @@ public:
             tileinfo->cameraMask = tilenum;
 			if (ncontribcam == 1) {
 				// A single camera contributed to this
-				tileinfo->cameraName = (char *)m_grabber->configuration.camera_data[lastcontribcamid].serial.c_str();
+				tileinfo->cameraName = (char *)m_grabber->configuration.all_camera_configs[lastcontribcamid].serial.c_str();
 			}
 		}
 		return true;

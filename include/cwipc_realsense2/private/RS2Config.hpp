@@ -22,7 +22,7 @@
 //
 #include "cwipc_util/api_pcl.h"
 
-struct RS2CameraConfig {
+struct RS2CameraProcessingParameters {
 	bool do_decimation = false;
 	int decimation_value = 1;             // int value between 2 and 8
 	bool do_threshold = true;
@@ -41,7 +41,7 @@ struct RS2CameraConfig {
 	int temporal_percistency = 3;         // val between 0 and 8
 };
 
-struct RS2CameraData {
+struct RS2CameraConfig {
 	bool disabled = false;	// to easily disable cameras without altering too much the cameraconfig
 	std::string serial;		// Serial number of this camera
     std::string type = "realsense";       // Camera type (must be realsense)
@@ -74,11 +74,11 @@ struct RS2CaptureConfig {
     bool want_auxdata_rgb = false;
     bool want_auxdata_depth = false;
     
-	RS2CameraConfig camera_config;
+	RS2CameraProcessingParameters camera_processing;
 	// realsense specific post processing filtering
 
 	// per camera data
-	std::vector<RS2CameraData> camera_data;
+	std::vector<RS2CameraConfig> all_camera_configs;
 };
 
 struct RS2CaptureConfig;

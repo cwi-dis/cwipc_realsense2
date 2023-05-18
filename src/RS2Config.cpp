@@ -52,26 +52,26 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(postprocessing, height_max, config, height_max);
 
     json depthfilterparameters = postprocessing.at("depthfilterparameters");
-    _MY_JSON_GET(depthfilterparameters, do_decimation, config.camera_config, do_decimation);
-    _MY_JSON_GET(depthfilterparameters, decimation_value, config.camera_config, decimation_value);
-    _MY_JSON_GET(depthfilterparameters, do_threshold, config.camera_config, do_threshold);
-    _MY_JSON_GET(depthfilterparameters, threshold_near, config.camera_config, threshold_near);
-    _MY_JSON_GET(depthfilterparameters, threshold_far, config.camera_config, threshold_far);
-    _MY_JSON_GET(depthfilterparameters, do_spatial, config.camera_config, do_spatial);
-    _MY_JSON_GET(depthfilterparameters, spatial_iterations, config.camera_config, spatial_iterations);
-    _MY_JSON_GET(depthfilterparameters, spatial_alpha, config.camera_config, spatial_alpha);
-    _MY_JSON_GET(depthfilterparameters, spatial_delta, config.camera_config, spatial_delta);
-    _MY_JSON_GET(depthfilterparameters, spatial_filling, config.camera_config, spatial_filling);
-    _MY_JSON_GET(depthfilterparameters, do_temporal, config.camera_config, do_temporal);
-    _MY_JSON_GET(depthfilterparameters, temporal_alpha, config.camera_config, temporal_alpha);
-    _MY_JSON_GET(depthfilterparameters, temporal_delta, config.camera_config, temporal_delta);
-    _MY_JSON_GET(depthfilterparameters, temporal_percistency, config.camera_config, temporal_percistency);
+    _MY_JSON_GET(depthfilterparameters, do_decimation, config.camera_processing, do_decimation);
+    _MY_JSON_GET(depthfilterparameters, decimation_value, config.camera_processing, decimation_value);
+    _MY_JSON_GET(depthfilterparameters, do_threshold, config.camera_processing, do_threshold);
+    _MY_JSON_GET(depthfilterparameters, threshold_near, config.camera_processing, threshold_near);
+    _MY_JSON_GET(depthfilterparameters, threshold_far, config.camera_processing, threshold_far);
+    _MY_JSON_GET(depthfilterparameters, do_spatial, config.camera_processing, do_spatial);
+    _MY_JSON_GET(depthfilterparameters, spatial_iterations, config.camera_processing, spatial_iterations);
+    _MY_JSON_GET(depthfilterparameters, spatial_alpha, config.camera_processing, spatial_alpha);
+    _MY_JSON_GET(depthfilterparameters, spatial_delta, config.camera_processing, spatial_delta);
+    _MY_JSON_GET(depthfilterparameters, spatial_filling, config.camera_processing, spatial_filling);
+    _MY_JSON_GET(depthfilterparameters, do_temporal, config.camera_processing, do_temporal);
+    _MY_JSON_GET(depthfilterparameters, temporal_alpha, config.camera_processing, temporal_alpha);
+    _MY_JSON_GET(depthfilterparameters, temporal_delta, config.camera_processing, temporal_delta);
+    _MY_JSON_GET(depthfilterparameters, temporal_percistency, config.camera_processing, temporal_percistency);
     
     json cameras = json_data.at("camera");
     int camera_index = 0;
     for(json::iterator it=cameras.begin(); it != cameras.end(); it++) {
         json camera = *it;
-        RS2CameraData cd;
+        RS2CameraConfig cd;
         pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
         default_trafo->setIdentity();
         cd.trafo = default_trafo;
@@ -86,7 +86,7 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
             }
         }
         // xxxjack should check whether the camera with this serial already exists
-        config.camera_data.push_back(cd);
+        config.all_camera_configs.push_back(cd);
         camera_index++;
     }
 }
@@ -95,7 +95,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     
     json cameras;
     int camera_index = 0;
-    for (RS2CameraData cd : config.camera_data) {
+    for (RS2CameraConfig cd : config.all_camera_configs) {
         json camera;
         _MY_JSON_PUT(camera, serial, cd, serial);
         _MY_JSON_PUT(camera, type, cd, type);
@@ -111,20 +111,20 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json_data["cameras"] = cameras;
 
     json depthfilterparameters;
-    _MY_JSON_PUT(depthfilterparameters, do_decimation, config.camera_config, do_decimation);
-    _MY_JSON_PUT(depthfilterparameters, decimation_value, config.camera_config, decimation_value);
-    _MY_JSON_PUT(depthfilterparameters, do_threshold, config.camera_config, do_threshold);
-    _MY_JSON_PUT(depthfilterparameters, threshold_near, config.camera_config, threshold_near);
-    _MY_JSON_PUT(depthfilterparameters, threshold_far, config.camera_config, threshold_far);
-    _MY_JSON_PUT(depthfilterparameters, do_spatial, config.camera_config, do_spatial);
-    _MY_JSON_PUT(depthfilterparameters, spatial_iterations, config.camera_config, spatial_iterations);
-    _MY_JSON_PUT(depthfilterparameters, spatial_alpha, config.camera_config, spatial_alpha);
-    _MY_JSON_PUT(depthfilterparameters, spatial_delta, config.camera_config, spatial_delta);
-    _MY_JSON_PUT(depthfilterparameters, spatial_filling, config.camera_config, spatial_filling);
-    _MY_JSON_PUT(depthfilterparameters, do_temporal, config.camera_config, do_temporal);
-    _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.camera_config, temporal_alpha);
-    _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.camera_config, temporal_delta);
-    _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.camera_config, temporal_percistency);
+    _MY_JSON_PUT(depthfilterparameters, do_decimation, config.camera_processing, do_decimation);
+    _MY_JSON_PUT(depthfilterparameters, decimation_value, config.camera_processing, decimation_value);
+    _MY_JSON_PUT(depthfilterparameters, do_threshold, config.camera_processing, do_threshold);
+    _MY_JSON_PUT(depthfilterparameters, threshold_near, config.camera_processing, threshold_near);
+    _MY_JSON_PUT(depthfilterparameters, threshold_far, config.camera_processing, threshold_far);
+    _MY_JSON_PUT(depthfilterparameters, do_spatial, config.camera_processing, do_spatial);
+    _MY_JSON_PUT(depthfilterparameters, spatial_iterations, config.camera_processing, spatial_iterations);
+    _MY_JSON_PUT(depthfilterparameters, spatial_alpha, config.camera_processing, spatial_alpha);
+    _MY_JSON_PUT(depthfilterparameters, spatial_delta, config.camera_processing, spatial_delta);
+    _MY_JSON_PUT(depthfilterparameters, spatial_filling, config.camera_processing, spatial_filling);
+    _MY_JSON_PUT(depthfilterparameters, do_temporal, config.camera_processing, do_temporal);
+    _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.camera_processing, temporal_alpha);
+    _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.camera_processing, temporal_delta);
+    _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.camera_processing, temporal_percistency);
  
     json postprocessing;
     postprocessing["depthfilterparameters"] = depthfilterparameters;
@@ -151,42 +151,6 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     
     json_data["version"] = 3;
     json_data["type"] = "realsense";
-
-   
-
-#if 0
-   
-
-    cameraconfig->LinkEndChild(new TiXmlComment(" backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane "));
-    for (RS2CameraData cd : config->camera_data) {
-        TiXmlElement* cam = new TiXmlElement("camera");
-        cam->SetAttribute("serial", cd.serial.c_str());
-        cam->SetAttribute("type", cd.type.c_str());
-        cameraconfig->LinkEndChild(cam);
-
-        TiXmlElement* trafo = new TiXmlElement("trafo");
-        cam->LinkEndChild(trafo);
-
-        TiXmlElement* val = new TiXmlElement("values");
-        val->SetDoubleAttribute("v00", (*cd.trafo)(0, 0));
-        val->SetDoubleAttribute("v01", (*cd.trafo)(0, 1));
-        val->SetDoubleAttribute("v02", (*cd.trafo)(0, 2));
-        val->SetDoubleAttribute("v03", (*cd.trafo)(0, 3));
-        val->SetDoubleAttribute("v10", (*cd.trafo)(1, 0));
-        val->SetDoubleAttribute("v11", (*cd.trafo)(1, 1));
-        val->SetDoubleAttribute("v12", (*cd.trafo)(1, 2));
-        val->SetDoubleAttribute("v13", (*cd.trafo)(1, 3));
-        val->SetDoubleAttribute("v20", (*cd.trafo)(2, 0));
-        val->SetDoubleAttribute("v21", (*cd.trafo)(2, 1));
-        val->SetDoubleAttribute("v22", (*cd.trafo)(2, 2));
-        val->SetDoubleAttribute("v23", (*cd.trafo)(2, 3));
-        val->SetDoubleAttribute("v30", (*cd.trafo)(3, 0));
-        val->SetDoubleAttribute("v31", (*cd.trafo)(3, 1));
-        val->SetDoubleAttribute("v32", (*cd.trafo)(3, 2));
-        val->SetDoubleAttribute("v33", (*cd.trafo)(3, 3));
-        trafo->LinkEndChild(val);
-    }
-#endif
 }
 
 bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config) {
@@ -266,26 +230,26 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
 
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
-			parameterElement->QueryBoolAttribute("do_decimation", &(config->camera_config.do_decimation));
-			parameterElement->QueryIntAttribute("decimation_value", &(config->camera_config.decimation_value));
-			parameterElement->QueryBoolAttribute("do_threshold", &(config->camera_config.do_threshold));
-			parameterElement->QueryDoubleAttribute("threshold_near", &(config->camera_config.threshold_near));
-			parameterElement->QueryDoubleAttribute("threshold_far", &(config->camera_config.threshold_far));
-            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->camera_config.depth_x_erosion));
-            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->camera_config.depth_y_erosion));
-			parameterElement->QueryBoolAttribute("do_spatial", &(config->camera_config.do_spatial));
-			parameterElement->QueryIntAttribute("spatial_iterations", &(config->camera_config.spatial_iterations));
-			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->camera_config.spatial_alpha));
-			parameterElement->QueryIntAttribute("spatial_delta", &(config->camera_config.spatial_delta));
-			parameterElement->QueryIntAttribute("spatial_filling", &(config->camera_config.spatial_filling));
-			parameterElement->QueryBoolAttribute("do_temporal", &(config->camera_config.do_temporal));
-			parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->camera_config.temporal_alpha));
-			parameterElement->QueryIntAttribute("temporal_delta", &(config->camera_config.temporal_delta));
-			parameterElement->QueryIntAttribute("temporal_percistency", &(config->camera_config.temporal_percistency));
+			parameterElement->QueryBoolAttribute("do_decimation", &(config->camera_processing.do_decimation));
+			parameterElement->QueryIntAttribute("decimation_value", &(config->camera_processing.decimation_value));
+			parameterElement->QueryBoolAttribute("do_threshold", &(config->camera_processing.do_threshold));
+			parameterElement->QueryDoubleAttribute("threshold_near", &(config->camera_processing.threshold_near));
+			parameterElement->QueryDoubleAttribute("threshold_far", &(config->camera_processing.threshold_far));
+            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->camera_processing.depth_x_erosion));
+            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->camera_processing.depth_y_erosion));
+			parameterElement->QueryBoolAttribute("do_spatial", &(config->camera_processing.do_spatial));
+			parameterElement->QueryIntAttribute("spatial_iterations", &(config->camera_processing.spatial_iterations));
+			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->camera_processing.spatial_alpha));
+			parameterElement->QueryIntAttribute("spatial_delta", &(config->camera_processing.spatial_delta));
+			parameterElement->QueryIntAttribute("spatial_filling", &(config->camera_processing.spatial_filling));
+			parameterElement->QueryBoolAttribute("do_temporal", &(config->camera_processing.do_temporal));
+			parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->camera_processing.temporal_alpha));
+			parameterElement->QueryIntAttribute("temporal_delta", &(config->camera_processing.temporal_delta));
+			parameterElement->QueryIntAttribute("temporal_percistency", &(config->camera_processing.temporal_percistency));
         }
     }
     
-	bool allnewcameras = config->camera_data.size() == 0; // if empty we have to set up a new administration
+	bool allnewcameras = config->all_camera_configs.size() == 0; // if empty we have to set up a new administration
 	int registeredcameras = 0;
 
 	// now get the per camera info
@@ -293,23 +257,23 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
 	while (cameraElement)
 	{
 		const char * serial = cameraElement->Attribute("serial");
-		RS2CameraData* cd;
+		RS2CameraConfig* cd;
 
 		int i = 0;
-		while (i < config->camera_data.size()) {
-			if (config->camera_data[i].serial == serial) {
-				cameraElement->QueryBoolAttribute("disabled", &(config->camera_data[i].disabled));
-				cd = &config->camera_data[i];
+		while (i < config->all_camera_configs.size()) {
+			if (config->all_camera_configs[i].serial == serial) {
+				cameraElement->QueryBoolAttribute("disabled", &(config->all_camera_configs[i].disabled));
+				cd = &config->all_camera_configs[i];
 				break;
 			}
 			i++;
 		}
-		if (i == config->camera_data.size()) {
+		if (i == config->all_camera_configs.size()) {
 			// this camera was not in the admin yet
 			if (!allnewcameras)
 				loadOkay = false;
 
-			cd = new RS2CameraData();
+			cd = new RS2CameraConfig();
 			pcl::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
 			pcl::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
 			intrinsicTrafo->setIdentity();
@@ -318,8 +282,8 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
 			cd->trafo = trafo;
 			cd->intrinsicTrafo = intrinsicTrafo;
 			cd->cameraposition = { 0, 0, 0 };
-			config->camera_data.push_back(*cd);
-			cd = &config->camera_data.back();
+			config->all_camera_configs.push_back(*cd);
+			cd = &config->all_camera_configs.back();
 		}
 
         const char *type = cameraElement->Attribute("type");
@@ -374,7 +338,7 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
 		registeredcameras++;
 		cameraElement = cameraElement->NextSiblingElement("camera");
 	}
-	if (config->camera_data.size() != registeredcameras)
+	if (config->all_camera_configs.size() != registeredcameras)
 		loadOkay = false;
 
     if (!loadOkay) {
@@ -441,24 +405,24 @@ void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
 	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_percistency is a float between 0 and 8 "));
 
 	TiXmlElement* parameters = new TiXmlElement("depthfilterparameters");
-	parameters->SetAttribute("do_decimation", config->camera_config.do_decimation);
-	parameters->SetAttribute("decimation_value", config->camera_config.decimation_value);
-	parameters->SetAttribute("do_threshold", config->camera_config.do_threshold);
-	parameters->SetDoubleAttribute("threshold_near", config->camera_config.threshold_near);
-	parameters->SetDoubleAttribute("threshold_far", config->camera_config.threshold_far);
-	parameters->SetAttribute("do_spatial", config->camera_config.do_spatial);
-	parameters->SetAttribute("spatial_iterations", config->camera_config.spatial_iterations);
-	parameters->SetDoubleAttribute("spatial_alpha", config->camera_config.spatial_alpha);
-	parameters->SetAttribute("spatial_delta", config->camera_config.spatial_delta);
-	parameters->SetAttribute("spatial_filling", config->camera_config.spatial_filling);
-	parameters->SetAttribute("do_temporal", config->camera_config.do_temporal);
-	parameters->SetDoubleAttribute("temporal_alpha", config->camera_config.temporal_alpha);
-	parameters->SetAttribute("temporal_delta", config->camera_config.temporal_delta);
-	parameters->SetAttribute("temporal_percistency", config->camera_config.temporal_percistency);
+	parameters->SetAttribute("do_decimation", config->camera_processing.do_decimation);
+	parameters->SetAttribute("decimation_value", config->camera_processing.decimation_value);
+	parameters->SetAttribute("do_threshold", config->camera_processing.do_threshold);
+	parameters->SetDoubleAttribute("threshold_near", config->camera_processing.threshold_near);
+	parameters->SetDoubleAttribute("threshold_far", config->camera_processing.threshold_far);
+	parameters->SetAttribute("do_spatial", config->camera_processing.do_spatial);
+	parameters->SetAttribute("spatial_iterations", config->camera_processing.spatial_iterations);
+	parameters->SetDoubleAttribute("spatial_alpha", config->camera_processing.spatial_alpha);
+	parameters->SetAttribute("spatial_delta", config->camera_processing.spatial_delta);
+	parameters->SetAttribute("spatial_filling", config->camera_processing.spatial_filling);
+	parameters->SetAttribute("do_temporal", config->camera_processing.do_temporal);
+	parameters->SetDoubleAttribute("temporal_alpha", config->camera_processing.temporal_alpha);
+	parameters->SetAttribute("temporal_delta", config->camera_processing.temporal_delta);
+	parameters->SetAttribute("temporal_percistency", config->camera_processing.temporal_percistency);
 	postprocessing->LinkEndChild(parameters);
 
 	cameraconfig->LinkEndChild(new TiXmlComment(" backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane "));
-	for (RS2CameraData cd : config->camera_data) {
+	for (RS2CameraConfig cd : config->all_camera_configs) {
 		TiXmlElement* cam = new TiXmlElement("camera");
 		cam->SetAttribute("serial", cd.serial.c_str());
         cam->SetAttribute("type", cd.type.c_str());

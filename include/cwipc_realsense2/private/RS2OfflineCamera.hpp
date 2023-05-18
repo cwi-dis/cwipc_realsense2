@@ -18,7 +18,7 @@ private:
 	RS2OfflineCamera(const RS2OfflineCamera&);	// Disable copy constructor
 	RS2OfflineCamera& operator=(const RS2OfflineCamera&);	// Disable assignment
 public:
-	RS2OfflineCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraData& _camData, cwipc_rs2offline_settings& settings);
+	RS2OfflineCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData, cwipc_rs2offline_settings& settings);
 	~RS2OfflineCamera();
 
 	void _start_capture_thread();

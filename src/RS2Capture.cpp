@@ -175,18 +175,18 @@ void RS2Capture::_setup_camera_sync() {
 
 void RS2Capture::_find_camera_positions() {
 	// find camerapositions
-	for (int i = 0; i < configuration.camera_data.size(); i++) {
+	for (int i = 0; i < configuration.all_camera_configs.size(); i++) {
 		cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
 		cwipc_pcl_point pt;
 		pt.x = 0;
 		pt.y = 0;
 		pt.z = 0;
 		pcptr->push_back(pt);
-		transformPointCloud(*pcptr, *pcptr, *configuration.camera_data[i].trafo);
+		transformPointCloud(*pcptr, *pcptr, *configuration.all_camera_configs[i].trafo);
 		cwipc_pcl_point pnt = pcptr->points[0];
-		configuration.camera_data[i].cameraposition.x = pnt.x;
-		configuration.camera_data[i].cameraposition.y = pnt.y;
-		configuration.camera_data[i].cameraposition.z = pnt.z;
+		configuration.all_camera_configs[i].cameraposition.x = pnt.x;
+		configuration.all_camera_configs[i].cameraposition.y = pnt.y;
+		configuration.all_camera_configs[i].cameraposition.z = pnt.z;
 	}
 }
 
@@ -233,14 +233,14 @@ void RS2Capture::_apply_default_config() {
 #ifdef CWIPC_DEBUG
 		std::cout << "cwipc_realsense2: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 #endif
-		RS2CameraData cd;
+		RS2CameraConfig cd;
 		cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 		pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 		default_trafo->setIdentity();
 		cd.trafo = default_trafo;
 		cd.intrinsicTrafo = default_trafo;
 		cd.cameraposition = { 0, 0, 0 };
-		configuration.camera_data.push_back(cd);
+		configuration.all_camera_configs.push_back(cd);
 	}
 #ifdef xxxjack_old
 
@@ -283,7 +283,7 @@ void RS2Capture::_create_cameras() {
 		std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 		std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
 
-		RS2CameraData& cd = get_camera_data(serial);
+		RS2CameraConfig& cd = get_camera_data(serial);
         if (cd.type != "realsense") {
             cwipc_rs2_log_warning("Camera " + serial + " is type " + cd.type + " in stead of realsense");
         }
@@ -494,12 +494,12 @@ void RS2Capture::merge_views()
     // No need to merge aux_data: already inserted into mergedPC by each camera
 }
 
-RS2CameraData& RS2Capture::get_camera_data(std::string serial) {
-	for (int i = 0; i < configuration.camera_data.size(); i++)
-		if (configuration.camera_data[i].serial == serial)
-			return configuration.camera_data[i];
+RS2CameraConfig& RS2Capture::get_camera_data(std::string serial) {
+	for (int i = 0; i < configuration.all_camera_configs.size(); i++)
+		if (configuration.all_camera_configs[i].serial == serial)
+			return configuration.all_camera_configs[i];
 	cwipc_rs2_log_warning("Unknown camera " + serial);
-	static RS2CameraData empty;
+	static RS2CameraConfig empty;
 	return empty;
 }
 

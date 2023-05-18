@@ -15,9 +15,9 @@ private:
 	RS2Camera(const RS2Camera&);	// Disable copy constructor
 	RS2Camera& operator=(const RS2Camera&);	// Disable assignment
 protected:
-	RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& configuration, RS2CameraData& _camData);
+	RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& configuration, RS2CameraConfig& _camData);
 public:
-	RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraData& _camData, std::string _usb="0");
+	RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData, std::string _usb="0");
 	virtual ~RS2Camera();
 
 	void start();
@@ -53,8 +53,8 @@ protected:
 	void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 private:
-	RS2CameraData& camData;
-	RS2CameraConfig& camSettings;
+	RS2CameraConfig& camera_config;
+	RS2CameraProcessingParameters& camera_processing;
 	bool high_speed_connection;
     cwipc_pcl_pointcloud current_pointcloud;
 

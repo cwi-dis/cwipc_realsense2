@@ -25,7 +25,7 @@ RS2Offline::RS2Offline(cwipc_rs2offline_settings& settings, const char *configFi
 	bool ok = cwipc_rs2_file2config(configFilename, &configuration);
 	assert(ok);
 	int camera_index = 0;
-	for (RS2CameraData& cd : configuration.camera_data) {
+	for (RS2CameraConfig& cd : configuration.all_camera_configs) {
 		if (!cd.disabled) {
 			auto cam = new RS2OfflineCamera(ctx, configuration, camera_index, cd, settings);
 			feeders.push_back(cam);
