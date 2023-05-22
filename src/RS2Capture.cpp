@@ -54,7 +54,7 @@ RS2Capture::RS2Capture(const char *configFilename)
 	if (numberOfCapturersActive > 1) {
 		cwipc_rs2_log_warning("Attempting to create capturer while one is already active.");
 	}
- 
+    bool ok = config_reload(configFilename);
 }
 
 bool RS2Capture::config_reload(const char *configFilename) {
