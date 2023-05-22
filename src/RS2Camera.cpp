@@ -338,7 +338,7 @@ void RS2Camera::_processing_thread_main()
 		const uint8_t camera_label = (uint8_t)1 << camera_index;
 
 		// Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
-        _init_pointcloud(points.size());
+        _init_pointcloud((int)points.size());
         cwipc_pcl_pointcloud pcl_pointcloud = current_pointcloud;
 		{
 			// Make PointCloud

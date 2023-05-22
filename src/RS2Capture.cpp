@@ -54,48 +54,60 @@ RS2Capture::RS2Capture(const char *configFilename)
 	if (numberOfCapturersActive > 1) {
 		cwipc_rs2_log_warning("Attempting to create capturer while one is already active.");
 	}
-	camera_count = _count_devices();
-	if (!_apply_config(configFilename)) {
-		_apply_default_config();
-	}
-	// Set various camera hardware parameters (white balance and such)
-	_setup_camera_hardware_parameters();
+ 
+}
 
-	//
-	// Set sync mode, if needed
-	//
-	_setup_camera_sync();
+bool RS2Capture::config_reload(const char *configFilename) {
+    camera_count = 0;
+    if (!_apply_config(configFilename)) {
+        return false;
+    }
+    camera_count = (int)configuration.all_camera_configs.size();
+    if (camera_count == 0) {
+        return false;
+    }
+    // Set various camera hardware parameters (white balance and such)
+    _setup_camera_hardware_parameters();
 
-	// Now we have all the configuration information. Open the cameras.
-	_create_cameras();
+    //
+    // Set sync mode, if needed
+    //
+    _setup_camera_sync();
+
+    // Now we have all the configuration information. Open the cameras.
+    _create_cameras();
 
 
-	_find_camera_positions();
-    
+    _find_camera_positions();
 
 
-	//
-	// start the cameras
-	//
-	try {
-		for (auto cam: cameras)
-			cam->start();
-	} catch(const rs2::error& e) {
-		cwipc_rs2_log_warning("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
-		throw;
-	}
-	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	//
-	// start the per-camera capture threads
-	//
-	for (auto cam: cameras)
-		cam->start_capturer();
-	//
-	// start our run thread (which will drive the capturers and merge the pointclouds)
-	//
-	stopped = false;
-	control_thread = new std::thread(&RS2Capture::_control_thread_main, this);
-	_cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Capture::control_thread");
+
+    //
+    // start the cameras
+    //
+    try {
+        for (auto cam: cameras)
+            cam->start();
+    } catch(const rs2::error& e) {
+        cwipc_rs2_log_warning("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
+        throw;
+    }
+    starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    //
+    // start the per-camera capture threads
+    //
+    for (auto cam: cameras)
+        cam->start_capturer();
+    //
+    // start our run thread (which will drive the capturers and merge the pointclouds)
+    //
+    stopped = false;
+    control_thread = new std::thread(&RS2Capture::_control_thread_main, this);
+    _cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Capture::control_thread");
+}
+
+std::string RS2Capture::config_get() {
+    return "";
 }
 
 void RS2Capture::_setup_camera_hardware_parameters() {
@@ -205,19 +217,39 @@ int RS2Capture::_count_devices() {
 }
 
 bool RS2Capture::_apply_config(const char* configFilename) {
-
+    // Clear out old configuration
+    RS2CaptureConfig empty;
+    configuration = empty;
+    
 	//
 	// Read the configuration. We do this only now because for historical reasons the configuration
 	// reader is also the code that checks whether the configuration file contents match the actual
 	// current hardware setup. To be fixed at some point.
 	//
-	if (configFilename == NULL) {
+	if (configFilename == NULL || *configFilename == '\0') {
+        // Empty config filename: use default cameraconfig.xml.
 		configFilename = "cameraconfig.xml";
 	}
-	return cwipc_rs2_file2config(configFilename, &configuration);
+    if (strcmp(configFilename, "auto") == 0) {
+        // Special case 1: string "auto" means auto-configure all realsense cameras.
+        return _apply_default_config();
+    }
+    if (configFilename[0] == '{') {
+        // Special case 2: a string starting with { is considered a JSON literal
+        return cwipc_rs2_jsonbuffer2config(configFilename, &configuration);
+    }
+    // Otherwise we check the extension. It can be .xml or .json.
+    const char *extension = strrchr(configFilename, '.');
+    if (strcmp(extension, ".xml") == 0) {
+        return cwipc_rs2_xmlfile2config(configFilename, &configuration);
+    }
+    if (strcmp(extension, ".json") == 0) {
+        return cwipc_rs2_jsonfile2config(configFilename, &configuration);
+    }
+    return false;
 }
 
-void RS2Capture::_apply_default_config() {
+bool RS2Capture::_apply_default_config() {
 	// Determine how many realsense cameras (not platform cameras like webcams) are connected
 	const std::string platform_camera_name = "Platform Camera";
 	rs2::device_list devs = ctx.query_devices();
@@ -238,10 +270,13 @@ void RS2Capture::_apply_default_config() {
 		pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
 		default_trafo->setIdentity();
 		cd.trafo = default_trafo;
-		cd.intrinsicTrafo = default_trafo;
+        pcl::shared_ptr<Eigen::Affine3d> default_intrinsic_trafo(new Eigen::Affine3d());
+        default_intrinsic_trafo->setIdentity();
+        cd.intrinsicTrafo = default_intrinsic_trafo;
 		cd.cameraposition = { 0, 0, 0 };
 		configuration.all_camera_configs.push_back(cd);
 	}
+    return true;
 #ifdef xxxjack_old
 
 	// the configuration file did not fully match the current situation so we have to update the admin
@@ -287,7 +322,7 @@ void RS2Capture::_create_cameras() {
         if (cd.type != "realsense") {
             cwipc_rs2_log_warning("Camera " + serial + " is type " + cd.type + " in stead of realsense");
         }
-		int camera_index = cameras.size();
+		int camera_index = (int)cameras.size();
 		if (cd.disabled) {
 			// xxxnacho do we need to close the device, like the kinect case?
 		}else{
@@ -298,34 +333,38 @@ void RS2Capture::_create_cameras() {
 }
 
 RS2Capture::~RS2Capture() {
-    if (camera_count == 0) {
-        numberOfCapturersActive--;
-        return;
+    if (camera_count != 0) {
+        _unload_cameras();
     }
-	uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	// Stop all cameras
-	for (auto cam : cameras)
-		cam->stop();
+    numberOfCapturersActive--;
+}
+
+void RS2Capture::_unload_cameras() {
+    uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    if (camera_count == 0) return;
+    // Stop all cameras
+    for (auto cam : cameras)
+        cam->stop();
+    camera_count = 0;
     mergedPC_is_fresh = true;
     mergedPC_want_new = false;
     mergedPC_is_fresh_cv.notify_all();
     mergedPC_want_new = true;
     mergedPC_want_new_cv.notify_all();
-	if(!stopped) {
-		// Make the control thread stop. We set want_new to make it wake up (bit of a hack, really...)
-		stopped = true;
-  		control_thread->join();
-	}
-	std::cerr << "cwipc_realsense2: stopped all cameras\n";
-	// Delete all cameras (which will stop their threads as well)
-	for (auto cam : cameras)
-		delete cam;
-	cameras.clear();
-	std::cerr << "cwipc_realsense2: deleted all cameras\n";
-	// Print some minimal statistics of this run
-	float deltaT = (stopTime - starttime) / 1000.0;
-	std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
-	numberOfCapturersActive--;
+    if(!stopped) {
+        // Make the control thread stop. We set want_new to make it wake up (bit of a hack, really...)
+        stopped = true;
+          control_thread->join();
+    }
+    std::cerr << "cwipc_realsense2: stopped all cameras\n";
+    // Delete all cameras (which will stop their threads as well)
+    for (auto cam : cameras)
+        delete cam;
+    cameras.clear();
+    std::cerr << "cwipc_realsense2: deleted all cameras\n";
+    // Print some minimal statistics of this run
+    float deltaT = (stopTime - starttime) / 1000.0;
+    std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
 }
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp

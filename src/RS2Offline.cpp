@@ -22,7 +22,7 @@
 RS2Offline::RS2Offline(cwipc_rs2offline_settings& settings, const char *configFilename)
 :	RS2Capture(1)
 {
-	bool ok = cwipc_rs2_file2config(configFilename, &configuration);
+    bool ok = _apply_config(configFilename);
 	assert(ok);
 	int camera_index = 0;
 	for (RS2CameraConfig& cd : configuration.all_camera_configs) {

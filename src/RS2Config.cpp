@@ -184,7 +184,42 @@ bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config) {
     json dbg_result;
     to_json(dbg_result, *config);
     std::cerr << "xxxjack debug json parse result: \n" << dbg_result << "\n";
-	return true;
+    return true;
+}
+
+bool cwipc_rs2_jsonbuffer2config(const char* jsonBuffer, RS2CaptureConfig* config) {
+    json json_data;
+    try {
+        json_data = json::parse(jsonBuffer);
+
+        int version = 0;
+        json_data.at("version").get_to(version);
+        if (version != 3) {
+            cwipc_rs2_log_warning(std::string("CameraConfig ") + "(inline buffer) " + "ignored, is not version 3");
+            return false;
+        }
+        std::string type;
+        json_data.at("type").get_to(type);
+        if (type != "realsense") {
+            cwipc_rs2_log_warning(std::string("CameraConfig ") + "(inline buffer) " + "ignored, is not realsense but " + type);
+            return false;
+        }
+        from_json(json_data, *config);
+    }
+    catch (const std::exception& e) {
+        cwipc_rs2_log_warning(std::string("CameraConfig ") + "(inline buffer) " + ": exception " + e.what() );
+        return false;
+    }
+    json dbg_result;
+    to_json(dbg_result, *config);
+    std::cerr << "xxxjack debug json parse result: \n" << dbg_result << "\n";
+    return true;
+}
+
+std::string cwipc_rs2_config2jsonbuffer(RS2CaptureConfig *config) {
+    json result;
+    to_json(result, *config);
+    return result.dump();
 }
 
 bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
@@ -346,110 +381,3 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
     }
 	return loadOkay;
 }
-
-// read and restore the camera transformation setting as stored in the configuration document
-bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config)
-{
-	std::string sFilename(filename);
-	std::cerr << "xxxjack filename=" << sFilename << std::endl;
-	if (sFilename.substr(sFilename.find_last_of(".")+1) == "json") {
-		return cwipc_rs2_jsonfile2config(filename, config);
-	} else {
-		return cwipc_rs2_xmlfile2config(filename, config);
-	}
-}
-
-// store the current camera transformation setting into a xml document
-void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config)
-{
-	TiXmlDocument doc;
-	doc.LinkEndChild(new TiXmlDeclaration("1.0", "", ""));
-
-	TiXmlElement* root = new TiXmlElement("file");
-	doc.LinkEndChild(root);
-
-	TiXmlElement* cameraconfig = new TiXmlElement("CameraConfig");
-    cameraconfig->SetAttribute("version", 2);
-    root->LinkEndChild(cameraconfig);
-
-	TiXmlElement* system = new TiXmlElement("system");
-	system->SetAttribute("usb2width", config->usb2_width);
-	system->SetAttribute("usb2height", config->usb2_height);
-	system->SetAttribute("usb2fps", config->usb2_fps);
-	system->SetAttribute("usb3width", config->usb3_width);
-	system->SetAttribute("usb3height", config->usb3_height);
-    system->SetAttribute("usb3fps", config->usb3_fps);
-    system->SetAttribute("usb2allowed", config->usb2allowed);
-    system->SetAttribute("exposure", config->exposure);
-    system->SetAttribute("whitebalance", config->whitebalance);
-    system->SetAttribute("backlight_compensation", config->backlight_compensation);
-    system->SetAttribute("laser_power", config->laser_power);
-    system->SetAttribute("density_preferred", config->density);
-	cameraconfig->LinkEndChild(system);
-
-	cameraconfig->LinkEndChild(new TiXmlComment(" 'cloudresolution' and 'tileresolution' are specified in meters "));
-	TiXmlElement* postprocessing = new TiXmlElement("postprocessing");
-	postprocessing->SetAttribute("greenscreenremoval", config->greenscreen_removal);
-	postprocessing->SetDoubleAttribute("height_min", config->height_min);
-	postprocessing->SetDoubleAttribute("height_max", config->height_max);
-	cameraconfig->LinkEndChild(postprocessing);
-
-	postprocessing->LinkEndChild(new TiXmlComment(" For information on depth filtering parameters see librealsense/doc/post-processing-filters.md "));
-	postprocessing->LinkEndChild(new TiXmlComment("\tdecimation_value is an int between 2 and 8 "));
-	postprocessing->LinkEndChild(new TiXmlComment("\tspatial_iterations is an int between 1 and 5 "));
-	postprocessing->LinkEndChild(new TiXmlComment("\tspatial_alpha is is a float between 0.25 and 1.0 "));
-	postprocessing->LinkEndChild(new TiXmlComment("\tspatial_delta is an int between 1 and 50 "));
-	postprocessing->LinkEndChild(new TiXmlComment("\tspatial_filling is an int between 0 and 6 "));
-	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_alpha is is a float between 0 and 1 "));
-	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_delta is is an int between 1 and 100 "));
-	postprocessing->LinkEndChild(new TiXmlComment("\ttemporal_percistency is a float between 0 and 8 "));
-
-	TiXmlElement* parameters = new TiXmlElement("depthfilterparameters");
-	parameters->SetAttribute("do_decimation", config->camera_processing.do_decimation);
-	parameters->SetAttribute("decimation_value", config->camera_processing.decimation_value);
-	parameters->SetAttribute("do_threshold", config->camera_processing.do_threshold);
-	parameters->SetDoubleAttribute("threshold_near", config->camera_processing.threshold_near);
-	parameters->SetDoubleAttribute("threshold_far", config->camera_processing.threshold_far);
-	parameters->SetAttribute("do_spatial", config->camera_processing.do_spatial);
-	parameters->SetAttribute("spatial_iterations", config->camera_processing.spatial_iterations);
-	parameters->SetDoubleAttribute("spatial_alpha", config->camera_processing.spatial_alpha);
-	parameters->SetAttribute("spatial_delta", config->camera_processing.spatial_delta);
-	parameters->SetAttribute("spatial_filling", config->camera_processing.spatial_filling);
-	parameters->SetAttribute("do_temporal", config->camera_processing.do_temporal);
-	parameters->SetDoubleAttribute("temporal_alpha", config->camera_processing.temporal_alpha);
-	parameters->SetAttribute("temporal_delta", config->camera_processing.temporal_delta);
-	parameters->SetAttribute("temporal_percistency", config->camera_processing.temporal_percistency);
-	postprocessing->LinkEndChild(parameters);
-
-	cameraconfig->LinkEndChild(new TiXmlComment(" backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane "));
-	for (RS2CameraConfig cd : config->all_camera_configs) {
-		TiXmlElement* cam = new TiXmlElement("camera");
-		cam->SetAttribute("serial", cd.serial.c_str());
-        cam->SetAttribute("type", cd.type.c_str());
-		cameraconfig->LinkEndChild(cam);
-
-		TiXmlElement* trafo = new TiXmlElement("trafo");
-		cam->LinkEndChild(trafo);
-
-		TiXmlElement* val = new TiXmlElement("values");
-		val->SetDoubleAttribute("v00", (*cd.trafo)(0, 0));
-		val->SetDoubleAttribute("v01", (*cd.trafo)(0, 1));
-		val->SetDoubleAttribute("v02", (*cd.trafo)(0, 2));
-		val->SetDoubleAttribute("v03", (*cd.trafo)(0, 3));
-		val->SetDoubleAttribute("v10", (*cd.trafo)(1, 0));
-		val->SetDoubleAttribute("v11", (*cd.trafo)(1, 1));
-		val->SetDoubleAttribute("v12", (*cd.trafo)(1, 2));
-		val->SetDoubleAttribute("v13", (*cd.trafo)(1, 3));
-		val->SetDoubleAttribute("v20", (*cd.trafo)(2, 0));
-		val->SetDoubleAttribute("v21", (*cd.trafo)(2, 1));
-		val->SetDoubleAttribute("v22", (*cd.trafo)(2, 2));
-		val->SetDoubleAttribute("v23", (*cd.trafo)(2, 3));
-		val->SetDoubleAttribute("v30", (*cd.trafo)(3, 0));
-		val->SetDoubleAttribute("v31", (*cd.trafo)(3, 1));
-		val->SetDoubleAttribute("v32", (*cd.trafo)(3, 2));
-		val->SetDoubleAttribute("v33", (*cd.trafo)(3, 3));
-		trafo->LinkEndChild(val);
-	}
-	doc.SaveFile(filename);
-}
-

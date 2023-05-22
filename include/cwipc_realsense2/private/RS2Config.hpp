@@ -87,10 +87,10 @@ struct RS2CaptureConfig;
 void cwipc_rs2_log_warning(std::string warning);
 extern char **cwipc_rs2_warning_store;
 
-bool cwipc_rs2_file2config(const char* filename, RS2CaptureConfig* config);
-
-// store the current camera transformation setting into a xml document
-void cwipc_rs2_config2file(const char* filename, RS2CaptureConfig* config);
+bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config);
+bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config);
+bool cwipc_rs2_jsonbuffer2config(const char* jsonbuffer, RS2CaptureConfig* config);
+std::string cwipc_rs2_config2string(RS2CaptureConfig *config);
 
 #ifdef _WIN32
 #include <Windows.h>

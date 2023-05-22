@@ -17,14 +17,17 @@ protected:
 	RS2Capture(int dummy);
 	int _count_devices();
 	bool _apply_config(const char* configFilename);
-	void _apply_default_config();
+	bool _apply_default_config();
 	void _find_camera_positions();
 	void _setup_camera_sync();
 	void _setup_camera_hardware_parameters();
+    void _unload_cameras();
 public:
 	// methods
 	RS2Capture(const char *configFilename=NULL);
 	virtual ~RS2Capture();
+    bool config_reload(const char *configFilename);
+    std::string config_get();
 	cwipc* get_pointcloud(); // API function that returns the merged pointcloud
 	bool pointcloud_available(bool wait);					  // Returns true if a pointcloud is available
 	cwipc* get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)

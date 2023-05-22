@@ -130,7 +130,7 @@ public:
     int maxtile() override
     {
         if (m_grabber == NULL) return 0;
-        int nCamera = m_grabber->configuration.all_camera_configs.size();
+        int nCamera = (int)m_grabber->configuration.all_camera_configs.size();
         if (nCamera <= 1) {
             // Using a single camera or no camera.
             return nCamera;
@@ -142,7 +142,7 @@ public:
         if (m_grabber == NULL)
 			return false;
 
-        int nCamera = m_grabber->configuration.all_camera_configs.size();
+        int nCamera = (int)m_grabber->configuration.all_camera_configs.size();
 
 		if (nCamera == 0) { // No camera
 			return false;
