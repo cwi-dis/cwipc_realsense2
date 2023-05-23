@@ -41,7 +41,7 @@ class TestApi(unittest.TestCase):
     
     def _open_grabber(self):
         try:
-            grabber = _cwipc_realsense2.cwipc_realsense2()
+            grabber = _cwipc_realsense2.cwipc_realsense2("auto")
         except cwipc.CwipcError as arg:
             if str(arg) == 'cwipc_realsense2: no realsense cameras found':
                 self.skipTest(str(arg))
