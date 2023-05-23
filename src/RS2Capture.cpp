@@ -301,15 +301,20 @@ void RS2Capture::_create_cameras() {
 		std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 		std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
 
-		RS2CameraConfig& cd = get_camera_data(serial);
-        if (cd.type != "realsense") {
-            cwipc_rs2_log_warning("Camera " + serial + " is type " + cd.type + " in stead of realsense");
+		RS2CameraConfig* cd = get_camera_config(serial);
+		if (cd == nullptr) {
+			cwipc_rs2_log_warning("Camera " + serial + " is not connected");
+			continue;
+		}
+        if (cd->type != "realsense") {
+            cwipc_rs2_log_warning("Camera " + serial + " is type " + cd->type + " in stead of realsense");
+			continue;
         }
 		int camera_index = (int)cameras.size();
-		if (cd.disabled) {
+		if (cd->disabled) {
 			// xxxnacho do we need to close the device, like the kinect case?
 		}else{
-			auto cam = new RS2Camera(ctx, configuration, camera_index, cd, camUsb);
+			auto cam = new RS2Camera(ctx, configuration, camera_index, *cd, camUsb);
 			cameras.push_back(cam);
 		}
 	}
@@ -516,13 +521,12 @@ void RS2Capture::merge_views()
     // No need to merge aux_data: already inserted into mergedPC by each camera
 }
 
-RS2CameraConfig& RS2Capture::get_camera_data(std::string serial) {
+RS2CameraConfig* RS2Capture::get_camera_config(std::string serial) {
 	for (int i = 0; i < configuration.all_camera_configs.size(); i++)
 		if (configuration.all_camera_configs[i].serial == serial)
-			return configuration.all_camera_configs[i];
+			return &configuration.all_camera_configs[i];
 	cwipc_rs2_log_warning("Unknown camera " + serial);
-	static RS2CameraConfig empty;
-	return empty;
+	return nullptr;
 }
 
 RS2Camera* RS2Capture::get_camera(std::string serial) {
