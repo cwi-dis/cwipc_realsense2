@@ -104,6 +104,7 @@ bool RS2Capture::config_reload(const char *configFilename) {
     stopped = false;
     control_thread = new std::thread(&RS2Capture::_control_thread_main, this);
     _cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Capture::control_thread");
+	return true;
 }
 
 std::string RS2Capture::config_get() {
@@ -291,7 +292,7 @@ bool RS2Capture::_apply_default_config() {
 	}
 
 	// collect all camera's in the config that are connected
-	for (RS2CameraData cd : configuration.camera_data) {
+	for (RS2CameraData cd : configuration.all_camera_configs) {
 		if ((find(serials.begin(), serials.end(), cd.serial) != serials.end())) {
 			if (!cd.disabled)
 				realcams.push_back(cd);
@@ -301,7 +302,7 @@ bool RS2Capture::_apply_default_config() {
 		}
 	}
 	// Reduce the active configuration to cameras that are connected
-	configuration.camera_data = realcams;
+	configuration.all_camera_configs = realcams;
 #endif
 
 }
