@@ -90,7 +90,8 @@ public:
     cwipc_source_realsense2_impl(const char *configFilename=NULL)
 		: m_grabber(NULL)
 	{ 
-		m_grabber = new RS2Capture(configFilename);
+		m_grabber = new RS2Capture();
+		m_grabber->config_reload(configFilename);
 	}
 
     ~cwipc_source_realsense2_impl()
@@ -210,9 +211,10 @@ protected:
 	cwipc_source_realsense2_impl *m_source;
 public:
     cwipc_source_rs2offline_impl(cwipc_rs2offline_settings& settings, const char *configFilename=NULL)
-	:	m_offline(new RS2Offline(settings, configFilename)),
+	:	m_offline(new RS2Offline(settings)),
 		m_source(new cwipc_source_realsense2_impl(m_offline))
 	{
+		m_offline->config_reload(configFilename);
 	}
 
     ~cwipc_source_rs2offline_impl()

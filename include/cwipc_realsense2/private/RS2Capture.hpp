@@ -14,7 +14,6 @@ class RS2Camera;
 
 class RS2Capture {
 protected:
-	RS2Capture(int dummy);
 	int _count_devices();
 	bool _apply_config(const char* configFilename);
 	bool _apply_default_config();
@@ -24,9 +23,9 @@ protected:
     void _unload_cameras();
 public:
 	// methods
-	RS2Capture(const char *configFilename=NULL);
+	RS2Capture();
 	virtual ~RS2Capture();
-    bool config_reload(const char *configFilename);
+    virtual bool config_reload(const char *configFilename);
     std::string config_get();
 	cwipc* get_pointcloud(); // API function that returns the merged pointcloud
 	bool pointcloud_available(bool wait);					  // Returns true if a pointcloud is available
@@ -37,32 +36,32 @@ public:
 
 	// variables
     RS2CaptureConfig configuration;
-	uint64_t starttime;
-	int numberOfPCsProduced;
-	int camera_count; // number of cameras
+	uint64_t starttime = 0;
+	int numberOfPCsProduced = 0;
+	int camera_count = 0; // number of cameras
     void request_image_auxdata(bool _rgb, bool _depth) {
         want_auxdata_rgb = _rgb;
         want_auxdata_depth = _depth;
     }
-    bool want_auxdata_rgb;
-    bool want_auxdata_depth;
+    bool want_auxdata_rgb = false;
+    bool want_auxdata_depth = false;
 protected:
 	rs2::context ctx;				// librealsense2 context (coordinates all cameras)
 	std::list<rs2::device> rs2_cameras; // librealsense2 cameras that we use
 	virtual void _create_cameras();
 	std::vector<RS2Camera*> cameras;                // Storage of camera specifics
 	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
-	bool stopped;
-	std::thread *control_thread;
+	bool stopped = false;
+	std::thread *control_thread = nullptr;
 
 private:
 	void merge_views();                       // Internal: merge all camera's pointclouds into one
 	void _request_new_pointcloud();           // Internal: request a new pointcloud to be grabbed and processed
-	cwipc* mergedPC;                            // Merged pointcloud
+	cwipc* mergedPC = nullptr;                            // Merged pointcloud
 	std::mutex mergedPC_mutex;                                // Lock for all mergedPC-related dta structures
-	bool mergedPC_is_fresh;                                   // True if mergedPC contains a freshly-created pointcloud
+	bool mergedPC_is_fresh = false;                                   // True if mergedPC contains a freshly-created pointcloud
 	std::condition_variable mergedPC_is_fresh_cv;             // Condition variable for signalling freshly-created pointcloud
-	bool mergedPC_want_new;                                   // Set to true to request a new pointcloud
+	bool mergedPC_want_new = false;                                   // Set to true to request a new pointcloud
 	std::condition_variable mergedPC_want_new_cv;             // Condition variable for signalling we want a new pointcloud
 };
 #endif // cwipc_realsense_RS2Capture_hpp

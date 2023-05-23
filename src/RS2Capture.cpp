@@ -28,33 +28,13 @@
 // if there is another one open.
 static int numberOfCapturersActive = 0;
 
-RS2Capture::RS2Capture(int dummy)
-:	numberOfPCsProduced(0),
-    want_auxdata_rgb(false),
-    want_auxdata_depth(false),
-    camera_count(0),
-	mergedPC_is_fresh(false),
-	mergedPC_want_new(false)
-{
-	numberOfCapturersActive++;
-	mergedPC = nullptr;
-	starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-}
-
-RS2Capture::RS2Capture(const char *configFilename)
-:	numberOfPCsProduced(0),
-    want_auxdata_rgb(false),
-    want_auxdata_depth(false),
-    camera_count(0),
-	mergedPC_is_fresh(false),
-	mergedPC_want_new(false)
+RS2Capture::RS2Capture()
 {
 	// First check that no other RS2Capture is active within this process (trying to catch programmer errors)
 	numberOfCapturersActive++;
 	if (numberOfCapturersActive > 1) {
 		cwipc_rs2_log_warning("Attempting to create capturer while one is already active.");
 	}
-    bool ok = config_reload(configFilename);
 }
 
 bool RS2Capture::config_reload(const char *configFilename) {

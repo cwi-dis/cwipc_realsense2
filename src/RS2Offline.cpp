@@ -19,11 +19,22 @@
 #include "cwipc_realsense2/private/RS2Offline.hpp"
 #include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
-RS2Offline::RS2Offline(cwipc_rs2offline_settings& settings, const char *configFilename)
-:	RS2Capture(1)
+RS2Offline::RS2Offline(cwipc_rs2offline_settings& _settings)
+:	RS2Capture(),
+	settings(_settings)
 {
-    bool ok = _apply_config(configFilename);
-	assert(ok);
+
+}
+
+RS2Offline::~RS2Offline() {
+
+}
+
+bool RS2Offline::config_reload(const char* configFilename) {
+	if (!_apply_config(configFilename)) {
+		return false;
+	}
+	
 	int camera_index = 0;
 	for (RS2CameraConfig& cd : configuration.all_camera_configs) {
 		if (!cd.disabled) {
@@ -33,15 +44,12 @@ RS2Offline::RS2Offline(cwipc_rs2offline_settings& settings, const char *configFi
 		}
 		camera_index++;
 	}
-	for (auto cam: cameras)
+	for (auto cam : cameras)
 		cam->start_capturer();
 	stopped = false;
 	control_thread = new std::thread(&RS2Offline::_control_thread_main, this);
 	_cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Offline::control_thread");
-}
-
-RS2Offline::~RS2Offline() {
-
+	return true;
 }
 
 bool RS2Offline::feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
