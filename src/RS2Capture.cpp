@@ -28,6 +28,8 @@
 // if there is another one open.
 static int numberOfCapturersActive = 0;
 
+rs2::context RS2Capture::ctx;
+
 RS2Capture::RS2Capture()
 {
 	// First check that no other RS2Capture is active within this process (trying to catch programmer errors)
@@ -183,7 +185,7 @@ void RS2Capture::_find_camera_positions() {
 	}
 }
 
-int RS2Capture::_count_devices() {
+int RS2Capture::count_devices() {
 	// Determine how many realsense cameras (not platform cameras like webcams) are connected
 	const std::string platform_camera_name = "Platform Camera";
 	rs2::device_list devs = ctx.query_devices();

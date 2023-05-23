@@ -22,6 +22,8 @@ public:
 	~RS2Offline();
 	virtual bool config_reload(const char* configFilename) override;
 private:
+	static int count_devices() { return 0; }
+	static RS2Offline* factory(cwipc_rs2offline_settings& _settings) { return new RS2Offline(_settings); }
 	cwipc_rs2offline_settings settings;
 	std::vector<RS2OfflineCamera*> feeders;
 };
