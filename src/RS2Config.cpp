@@ -216,7 +216,7 @@ bool cwipc_rs2_jsonbuffer2config(const char* jsonBuffer, RS2CaptureConfig* confi
     return true;
 }
 
-std::string cwipc_rs2_config2jsonbuffer(RS2CaptureConfig *config) {
+std::string cwipc_rs2_config2string(RS2CaptureConfig *config) {
     json result;
     to_json(result, *config);
     return result.dump();

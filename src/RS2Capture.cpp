@@ -90,7 +90,7 @@ bool RS2Capture::config_reload(const char *configFilename) {
 }
 
 std::string RS2Capture::config_get() {
-    return "";
+	return cwipc_rs2_config2string(&configuration);
 }
 
 void RS2Capture::_setup_camera_hardware_parameters() {
