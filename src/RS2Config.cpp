@@ -321,9 +321,12 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
 			cd = &config->all_camera_configs.back();
 		}
 
-        const char *type = cameraElement->Attribute("type");
-        if (type != NULL && *type != '\0') {
+        std::string type = cameraElement->Attribute("type");
+        if (type != "") {
             cd->type = type;
+            if (config->type == "") {
+                config->type = type;
+            }
         }
         
 		TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
