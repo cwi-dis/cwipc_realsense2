@@ -227,7 +227,7 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
 	{
-        cwipc_rs2_log_warning(std::string("Failed to load configfile ") + filename + ", using default matrices");
+        cwipc_rs2_log_warning(std::string("Failed to load configfile ") + filename);
 		return false;
 	}
 

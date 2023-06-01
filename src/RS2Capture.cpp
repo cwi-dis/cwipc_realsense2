@@ -211,7 +211,7 @@ bool RS2Capture::_apply_config(const char* configFilename) {
 	//
 	if (configFilename == NULL || *configFilename == '\0') {
         // Empty config filename: use default cameraconfig.xml.
-		configFilename = "cameraconfig.xml";
+		configFilename = "cameraconfig.json";
 	}
     if (strcmp(configFilename, "auto") == 0) {
         // Special case 1: string "auto" means auto-configure all realsense cameras.
