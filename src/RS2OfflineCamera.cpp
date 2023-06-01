@@ -36,19 +36,24 @@ RS2OfflineCamera::RS2OfflineCamera(rs2::context& ctx, RS2CaptureConfig& configur
 	feedFrameNum(0)
 {
 	// Get transformation matrix between color and depth in librealsense2 format
-	auto matrix = _camData.intrinsicTrafo->matrix();
-	depth_to_color_extrinsics.rotation[0] = matrix(0,0);
-	depth_to_color_extrinsics.rotation[1] = matrix(0,1);
-	depth_to_color_extrinsics.rotation[2] = matrix(0,2);
-	depth_to_color_extrinsics.rotation[3] = matrix(1,0);
-	depth_to_color_extrinsics.rotation[4] = matrix(1,1);
-	depth_to_color_extrinsics.rotation[5] = matrix(1,2);
-	depth_to_color_extrinsics.rotation[6] = matrix(2,0);
-	depth_to_color_extrinsics.rotation[7] = matrix(2,1);
-	depth_to_color_extrinsics.rotation[8] = matrix(2,2);
-	depth_to_color_extrinsics.translation[0] = matrix(0,3);
-	depth_to_color_extrinsics.translation[1] = matrix(1,3);
-	depth_to_color_extrinsics.translation[2] = matrix(2,3);
+	if (_camData.intrinsicTrafo == nullptr) {
+		cwipc_rs2_log_warning("cwipc_rs2offline: camera has no intrinsicTrafo");
+	}
+	else {
+		auto matrix = _camData.intrinsicTrafo->matrix();
+		depth_to_color_extrinsics.rotation[0] = matrix(0, 0);
+		depth_to_color_extrinsics.rotation[1] = matrix(0, 1);
+		depth_to_color_extrinsics.rotation[2] = matrix(0, 2);
+		depth_to_color_extrinsics.rotation[3] = matrix(1, 0);
+		depth_to_color_extrinsics.rotation[4] = matrix(1, 1);
+		depth_to_color_extrinsics.rotation[5] = matrix(1, 2);
+		depth_to_color_extrinsics.rotation[6] = matrix(2, 0);
+		depth_to_color_extrinsics.rotation[7] = matrix(2, 1);
+		depth_to_color_extrinsics.rotation[8] = matrix(2, 2);
+		depth_to_color_extrinsics.translation[0] = matrix(0, 3);
+		depth_to_color_extrinsics.translation[1] = matrix(1, 3);
+		depth_to_color_extrinsics.translation[2] = matrix(2, 3);
+	}
 	
 	dev = rs2::software_device();
 

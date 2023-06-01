@@ -354,6 +354,10 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
 		// load optional intrinsicTrafo element (only for offline usage)
 		trafo = cameraElement->FirstChildElement("intrinsicTrafo");
 		if (trafo) {
+            if (cd->intrinsicTrafo == nullptr) {
+                pcl::shared_ptr<Eigen::Affine3d> intrinsic_trafo(new Eigen::Affine3d());
+                cd->intrinsicTrafo = intrinsic_trafo;
+            }
 			TiXmlElement *val = trafo->FirstChildElement("values");
 			val->QueryDoubleAttribute("v00", &(*cd->intrinsicTrafo)(0, 0));
 			val->QueryDoubleAttribute("v01", &(*cd->intrinsicTrafo)(0, 1));
