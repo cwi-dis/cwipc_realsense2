@@ -32,6 +32,7 @@ rs2::context RS2Capture::ctx;
 
 RS2Capture::RS2Capture()
 {
+	type = "realsense";
 	// First check that no other RS2Capture is active within this process (trying to catch programmer errors)
 	numberOfCapturersActive++;
 	if (numberOfCapturersActive > 1) {
@@ -219,15 +220,15 @@ bool RS2Capture::_apply_config(const char* configFilename) {
     }
     if (configFilename[0] == '{') {
         // Special case 2: a string starting with { is considered a JSON literal
-        return cwipc_rs2_jsonbuffer2config(configFilename, &configuration);
+        return cwipc_rs2_jsonbuffer2config(configFilename, &configuration, type);
     }
     // Otherwise we check the extension. It can be .xml or .json.
     const char *extension = strrchr(configFilename, '.');
     if (strcmp(extension, ".xml") == 0) {
-        return cwipc_rs2_xmlfile2config(configFilename, &configuration);
+        return cwipc_rs2_xmlfile2config(configFilename, &configuration, type);
     }
     if (strcmp(extension, ".json") == 0) {
-        return cwipc_rs2_jsonfile2config(configFilename, &configuration);
+        return cwipc_rs2_jsonfile2config(configFilename, &configuration, type);
     }
     return false;
 }

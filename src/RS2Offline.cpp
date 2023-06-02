@@ -23,7 +23,7 @@ RS2Offline::RS2Offline(cwipc_rs2offline_settings& _settings)
 :	RS2Capture(),
 	settings(_settings)
 {
-
+	type = "realsense_offline";
 }
 
 RS2Offline::~RS2Offline() {

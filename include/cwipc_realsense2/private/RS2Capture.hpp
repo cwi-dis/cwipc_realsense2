@@ -8,11 +8,13 @@
 
 #include <librealsense2/rs.hpp>
 
+#include <cwipc_util/internal.h>
+
 #include "cwipc_realsense2/private/RS2Config.hpp"
 
 class RS2Camera;
 
-class RS2Capture {
+class RS2Capture : public CwipcBaseCapture {
 protected:
 	bool _apply_config(const char* configFilename);
 	bool _apply_default_config();

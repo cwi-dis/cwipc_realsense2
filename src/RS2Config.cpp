@@ -150,10 +150,10 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json_data["system"] = system_data;
     
     json_data["version"] = 3;
-    json_data["type"] = "realsense";
+    json_data["type"] = config.type;
 }
 
-bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config) {
+bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config, std::string typeWanted) {
     json json_data;
     try {
         std::ifstream f(filename);
@@ -171,8 +171,8 @@ bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config) {
         }
         std::string type;
         json_data.at("type").get_to(type);
-        if (type != "realsense") {
-            cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + "ignored, is not realsense but " + type);
+        if (type != typeWanted) {
+            cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + "ignored: type=" + type + " but expected " + type);
             return false;
         }
         from_json(json_data, *config);
@@ -187,7 +187,7 @@ bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config) {
     return true;
 }
 
-bool cwipc_rs2_jsonbuffer2config(const char* jsonBuffer, RS2CaptureConfig* config) {
+bool cwipc_rs2_jsonbuffer2config(const char* jsonBuffer, RS2CaptureConfig* config, std::string typeWanted) {
     json json_data;
     try {
         json_data = json::parse(jsonBuffer);
@@ -200,8 +200,8 @@ bool cwipc_rs2_jsonbuffer2config(const char* jsonBuffer, RS2CaptureConfig* confi
         }
         std::string type;
         json_data.at("type").get_to(type);
-        if (type != "realsense") {
-            cwipc_rs2_log_warning(std::string("CameraConfig ") + "(inline buffer) " + "ignored, is not realsense but " + type);
+        if (type != typeWanted) {
+            cwipc_rs2_log_warning(std::string("CameraConfig ") + "(inline buffer) " + "ignored: type=" + type + " but expected " + type);
             return false;
         }
         from_json(json_data, *config);
@@ -222,7 +222,7 @@ std::string cwipc_rs2_config2string(RS2CaptureConfig *config) {
     return result.dump();
 }
 
-bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
+bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, std::string typeWanted) {
 	TiXmlDocument doc(filename);
 	bool loadOkay = doc.LoadFile();
 	if (!loadOkay)
@@ -238,6 +238,7 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
     if (version != 2) {
         cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + " is not version 2");
     }
+    config->type = typeWanted;
 
 	// get the system related information
 	TiXmlElement* systemElement = configElement->FirstChildElement("system");
@@ -324,9 +325,12 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config) {
         const char * type = cameraElement->Attribute("type");
         if (type != nullptr) {
             cd->type = type;
-            if (config->type == "") {
-                config->type = type;
-            }
+        }
+        else {
+            cd->type = config->type;
+        }
+        if (cd->type != config->type) {
+            cwipc_rs2_log_warning(std::string("camera type mismatch: " + cd->type + " versus " + config->type));
         }
         
 		TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");

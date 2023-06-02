@@ -8,9 +8,11 @@
 
 #include <librealsense2/rs.hpp>
 
+#include <cwipc_util/internal.h>
+
 #include "cwipc_realsense2/private/RS2Config.hpp"
 
-class RS2Camera {
+class RS2Camera : CwipcBaseCamera {
 private:
 	RS2Camera(const RS2Camera&);	// Disable copy constructor
 	RS2Camera& operator=(const RS2Camera&);	// Disable assignment
