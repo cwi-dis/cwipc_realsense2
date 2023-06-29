@@ -58,8 +58,18 @@ bool RS2Capture::config_reload(const char *configFilename) {
     _setup_camera_sync();
 
     // Now we have all the configuration information. Open the cameras.
-    _create_cameras();
+	if (!_create_cameras()) {
+		camera_count = 0;
+		return false;
+	}
 
+	for (RS2CameraConfig& cd : configuration.all_camera_configs) {
+		if (!cd.connected && !cd.disabled) {
+			cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
+			camera_count = 0;
+			return false;
+		}
+	}
 
     _find_camera_positions();
 
@@ -288,7 +298,7 @@ bool RS2Capture::_apply_default_config() {
 
 }
 
-void RS2Capture::_create_cameras() {
+bool RS2Capture::_create_cameras() {
 	rs2::device_list devs = ctx.query_devices();
 	const std::string platform_camera_name = "Platform Camera";
 	for (auto dev : devs) {
@@ -302,12 +312,12 @@ void RS2Capture::_create_cameras() {
 
 		RS2CameraConfig* cd = get_camera_config(serial);
 		if (cd == nullptr) {
-			cwipc_rs2_log_warning("Camera " + serial + " is not connected");
-			continue;
+			cwipc_rs2_log_warning("Camera " + serial + " is connected but not configured");
+			return false;
 		}
         if (cd->type != "realsense") {
             cwipc_rs2_log_warning("Camera " + serial + " is type " + cd->type + " in stead of realsense");
-			continue;
+			return false;
         }
 		int camera_index = (int)cameras.size();
 		if (cd->disabled) {
@@ -315,8 +325,10 @@ void RS2Capture::_create_cameras() {
 		}else{
 			auto cam = new RS2Camera(ctx, configuration, camera_index, *cd, camUsb);
 			cameras.push_back(cam);
+			cd->connected = true;
 		}
 	}
+	return true;
 }
 
 RS2Capture::~RS2Capture() {

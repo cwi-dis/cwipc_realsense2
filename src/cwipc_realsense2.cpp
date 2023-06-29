@@ -88,9 +88,8 @@ protected:
     {}
 public:
     cwipc_source_realsense2_impl(const char *configFilename=NULL)
-		: m_grabber(NULL)
+		: m_grabber(RS2Capture::factory())
 	{ 
-		m_grabber = new RS2Capture();
 		m_grabber->config_reload(configFilename);
 	}
 
