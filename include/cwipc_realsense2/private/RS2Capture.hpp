@@ -16,6 +16,8 @@ class RS2Camera;
 
 class RS2Capture : public CwipcBaseCapture {
 protected:
+	// methods
+	RS2Capture();
 	bool _apply_config(const char* configFilename);
 	bool _apply_default_config();
 	void _find_camera_positions();
@@ -25,8 +27,6 @@ protected:
 public:
 	static int count_devices();
 	static RS2Capture* factory() { return new RS2Capture(); }
-	// methods
-	RS2Capture();
 	virtual ~RS2Capture();
     virtual bool config_reload(const char *configFilename);
     std::string config_get();
@@ -50,7 +50,7 @@ public:
     bool want_auxdata_depth = false;
 protected:
 	static rs2::context ctx;				// librealsense2 context (coordinates all cameras)
-	virtual void _create_cameras();
+	virtual bool _create_cameras();
 	std::vector<RS2Camera*> cameras;                // Storage of camera specifics
 	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
 	bool stopped = false;

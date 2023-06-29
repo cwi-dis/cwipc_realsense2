@@ -44,6 +44,7 @@ struct RS2CameraProcessingParameters {
 
 struct RS2CameraConfig : CwipcBaseCameraConfig {
 	bool disabled = false;	// to easily disable cameras without altering too much the cameraconfig
+	bool connected = false; // set to true when the camera is opened.
 	std::string serial;		// Serial number of this camera
     std::string type = "realsense";       // Camera type (must be realsense)
 	pcl::shared_ptr<Eigen::Affine3d> trafo;	//!< Transformation matrix from camera coorindates to world coordinates
