@@ -294,7 +294,9 @@ cwipc_offline* cwipc_rs2offline(cwipc_rs2offline_settings settings, const char *
 		return NULL;
 	}
 	if (!rs2_versioncheck(errorMessage)) return NULL;
+	cwipc_rs2_warning_store = errorMessage;
 	cwipc_source_rs2offline_impl* rv = new cwipc_source_rs2offline_impl(settings, configFilename);
+	cwipc_rs2_warning_store = NULL;
 	if (rv && rv->is_valid()) return rv;
 	delete rv;
 	if (errorMessage && *errorMessage == NULL) {
