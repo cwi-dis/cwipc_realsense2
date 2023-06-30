@@ -181,9 +181,6 @@ bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config, s
         cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + ": exception " + e.what() );
         return false;
     }
-    json dbg_result;
-    to_json(dbg_result, *config);
-    std::cerr << "xxxjack debug json parse result: \n" << dbg_result << "\n";
     return true;
 }
 
