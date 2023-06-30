@@ -234,6 +234,10 @@ public:
 		delete m_source;
     }
 
+	bool is_valid() {
+		return m_offline != nullptr && m_offline->camera_count > 0;
+	}
+
     void free()
 	{
 		m_offline = NULL;
@@ -290,7 +294,13 @@ cwipc_offline* cwipc_rs2offline(cwipc_rs2offline_settings settings, const char *
 		return NULL;
 	}
 	if (!rs2_versioncheck(errorMessage)) return NULL;
-	return new cwipc_source_rs2offline_impl(settings, configFilename);
+	cwipc_source_rs2offline_impl* rv = new cwipc_source_rs2offline_impl(settings, configFilename);
+	if (rv && rv->is_valid()) return rv;
+	delete rv;
+	if (errorMessage && *errorMessage == NULL) {
+		*errorMessage = (char*)"cwipc_rs2offline: cannot open recording";
+	}
+	return NULL;
 }
 
 void cwipc_offline_free(cwipc_offline* obj, int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize)
