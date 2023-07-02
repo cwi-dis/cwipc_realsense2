@@ -34,7 +34,10 @@ bool RS2Offline::config_reload(const char* configFilename) {
 	if (!_apply_config(configFilename)) {
 		return false;
 	}
-	
+    camera_count = (int)configuration.all_camera_configs.size();
+    if (camera_count == 0) {
+        return false;
+    }
 	int camera_index = 0;
 	for (RS2CameraConfig& cd : configuration.all_camera_configs) {
 		if (!cd.disabled) {
