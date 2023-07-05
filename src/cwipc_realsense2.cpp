@@ -319,3 +319,10 @@ bool cwipc_offline_feed(cwipc_offline* obj, int camNum, int frameNum, void *colo
 {
 	return obj->feed(camNum, frameNum, colorBuffer, colorSize, depthBuffer, depthSize);
 }
+
+
+//
+// These static variables only exist to ensure the initializer is called, which registers our camera type.
+//
+int _cwipc_dummy_realsense_initializer = _cwipc_register_capturer("realsense", RS2Capture::count_devices, cwipc_realsense2);
+// int _cwipc_dummy_realsense_offline_initializer = _cwipc_register_capturer("realsense_offline", nullptr, cwipc_rs2offline);
