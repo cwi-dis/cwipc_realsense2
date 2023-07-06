@@ -121,6 +121,12 @@ public:
 		memcpy(buffer, config.c_str(), config.length());
 		return config.length();
 	}
+
+	virtual bool reload_config(const char* configFile) override
+	{
+		return m_grabber->config_reload(configFile);
+	}
+
     bool eof() override
 	{
     	return false;
