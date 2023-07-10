@@ -109,7 +109,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
         cameras[camera_index] = camera;
         camera_index++;
     }
-    json_data["cameras"] = cameras;
+    json_data["camera"] = cameras;
 
     json depthfilterparameters;
     _MY_JSON_PUT(depthfilterparameters, do_decimation, config.camera_processing, do_decimation);
