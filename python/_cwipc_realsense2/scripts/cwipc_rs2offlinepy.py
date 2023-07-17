@@ -10,7 +10,7 @@ import numpy
 #
 if 'CWIPC_TEST_DLL' in os.environ:
     filename = os.environ['CWIPC_TEST_DLL']
-    dllobj = cwipc.realsense2._cwipc_realsense2_dll(filename)
+    dllobj = cwipc.realsense2.cwipc_realsense2_dll_load(filename)
 
 def loadImage(filename):
     return Image.open(filename)
