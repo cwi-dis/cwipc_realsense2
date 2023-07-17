@@ -2,6 +2,7 @@ import os
 import ctypes
 import ctypes.util
 import warnings
+from typing import Optional
 from cwipc.util import CwipcError, CWIPC_API_VERSION, cwipc_tiledsource
 from cwipc.util import cwipc_tiledsource_p
 from cwipc.util import _cwipc_dll_search_path_collection
@@ -13,7 +14,7 @@ __all__ = [
     "RS2_FORMAT_Z16",
     "cwipc_realsense2",
     "cwipc_rs2offline",
-    "_cwipc_realsense2_dll"
+    "cwipc_realsense2_dll_load"
 ]
 
 #
@@ -54,8 +55,12 @@ _cwipc_realsense2_dll_reference = None
 #
 # NOTE: the signatures here must match those in cwipc_util/api.h or all hell will break loose
 #
-def _cwipc_realsense2_dll(libname=None):
-    """Load the cwipc_util DLL and assign the signatures (if not already loaded)"""
+def cwipc_realsense2_dll_load(libname : Optional[str]=None):
+    """Load the cwipc_realsense2 DLL and assign the signatures (if not already loaded).
+    
+    If you want to load a non-default native library (for example to allow debugging low level code)
+    call this method early, before any other method from this package.
+    """
     global _cwipc_realsense2_dll_reference
     if _cwipc_realsense2_dll_reference: return _cwipc_realsense2_dll_reference
     
@@ -86,83 +91,74 @@ def _cwipc_realsense2_dll(libname=None):
     return _cwipc_realsense2_dll_reference
 
 def RS2_FORMAT_RGB8():
-    return ctypes.c_int.in_dll(_cwipc_realsense2_dll(), "CWIPC_RS2_FORMAT_RGB8")
+    return ctypes.c_int.in_dll(cwipc_realsense2_dll_load(), "CWIPC_RS2_FORMAT_RGB8")
     
 def RS2_FORMAT_Z16():
-    return ctypes.c_int.in_dll(_cwipc_realsense2_dll(), "CWIPC_RS2_FORMAT_Z16")
+    return ctypes.c_int.in_dll(cwipc_realsense2_dll_load(), "CWIPC_RS2_FORMAT_Z16")
     
 class cwipc_offline_wrapper:
-    def __init__(self, _cwipc_offline):
+    _cwipc_offline : Optional[cwipc_offline_p]
+
+    def __init__(self, _cwipc_offline : Optional[cwipc_offline_p]):
         if _cwipc_offline != None:
             assert isinstance(_cwipc_offline, cwipc_offline_p)
         self._cwipc_offline = _cwipc_offline
         
-    def _as_cwipc_offline_p(self):
+    def _as_cwipc_offline_p(self) -> cwipc_offline_p:
         assert self._cwipc_offline
         return self._cwipc_offline
         
-    def free(self):
+    def free(self) -> None:
         if self._cwipc_offline:
-            _cwipc_realsense2_dll().cwipc_offline_free(self._as_cwipc_offline_p())
+            cwipc_realsense2_dll_load().cwipc_offline_free(self._as_cwipc_offline_p())
         self._cwipc_offline = None
 
-    def get_source(self):
-        obj = _cwipc_realsense2_dll().cwipc_offline_get_source(self._as_cwipc_offline_p())
+    def get_source(self) -> cwipc_tiledsource:
+        """Returns the cwipc_tiledsource that can be used to read pointclouds from this cwipc_offline"""
+        obj = cwipc_realsense2_dll_load().cwipc_offline_get_source(self._as_cwipc_offline_p())
         return cwipc_tiledsource(obj)
         
-    def feed(self, camNum, frameNum, colorBuffer, depthBuffer):
+    def feed(self, camNum : int, frameNum : int, colorBuffer : bytearray | bytes | ctypes.Array[ctypes.c_char], depthBuffer : bytearray | bytes | ctypes.Array[ctypes.c_char]):
+        """Feed RGB and D frame data into the cwipc_offline"""
         colorLength = len(colorBuffer)
         if isinstance(colorBuffer, bytearray):
             colorBuffer = (ctypes.c_char * colorLength).from_buffer(colorBuffer)
+        elif isinstance(colorBuffer, bytes):
+            colorBuffer = (ctypes.c_char * colorLength).from_buffer_copy(colorBuffer)
         colorPtr = ctypes.cast(colorBuffer, ctypes.c_void_p)
         depthLength = len(depthBuffer)
         if isinstance(depthBuffer, bytearray):
             depthBuffer = (ctypes.c_char * depthLength).from_buffer(depthBuffer)
+        elif isinstance(depthBuffer, bytes):
+            depthBuffer = (ctypes.c_char * depthLength).from_buffer_copy(depthBuffer)
         depthPtr = ctypes.cast(depthBuffer, ctypes.c_void_p)
-        rv = _cwipc_realsense2_dll().cwipc_offline_feed(self._as_cwipc_offline_p(), camNum, frameNum, colorPtr, colorLength, depthPtr, depthLength)
+        rv = cwipc_realsense2_dll_load().cwipc_offline_feed(self._as_cwipc_offline_p(), camNum, frameNum, colorPtr, colorLength, depthPtr, depthLength)
         return rv
         
-def cwipc_realsense2(conffile=None):
+def cwipc_realsense2(conffile : Optional[str]=None) -> cwipc_tiledsource:
     """Returns a cwipc_source object that grabs from a realsense2 camera and returns cwipc object on every get() call."""
     errorString = ctypes.c_char_p()
+    cconffile = None
     if conffile:
-        conffile = conffile.encode('utf8')
-    else:
-        conffile = None
-    rv = _cwipc_realsense2_dll().cwipc_realsense2(conffile, ctypes.byref(errorString), CWIPC_API_VERSION)
-    if errorString and not rv:
+        cconffile = conffile.encode('utf8')
+    rv = cwipc_realsense2_dll_load().cwipc_realsense2(cconffile, ctypes.byref(errorString), CWIPC_API_VERSION)
+    if errorString and errorString.value and not rv:
         raise CwipcError(errorString.value.decode('utf8'))
-    if errorString:
+    if errorString and errorString.value:
         warnings.warn(errorString.value.decode('utf8'))
     if rv:
         return cwipc_tiledsource(rv)
-    return None
+    raise CwipcError("cwipc_realsense2: no cwipc_tiledsource created, but no specific error returned from C library")
 
-def cwipc_rs2offline(settings, conffile):
+def cwipc_rs2offline(settings : cwipc_offline_settings, conffile : str):
     """Returns a cwipc_source object that grabs from a realsense2 camera and returns cwipc object on every get() call."""
     errorString = ctypes.c_char_p()
-    if conffile:
-        conffile = conffile.encode('utf8')
-    else:
-        conffile = None
-    rv = _cwipc_realsense2_dll().cwipc_rs2offline(settings, conffile, ctypes.byref(errorString), CWIPC_API_VERSION)
-    if errorString and not rv:
+    cconffile = conffile.encode('utf8')
+    rv = cwipc_realsense2_dll_load().cwipc_rs2offline(settings, cconffile, ctypes.byref(errorString), CWIPC_API_VERSION)
+    if errorString and errorString.value and not rv:
         raise CwipcError(errorString.value.decode('utf8'))
-    if errorString:
+    if errorString and errorString.value:
         warnings.warn(errorString.value.decode('utf8'))
     if rv:
         return cwipc_offline_wrapper(rv)
-    return None
-         
-def main():
-    grabber = cwipc_realsense2()
-    pc = grabber.get()
-    if not pc:
-        print('Could not read pointcloud from realsense2 grabber')
-    points = pc.get_points()
-    print('Pointcloud contained %d points' % len(points))
-    
-if __name__ == '__main__':
-    main()
-    
-    
+    raise CwipcError("cwipc_rs2offline: no cwipc_tiledsource created, but no specific error returned from C library")
