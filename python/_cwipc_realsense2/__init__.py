@@ -3,7 +3,7 @@ import ctypes
 import ctypes.util
 import warnings
 from typing import Optional
-from cwipc.util import CwipcError, CWIPC_API_VERSION, cwipc_tiledsource
+from cwipc.util import CwipcError, CWIPC_API_VERSION, cwipc_tiledsource_wrapper
 from cwipc.util import cwipc_tiledsource_p
 from cwipc.util import _cwipc_dll_search_path_collection
 
@@ -113,10 +113,10 @@ class cwipc_offline_wrapper:
             cwipc_realsense2_dll_load().cwipc_offline_free(self._as_cwipc_offline_p())
         self._cwipc_offline = None
 
-    def get_source(self) -> cwipc_tiledsource:
+    def get_source(self) -> cwipc_tiledsource_wrapper:
         """Returns the cwipc_tiledsource that can be used to read pointclouds from this cwipc_offline"""
         obj = cwipc_realsense2_dll_load().cwipc_offline_get_source(self._as_cwipc_offline_p())
-        return cwipc_tiledsource(obj)
+        return cwipc_tiledsource_wrapper(obj)
         
     def feed(self, camNum : int, frameNum : int, colorBuffer : bytearray | bytes | ctypes.Array[ctypes.c_char], depthBuffer : bytearray | bytes | ctypes.Array[ctypes.c_char]):
         """Feed RGB and D frame data into the cwipc_offline"""
@@ -135,7 +135,7 @@ class cwipc_offline_wrapper:
         rv = cwipc_realsense2_dll_load().cwipc_offline_feed(self._as_cwipc_offline_p(), camNum, frameNum, colorPtr, colorLength, depthPtr, depthLength)
         return rv
         
-def cwipc_realsense2(conffile : Optional[str]=None) -> cwipc_tiledsource:
+def cwipc_realsense2(conffile : Optional[str]=None) -> cwipc_tiledsource_wrapper:
     """Returns a cwipc_source object that grabs from a realsense2 camera and returns cwipc object on every get() call."""
     errorString = ctypes.c_char_p()
     cconffile = None
@@ -147,7 +147,7 @@ def cwipc_realsense2(conffile : Optional[str]=None) -> cwipc_tiledsource:
     if errorString and errorString.value:
         warnings.warn(errorString.value.decode('utf8'))
     if rv:
-        return cwipc_tiledsource(rv)
+        return cwipc_tiledsource_wrapper(rv)
     raise CwipcError("cwipc_realsense2: no cwipc_tiledsource created, but no specific error returned from C library")
 
 def cwipc_rs2offline(settings : cwipc_offline_settings, conffile : str):
