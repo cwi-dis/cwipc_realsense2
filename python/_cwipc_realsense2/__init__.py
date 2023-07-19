@@ -2,7 +2,7 @@ import os
 import ctypes
 import ctypes.util
 import warnings
-from typing import Optional
+from typing import Optional, Union
 from cwipc.util import CwipcError, CWIPC_API_VERSION, cwipc_tiledsource_wrapper
 from cwipc.util import cwipc_tiledsource_p
 from cwipc.util import _cwipc_dll_search_path_collection
@@ -17,6 +17,7 @@ __all__ = [
     "cwipc_realsense2_dll_load"
 ]
 
+cwipc_image_buffer_type = Union[bytearray, bytes, ctypes.Array[ctypes.c_char]]
 #
 # This is a workaround for the change in DLL loading semantics on Windows since Python 3.8
 # Python no longer uses the PATH environment variable to load dependent dlls but only
@@ -118,7 +119,7 @@ class cwipc_offline_wrapper:
         obj = cwipc_realsense2_dll_load().cwipc_offline_get_source(self._as_cwipc_offline_p())
         return cwipc_tiledsource_wrapper(obj)
         
-    def feed(self, camNum : int, frameNum : int, colorBuffer : bytearray | bytes | ctypes.Array[ctypes.c_char], depthBuffer : bytearray | bytes | ctypes.Array[ctypes.c_char]):
+    def feed(self, camNum : int, frameNum : int, colorBuffer : cwipc_image_buffer_type, depthBuffer : cwipc_image_buffer_type):
         """Feed RGB and D frame data into the cwipc_offline"""
         colorLength = len(colorBuffer)
         if isinstance(colorBuffer, bytearray):
