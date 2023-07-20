@@ -14,8 +14,7 @@ if 0:
     # - Attach to python in the XCode debugger
     # - press return to python3.
     import _cwipc_realsense2
-    #_cwipc_realsense2._cwipc_realsense2_dll('/Users/jack/src/VRTogether/cwipc_realsense2/build-xcode/lib/Debug/libcwipc_realsense2.dylib')
-    _cwipc_realsense2._cwipc_realsense2_dll('C:/Users/vrtogether/src/VRtogether/cwipc_realsense2/build/bin/RelWithDebInfo/cwipc_realsense2.dll')
+    _cwipc_realsense2.cwipc_realsense2_dll_load('C:/Users/vrtogether/src/VRtogether/cwipc_realsense2/build/bin/RelWithDebInfo/cwipc_realsense2.dll')
     print('Type return after attaching in XCode debugger (pid=%d) - ' % os.getpid())
     sys.stdin.readline()
 
@@ -24,7 +23,7 @@ if 0:
 #
 if 'CWIPC_TEST_DLL' in os.environ:
     filename = os.environ['CWIPC_TEST_DLL']
-    dllobj = _cwipc_realsense2._cwipc_realsense2_dll(filename)
+    dllobj = _cwipc_realsense2.cwipc_realsense2_dll_load(filename)
 
 #
 # Find directories for test inputs and outputs
@@ -35,7 +34,7 @@ TEST_FIXTURES_DIR=os.path.join(_topdir, "tests", "fixtures")
 print('xxxjack', _thisdir, _topdir, TEST_FIXTURES_DIR)
 TEST_OUTPUT_DIR=os.path.join(TEST_FIXTURES_DIR, "output")
 if not os.access(TEST_OUTPUT_DIR, os.W_OK):
-    TEST_OUTPUT_DIR=tempfile.mkdtemp('cwipc_realsense2_test')
+    TEST_OUTPUT_DIR=tempfile.mkdtemp('cwipc_realsense2_test')  # type: ignore
 
 class TestApi(unittest.TestCase):
     
@@ -57,6 +56,8 @@ class TestApi(unittest.TestCase):
             self.assertFalse(grabber.eof())
             self.assertTrue(grabber.available(True))
             pc = grabber.get()
+            self.assertIsNotNone(pc)
+            assert pc # Only to keep linters happy
             self._verify_pointcloud(pc)
         finally:
             if grabber: grabber.free()
@@ -71,6 +72,8 @@ class TestApi(unittest.TestCase):
             self.assertGreaterEqual(nTile, 1)
             # Assure the non-tiled-tile exists and points nowhere.
             tileInfo = grabber.get_tileinfo_dict(0)
+            self.assertIsNotNone(tileInfo)
+            assert tileInfo # Only to keep linters happy
             self.assertIn('normal', tileInfo)
             self.assertIn('cameraName', tileInfo)
             self.assertIn('cameraMask', tileInfo)
@@ -79,6 +82,8 @@ class TestApi(unittest.TestCase):
             # Test some minimal conditions for other tiles
             for i in range(1, nTile):
                 tileInfo = grabber.get_tileinfo_dict(i)
+                self.assertIsNotNone(tileInfo)
+                assert tileInfo # Only to keep linters happy
                 if i in (1, 2, 4, 8, 16, 32, 64, 128):
                     # These tiles should exist and have a normal and camera ID (which may be None)
                     self.assertIn('normal', tileInfo)
@@ -120,13 +125,11 @@ class TestApi(unittest.TestCase):
             if pc: pc.free()
 
 
-    def _verify_pointcloud(self, pc):
+    def _verify_pointcloud(self, pc : cwipc.cwipc_wrapper):
         points = pc.get_points()
         self.assertGreater(len(points), 1)
         halfway = int((len(points)+1)/2)
         p0 = points[0].x, points[0].y, points[0].z, points[0].r, points[0].g, points[0].b
         p1 = points[halfway].x, points[halfway].y, points[halfway].z, points[halfway].r, points[halfway].g, points[halfway].b
         self.assertNotEqual(p0, p1)
-   
-if __name__ == '__main__':
-    unittest.main()
+        
