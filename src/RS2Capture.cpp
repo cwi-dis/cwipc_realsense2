@@ -41,6 +41,7 @@ RS2Capture::RS2Capture()
 }
 
 bool RS2Capture::config_reload(const char *configFilename) {
+	_unload_cameras();
     camera_count = 0;
     if (!_apply_config(configFilename)) {
         return false;
@@ -234,10 +235,10 @@ bool RS2Capture::_apply_config(const char* configFilename) {
     }
     // Otherwise we check the extension. It can be .xml or .json.
     const char *extension = strrchr(configFilename, '.');
-    if (strcmp(extension, ".xml") == 0) {
+    if (extension != nullptr && strcmp(extension, ".xml") == 0) {
         return cwipc_rs2_xmlfile2config(configFilename, &configuration, type);
     }
-    if (strcmp(extension, ".json") == 0) {
+    if (extension != nullptr && strcmp(extension, ".json") == 0) {
         return cwipc_rs2_jsonfile2config(configFilename, &configuration, type);
     }
     return false;
@@ -332,15 +333,12 @@ bool RS2Capture::_create_cameras() {
 }
 
 RS2Capture::~RS2Capture() {
-    if (camera_count != 0) {
-        _unload_cameras();
-    }
+    _unload_cameras();
     numberOfCapturersActive--;
 }
 
 void RS2Capture::_unload_cameras() {
     uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    if (camera_count == 0) return;
     // Stop all cameras
     for (auto cam : cameras)
         cam->stop();
