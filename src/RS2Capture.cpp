@@ -351,7 +351,11 @@ void RS2Capture::_unload_cameras() {
     if(!stopped) {
         // Make the control thread stop. We set want_new to make it wake up (bit of a hack, really...)
         stopped = true;
-          control_thread->join();
+		if (control_thread) {
+			control_thread->join();
+		}
+		delete control_thread;
+		control_thread = nullptr;
     }
     std::cerr << "cwipc_realsense2: stopped all cameras\n";
     // Delete all cameras (which will stop their threads as well)

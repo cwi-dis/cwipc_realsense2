@@ -244,7 +244,11 @@ void RS2Camera::stop()
 	assert(!stopped);
 	stopped = true;
 	if (grabber_thread) grabber_thread->join();
+	delete grabber_thread;
+	grabber_thread = nullptr;
 	if (processing_thread) processing_thread->join();
+	delete processing_thread;
+	processing_thread = nullptr;
 	if (pipe_started) pipe.stop();
 	pipe_started = false;
 	processing_done = true;
