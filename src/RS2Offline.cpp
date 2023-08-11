@@ -41,7 +41,7 @@ bool RS2Offline::config_reload(const char* configFilename) {
 	int camera_index = 0;
 	for (RS2CameraConfig& cd : configuration.all_camera_configs) {
 		if (!cd.disabled) {
-			auto cam = new RS2OfflineCamera(ctx, configuration, camera_index, cd, settings);
+			auto cam = new RS2OfflineCamera(ctx(), configuration, camera_index, cd, settings);
 			feeders.push_back(cam);
 			cameras.push_back(cam);
 		}

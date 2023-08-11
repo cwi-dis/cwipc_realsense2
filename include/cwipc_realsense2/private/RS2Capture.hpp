@@ -49,7 +49,13 @@ public:
     bool want_auxdata_rgb = false;
     bool want_auxdata_depth = false;
 protected:
-	static rs2::context ctx;				// librealsense2 context (coordinates all cameras)
+	static rs2::context* ctx_p;				// librealsense2 context (coordinates all cameras)
+	static inline rs2::context& ctx() { 
+		if (ctx_p == nullptr) {
+			ctx_p = new rs2::context();
+		}
+		return *ctx_p;
+	}
 	virtual bool _create_cameras();
 	std::vector<RS2Camera*> cameras;                // Storage of camera specifics
 	void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
