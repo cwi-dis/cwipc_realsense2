@@ -14,9 +14,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMakeFiles)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 
-include(CTest)
-include(GNUInstallDirs)
-
 #
 # Find cwipc_util
 #
@@ -26,29 +23,21 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
 	include_directories(${cwipc_util_INCLUDE_DIRS})
 	link_directories(${cwipc_util_LIBRARY_DIRS})
 endif()
-#
-# Find PCL. 1.10-1.12 has been tested.
-#
-find_package(PCL 1.10 REQUIRED COMPONENTS common io filters) 
-include_directories(${PCL_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-
 
 #
 # Find realsense (either with pkgconfig or with cmake)
 #
 find_package(REALSENSE2 REQUIRED)
 
-# we need the thirdparty tinyXML for the test programs.
+# we need the thirdparty tinyXML
 include(third-party/tinyXML/CMakeLists.txt)
 include_directories(third-party/tinyXML)
 
 # If we're on Linux os MacOS we need libusb
-
-if(NOT WIN32)
-	list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
-endif()
+#
+#if(NOT WIN32)
+#	list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
+#endif()
 
 include_directories(include)
 
