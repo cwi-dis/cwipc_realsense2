@@ -19,45 +19,48 @@
 #include "cwipc_realsense2/private/RS2Offline.hpp"
 #include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
-RS2Offline::RS2Offline(cwipc_rs2offline_settings& _settings)
-:	RS2Capture(),
-	settings(_settings)
-{
-	type = "realsense_offline";
+RS2Offline::RS2Offline(cwipc_rs2offline_settings& _settings) :  RS2Capture(), settings(_settings) {
+    type = "realsense_offline";
 }
 
-RS2Offline::~RS2Offline() {
-
-}
+RS2Offline::~RS2Offline() {}
 
 bool RS2Offline::config_reload(const char* configFilename) {
-	if (!_apply_config(configFilename)) {
-		return false;
-	}
+    if (!_apply_config(configFilename)) {
+        return false;
+    }
+
     camera_count = (int)configuration.all_camera_configs.size();
     if (camera_count == 0) {
         return false;
     }
-	int camera_index = 0;
-	for (RS2CameraConfig& cd : configuration.all_camera_configs) {
-		if (!cd.disabled) {
-			auto cam = new RS2OfflineCamera(ctx(), configuration, camera_index, cd, settings);
-			feeders.push_back(cam);
-			cameras.push_back(cam);
-		}
-		camera_index++;
-	}
-	for (auto cam : cameras)
-		cam->start_capturer();
-	stopped = false;
-	control_thread = new std::thread(&RS2Offline::_control_thread_main, this);
-	_cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Offline::control_thread");
-	return true;
+
+    int camera_index = 0;
+    for (RS2CameraConfig& cd : configuration.all_camera_configs) {
+        if (!cd.disabled) {
+            auto cam = new RS2OfflineCamera(ctx(), configuration, camera_index, cd, settings);
+            feeders.push_back(cam);
+            cameras.push_back(cam);
+        }
+        camera_index++;
+    }
+
+    for (auto cam : cameras) {
+        cam->start_capturer();
+    }
+
+    stopped = false;
+    control_thread = new std::thread(&RS2Offline::_control_thread_main, this);
+    _cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Offline::control_thread");
+
+    return true;
 }
 
-bool RS2Offline::feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize)
-{
-	if (camNum < 0 || camNum > feeders.size()) return false;
-	auto cam = feeders[camNum];
-	return cam->feed_image_data(frameNum, colorBuffer, colorSize, depthBuffer, depthSize);
+bool RS2Offline::feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize) {
+    if (camNum < 0 || camNum > feeders.size()) {
+        return false;
+    }
+
+    auto cam = feeders[camNum];
+    return cam->feed_image_data(frameNum, colorBuffer, colorSize, depthBuffer, depthSize);
 }
