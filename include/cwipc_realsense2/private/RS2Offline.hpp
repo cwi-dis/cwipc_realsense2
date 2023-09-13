@@ -14,17 +14,17 @@
 #include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
 class RS2Offline : public RS2Capture {
-
 public:
-	// methods
-	RS2Offline(cwipc_rs2offline_settings& _settings);
-	bool feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize);
-	~RS2Offline();
-	virtual bool config_reload(const char* configFilename) override;
+    // methods
+    RS2Offline(cwipc_rs2offline_settings& _settings);
+    bool feed_image_data(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize);
+    ~RS2Offline();
+    virtual bool config_reload(const char* configFilename) override;
+
 private:
-	static int count_devices() { return 0; }
-	static RS2Offline* factory(cwipc_rs2offline_settings& _settings) { return new RS2Offline(_settings); }
-	cwipc_rs2offline_settings settings;
-	std::vector<RS2OfflineCamera*> feeders;
+    static int count_devices() { return 0; }
+    static RS2Offline* factory(cwipc_rs2offline_settings& _settings) { return new RS2Offline(_settings); }
+    cwipc_rs2offline_settings settings;
+    std::vector<RS2OfflineCamera*> feeders;
 };
 #endif // cwipc_realsense_RS2Offline_hpp

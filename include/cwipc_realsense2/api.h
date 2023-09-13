@@ -40,19 +40,19 @@ public:
     virtual ~cwipc_offline() {};
 
     virtual void free() = 0;
-	/** \brief Return the pointcloud source for this converter.
-	 */
+    /** \brief Return the pointcloud source for this converter.
+     */
     virtual cwipc_tiledsource* get_source() = 0;
 
-	/** \brief Feed an image into the converter.
-	 * \param camNum Index of camera for which this data is meant.
-	 * \param frameNum frame number for this data
-	 * \param colorBuffer Pointer to the RGB image data
-	 * \param colorSize Size of colorBuffer (in bytes).
-	 * \param depthBuffer Pointer to the depth data
-	 * \param depthSize Size of depthBuffer (in bytes).
-	 * \returns False in case of detectable errors (such as incorrect image size)
-	 */
+    /** \brief Feed an image into the converter.
+     * \param camNum Index of camera for which this data is meant.
+     * \param frameNum frame number for this data
+     * \param colorBuffer Pointer to the RGB image data
+     * \param colorSize Size of colorBuffer (in bytes).
+     * \param depthBuffer Pointer to the depth data
+     * \param depthSize Size of depthBuffer (in bytes).
+     * \returns False in case of detectable errors (such as incorrect image size)
+     */
     virtual bool feed(int camNum, int frameNum, void *colorBuffer, size_t colorSize,  void *depthBuffer, size_t depthSize) = 0;
 };
 #else
@@ -60,7 +60,7 @@ public:
 /** \brief Abstract interface to a single pointcloud, C-compatible placeholder.
  */
 typedef struct _cwipc_offline {
-	int _dummy;
+    int _dummy;
 } cwipc_offline;
 
 #endif
@@ -69,8 +69,8 @@ typedef struct _cwipc_offline {
 extern "C" {
 #endif
 
-extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_RGB8;	//!< Constant: 24-bit RGB pixels
-extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16;	//!< Constant: 16-bit Depth pixels
+extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_RGB8;  //!< Constant: 24-bit RGB pixels
+extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16;   //!< Constant: 16-bit Depth pixels
 
 /** \brief Capture pointclouds from realsense2 cameras.
  * \param configFilename An option string with the filename of the camera configuration file.

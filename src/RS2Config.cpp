@@ -241,16 +241,16 @@ std::string cwipc_rs2_config2string(RS2CaptureConfig *config) {
 }
 
 bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, std::string typeWanted) {
-	TiXmlDocument doc(filename);
-	bool loadOkay = doc.LoadFile();
+    TiXmlDocument doc(filename);
+    bool loadOkay = doc.LoadFile();
 
-	if (!loadOkay) {
+    if (!loadOkay) {
         cwipc_rs2_log_warning(std::string("Failed to load configfile ") + filename);
-		return false;
-	}
+        return false;
+    }
 
-	TiXmlHandle docHandle(&doc);
-	TiXmlElement* configElement = docHandle.FirstChild("file").FirstChild("CameraConfig").ToElement();
+    TiXmlHandle docHandle(&doc);
+    TiXmlElement* configElement = docHandle.FirstChild("file").FirstChild("CameraConfig").ToElement();
     int version = -1;
     configElement->QueryIntAttribute("version", &version);
 
@@ -260,14 +260,14 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
 
     config->type = typeWanted;
 
-	// get the system related information
-	TiXmlElement* systemElement = configElement->FirstChildElement("system");
-	if (systemElement) {
-		systemElement->QueryIntAttribute("usb2width", &(config->usb2_width));
-		systemElement->QueryIntAttribute("usb2height", &(config->usb2_height));
-		systemElement->QueryIntAttribute("usb2fps", &(config->usb2_fps));
-		systemElement->QueryIntAttribute("usb3width", &(config->usb3_width));
-		systemElement->QueryIntAttribute("usb3height", &(config->usb3_height));
+    // get the system related information
+    TiXmlElement* systemElement = configElement->FirstChildElement("system");
+    if (systemElement) {
+        systemElement->QueryIntAttribute("usb2width", &(config->usb2_width));
+        systemElement->QueryIntAttribute("usb2height", &(config->usb2_height));
+        systemElement->QueryIntAttribute("usb2fps", &(config->usb2_fps));
+        systemElement->QueryIntAttribute("usb3width", &(config->usb3_width));
+        systemElement->QueryIntAttribute("usb3height", &(config->usb3_height));
         systemElement->QueryIntAttribute("usb3fps", &(config->usb3_fps));
         systemElement->QueryBoolAttribute("usb2allowed", &(config->usb2allowed));
         systemElement->QueryBoolAttribute("density_preferred", &(config->density));
@@ -275,76 +275,76 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
         systemElement->QueryIntAttribute("whitebalance", &(config->whitebalance));
         systemElement->QueryIntAttribute("backlight_compensation", &(config->backlight_compensation));
         systemElement->QueryIntAttribute("laser_power", &(config->laser_power));
-	}
+    }
 
     // get the processing related information
     TiXmlElement* postprocessingElement = configElement->FirstChildElement("postprocessing");
     if (postprocessingElement) {
-		postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
-		postprocessingElement->QueryDoubleAttribute("height_min", &(config->height_min));
-		postprocessingElement->QueryDoubleAttribute("height_max", &(config->height_max));
+        postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
+        postprocessingElement->QueryDoubleAttribute("height_min", &(config->height_min));
+        postprocessingElement->QueryDoubleAttribute("height_max", &(config->height_max));
 
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
-			parameterElement->QueryBoolAttribute("do_decimation", &(config->camera_processing.do_decimation));
-			parameterElement->QueryIntAttribute("decimation_value", &(config->camera_processing.decimation_value));
-			parameterElement->QueryBoolAttribute("do_threshold", &(config->camera_processing.do_threshold));
-			parameterElement->QueryDoubleAttribute("threshold_near", &(config->camera_processing.threshold_near));
-			parameterElement->QueryDoubleAttribute("threshold_far", &(config->camera_processing.threshold_far));
+            parameterElement->QueryBoolAttribute("do_decimation", &(config->camera_processing.do_decimation));
+            parameterElement->QueryIntAttribute("decimation_value", &(config->camera_processing.decimation_value));
+            parameterElement->QueryBoolAttribute("do_threshold", &(config->camera_processing.do_threshold));
+            parameterElement->QueryDoubleAttribute("threshold_near", &(config->camera_processing.threshold_near));
+            parameterElement->QueryDoubleAttribute("threshold_far", &(config->camera_processing.threshold_far));
             parameterElement->QueryIntAttribute("depth_x_erosion", &(config->camera_processing.depth_x_erosion));
             parameterElement->QueryIntAttribute("depth_y_erosion", &(config->camera_processing.depth_y_erosion));
-			parameterElement->QueryBoolAttribute("do_spatial", &(config->camera_processing.do_spatial));
-			parameterElement->QueryIntAttribute("spatial_iterations", &(config->camera_processing.spatial_iterations));
-			parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->camera_processing.spatial_alpha));
-			parameterElement->QueryIntAttribute("spatial_delta", &(config->camera_processing.spatial_delta));
-			parameterElement->QueryIntAttribute("spatial_filling", &(config->camera_processing.spatial_filling));
-			parameterElement->QueryBoolAttribute("do_temporal", &(config->camera_processing.do_temporal));
-			parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->camera_processing.temporal_alpha));
-			parameterElement->QueryIntAttribute("temporal_delta", &(config->camera_processing.temporal_delta));
-			parameterElement->QueryIntAttribute("temporal_percistency", &(config->camera_processing.temporal_percistency));
+            parameterElement->QueryBoolAttribute("do_spatial", &(config->camera_processing.do_spatial));
+            parameterElement->QueryIntAttribute("spatial_iterations", &(config->camera_processing.spatial_iterations));
+            parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->camera_processing.spatial_alpha));
+            parameterElement->QueryIntAttribute("spatial_delta", &(config->camera_processing.spatial_delta));
+            parameterElement->QueryIntAttribute("spatial_filling", &(config->camera_processing.spatial_filling));
+            parameterElement->QueryBoolAttribute("do_temporal", &(config->camera_processing.do_temporal));
+            parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->camera_processing.temporal_alpha));
+            parameterElement->QueryIntAttribute("temporal_delta", &(config->camera_processing.temporal_delta));
+            parameterElement->QueryIntAttribute("temporal_percistency", &(config->camera_processing.temporal_percistency));
         }
     }
 
-	bool allnewcameras = config->all_camera_configs.size() == 0; // if empty we have to set up a new administration
-	int registeredcameras = 0;
+    bool allnewcameras = config->all_camera_configs.size() == 0; // if empty we have to set up a new administration
+    int registeredcameras = 0;
 
-	// now get the per camera info
-	TiXmlElement* cameraElement = configElement->FirstChildElement("camera");
-	while (cameraElement) {
-		const char * serial = cameraElement->Attribute("serial");
-		RS2CameraConfig* cd;
+    // now get the per camera info
+    TiXmlElement* cameraElement = configElement->FirstChildElement("camera");
+    while (cameraElement) {
+        const char * serial = cameraElement->Attribute("serial");
+        RS2CameraConfig* cd;
 
-		int i = 0;
-		while (i < config->all_camera_configs.size()) {
-			if (config->all_camera_configs[i].serial == serial) {
-				cameraElement->QueryBoolAttribute("disabled", &(config->all_camera_configs[i].disabled));
-				cd = &config->all_camera_configs[i];
+        int i = 0;
+        while (i < config->all_camera_configs.size()) {
+            if (config->all_camera_configs[i].serial == serial) {
+                cameraElement->QueryBoolAttribute("disabled", &(config->all_camera_configs[i].disabled));
+                cd = &config->all_camera_configs[i];
 
-				break;
-			}
-
-			i++;
-		}
-
-		if (i == config->all_camera_configs.size()) {
-			// this camera was not in the admin yet
-			if (!allnewcameras) {
-				loadOkay = false;
+                break;
             }
 
-			cd = new RS2CameraConfig();
-			pcl::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
-			pcl::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
+            i++;
+        }
 
-			intrinsicTrafo->setIdentity();
-			cd->serial = cameraElement->Attribute("serial");
-			cameraElement->QueryBoolAttribute("disabled", &cd->disabled);
-			cd->trafo = trafo;
-			cd->intrinsicTrafo = intrinsicTrafo;
-			cd->cameraposition = { 0, 0, 0 };
-			config->all_camera_configs.push_back(*cd);
-			cd = &config->all_camera_configs.back();
-		}
+        if (i == config->all_camera_configs.size()) {
+            // this camera was not in the admin yet
+            if (!allnewcameras) {
+                loadOkay = false;
+            }
+
+            cd = new RS2CameraConfig();
+            pcl::shared_ptr<Eigen::Affine3d> trafo(new Eigen::Affine3d());
+            pcl::shared_ptr<Eigen::Affine3d> intrinsicTrafo(new Eigen::Affine3d());
+
+            intrinsicTrafo->setIdentity();
+            cd->serial = cameraElement->Attribute("serial");
+            cameraElement->QueryBoolAttribute("disabled", &cd->disabled);
+            cd->trafo = trafo;
+            cd->intrinsicTrafo = intrinsicTrafo;
+            cd->cameraposition = { 0, 0, 0 };
+            config->all_camera_configs.push_back(*cd);
+            cd = &config->all_camera_configs.back();
+        }
 
         const char * type = cameraElement->Attribute("type");
         if (type != nullptr) {
@@ -357,67 +357,67 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
             cwipc_rs2_log_warning(std::string("camera type mismatch: " + cd->type + " versus " + config->type));
         }
 
-		TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
-		if (trafo) {
-			TiXmlElement *val = trafo->FirstChildElement("values");
-			val->QueryDoubleAttribute("v00", &(*cd->trafo)(0, 0));
-			val->QueryDoubleAttribute("v01", &(*cd->trafo)(0, 1));
-			val->QueryDoubleAttribute("v02", &(*cd->trafo)(0, 2));
-			val->QueryDoubleAttribute("v03", &(*cd->trafo)(0, 3));
-			val->QueryDoubleAttribute("v10", &(*cd->trafo)(1, 0));
-			val->QueryDoubleAttribute("v11", &(*cd->trafo)(1, 1));
-			val->QueryDoubleAttribute("v12", &(*cd->trafo)(1, 2));
-			val->QueryDoubleAttribute("v13", &(*cd->trafo)(1, 3));
-			val->QueryDoubleAttribute("v20", &(*cd->trafo)(2, 0));
-			val->QueryDoubleAttribute("v21", &(*cd->trafo)(2, 1));
-			val->QueryDoubleAttribute("v22", &(*cd->trafo)(2, 2));
-			val->QueryDoubleAttribute("v23", &(*cd->trafo)(2, 3));
-			val->QueryDoubleAttribute("v30", &(*cd->trafo)(3, 0));
-			val->QueryDoubleAttribute("v31", &(*cd->trafo)(3, 1));
-			val->QueryDoubleAttribute("v32", &(*cd->trafo)(3, 2));
-			val->QueryDoubleAttribute("v33", &(*cd->trafo)(3, 3));
-		} else {
-			loadOkay = false;
+        TiXmlElement *trafo = cameraElement->FirstChildElement("trafo");
+        if (trafo) {
+            TiXmlElement *val = trafo->FirstChildElement("values");
+            val->QueryDoubleAttribute("v00", &(*cd->trafo)(0, 0));
+            val->QueryDoubleAttribute("v01", &(*cd->trafo)(0, 1));
+            val->QueryDoubleAttribute("v02", &(*cd->trafo)(0, 2));
+            val->QueryDoubleAttribute("v03", &(*cd->trafo)(0, 3));
+            val->QueryDoubleAttribute("v10", &(*cd->trafo)(1, 0));
+            val->QueryDoubleAttribute("v11", &(*cd->trafo)(1, 1));
+            val->QueryDoubleAttribute("v12", &(*cd->trafo)(1, 2));
+            val->QueryDoubleAttribute("v13", &(*cd->trafo)(1, 3));
+            val->QueryDoubleAttribute("v20", &(*cd->trafo)(2, 0));
+            val->QueryDoubleAttribute("v21", &(*cd->trafo)(2, 1));
+            val->QueryDoubleAttribute("v22", &(*cd->trafo)(2, 2));
+            val->QueryDoubleAttribute("v23", &(*cd->trafo)(2, 3));
+            val->QueryDoubleAttribute("v30", &(*cd->trafo)(3, 0));
+            val->QueryDoubleAttribute("v31", &(*cd->trafo)(3, 1));
+            val->QueryDoubleAttribute("v32", &(*cd->trafo)(3, 2));
+            val->QueryDoubleAttribute("v33", &(*cd->trafo)(3, 3));
+        } else {
+            loadOkay = false;
         }
 
-		// load optional intrinsicTrafo element (only for offline usage)
-		trafo = cameraElement->FirstChildElement("intrinsicTrafo");
-		if (trafo) {
+        // load optional intrinsicTrafo element (only for offline usage)
+        trafo = cameraElement->FirstChildElement("intrinsicTrafo");
+        if (trafo) {
             if (cd->intrinsicTrafo == nullptr) {
                 pcl::shared_ptr<Eigen::Affine3d> intrinsic_trafo(new Eigen::Affine3d());
                 cd->intrinsicTrafo = intrinsic_trafo;
             }
 
-			TiXmlElement *val = trafo->FirstChildElement("values");
-			val->QueryDoubleAttribute("v00", &(*cd->intrinsicTrafo)(0, 0));
-			val->QueryDoubleAttribute("v01", &(*cd->intrinsicTrafo)(0, 1));
-			val->QueryDoubleAttribute("v02", &(*cd->intrinsicTrafo)(0, 2));
-			val->QueryDoubleAttribute("v03", &(*cd->intrinsicTrafo)(0, 3));
-			val->QueryDoubleAttribute("v10", &(*cd->intrinsicTrafo)(1, 0));
-			val->QueryDoubleAttribute("v11", &(*cd->intrinsicTrafo)(1, 1));
-			val->QueryDoubleAttribute("v12", &(*cd->intrinsicTrafo)(1, 2));
-			val->QueryDoubleAttribute("v13", &(*cd->intrinsicTrafo)(1, 3));
-			val->QueryDoubleAttribute("v20", &(*cd->intrinsicTrafo)(2, 0));
-			val->QueryDoubleAttribute("v21", &(*cd->intrinsicTrafo)(2, 1));
-			val->QueryDoubleAttribute("v22", &(*cd->intrinsicTrafo)(2, 2));
-			val->QueryDoubleAttribute("v23", &(*cd->intrinsicTrafo)(2, 3));
-			val->QueryDoubleAttribute("v30", &(*cd->intrinsicTrafo)(3, 0));
-			val->QueryDoubleAttribute("v31", &(*cd->intrinsicTrafo)(3, 1));
-			val->QueryDoubleAttribute("v32", &(*cd->intrinsicTrafo)(3, 2));
-			val->QueryDoubleAttribute("v33", &(*cd->intrinsicTrafo)(3, 3));
-		}
+            TiXmlElement *val = trafo->FirstChildElement("values");
+            val->QueryDoubleAttribute("v00", &(*cd->intrinsicTrafo)(0, 0));
+            val->QueryDoubleAttribute("v01", &(*cd->intrinsicTrafo)(0, 1));
+            val->QueryDoubleAttribute("v02", &(*cd->intrinsicTrafo)(0, 2));
+            val->QueryDoubleAttribute("v03", &(*cd->intrinsicTrafo)(0, 3));
+            val->QueryDoubleAttribute("v10", &(*cd->intrinsicTrafo)(1, 0));
+            val->QueryDoubleAttribute("v11", &(*cd->intrinsicTrafo)(1, 1));
+            val->QueryDoubleAttribute("v12", &(*cd->intrinsicTrafo)(1, 2));
+            val->QueryDoubleAttribute("v13", &(*cd->intrinsicTrafo)(1, 3));
+            val->QueryDoubleAttribute("v20", &(*cd->intrinsicTrafo)(2, 0));
+            val->QueryDoubleAttribute("v21", &(*cd->intrinsicTrafo)(2, 1));
+            val->QueryDoubleAttribute("v22", &(*cd->intrinsicTrafo)(2, 2));
+            val->QueryDoubleAttribute("v23", &(*cd->intrinsicTrafo)(2, 3));
+            val->QueryDoubleAttribute("v30", &(*cd->intrinsicTrafo)(3, 0));
+            val->QueryDoubleAttribute("v31", &(*cd->intrinsicTrafo)(3, 1));
+            val->QueryDoubleAttribute("v32", &(*cd->intrinsicTrafo)(3, 2));
+            val->QueryDoubleAttribute("v33", &(*cd->intrinsicTrafo)(3, 3));
+        }
 
-		registeredcameras++;
-		cameraElement = cameraElement->NextSiblingElement("camera");
-	}
+        registeredcameras++;
+        cameraElement = cameraElement->NextSiblingElement("camera");
+    }
 
-	if (config->all_camera_configs.size() != registeredcameras) {
-		loadOkay = false;
+    if (config->all_camera_configs.size() != registeredcameras) {
+        loadOkay = false;
     }
 
     if (!loadOkay) {
         cwipc_rs2_log_warning("Available hardware camera configuration does not match configuration file");
     }
 
-	return loadOkay;
+    return loadOkay;
 }
