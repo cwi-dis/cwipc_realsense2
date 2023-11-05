@@ -42,6 +42,7 @@ include_directories(third-party/tinyXML)
 include_directories(include)
 
 add_subdirectory(src)
+add_subdirectory(apps/cwipc_realsense2_install_check)
 add_subdirectory(apps/cwipc_rs2grab)
 add_subdirectory(apps/cwipc_rs2multigrab)
 add_subdirectory(apps/cwipc_rs2offline)
