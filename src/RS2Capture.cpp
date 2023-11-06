@@ -409,8 +409,9 @@ void RS2Capture::_unload_cameras() {
         delete control_thread;
         control_thread = nullptr;
     }
-
+#ifdef CWIPC_DEBUG
     std::cerr << "cwipc_realsense2: stopped all cameras\n";
+#endif
 
     // Delete all cameras (which will stop their threads as well)
     for (auto cam : cameras) {
@@ -418,10 +419,12 @@ void RS2Capture::_unload_cameras() {
     }
 
     cameras.clear();
+#ifdef CWIPC_DEBUG
     std::cerr << "cwipc_realsense2: deleted all cameras\n";
-    // Print some minimal statistics of this run
+
     float deltaT = (stopTime - starttime) / 1000.0;
     std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
+#endif
 }
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp

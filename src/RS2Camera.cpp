@@ -189,7 +189,9 @@ bool RS2Camera::capture_frameset() {
 void RS2Camera::start() {
     assert(stopped);
     rs2::config cfg;
+#ifdef CWIPC_DEBUG
     std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
+#endif
     cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_COLOR, camera_width, camera_height, RS2_FORMAT_RGB8, camera_fps);
     cfg.enable_stream(RS2_STREAM_DEPTH, camera_width, camera_height, RS2_FORMAT_Z16, camera_fps);
@@ -421,8 +423,10 @@ void RS2Camera::_processing_thread_main() {
         }
 
         if (pcl_pointcloud->size() == 0) {
+#ifdef CWIPC_DEBUG
           std::cerr << "cwipc_realsense2: warning: captured empty pointcloud from camera " << camera_config.serial << std::endl;
-                //continue;
+#endif
+          //continue;
         }
 
         // Notify wait_for_pc that we're done.
