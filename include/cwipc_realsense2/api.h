@@ -85,6 +85,19 @@ extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16;   //!< Constant: 16-bi
 
 _CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion);
 
+/** \brief Capture pointclouds from realsense2 recordings (.bag files).
+ * \param configFilename An option string with the filename of the camera-recording configuration file.
+ * \param errorMessage An optional pointer to a string where any error message will be stored.
+ * \param apiVersion Pass in CWIPC_API_VERSION to ensure DLL compatibility.
+ * \return A cwipc_source object.
+
+ * This function returns a cwipc_source that captures pointclouds from realsense
+ * `.bag` prerecorded streams. The cameraconfig file should contain the references
+ * to the file used for each camera (plus the usual transformation matrices and other parameters).
+ */
+
+_CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **errorMessage, uint64_t apiVersion);
+
 /** \brief Capture pointclouds from offline realsense2 images.
  * \param settings Structure containing settings for the offline capturer
  * \param configFilename An option string with the filename of the camera configuration file.

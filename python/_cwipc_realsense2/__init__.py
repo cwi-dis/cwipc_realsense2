@@ -79,6 +79,9 @@ def cwipc_realsense2_dll_load(libname : Optional[str]=None):
     
     _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_realsense2.restype = cwipc_tiledsource_p
+    if hasattr(_cwipc_realsense2_dll_reference, '_cwipc_realsense2_dll_reference'):
+        _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
+        _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.restype = cwipc_tiledsource_p
     if hasattr(_cwipc_realsense2_dll_reference, 'cwipc_rs2offline'):
         _cwipc_realsense2_dll_reference.cwipc_rs2offline.argtypes = [cwipc_offline_settings, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
         _cwipc_realsense2_dll_reference.cwipc_rs2offline.restype = cwipc_offline_p
@@ -150,6 +153,21 @@ def cwipc_realsense2(conffile : Optional[str]=None) -> cwipc_tiledsource_wrapper
     if rv:
         return cwipc_tiledsource_wrapper(rv)
     raise CwipcError("cwipc_realsense2: no cwipc_tiledsource created, but no specific error returned from C library")
+        
+def cwipc_realsense2_playback(conffile : str) -> cwipc_tiledsource_wrapper:
+    """Returns a cwipc_source object that grabs from a realsense2 recording (.bag file) and returns cwipc object on every get() call."""
+    errorString = ctypes.c_char_p()
+    cconffile = None
+    if conffile:
+        cconffile = conffile.encode('utf8')
+    rv = cwipc_realsense2_dll_load().cwipc_realsense2_playback(cconffile, ctypes.byref(errorString), CWIPC_API_VERSION)
+    if errorString and errorString.value and not rv:
+        raise CwipcError(errorString.value.decode('utf8'))
+    if errorString and errorString.value:
+        warnings.warn(errorString.value.decode('utf8'))
+    if rv:
+        return cwipc_tiledsource_wrapper(rv)
+    raise CwipcError("cwipc_realsense2_playback: no cwipc_tiledsource created, but no specific error returned from C library")
 
 def cwipc_rs2offline(settings : cwipc_offline_settings, conffile : str):
     """Returns a cwipc_source object that grabs from a realsense2 camera and returns cwipc object on every get() call."""
