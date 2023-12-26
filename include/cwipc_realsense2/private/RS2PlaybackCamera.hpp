@@ -19,6 +19,10 @@ private:
 public:
     RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData);
     ~RS2PlaybackCamera();
+protected:
+    virtual void _enable_camera(rs2::config &cfg) override;
+private:
+    std::string playback_filename;
 #ifdef xxxjack_old
     void _start_capture_thread();
     void _capture_thread_main();

@@ -192,7 +192,7 @@ void RS2Camera::start() {
 #ifdef CWIPC_DEBUG
     std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
 #endif
-    cfg.enable_device(serial);
+    _enable_camera(cfg);
     cfg.enable_stream(RS2_STREAM_COLOR, camera_width, camera_height, RS2_FORMAT_RGB8, camera_fps);
     cfg.enable_stream(RS2_STREAM_DEPTH, camera_width, camera_height, RS2_FORMAT_Z16, camera_fps);
     // xxxjack need to set things like disabling color correction and auto-exposure
@@ -200,6 +200,10 @@ void RS2Camera::start() {
     auto profile = pipe.start(cfg);   // Start streaming with the configuration just set
     _computePointSize(profile);
     pipe_started = true;
+}
+
+void RS2Camera::_enable_camera(rs2::config &cfg) {
+    cfg.enable_device(serial);
 }
 
 void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {

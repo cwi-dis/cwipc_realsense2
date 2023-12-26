@@ -25,3 +25,7 @@ RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& config
 
 RS2PlaybackCamera::~RS2PlaybackCamera() {
 }
+
+void RS2PlaybackCamera::_enable_camera(rs2::config &cfg) {
+    cfg.enable_device_from_file(playback_filename);
+}

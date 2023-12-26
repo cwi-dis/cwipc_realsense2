@@ -36,6 +36,8 @@ public:
     // This is public because RS2Capture needs it when dumping the color images
     rs2::frameset current_frameset;
     float pointSize;
+protected:
+    virtual void _enable_camera(rs2::config &cfg);
 
 public:
     // These are public because pcl_align wants to access them

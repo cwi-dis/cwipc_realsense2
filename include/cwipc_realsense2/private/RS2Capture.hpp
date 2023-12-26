@@ -21,8 +21,9 @@ protected:
     bool _apply_config(const char* configFilename);
     bool _apply_default_config();
     void _find_camera_positions();
-    void _setup_camera_sync();
-    void _setup_camera_hardware_parameters();
+    virtual void _setup_camera_sync();
+    virtual void _setup_camera_hardware_parameters();
+    virtual bool _check_cameras_connected();
     void _unload_cameras();
 
 public:

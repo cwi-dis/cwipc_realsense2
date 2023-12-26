@@ -67,14 +67,9 @@ bool RS2Capture::config_reload(const char *configFilename) {
         camera_count = 0;
         return false;
     }
-
-    for (RS2CameraConfig& cd : configuration.all_camera_configs) {
-        if (!cd.connected && !cd.disabled) {
-            cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
-            camera_count = 0;
-
-            return false;
-        }
+    if (!_check_cameras_connected()) {
+        camera_count = 0;
+        return false;
     }
 
     _find_camera_positions();
@@ -107,6 +102,16 @@ bool RS2Capture::config_reload(const char *configFilename) {
     control_thread = new std::thread(&RS2Capture::_control_thread_main, this);
     _cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2Capture::control_thread");
 
+    return true;
+}
+
+bool RS2Capture::_check_cameras_connected() {
+    for (RS2CameraConfig& cd : configuration.all_camera_configs) {
+        if (!cd.connected && !cd.disabled) {
+            cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
+            return false;
+        }
+    }
     return true;
 }
 

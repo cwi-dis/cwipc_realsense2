@@ -20,5 +20,10 @@ public:
     virtual bool config_reload(const char* configFilename) override;
     static int count_devices() { return 0; }
     static RS2PlaybackCapture* factory() { return new RS2PlaybackCapture(); }
+protected:
+    virtual void _setup_camera_sync() override {};
+    virtual void _setup_camera_hardware_parameters() override {};
+    virtual bool _check_cameras_connected() override { return true; /* xxxjack could check filenames... */};
+
 };
 #endif // cwipc_realsense_RS2PlaybackCapture_hpp
