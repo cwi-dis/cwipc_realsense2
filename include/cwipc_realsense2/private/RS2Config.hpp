@@ -46,7 +46,8 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
     bool disabled = false;  // to easily disable cameras without altering too much the cameraconfig
     bool connected = false; // set to true when the camera is opened.
     std::string serial;     // Serial number of this camera
-    std::string type = "realsense";       // Camera type (must be realsense)
+    std::string type = "realsense";       // Camera type (must be realsense, realsense_playback or realsense_offline)
+    std::string filename = "";  // filename, for realsense_playback
     pcl::shared_ptr<Eigen::Affine3d> trafo; //!< Transformation matrix from camera coorindates to world coordinates
     pcl::shared_ptr<Eigen::Affine3d> intrinsicTrafo;    //!< offline only: matrix to convert color to depth coordinates
     cwipc_vector cameraposition = { 0,0,0 };    //!< Position of this camera in real world coordinates

@@ -65,12 +65,10 @@ int main(int argc, char** argv) {
         cwipc *pc = NULL;
 
         while(1) {
-            pc = generator->get();
-
-            if (pc == NULL) {
-                error = (char *)"grabber returned NULL";
-                ok = -1;
-                break;
+            for(int i=0; i<10; i++) {
+                pc = generator->get();
+                if (pc != NULL) break;
+                std::cerr << "Dropping NULL point cloud" << std::endl;
             }
 
             if (pc->count() > 0) {
@@ -80,8 +78,8 @@ int main(int argc, char** argv) {
             std::cerr << argv[0] << ": warning: empty pointcloud, grabbing again" << std::endl;
         }
 
-        if (strcmp(argv[2], "-") != 0) {
-            snprintf(filename, sizeof(filename), "%s/pointcloud-%" PRIu64 ".ply", argv[2], pc->timestamp());
+        if (strcmp(argv[3], "-") != 0) {
+            snprintf(filename, sizeof(filename), "%s/pointcloud-%" PRIu64 ".ply", argv[3], pc->timestamp());
             ok = cwipc_write(filename, pc, &error);
         }
 

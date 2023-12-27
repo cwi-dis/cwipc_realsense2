@@ -81,6 +81,7 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
         cd.intrinsicTrafo = default_trafo;
 
         _MY_JSON_GET(camera, serial, cd, serial);
+        _MY_JSON_GET(camera, filename, cd, filename);
         _MY_JSON_GET(camera, type, cd, type);
 
         if (camera.contains("trafo")) {
@@ -104,6 +105,9 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     for (RS2CameraConfig cd : config.all_camera_configs) {
         json camera;
         _MY_JSON_PUT(camera, serial, cd, serial);
+        if (cd.filename != "") {
+            _MY_JSON_PUT(camera, filename, cd, filename);
+        }
         _MY_JSON_PUT(camera, type, cd, type);
 
         camera["trafo"] = {

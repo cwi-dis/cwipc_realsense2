@@ -24,6 +24,7 @@ protected:
     virtual void _setup_camera_sync() override {};
     virtual void _setup_camera_hardware_parameters() override {};
     virtual bool _check_cameras_connected() override { return true; /* xxxjack could check filenames... */};
+    virtual bool _create_cameras() override;
 
 };
 #endif // cwipc_realsense_RS2PlaybackCapture_hpp

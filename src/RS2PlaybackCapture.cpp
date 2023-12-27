@@ -32,7 +32,33 @@ bool RS2PlaybackCapture::config_reload(const char* configFilename) {
 
 
 bool RS2PlaybackCapture::_create_cameras() {
-    assert(false);
+    for (RS2CameraConfig& cd : configuration.all_camera_configs) {
+        // Ensure we have a serial
+        if (cd.serial == "") {
+            cd.serial = cd.filename;
+        }
+        if (cd.filename == "") {
+            cwipc_rs2_log_warning("Camera has no filename");
+            return false;
+        }
+        if (cd.type != "realsense_playback") {
+            cwipc_rs2_log_warning("Camera " + cd.serial + " is type " + cd.type + " in stead of realsense");
+            return false;
+        }
+
+        int camera_index = (int)cameras.size();
+
+        if (cd.disabled) {
+            // xxxnacho do we need to close the device, like the kinect case?
+        }
+        else {
+            auto cam = new RS2PlaybackCamera(ctx(), configuration, camera_index, cd);
+            cameras.push_back(cam);
+            cd.connected = true;
+        }
+
+    }
+#if 0
     rs2::device_list devs = ctx().query_devices();
     const std::string platform_camera_name = "Platform Camera";
 
@@ -40,6 +66,21 @@ bool RS2PlaybackCapture::_create_cameras() {
         if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) {
             continue;
         }
+
+        if (cd->type != "realsense") {
+            cwipc_rs2_log_warning("Camera " + serial + " is type " + cd->type + " in stead of realsense");
+            return false;
+        }
+
+        int camera_index = (int)cameras.size();
+
+        if (cd->disabled) {
+            // xxxnacho do we need to close the device, like the kinect case?
+        }
+        else {
+            auto cam = new RS2Camera(ctx(), configuration, camera_index, *cd, camUsb);
+            cameras.push_back(cam);
+            cd->connected = true;
 
 #ifdef CWIPC_DEBUG
         std::cout << "cwipc_realsense2: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
@@ -71,6 +112,6 @@ bool RS2PlaybackCapture::_create_cameras() {
             cd->connected = true;
         }
     }
-
+#endif
     return true;
 }
