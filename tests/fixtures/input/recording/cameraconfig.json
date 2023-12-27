@@ -1,8 +1,7 @@
 {
   "camera": [
     {
-      "serial": "802212060849",
-	  "filename": "C:/Users/dis/VRTogether/cwipc/cwipc_realsense2/tests/fixtures/input/recording/20231227_174509.bag",
+      "filename": "20231227_174509.bag",
       "trafo": [
         [
           -0.02281696186444373,

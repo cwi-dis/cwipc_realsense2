@@ -26,8 +26,22 @@ RS2PlaybackCapture::RS2PlaybackCapture()
 RS2PlaybackCapture::~RS2PlaybackCapture() {
 }
 
-bool RS2PlaybackCapture::config_reload(const char* configFilename) {
-    return RS2Capture::config_reload(configFilename);
+bool RS2PlaybackCapture::_apply_config(const char* configFilename) {
+    bool ok = RS2Capture::_apply_config(configFilename);
+    if (!ok) {
+        return ok;
+    }
+    if ( configFilename != NULL && configFilename[0] != '{' && (
+        strchr(configFilename, '/') != NULL
+#ifdef WIN32
+        || strchr(configFilename, '\\') != NULL
+#endif
+        )) {
+        // It appears the configFilename is a pathname. Get the directory component.
+        std::string dirName(configFilename);
+        int slashPos = dirName.find_last_of("/\\");
+        base_directory = dirName.substr(0, slashPos+1);
+    }
 }
 
 
@@ -52,66 +66,17 @@ bool RS2PlaybackCapture::_create_cameras() {
             // xxxnacho do we need to close the device, like the kinect case?
         }
         else {
-            auto cam = new RS2PlaybackCamera(ctx(), configuration, camera_index, cd);
+            std::string recording_filename;
+            if (base_directory == "") {
+                recording_filename = cd.filename;
+            } else {
+                recording_filename = base_directory + cd.filename;
+            }
+            auto cam = new RS2PlaybackCamera(ctx(), configuration, camera_index, cd, recording_filename);
             cameras.push_back(cam);
             cd.connected = true;
         }
 
     }
-#if 0
-    rs2::device_list devs = ctx().query_devices();
-    const std::string platform_camera_name = "Platform Camera";
-
-    for (auto dev : devs) {
-        if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) {
-            continue;
-        }
-
-        if (cd->type != "realsense") {
-            cwipc_rs2_log_warning("Camera " + serial + " is type " + cd->type + " in stead of realsense");
-            return false;
-        }
-
-        int camera_index = (int)cameras.size();
-
-        if (cd->disabled) {
-            // xxxnacho do we need to close the device, like the kinect case?
-        }
-        else {
-            auto cam = new RS2Camera(ctx(), configuration, camera_index, *cd, camUsb);
-            cameras.push_back(cam);
-            cd->connected = true;
-
-#ifdef CWIPC_DEBUG
-        std::cout << "cwipc_realsense2: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-#endif
-
-        // Found a realsense camera. Create a default data entry for it.
-        std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-        std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-
-        RS2CameraConfig* cd = get_camera_config(serial);
-
-        if (cd == nullptr) {
-            cwipc_rs2_log_warning("Camera " + serial + " is connected but not configured");
-            return false;
-        }
-
-        if (cd->type != "realsense") {
-            cwipc_rs2_log_warning("Camera " + serial + " is type " + cd->type + " in stead of realsense");
-            return false;
-        }
-
-        int camera_index = (int)cameras.size();
-
-        if (cd->disabled) {
-            // xxxnacho do we need to close the device, like the kinect case?
-        } else {
-            auto cam = new RS2Camera(ctx(), configuration, camera_index, *cd, camUsb);
-            cameras.push_back(cam);
-            cd->connected = true;
-        }
-    }
-#endif
     return true;
 }

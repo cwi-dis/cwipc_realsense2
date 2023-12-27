@@ -17,7 +17,7 @@ private:
     RS2PlaybackCamera(const RS2PlaybackCamera&);  // Disable copy constructor
     RS2PlaybackCamera& operator=(const RS2PlaybackCamera&);   // Disable assignment
 public:
-    RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData);
+    RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData, std::string recording_filename);
     ~RS2PlaybackCamera();
 protected:
     virtual void _enable_camera(rs2::config &cfg) override;

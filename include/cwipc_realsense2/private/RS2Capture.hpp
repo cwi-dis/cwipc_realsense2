@@ -18,7 +18,7 @@ class RS2Capture : public CwipcBaseCapture {
 protected:
     // methods
     RS2Capture();
-    bool _apply_config(const char* configFilename);
+    virtual bool _apply_config(const char* configFilename);
     bool _apply_default_config();
     void _find_camera_positions();
     virtual void _setup_camera_sync();
