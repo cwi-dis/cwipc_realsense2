@@ -31,7 +31,7 @@ if 'CWIPC_TEST_DLL' in os.environ:
 _thisdir=os.path.dirname(os.path.join(os.getcwd(), __file__))
 _topdir=os.path.dirname(_thisdir)
 TEST_FIXTURES_DIR=os.path.join(_topdir, "tests", "fixtures")
-print('xxxjack', _thisdir, _topdir, TEST_FIXTURES_DIR)
+TEST_FIXTURES_PLAYBACK_CONFIG=os.path.join(TEST_FIXTURES_DIR, "input", "recording", "cameraconfig.json")
 TEST_OUTPUT_DIR=os.path.join(TEST_FIXTURES_DIR, "output")
 if not os.access(TEST_OUTPUT_DIR, os.W_OK):
     TEST_OUTPUT_DIR=tempfile.mkdtemp('cwipc_realsense2_test')  # type: ignore
@@ -90,6 +90,33 @@ class TestApi(unittest.TestCase):
                     self.assertIn('camera', tileInfo)
         finally:
             if grabber: grabber.free()
+
+    def test_cwipc_realsense2_playback(self):
+        """Test that we can grab a realsense2 image from the playback grabber"""
+        grabber = None
+        pc = None
+        try:
+            grabber = _cwipc_realsense2.cwipc_realsense2_playback(TEST_FIXTURES_PLAYBACK_CONFIG)
+            self.assertFalse(grabber.eof())
+            self.assertTrue(grabber.available(True))
+            pc = grabber.get()
+            # Hack around problem: sometimes we get NULL or empty clouds at the beginnging of the run.
+            if pc is None or pc.count() == 0:
+                if pc != None:
+                    pc.free()
+                self.assertTrue(grabber.available(True))
+                pc = grabber.get()
+            if pc is None or pc.count() == 0:
+                if pc != None:
+                    pc.free()
+                self.assertTrue(grabber.available(True))
+                pc = grabber.get()
+            self.assertIsNotNone(pc)
+            assert pc # Only to keep linters happy
+            self._verify_pointcloud(pc)
+        finally:
+            if grabber: grabber.free()
+            if pc: pc.free()
 
     def test_cwipc_rs2offline(self):
         """Test that we can create a pointcloud from offline images"""
