@@ -42,6 +42,7 @@ bool RS2PlaybackCapture::_apply_config(const char* configFilename) {
         int slashPos = dirName.find_last_of("/\\");
         base_directory = dirName.substr(0, slashPos+1);
     }
+    return true;
 }
 
 
