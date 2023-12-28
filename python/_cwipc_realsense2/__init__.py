@@ -13,6 +13,7 @@ __all__ = [
     "RS2_FORMAT_RGB8",
     "RS2_FORMAT_Z16",
     "cwipc_realsense2",
+    "cwipc_realsense2_playback",
     "cwipc_rs2offline",
     "cwipc_realsense2_dll_load"
 ]
@@ -79,7 +80,7 @@ def cwipc_realsense2_dll_load(libname : Optional[str]=None):
     
     _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_realsense2.restype = cwipc_tiledsource_p
-    if hasattr(_cwipc_realsense2_dll_reference, '_cwipc_realsense2_dll_reference'):
+    if hasattr(_cwipc_realsense2_dll_reference, 'cwipc_realsense2_playback'):
         _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
         _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.restype = cwipc_tiledsource_p
     if hasattr(_cwipc_realsense2_dll_reference, 'cwipc_rs2offline'):
