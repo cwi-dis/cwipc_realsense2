@@ -55,12 +55,12 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
 
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // system data
-    int usb3_width = 1280;
-    int usb3_height = 720;
-    int usb3_fps = 30;
-    int usb2_width = 640;
-    int usb2_height = 480;
-    int usb2_fps = 15;
+    int usb3_width = 0;
+    int usb3_height = 0;
+    int usb3_fps = 0;
+    int usb2_width = 0;
+    int usb2_height = 0;
+    int usb2_fps = 0;
     bool usb2allowed = false;                    // true if USB2 is allowed
 
     // processing data
