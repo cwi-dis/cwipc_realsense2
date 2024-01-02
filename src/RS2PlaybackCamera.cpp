@@ -27,6 +27,17 @@ RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& config
 RS2PlaybackCamera::~RS2PlaybackCamera() {
 }
 
-void RS2PlaybackCamera::_enable_camera(rs2::config &cfg) {
+void RS2PlaybackCamera::_pre_start(rs2::config &cfg) {
     cfg.enable_device_from_file(playback_filename);
+}
+
+void RS2PlaybackCamera::_post_start() {
+#if 0
+    rs2::device_list devices_after = context.query_devices();
+    std::cerr << "xxxjack post_start device count " << devices_after.size() << std::endl;
+#endif
+    rs2::pipeline_profile prof = pipe.get_active_profile();
+    rs2::device dev = prof.get_device();
+    std::cerr << "xxxjack dev info RS2_CAMERA_INFO_NAME " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+    std::cerr << "xxxjack dev info RS2_CAMERA_INFO_SERIAL_NUMBER " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
 }

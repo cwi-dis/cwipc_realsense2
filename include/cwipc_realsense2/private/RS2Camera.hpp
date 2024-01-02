@@ -37,7 +37,8 @@ public:
     rs2::frameset current_frameset;
     float pointSize;
 protected:
-    virtual void _enable_camera(rs2::config &cfg);
+    virtual void _pre_start(rs2::config &cfg);
+    virtual void _post_start();
 
 public:
     // These are public because pcl_align wants to access them
@@ -59,7 +60,7 @@ protected:
     void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 
-private:
+protected:
     RS2CameraConfig& camera_config;
     RS2CameraProcessingParameters& camera_processing;
     bool high_speed_connection;
@@ -79,6 +80,7 @@ private:
     std::condition_variable processing_done_cv;
     bool processing_done;
 
+    rs2::context context;
     rs2::pipeline pipe;
     bool pipe_started;
     // for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
