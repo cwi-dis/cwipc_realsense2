@@ -18,7 +18,7 @@
 #include "cwipc_realsense2/private/RS2PlaybackCamera.hpp"
 
 RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData, std::string _filename)
-:   RS2Camera(ctx, configuration, _camera_index, _camData),
+:   RS2Camera(ctx, configuration, _camera_index, _camData, "3"), // The "3" is  hack to forestall a warning about USB2... Sigh...
     playback_filename(_filename)
 {
 
