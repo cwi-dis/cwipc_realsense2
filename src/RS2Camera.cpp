@@ -200,6 +200,7 @@ void RS2Camera::start() {
     // xxxjack need to set things like disabling color correction and auto-exposure
     // xxxjack need to allow setting things like laser power
     auto profile = pipe.start(cfg);   // Start streaming with the configuration just set
+    _post_start();
     _computePointSize(profile);
     pipe_started = true;
 }
@@ -209,7 +210,31 @@ void RS2Camera::_pre_start(rs2::config &cfg) {
 }
 
 void RS2Camera::_post_start() {
-
+    // Obtain actual serial number and fps. Most important for playback cameras, but also useful for
+    // live cameras (because the user program can obtain correct cameraconfig data with get_config()).
+    rs2::pipeline_profile prof = pipe.get_active_profile();
+    rs2::device dev = prof.get_device();
+    // Keep actual serial number, also in cameraconfig
+    serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+    camera_config.serial = serial;
+    std::vector<rs2::sensor> sensors = dev.query_sensors();
+    int depth_fps = camera_fps;
+    int color_fps = camera_fps;
+    for(rs2::sensor sensor : sensors) {
+        std::vector<rs2::stream_profile> streams = sensor.get_active_streams();
+        for(rs2::stream_profile stream : streams) {
+            if (stream.stream_type() == RS2_STREAM_DEPTH) {
+                depth_fps = stream.fps();
+            }
+            if (stream.stream_type() == RS2_STREAM_COLOR) {
+                color_fps = stream.fps();
+            }
+        }
+    }
+    if (depth_fps != color_fps) {
+        std::cerr << "RS2Camera: Warning: depth_fps=" << depth_fps << " and color_fps=" << color_fps << std::endl;
+    }
+    camera_fps = depth_fps;
 }
 
 void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
@@ -354,9 +379,14 @@ void RS2Camera::_processing_thread_main() {
 
         rs2::depth_frame depth = processing_frameset.get_depth_frame();
         rs2::video_frame color = processing_frameset.get_color_frame();
-
+        
         assert(depth);
         assert(color);
+
+        // set width/height to what the depth frame has.
+        // xxxjack this is a design flaw. We should have separate values for depth/color.
+        camera_width = depth.get_width();
+        camera_height = depth.get_height();
 
         if (camera_processing.depth_x_erosion >0 || camera_processing.depth_y_erosion > 0) {
             _erode_depth(depth, camera_processing.depth_x_erosion, camera_processing.depth_y_erosion);

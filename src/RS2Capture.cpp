@@ -116,6 +116,20 @@ bool RS2Capture::_check_cameras_connected() {
 }
 
 std::string RS2Capture::config_get() {
+    // get fps/width/height from all cameras
+    // xxxjack this is a design flaw: these parameters should be stored in the camera configuration, not the capture configuration.
+    int fps=0;
+    int width=0;
+    int height=0;
+    for(auto cam : cameras) {
+        if (fps == 0) fps = cam->camera_fps;
+        if (width == 0) width = cam->camera_width;
+        if (height == 0) height = cam->camera_height;
+        // xxxjack should we check that all cameras match?
+    }
+    configuration.usb2_fps = configuration.usb3_fps = fps;
+    configuration.usb2_width = configuration.usb3_width = width;
+    configuration.usb2_height = configuration.usb3_height = height;
     return cwipc_rs2_config2string(&configuration);
 }
 
