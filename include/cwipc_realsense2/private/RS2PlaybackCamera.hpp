@@ -19,6 +19,7 @@ private:
 public:
     RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData, std::string recording_filename);
     ~RS2PlaybackCamera();
+    virtual void all_cameras_started() override;
 protected:
     virtual void _pre_start(rs2::config &cfg) override;
     virtual void _post_start() override;

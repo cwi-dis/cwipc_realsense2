@@ -90,10 +90,16 @@ bool RS2Capture::config_reload(const char *configFilename) {
     //
     // start the per-camera capture threads
     //
-
+    std::cerr << "xxxjack start capturers" << std::endl;
     for (auto cam: cameras) {
         cam->start_capturer();
     }
+    std::cerr << "xxxjack start playback" << std::endl;
+
+    for (auto cam: cameras) {
+        cam->all_cameras_started();
+    }
+    std::cerr << "xxxjack start control thread" << std::endl;
 
     //
     // start our run thread (which will drive the capturers and merge the pointclouds)

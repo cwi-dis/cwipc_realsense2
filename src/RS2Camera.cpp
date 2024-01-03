@@ -235,6 +235,7 @@ void RS2Camera::_post_start() {
         std::cerr << "RS2Camera: Warning: depth_fps=" << depth_fps << " and color_fps=" << color_fps << std::endl;
     }
     camera_fps = depth_fps;
+   
 }
 
 void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {

@@ -32,5 +32,31 @@ void RS2PlaybackCamera::_pre_start(rs2::config &cfg) {
 }
 
 void RS2PlaybackCamera::_post_start() {
+    rs2::pipeline_profile prof = pipe.get_active_profile();
+    rs2::device dev = prof.get_device();
+    rs2::playback playback = dev.as<rs2::playback>();
+#if 0
+    // xxxjack for some reason pause() here and resume() in all_cameras_started doesn't work:
+    // the first resume() call will hang.
+    playback.pause();
+#endif
+    playback.set_real_time(false);
     RS2Camera::_post_start();
+
+     // Seek device, if needed
+    if (camera_config.inPointMicroSeconds != 0) {
+        uint64_t new_pos = ((uint64_t)1000) * camera_config.inPointMicroSeconds;
+        uint64_t old_pos = playback.get_position();
+#ifdef CWIPC_DEBUG
+        std::cerr << "RS2PlaybackCamera::_post_start: pos was " << old_pos << " seek to " << new_pos << std::endl;
+#endif
+        playback.seek(std::chrono::nanoseconds(new_pos));
+    }
+}
+
+void RS2PlaybackCamera::all_cameras_started() {
+    rs2::pipeline_profile prof = pipe.get_active_profile();
+    rs2::device dev = prof.get_device();
+    rs2::playback playback = dev.as<rs2::playback>();
+    playback.resume();
 }

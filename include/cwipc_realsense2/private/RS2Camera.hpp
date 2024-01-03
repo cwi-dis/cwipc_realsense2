@@ -25,6 +25,7 @@ public:
 
     void start();
     virtual void start_capturer();
+    virtual void all_cameras_started() {}
     void stop();
     bool capture_frameset();
     void create_pc_from_frames();
