@@ -274,9 +274,22 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
 }
 
 void RS2Camera::stop() {
+    // Tell the grabber and processor thread that we want to stop.
     assert(!stopped);
     stopped = true;
 
+    // Clear out the queues so we don't get into a deadlock
+    while (true) {
+        rs2::frameset tmp;
+        bool ok = captured_frame_queue.try_wait_for_frame(&tmp, 1);
+        if (!ok) break;
+    }
+    while (true) {
+        rs2::frameset tmp;
+        bool ok = processing_frame_queue.try_wait_for_frame(&tmp, 1);
+        if (!ok) break;
+    }
+    // Join and delete the grabber thread
     if (grabber_thread) {
         grabber_thread->join();
     }
@@ -284,6 +297,7 @@ void RS2Camera::stop() {
     delete grabber_thread;
     grabber_thread = nullptr;
 
+    // Join and delete the processor thread
     if (processing_thread) {
         processing_thread->join();
     }
@@ -291,6 +305,7 @@ void RS2Camera::stop() {
     delete processing_thread;
     processing_thread = nullptr;
 
+    // stop the pipeline.
     if (pipe_started) {
         pipe.stop();
     }
