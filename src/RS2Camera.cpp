@@ -557,7 +557,16 @@ uint64_t RS2Camera::get_capture_timestamp() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth) {
+bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
+{
+    out3d[0] = x_2d;
+    out3d[1] = y_2d;
+    out3d[2] = d_2d;
+    std::cerr << "RS2Camera: xxxjack: map2d3d: not yet implemented for realsense" << std::endl;
+    return false;
+}
+void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
+{
     if (rgb) {
         std::string name = "rgb." + serial;
         rs2::video_frame image = current_frameset.get_color_frame();
@@ -609,4 +618,3 @@ void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth) {
         }
     }
 }
-

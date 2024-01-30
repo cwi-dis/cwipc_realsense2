@@ -241,6 +241,21 @@ public:
         cwipc_tiledsource::request_auxiliary_data(name);
         m_grabber->request_image_auxdata(auxiliary_data_requested("rgb"), auxiliary_data_requested("depth"));
     }
+
+    bool auxiliary_operation(const std::string op, const void* inbuf, size_t insize, void* outbuf, size_t outsize) override {
+        // For test purposes, really...
+        if (op != "map2d3d") return false;
+        if (inbuf == nullptr || insize != 4*sizeof(float)) return false;
+        if (outbuf == nullptr || outsize != 3*sizeof(float)) return false;
+        float *infloat = (float *)inbuf;
+        float *outfloat = (float *)outbuf;
+        int tilenum = (int)infloat[0];
+        int x_2d = (int)infloat[1];
+        int y_2d = (int)infloat[2];
+        float d_2d = infloat[3];
+
+        return m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
+    }
 };
 
 class cwipc_source_realsense2_playback_impl : public cwipc_tiledsource {
@@ -391,6 +406,20 @@ public:
     void request_auxiliary_data(const std::string& name) override {
         cwipc_tiledsource::request_auxiliary_data(name);
         m_grabber->request_image_auxdata(auxiliary_data_requested("rgb"), auxiliary_data_requested("depth"));
+    }
+
+    bool auxiliary_operation(const std::string op, const void* inbuf, size_t insize, void* outbuf, size_t outsize) override {
+        // For test purposes, really...
+        if (op != "map2d3d") return false;
+        if (inbuf == nullptr || insize != 4*sizeof(float)) return false;
+        if (outbuf == nullptr || outsize != 3*sizeof(float)) return false;
+        float *infloat = (float *)inbuf;
+        float *outfloat = (float *)outbuf;
+        int tilenum = (int)infloat[0];
+        int x_2d = (int)infloat[1];
+        int y_2d = (int)infloat[2];
+        float d_2d = infloat[3];
+        return m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
     }
 };
 

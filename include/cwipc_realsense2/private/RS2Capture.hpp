@@ -38,6 +38,7 @@ public:
     RS2CameraConfig* get_camera_config(std::string serial);
     RS2Camera* get_camera(std::string serial);
     float get_pointSize();
+    bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d);
 
     // variables
     RS2CaptureConfig configuration;

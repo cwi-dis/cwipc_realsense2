@@ -499,7 +499,18 @@ float RS2Capture::get_pointSize() {
     return rv;
 }
 
-bool RS2Capture::pointcloud_available(bool wait) {
+bool RS2Capture::map2d3d(int tile, int x_2d, int y_2d, int d_2d, float *out3d)
+{
+    for(auto cam : cameras) {
+        if (tile == (1 << cam->camera_index)) {
+            return cam->map2d3d(x_2d, y_2d, d_2d, out3d);
+        }
+    }
+    return false;
+}
+
+bool RS2Capture::pointcloud_available(bool wait)
+{
     if (camera_count == 0) {
         return false;
     }

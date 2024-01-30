@@ -33,6 +33,7 @@ public:
     void save_auxdata(cwipc *pc, bool rgb, bool depth);
     uint64_t get_capture_timestamp();
     cwipc_pcl_pointcloud get_current_pointcloud() { return current_pointcloud; }
+    bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d);
 
     // This is public because RS2Capture needs it when dumping the color images
     rs2::frameset current_frameset;
