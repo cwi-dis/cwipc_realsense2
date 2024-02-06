@@ -559,11 +559,24 @@ uint64_t RS2Camera::get_capture_timestamp() {
 
 bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
 {
-    out3d[0] = x_2d;
-    out3d[1] = y_2d;
-    out3d[2] = d_2d;
-    std::cerr << "RS2Camera: xxxjack: map2d3d: not yet implemented for realsense" << std::endl;
-    return false;
+    float in2d[2] = {
+        (float)x_2d,
+        (float)y_2d
+    };
+    // Note by Jack: the 1000.0 is a magic value, somewhere it is stated that the D4xx cameras use 1mm as the
+    // depth unit.
+    float indepth = float(d_2d) / 1000.0;
+    out3d[0] = 0;
+    out3d[1] = 0;
+    out3d[2] = 0;
+    // Now get the intrinsics for the depth stream
+    rs2::pipeline_profile profile = pipe.get_active_profile();
+    rs2::video_stream_profile stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+    // xxxjack does not work rs2::video_stream_profile stream = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
+    rs2_intrinsics intrinsics = stream.get_intrinsics(); // Calibration data
+    rs2_deproject_pixel_to_point(out3d, &intrinsics, in2d, indepth);
+    // Now we still need to convert from camera-centric 
+    return true;
 }
 void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
 {
