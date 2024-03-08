@@ -54,5 +54,8 @@ install(FILES ${PROJECT_SOURCE_DIR}/CMakeFiles/cwipc_realsense2-config.cmake DES
 install(EXPORT cwipc_realsense2 DESTINATION lib/cmake/cwipc_realsense2)
 
 if(WIN32)
+	# Copy the dependent DLLs that cmake/vcpkg have created
+	install(FILES $<TARGET_RUNTIME_DLLS:cwipc_realsense2> DESTINATION ${CMAKE_INSTALL_BINDIR})
+	# Copy the PDB file, if it exists
 	install(FILES $<TARGET_PDB_FILE:cwipc_realsense2> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
 endif()
