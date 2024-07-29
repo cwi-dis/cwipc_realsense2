@@ -90,17 +90,14 @@ bool RS2Capture::config_reload(const char *configFilename) {
     //
     // start the per-camera capture threads
     //
-    std::cerr << "xxxjack start capturers" << std::endl;
-    for (auto cam: cameras) {
+   for (auto cam: cameras) {
         cam->start_capturer();
     }
-    std::cerr << "xxxjack start playback" << std::endl;
-
+    
     for (auto cam: cameras) {
         cam->all_cameras_started();
     }
-    std::cerr << "xxxjack start control thread" << std::endl;
-
+   
     //
     // start our run thread (which will drive the capturers and merge the pointclouds)
     //
@@ -141,9 +138,7 @@ std::string RS2Capture::config_get() {
 
 void RS2Capture::_setup_camera_hardware_parameters() {
     rs2::device_list devs = ctx().query_devices();
-    std::cerr << "xxxjack devs count=" << devs.size() << std::endl;
     for (auto dev : devs) {
-        std::cerr << "xxxjack dev " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
         auto allSensors = dev.query_sensors();
 
         for (auto sensor : allSensors) {
