@@ -140,6 +140,10 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
         cwipc_rs2_log_warning("Camera " + serial + " connected to USB2");
     }
 
+    if (configuration.record_to_directory != "") {
+        record_to_file = configuration.record_to_directory + "/" + serial + ".bag";
+    }
+
     _init_filters();
 }
 
@@ -207,6 +211,10 @@ void RS2Camera::start() {
 
 void RS2Camera::_pre_start(rs2::config &cfg) {
     cfg.enable_device(serial);
+    if (record_to_file != "") {
+        std::cerr << "RS2Camera::_pre_start: recording to " << record_to_file << std::endl;
+        cfg.enable_record_to_file(record_to_file);
+    }
 }
 
 void RS2Camera::_post_start() {

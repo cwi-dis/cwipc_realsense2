@@ -77,6 +77,8 @@ protected:
     double height_min;
     double height_max;
 
+    std::string record_to_file;
+
     std::thread *grabber_thread;
     rs2::frame_queue processing_frame_queue;
     std::mutex processing_mutex;

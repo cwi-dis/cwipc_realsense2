@@ -77,6 +77,7 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // special features
     bool want_auxdata_rgb = false;
     bool want_auxdata_depth = false;
+    std::string record_to_directory = ""; // If non-empty all camera streams will be recorded to this directory.
 
     RS2CameraProcessingParameters camera_processing;
     // realsense specific post processing filtering

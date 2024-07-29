@@ -45,6 +45,7 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(system_data, whitebalance, config, whitebalance);
     _MY_JSON_GET(system_data, backlight_compensation, config, backlight_compensation);
     _MY_JSON_GET(system_data, laser_power, config, laser_power);
+    _MY_JSON_GET(system_data, record_to_directory, config, record_to_directory);
 
     json postprocessing = json_data.at("postprocessing");
     _MY_JSON_GET(postprocessing, greenscreenremoval, config, greenscreen_removal);
@@ -163,6 +164,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(system_data, whitebalance, config, whitebalance);
     _MY_JSON_PUT(system_data, backlight_compensation, config, backlight_compensation);
     _MY_JSON_PUT(system_data, laser_power, config, laser_power);
+    _MY_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
     json_data["system"] = system_data;
 
     json_data["version"] = 3;

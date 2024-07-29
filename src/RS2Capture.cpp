@@ -141,8 +141,9 @@ std::string RS2Capture::config_get() {
 
 void RS2Capture::_setup_camera_hardware_parameters() {
     rs2::device_list devs = ctx().query_devices();
-
+    std::cerr << "xxxjack devs count=" << devs.size() << std::endl;
     for (auto dev : devs) {
+        std::cerr << "xxxjack dev " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
         auto allSensors = dev.query_sensors();
 
         for (auto sensor : allSensors) {
