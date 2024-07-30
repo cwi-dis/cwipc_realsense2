@@ -60,6 +60,7 @@ protected:
     virtual void _capture_thread_main();
     rs2::frame_queue captured_frame_queue;
     void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
+    void transformPoint(float *out, const float *in);
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 
 protected:

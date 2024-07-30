@@ -551,6 +551,12 @@ void RS2Camera::transformPoint(cwipc_pcl_point& out, const rs2::vertex& in) {
     out.z = (*camera_config.trafo)(2,0)*in.x + (*camera_config.trafo)(2,1)*in.y + (*camera_config.trafo)(2,2)*in.z + (*camera_config.trafo)(2,3);
 }
 
+void RS2Camera::transformPoint(float out[3], const float in[3]) {
+    out[0] = (*camera_config.trafo)(0,0)*in[0] + (*camera_config.trafo)(0,1)*in[1] + (*camera_config.trafo)(0,2)*in[2] + (*camera_config.trafo)(0,3);
+    out[1] = (*camera_config.trafo)(1,0)*in[0] + (*camera_config.trafo)(1,1)*in[1] + (*camera_config.trafo)(1,2)*in[2] + (*camera_config.trafo)(1,3);
+    out[2] = (*camera_config.trafo)(2,0)*in[0] + (*camera_config.trafo)(2,1)*in[1] + (*camera_config.trafo)(2,2)*in[2] + (*camera_config.trafo)(2,3);
+}
+
 void RS2Camera::create_pc_from_frames() {
     processing_frame_queue.enqueue(current_frameset);
 }
@@ -572,18 +578,15 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
         (float)y_2d
     };
     // Note by Jack: the 1000.0 is a magic value, somewhere it is stated that the D4xx cameras use 1mm as the
-    // depth unit.
+    // depth unit. xxxjack it should use get_depth_scale().
     float indepth = float(d_2d) / 1000.0;
-    out3d[0] = 0;
-    out3d[1] = 0;
-    out3d[2] = 0;
+    float tmp3d[3] = {0, 0, 0};
     // Now get the intrinsics for the depth stream
     rs2::pipeline_profile profile = pipe.get_active_profile();
-    rs2::video_stream_profile stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-    // xxxjack does not work rs2::video_stream_profile stream = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
-    rs2_intrinsics intrinsics = stream.get_intrinsics(); // Calibration data
-    rs2_deproject_pixel_to_point(out3d, &intrinsics, in2d, indepth);
-    // Now we still need to convert from camera-centric 
+    rs2::video_stream_profile depth_stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+    rs2_intrinsics depth_intrinsics = depth_stream.get_intrinsics(); // Calibration data
+    rs2_deproject_pixel_to_point(tmp3d, &depth_intrinsics, in2d, indepth);
+    transformPoint(out3d, tmp3d);
     return true;
 }
 void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
