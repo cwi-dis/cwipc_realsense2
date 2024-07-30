@@ -9,6 +9,9 @@
 #undef CWIPC_DEBUG
 #undef CWIPC_DEBUG_THREAD
 
+// Only for RGB and Depth auxdata: we have the option of mapping depth to color or color to depth.
+#define MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
+
 // This is the dll source, so define external symbols as dllexport on windows.
 
 #if defined(WIN32) || defined(_WIN32)
@@ -583,17 +586,29 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     float tmp3d[3] = {0, 0, 0};
     // Now get the intrinsics for the depth stream
     rs2::pipeline_profile profile = pipe.get_active_profile();
-    rs2::video_stream_profile depth_stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-    rs2_intrinsics depth_intrinsics = depth_stream.get_intrinsics(); // Calibration data
-    rs2_deproject_pixel_to_point(tmp3d, &depth_intrinsics, in2d, indepth);
+#ifdef MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
+    rs2::video_stream_profile stream = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
+#else
+    rs2::video_stream_profile stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+#endif
+    rs2_intrinsics intrinsics = stream.get_intrinsics(); // Calibration data
+    rs2_deproject_pixel_to_point(tmp3d, &intrinsics, in2d, indepth);
     transformPoint(out3d, tmp3d);
     return true;
 }
 void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
 {
+    if (!rgb && !depth) return;
+#ifdef MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
+    rs2::align aligner(RS2_STREAM_COLOR);
+#else
+    rs2::align aligner(RS2_STREAM_DEPTH);
+#endif
+    auto aligned_frameset = aligner.process(current_frameset);
+
     if (rgb) {
         std::string name = "rgb." + serial;
-        rs2::video_frame image = current_frameset.get_color_frame();
+        rs2::video_frame image = aligned_frameset.get_color_frame();
 
         //const void* pointer = color.get_data();
         const size_t size = image.get_data_size();
@@ -619,8 +634,7 @@ void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
 
     if (depth) {
         std::string name = "depth." + serial;
-        rs2::video_frame image = current_frameset.get_depth_frame();
-        //const void* pointer = color.get_data();
+        rs2::video_frame image = aligned_frameset.get_depth_frame();
         const size_t size = image.get_data_size();
         int width = image.get_width();
         int height = image.get_height();
