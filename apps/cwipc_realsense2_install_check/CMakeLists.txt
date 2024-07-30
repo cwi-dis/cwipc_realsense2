@@ -10,3 +10,4 @@ target_link_libraries(cwipc_realsense2_install_check cwipc_realsense2)
 install(TARGETS cwipc_realsense2_install_check RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/cwipc)
 
 add_test(NAME cwipc_realsense2_install_check COMMAND cwipc_realsense2_install_check )
+set_tests_properties(cwipc_realsense2_install_check PROPERTIES RUN_SERIAL TRUE)
