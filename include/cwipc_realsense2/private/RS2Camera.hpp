@@ -20,7 +20,7 @@ protected:
     RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& configuration, RS2CameraConfig& _camData);
 
 public:
-    RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData, std::string _usb="0");
+    RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData);
     virtual ~RS2Camera();
 
     void start();
@@ -66,12 +66,13 @@ protected:
 protected:
     RS2CameraConfig& camera_config;
     RS2CameraProcessingParameters& camera_processing;
-    bool high_speed_connection;
     cwipc_pcl_pointcloud current_pointcloud;
 public:
-    int camera_width;
-    int camera_height;
-    int camera_fps;
+    int color_width;
+    int color_height;
+    int depth_width;
+    int depth_height;
+    int fps;
 protected:
     bool do_greenscreen_removal;
     bool do_height_filtering;

@@ -83,35 +83,7 @@ static bool isNotGreen(cwipc_pcl_point* p) {
     return true;
 }
 
-// Internal-only constructor for OfflineCamera constructor
-RS2Camera::RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& configuration, RS2CameraConfig& _camData) :
-  pointSize(0), minx(0), minz(0), maxz(0),
-  camera_index(_camera_index),
-  serial(_camData.serial),
-  stopped(true),
-  captured_frame_queue(1),
-  camera_config(_camData),
-  camera_processing(configuration.camera_processing),
-    current_pointcloud(nullptr),
-  high_speed_connection(true),
-  camera_width(0),
-  camera_height(0),
-  camera_fps(0),
-  do_greenscreen_removal(configuration.greenscreen_removal),
-  do_height_filtering(configuration.height_min != configuration.height_max),
-  height_min(configuration.height_min),
-  height_max(configuration.height_max),
-  grabber_thread(nullptr),
-  processing_frame_queue(1),
-  context(ctx),
-  pipe(ctx),
-  pipe_started(false),
-  aligner(RS2_STREAM_DEPTH)
-{
-    _init_filters();
-}
-
-RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camera_config, std::string _usb) :
+RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camera_config) :
   pointSize(0), minx(0), minz(0), maxz(0),
   camera_index(_camera_index),
   serial(_camera_config.serial),
@@ -120,10 +92,11 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   camera_config(_camera_config),
   camera_processing(configuration.camera_processing),
   current_pointcloud(nullptr),
-  high_speed_connection(_usb[0] == '3'),
-  camera_width(high_speed_connection ? configuration.usb3_width : configuration.usb2_width),
-  camera_height(high_speed_connection ? configuration.usb3_height : configuration.usb2_height),
-  camera_fps(high_speed_connection ? configuration.usb3_fps : configuration.usb2_fps),
+  color_width(configuration.color_width),
+  color_height(configuration.color_height),
+  depth_width(configuration.depth_width),
+  depth_height(configuration.depth_height),
+  fps(configuration.fps),
   do_greenscreen_removal(configuration.greenscreen_removal),
   do_height_filtering(configuration.height_min != configuration.height_max),
   height_min(configuration.height_min),
@@ -138,10 +111,6 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
 #ifdef CWIPC_DEBUG
     std::cout << "cwipc_realsense2: creating camera " << serial << std::endl;
 #endif
-
-    if (!high_speed_connection && !configuration.usb2allowed) {
-        cwipc_rs2_log_warning("Camera " + serial + " connected to USB2");
-    }
 
     if (configuration.record_to_directory != "") {
         record_to_file = configuration.record_to_directory + "/" + serial + ".bag";
@@ -202,8 +171,8 @@ void RS2Camera::start() {
     std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
 #endif
     _pre_start(cfg);
-    cfg.enable_stream(RS2_STREAM_COLOR, camera_width, camera_height, RS2_FORMAT_RGB8, camera_fps);
-    cfg.enable_stream(RS2_STREAM_DEPTH, camera_width, camera_height, RS2_FORMAT_Z16, camera_fps);
+    cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, fps);
+    cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, fps);
     // xxxjack need to set things like disabling color correction and auto-exposure
     // xxxjack need to allow setting things like laser power
     auto profile = pipe.start(cfg);   // Start streaming with the configuration just set
@@ -229,8 +198,8 @@ void RS2Camera::_post_start() {
     serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     camera_config.serial = serial;
     std::vector<rs2::sensor> sensors = dev.query_sensors();
-    int depth_fps = camera_fps;
-    int color_fps = camera_fps;
+    int depth_fps = fps;
+    int color_fps = fps;
     for(rs2::sensor sensor : sensors) {
         std::vector<rs2::stream_profile> streams = sensor.get_active_streams();
         for(rs2::stream_profile stream : streams) {
@@ -245,7 +214,7 @@ void RS2Camera::_post_start() {
     if (depth_fps != color_fps) {
         std::cerr << "RS2Camera: Warning: depth_fps=" << depth_fps << " and color_fps=" << color_fps << std::endl;
     }
-    camera_fps = depth_fps;
+    fps = depth_fps;
    
 }
 
@@ -266,8 +235,8 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
 
     // Compute 2D coordinates of adjacent pixels in the middle of the field of view
     float pixel0[2], pixel1[2];
-    pixel0[0] = camera_width / 2;
-    pixel0[1] = camera_height / 2;
+    pixel0[0] = depth_width / 2;
+    pixel0[1] = depth_height / 2;
     if (camera_processing.do_decimation) {
         pixel1[0] = pixel0[0] + camera_processing.decimation_value;
         pixel1[1] = pixel0[1] + camera_processing.decimation_value;
@@ -410,10 +379,11 @@ void RS2Camera::_processing_thread_main() {
         assert(depth);
         assert(color);
 
-        // set width/height to what the depth frame has.
-        // xxxjack this is a design flaw. We should have separate values for depth/color.
-        camera_width = depth.get_width();
-        camera_height = depth.get_height();
+        // set width/height to what the frames have.
+        color_width = color.get_width();
+        color_height = color.get_height();
+        depth_width = depth.get_width();
+        depth_height = depth.get_height();
 
         if (camera_processing.depth_x_erosion >0 || camera_processing.depth_y_erosion > 0) {
             _erode_depth(depth, camera_processing.depth_x_erosion, camera_processing.depth_y_erosion);

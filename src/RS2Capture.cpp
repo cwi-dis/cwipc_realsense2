@@ -122,17 +122,23 @@ std::string RS2Capture::config_get() {
     // get fps/width/height from all cameras
     // xxxjack this is a design flaw: these parameters should be stored in the camera configuration, not the capture configuration.
     int fps=0;
-    int width=0;
-    int height=0;
+    int color_width=0;
+    int color_height=0;
+    int depth_width=0;
+    int depth_height=0;
     for(auto cam : cameras) {
-        if (fps == 0) fps = cam->camera_fps;
-        if (width == 0) width = cam->camera_width;
-        if (height == 0) height = cam->camera_height;
+        if (fps == 0) fps = cam->fps;
+        if (color_width == 0) color_width = cam->color_width;
+        if (color_height == 0) color_height = cam->color_height;
+        if (depth_width == 0) depth_width = cam->depth_width;
+        if (depth_height == 0) depth_height = cam->depth_height;
         // xxxjack should we check that all cameras match?
     }
-    configuration.usb2_fps = configuration.usb3_fps = fps;
-    configuration.usb2_width = configuration.usb3_width = width;
-    configuration.usb2_height = configuration.usb3_height = height;
+    configuration.fps = fps;
+    configuration.color_width = color_width;
+    configuration.color_height = color_height;
+    configuration.depth_width = depth_width;
+    configuration.depth_height = depth_height;
     return cwipc_rs2_config2string(&configuration);
 }
 
@@ -372,8 +378,7 @@ bool RS2Capture::_create_cameras() {
 
         // Found a realsense camera. Create a default data entry for it.
         std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-        std::string camUsb(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-
+        
         RS2CameraConfig* cd = get_camera_config(serial);
 
         if (cd == nullptr) {
@@ -391,7 +396,7 @@ bool RS2Capture::_create_cameras() {
         if (cd->disabled) {
             // xxxnacho do we need to close the device, like the kinect case?
         } else {
-            auto cam = new RS2Camera(ctx(), configuration, camera_index, *cd, camUsb);
+            auto cam = new RS2Camera(ctx(), configuration, camera_index, *cd);
             cameras.push_back(cam);
             cd->connected = true;
         }

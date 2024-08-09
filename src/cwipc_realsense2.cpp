@@ -423,40 +423,6 @@ public:
     }
 };
 
-class cwipc_source_rs2offline_impl : public cwipc_offline {
-protected:
-  RS2Offline *m_offline;
-  cwipc_source_realsense2_impl *m_source;
-
-public:
-    cwipc_source_rs2offline_impl(cwipc_rs2offline_settings& settings, const char *configFilename=NULL) : m_offline(new RS2Offline(settings)), m_source(new cwipc_source_realsense2_impl(m_offline)) {
-        m_offline->config_reload(configFilename);
-    }
-
-    ~cwipc_source_rs2offline_impl() {
-        m_offline = NULL;
-        delete m_source;
-    }
-
-    bool is_valid() {
-        return m_offline != nullptr && m_offline->camera_count > 0;
-    }
-
-    void free() {
-        m_offline = NULL;
-        delete m_source;
-        m_source = NULL;
-    }
-
-    cwipc_tiledsource* get_source() {
-        return m_source;
-    }
-
-    bool feed(int camNum, int frameNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize) {
-        return m_offline->feed_image_data(camNum, frameNum, colorBuffer, colorSize, depthBuffer, depthSize);
-    }
-};
-
 //
 // C-compatible entry points
 //
@@ -528,53 +494,9 @@ cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **
     return NULL;
 }
 
-cwipc_offline* cwipc_rs2offline(cwipc_rs2offline_settings settings, const char *configFilename, char **errorMessage, uint64_t apiVersion) {
-    if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
-        if (errorMessage) {
-            char* msgbuf = (char*)malloc(1024);
-            snprintf(msgbuf, 1024, "cwipc_rs2offline: incorrect apiVersion 0x%08" PRIx64 " expected 0x%08" PRIx64 "..0x%08" PRIx64 "", apiVersion, CWIPC_API_VERSION_OLD, CWIPC_API_VERSION);
-            *errorMessage = msgbuf;
-        }
-
-        return NULL;
-    }
-
-    if (!rs2_versioncheck(errorMessage)) {
-        return NULL;
-    }
-
-    cwipc_rs2_warning_store = errorMessage;
-    cwipc_source_rs2offline_impl* rv = new cwipc_source_rs2offline_impl(settings, configFilename);
-    cwipc_rs2_warning_store = NULL;
-
-    if (rv && rv->is_valid()) {
-        return rv;
-    }
-
-    delete rv;
-
-    if (errorMessage && *errorMessage == NULL) {
-        *errorMessage = (char*)"cwipc_rs2offline: cannot open recording";
-    }
-
-    return NULL;
-}
-
-void cwipc_offline_free(cwipc_offline* obj, int camNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize) {
-    obj->free();
-}
-
-cwipc_tiledsource* cwipc_offline_get_source(cwipc_offline* obj) {
-    return obj->get_source();
-}
-
-bool cwipc_offline_feed(cwipc_offline* obj, int camNum, int frameNum, void *colorBuffer, size_t colorSize, void *depthBuffer, size_t depthSize) {
-    return obj->feed(camNum, frameNum, colorBuffer, colorSize, depthBuffer, depthSize);
-}
 
 //
 // These static variables only exist to ensure the initializer is called, which registers our camera type.
 //
 int _cwipc_dummy_realsense_initializer = _cwipc_register_capturer("realsense", RS2Capture::count_devices, cwipc_realsense2);
 int _cwipc_dummy_realsense_playback_initializer = _cwipc_register_capturer("realsense_playback", RS2PlaybackCapture::count_devices, cwipc_realsense2_playback);
-// int _cwipc_dummy_realsense_offline_initializer = _cwipc_register_capturer("realsense_offline", nullptr, cwipc_rs2offline);

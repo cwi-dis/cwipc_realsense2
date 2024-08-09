@@ -56,14 +56,12 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
 
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // system data
-    int usb3_width = 0;
-    int usb3_height = 0;
-    int usb3_fps = 0;
-    int usb2_width = 0;
-    int usb2_height = 0;
-    int usb2_fps = 0;
-    bool usb2allowed = false;                    // true if USB2 is allowed
-
+    int color_width = 0;
+    int color_height = 0;
+    int depth_width = 0;
+    int depth_height = 0;
+    int fps = 0;
+    
     // processing data
     bool greenscreen_removal = false;     // If true include greenscreen removal
     double height_min = 0.0;              // If height_min != height_max perform height filtering

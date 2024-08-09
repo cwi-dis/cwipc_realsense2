@@ -33,13 +33,12 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     // version and type should already have been checked.
 
     json system_data = json_data.at("system");
-    _MY_JSON_GET(system_data, usb2width, config, usb2_width);
-    _MY_JSON_GET(system_data, usb2height, config, usb2_height);
-    _MY_JSON_GET(system_data, usb2fps, config, usb2_fps);
-    _MY_JSON_GET(system_data, usb3width, config, usb3_width);
-    _MY_JSON_GET(system_data, usb3height, config, usb3_height);
-    _MY_JSON_GET(system_data, usb3fps, config, usb3_fps);
-    _MY_JSON_GET(system_data, usb2allowed, config, usb2allowed);
+    _MY_JSON_GET(system_data, color_width, config, color_width);
+    _MY_JSON_GET(system_data, color_height, config, color_height);
+    _MY_JSON_GET(system_data, fps, config, fps);
+    _MY_JSON_GET(system_data, depth_width, config, depth_width);
+    _MY_JSON_GET(system_data, depth_height, config, depth_height);
+    _MY_JSON_GET(system_data, fps, config, fps);
     _MY_JSON_GET(system_data, density_preferred, config, density);
     _MY_JSON_GET(system_data, exposure, config, exposure);
     _MY_JSON_GET(system_data, whitebalance, config, whitebalance);
@@ -152,13 +151,11 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json_data["postprocessing"] = postprocessing;
 
     json system_data;
-    _MY_JSON_PUT(system_data, usb2width, config, usb2_width);
-    _MY_JSON_PUT(system_data, usb2height, config, usb2_height);
-    _MY_JSON_PUT(system_data, usb2fps, config, usb2_fps);
-    _MY_JSON_PUT(system_data, usb3width, config, usb3_width);
-    _MY_JSON_PUT(system_data, usb3height, config, usb3_height);
-    _MY_JSON_PUT(system_data, usb3fps, config, usb3_fps);
-    _MY_JSON_PUT(system_data, usb2allowed, config, usb2allowed);
+    _MY_JSON_PUT(system_data, color_width, config, color_width);
+    _MY_JSON_PUT(system_data, color_height, config, color_height);
+    _MY_JSON_PUT(system_data, depth_width, config, depth_width);
+    _MY_JSON_PUT(system_data, depth_height, config, depth_height);
+    _MY_JSON_PUT(system_data, fps, config, fps);
     _MY_JSON_PUT(system_data, density_preferred, config, density);
     _MY_JSON_PUT(system_data, exposure, config, exposure);
     _MY_JSON_PUT(system_data, whitebalance, config, whitebalance);
@@ -167,7 +164,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
     json_data["system"] = system_data;
 
-    json_data["version"] = 3;
+    json_data["version"] = 4;
     json_data["type"] = config.type;
 }
 
@@ -186,8 +183,8 @@ bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config, s
         int version = 0;
         json_data.at("version").get_to(version);
 
-        if (version != 3) {
-            cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + " ignored, is not version 3");
+        if (version != 4) {
+            cwipc_rs2_log_warning(std::string("CameraConfig ") + filename + " ignored, is not version 4");
             return false;
         }
 
@@ -273,13 +270,11 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
     // get the system related information
     TiXmlElement* systemElement = configElement->FirstChildElement("system");
     if (systemElement) {
-        systemElement->QueryIntAttribute("usb2width", &(config->usb2_width));
-        systemElement->QueryIntAttribute("usb2height", &(config->usb2_height));
-        systemElement->QueryIntAttribute("usb2fps", &(config->usb2_fps));
-        systemElement->QueryIntAttribute("usb3width", &(config->usb3_width));
-        systemElement->QueryIntAttribute("usb3height", &(config->usb3_height));
-        systemElement->QueryIntAttribute("usb3fps", &(config->usb3_fps));
-        systemElement->QueryBoolAttribute("usb2allowed", &(config->usb2allowed));
+        systemElement->QueryIntAttribute("usb3width", &(config->color_width));
+        systemElement->QueryIntAttribute("usb3height", &(config->color_height));
+        systemElement->QueryIntAttribute("usb3width", &(config->depth_width));
+        systemElement->QueryIntAttribute("usb3height", &(config->depth_height));
+        systemElement->QueryIntAttribute("usb3fps", &(config->fps));
         systemElement->QueryBoolAttribute("density_preferred", &(config->density));
         systemElement->QueryIntAttribute("exposure", &(config->exposure));
         systemElement->QueryIntAttribute("whitebalance", &(config->whitebalance));
