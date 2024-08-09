@@ -12,8 +12,6 @@
 #include "cwipc_realsense2/private/RS2Camera.hpp"
 #include "cwipc_realsense2/private/RS2PlaybackCapture.hpp"
 #include "cwipc_realsense2/private/RS2PlaybackCamera.hpp"
-#include "cwipc_realsense2/private/RS2Offline.hpp"
-#include "cwipc_realsense2/private/RS2OfflineCamera.hpp"
 
 // Global variables (constants, really)
 
@@ -94,7 +92,6 @@ static cwipc_vector* cross_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector 
 }
 
 class cwipc_source_realsense2_impl : public cwipc_tiledsource {
-    friend class cwipc_source_rs2offline_impl;
     friend class cwipc_source_realsense2_playback_impl;
 protected:
     RS2Capture *m_grabber;

@@ -118,40 +118,6 @@ class TestApi(unittest.TestCase):
             if grabber: grabber.free()
             if pc: pc.free()
 
-    def test_cwipc_rs2offline(self):
-        """Test that we can create a pointcloud from offline images"""
-        if sys.platform == 'linux':
-            self.skipTest('rs2offline destructor will hang on Linux')
-        grabber = None
-        pc = None
-        try:
-            conffile = os.path.join(TEST_FIXTURES_DIR, 'input', 'offlineconfig.xml')
-            settings = _cwipc_realsense2.cwipc_offline_settings(
-                color=_cwipc_realsense2.cwipc_offline_camera_settings(
-                    width=640,
-                    height=480,
-                    bpp=3,
-                    fps=60,
-                    format=_cwipc_realsense2.RS2_FORMAT_RGB8()
-                ),
-                depth=_cwipc_realsense2.cwipc_offline_camera_settings(
-                    width=640,
-                    height=480,
-                    bpp=2,
-                    fps=60,
-                    format=_cwipc_realsense2.RS2_FORMAT_Z16()
-                ),
-        
-            )
-            converter = _cwipc_realsense2.cwipc_rs2offline(settings, conffile)
-            grabber = converter.get_source()
-            self.assertFalse(grabber.eof())
-            self.assertFalse(grabber.available(True))
-        finally:
-            if grabber: grabber.free()
-            if pc: pc.free()
-
-
     def _verify_pointcloud(self, pc : cwipc.cwipc_wrapper):
         points = pc.get_points()
         self.assertGreater(len(points), 1)
