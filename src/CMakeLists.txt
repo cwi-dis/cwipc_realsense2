@@ -14,8 +14,6 @@ add_library(cwipc_realsense2
 	RS2Camera.cpp 
 	RS2PlaybackCapture.cpp 
 	RS2PlaybackCamera.cpp 
-	RS2Offline.cpp 
-	RS2OfflineCamera.cpp 
 	RS2Config.cpp 
 	cwipc_pcl_additions.cpp 
 	${TINY_SRC}
@@ -28,8 +26,6 @@ target_sources(cwipc_realsense2
 	"../include/cwipc_realsense2/private/RS2Camera.hpp"
 	"../include/cwipc_realsense2/private/RS2PlaybackCapture.hpp"
 	"../include/cwipc_realsense2/private/RS2PlaybackCamera.hpp"
-	"../include/cwipc_realsense2/private/RS2Offline.hpp"
-	"../include/cwipc_realsense2/private/RS2OfflineCamera.hpp"
 	"../include/cwipc_realsense2/api.h"
 )
 
