@@ -328,7 +328,6 @@ bool RS2Capture::_apply_default_config() {
         pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
         default_trafo->setIdentity();
         cd.trafo = default_trafo;
-            cd.intrinsicTrafo = nullptr;
         cd.cameraposition = { 0, 0, 0 };
         configuration.all_camera_configs.push_back(cd);
     }
