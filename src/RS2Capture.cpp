@@ -149,47 +149,47 @@ void RS2Capture::_setup_camera_hardware_parameters() {
         auto depth_sensor = dev.first<rs2::depth_sensor>();
         auto color_sensor = dev.first<rs2::color_sensor>();
         // Options for color sensor
-        if (configuration.color_exposure >= 0) {
+        if (configuration.hardware.color_exposure >= 0) {
             assert(color_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
             color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
             assert (color_sensor.supports(RS2_OPTION_EXPOSURE));
-            color_sensor.set_option(RS2_OPTION_EXPOSURE, configuration.color_exposure);
+            color_sensor.set_option(RS2_OPTION_EXPOSURE, configuration.hardware.color_exposure);
         } else {
             if (color_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
                 color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
             }
         }
-        if (configuration.whitebalance >= 0) {
+        if (configuration.hardware.whitebalance >= 0) {
             if (color_sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) {
                 color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 0);
             }
 
             if (color_sensor.supports(RS2_OPTION_WHITE_BALANCE)) {
-                color_sensor.set_option(RS2_OPTION_WHITE_BALANCE, configuration.whitebalance);
+                color_sensor.set_option(RS2_OPTION_WHITE_BALANCE, configuration.hardware.whitebalance);
             }
         } else {
             if (color_sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) {
                 color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 1);
             }
         }
-        if (configuration.backlight_compensation >= 0) {
+        if (configuration.hardware.backlight_compensation >= 0) {
             if (color_sensor.supports(RS2_OPTION_BACKLIGHT_COMPENSATION)) {
-                color_sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.backlight_compensation);
+                color_sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.hardware.backlight_compensation);
             }
         }
         // Options for depth sensor
-        if (configuration.depth_exposure >= 0) {
+        if (configuration.hardware.depth_exposure >= 0) {
             assert(depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
             depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
             assert(depth_sensor.supports(RS2_OPTION_EXPOSURE));
-            depth_sensor.set_option(RS2_OPTION_EXPOSURE, configuration.depth_exposure);
+            depth_sensor.set_option(RS2_OPTION_EXPOSURE, configuration.hardware.depth_exposure);
         } else {
             if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
                 depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
             }
         }
-        if (depth_sensor.supports(RS2_OPTION_LASER_POWER) && configuration.laser_power >= 0) {
-            depth_sensor.set_option(RS2_OPTION_LASER_POWER, configuration.laser_power);
+        if (depth_sensor.supports(RS2_OPTION_LASER_POWER) && configuration.hardware.laser_power >= 0) {
+            depth_sensor.set_option(RS2_OPTION_LASER_POWER, configuration.hardware.laser_power);
         }
 
         // xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
@@ -197,7 +197,7 @@ void RS2Capture::_setup_camera_hardware_parameters() {
         if (depth_sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
             depth_sensor.set_option(
                 RS2_OPTION_VISUAL_PRESET,
-                configuration.density ? RS2_RS400_VISUAL_PRESET_HIGH_DENSITY : RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY
+                configuration.hardware.density ? RS2_RS400_VISUAL_PRESET_HIGH_DENSITY : RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY
             );
         }
     }

@@ -54,7 +54,12 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
 };
 
 struct RS2CameraHardwareConfig {
-
+    bool density = false;                 // Grab with high density (alternative is high accuracy)
+    int color_exposure = -1;              // Set exposure for color. -1 is auto.
+    int depth_exposure = -1;              // Set exposure for depth. -1 is auto.
+    int whitebalance = -1;                // Set whitebalance for color camera. -1 is auto.
+    int backlight_compensation = -1;      // Set backlight compesnation for color camera. -1 is don't change.
+    int laser_power = 360;                // Laser power. -1 is don't change.
 };
 
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {
@@ -69,12 +74,6 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     bool greenscreen_removal = false;     // If true include greenscreen removal
     double height_min = 0.0;              // If height_min != height_max perform height filtering
     double height_max = 0.0;              // If height_min != height_max perform height filtering
-    bool density = false;                 // Grab with high density (alternative is high accuracy)
-    int color_exposure = -1;              // Set exposure for color. -1 is auto.
-    int depth_exposure = -1;              // Set exposure for depth. -1 is auto.
-    int whitebalance = -1;                // Set whitebalance for color camera. -1 is auto.
-    int backlight_compensation = -1;      // Set backlight compesnation for color camera. -1 is don't change.
-    int laser_power = 360;                // Laser power. -1 is don't change.
 
     // special features
     bool want_auxdata_rgb = false;
@@ -83,7 +82,7 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
 
     RS2CameraProcessingParameters camera_processing;
     // realsense specific post processing filtering
-    RS2CameraHardwareConfig camera_hardware_config;
+    RS2CameraHardwareConfig hardware;
 
     // per camera data
     std::vector<RS2CameraConfig> all_camera_configs;

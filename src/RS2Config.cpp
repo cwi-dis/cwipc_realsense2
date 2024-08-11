@@ -33,18 +33,19 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     // version and type should already have been checked.
 
     json system_data = json_data.at("system");
+    json hardware_data = json_data.at("hardware");
     _MY_JSON_GET(system_data, color_width, config, color_width);
     _MY_JSON_GET(system_data, color_height, config, color_height);
     _MY_JSON_GET(system_data, fps, config, fps);
     _MY_JSON_GET(system_data, depth_width, config, depth_width);
     _MY_JSON_GET(system_data, depth_height, config, depth_height);
     _MY_JSON_GET(system_data, fps, config, fps);
-    _MY_JSON_GET(system_data, density_preferred, config, density);
-    _MY_JSON_GET(system_data, color_exposure, config, color_exposure);
-    _MY_JSON_GET(system_data, depth_exposure, config, depth_exposure);
-    _MY_JSON_GET(system_data, whitebalance, config, whitebalance);
-    _MY_JSON_GET(system_data, backlight_compensation, config, backlight_compensation);
-    _MY_JSON_GET(system_data, laser_power, config, laser_power);
+    _MY_JSON_GET(hardware_data, density_preferred, config.hardware, density);
+    _MY_JSON_GET(hardware_data, color_exposure, config.hardware, color_exposure);
+    _MY_JSON_GET(hardware_data, depth_exposure, config.hardware, depth_exposure);
+    _MY_JSON_GET(hardware_data, whitebalance, config.hardware, whitebalance);
+    _MY_JSON_GET(hardware_data, backlight_compensation, config.hardware, backlight_compensation);
+    _MY_JSON_GET(hardware_data, laser_power, config.hardware, laser_power);
     _MY_JSON_GET(system_data, record_to_directory, config, record_to_directory);
 
     json postprocessing = json_data.at("postprocessing");
@@ -151,19 +152,21 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json_data["postprocessing"] = postprocessing;
 
     json system_data;
+    json hardware_data;
     _MY_JSON_PUT(system_data, color_width, config, color_width);
     _MY_JSON_PUT(system_data, color_height, config, color_height);
     _MY_JSON_PUT(system_data, depth_width, config, depth_width);
     _MY_JSON_PUT(system_data, depth_height, config, depth_height);
     _MY_JSON_PUT(system_data, fps, config, fps);
-    _MY_JSON_PUT(system_data, density_preferred, config, density);
-    _MY_JSON_PUT(system_data, color_exposure, config, color_exposure);
-    _MY_JSON_PUT(system_data, depth_exposure, config, depth_exposure);
-    _MY_JSON_PUT(system_data, whitebalance, config, whitebalance);
-    _MY_JSON_PUT(system_data, backlight_compensation, config, backlight_compensation);
-    _MY_JSON_PUT(system_data, laser_power, config, laser_power);
-    _MY_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
+    _MY_JSON_PUT(hardware_data, density_preferred, config.hardware, density);
+    _MY_JSON_PUT(hardware_data, color_exposure, config.hardware, color_exposure);
+    _MY_JSON_PUT(hardware_data, depth_exposure, config.hardware, depth_exposure);
+    _MY_JSON_PUT(hardware_data, whitebalance, config.hardware, whitebalance);
+    _MY_JSON_PUT(hardware_data, backlight_compensation, config.hardware, backlight_compensation);
+    _MY_JSON_PUT(hardware_data, laser_power, config.hardware, laser_power);
+    _MY_JSON_PUT(hardware_data, record_to_directory, config, record_to_directory);
     json_data["system"] = system_data;
+    json_data["hardware"] = hardware_data;
 
     json_data["version"] = 4;
     json_data["type"] = config.type;
@@ -276,12 +279,12 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
         systemElement->QueryIntAttribute("usb3width", &(config->depth_width));
         systemElement->QueryIntAttribute("usb3height", &(config->depth_height));
         systemElement->QueryIntAttribute("usb3fps", &(config->fps));
-        systemElement->QueryBoolAttribute("density_preferred", &(config->density));
-        systemElement->QueryIntAttribute("exposure", &(config->color_exposure));
-        systemElement->QueryIntAttribute("exposure", &(config->depth_exposure));
-        systemElement->QueryIntAttribute("whitebalance", &(config->whitebalance));
-        systemElement->QueryIntAttribute("backlight_compensation", &(config->backlight_compensation));
-        systemElement->QueryIntAttribute("laser_power", &(config->laser_power));
+        systemElement->QueryBoolAttribute("density_preferred", &(config->hardware.density));
+        systemElement->QueryIntAttribute("exposure", &(config->hardware.color_exposure));
+        systemElement->QueryIntAttribute("exposure", &(config->hardware.depth_exposure));
+        systemElement->QueryIntAttribute("whitebalance", &(config->hardware.whitebalance));
+        systemElement->QueryIntAttribute("backlight_compensation", &(config->hardware.backlight_compensation));
+        systemElement->QueryIntAttribute("laser_power", &(config->hardware.laser_power));
     }
 
     // get the processing related information
