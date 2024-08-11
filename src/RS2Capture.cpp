@@ -121,24 +121,14 @@ bool RS2Capture::_check_cameras_connected() {
 std::string RS2Capture::config_get() {
     // get fps/width/height from all cameras
     // xxxjack this is a design flaw: these parameters should be stored in the camera configuration, not the capture configuration.
-    int fps=0;
-    int color_width=0;
-    int color_height=0;
-    int depth_width=0;
-    int depth_height=0;
+    bool must_set = true;
     for(auto cam : cameras) {
-        if (fps == 0) fps = cam->fps;
-        if (color_width == 0) color_width = cam->color_width;
-        if (color_height == 0) color_height = cam->color_height;
-        if (depth_width == 0) depth_width = cam->depth_width;
-        if (depth_height == 0) depth_height = cam->depth_height;
-        // xxxjack should we check that all cameras match?
+        bool ok = cam->getHardwareParameters(configuration.hardware, must_set);
+        must_set = false;
+        if (!ok) {
+            cwipc_rs2_log_warning("Not all cameras have the same hardware configuration");
+        }
     }
-    configuration.hardware.fps = fps;
-    configuration.hardware.color_width = color_width;
-    configuration.hardware.color_height = color_height;
-    configuration.hardware.depth_width = depth_width;
-    configuration.hardware.depth_height = depth_height;
     return cwipc_rs2_config2string(&configuration);
 }
 

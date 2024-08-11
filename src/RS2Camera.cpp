@@ -91,12 +91,8 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   captured_frame_queue(1),
   camera_config(_camera_config),
   postprocessing(configuration.postprocessing),
+  hardware(configuration.hardware),
   current_pointcloud(nullptr),
-  color_width(configuration.hardware.color_width),
-  color_height(configuration.hardware.color_height),
-  depth_width(configuration.hardware.depth_width),
-  depth_height(configuration.hardware.depth_height),
-  fps(configuration.hardware.fps),
   do_greenscreen_removal(configuration.greenscreen_removal),
   do_height_filtering(configuration.height_min != configuration.height_max),
   height_min(configuration.height_min),
@@ -124,6 +120,27 @@ RS2Camera::~RS2Camera() {
     std::cout << "cwipc_realsense2: destroying " << serial << std::endl;
 #endif
     assert(stopped);
+}
+
+bool RS2Camera::getHardwareParameters(RS2CameraHardwareConfig& output, bool match) {
+    if (match) {
+        return 
+            output.fps == hardware.fps &&
+
+            output.color_height == hardware.color_height &&
+            output.color_width == hardware.color_width &&
+            output.color_exposure == hardware.color_exposure &&
+            output.backlight_compensation == hardware.backlight_compensation &&
+            output.whitebalance == hardware.whitebalance &&
+
+            output.depth_exposure == hardware.depth_exposure &&
+            output.depth_height == hardware.depth_height &&
+            output.depth_width == hardware.depth_width &&
+            output.density == hardware.density &&
+            output.laser_power == hardware.laser_power;
+    }
+    output = hardware;
+    return true;
 }
 
 void RS2Camera::_init_filters() {
@@ -171,8 +188,8 @@ void RS2Camera::start() {
     std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
 #endif
     _pre_start(cfg);
-    cfg.enable_stream(RS2_STREAM_COLOR, color_width, color_height, RS2_FORMAT_RGB8, fps);
-    cfg.enable_stream(RS2_STREAM_DEPTH, depth_width, depth_height, RS2_FORMAT_Z16, fps);
+    cfg.enable_stream(RS2_STREAM_COLOR, hardware.color_width, hardware.color_height, RS2_FORMAT_RGB8, hardware.fps);
+    cfg.enable_stream(RS2_STREAM_DEPTH, hardware.depth_width, hardware.depth_height, RS2_FORMAT_Z16, hardware.fps);
     // xxxjack need to set things like disabling color correction and auto-exposure
     // xxxjack need to allow setting things like laser power
     auto profile = pipe.start(cfg);   // Start streaming with the configuration just set
@@ -198,8 +215,8 @@ void RS2Camera::_post_start() {
     serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     camera_config.serial = serial;
     std::vector<rs2::sensor> sensors = dev.query_sensors();
-    int depth_fps = fps;
-    int color_fps = fps;
+    int depth_fps = hardware.fps;
+    int color_fps = hardware.fps;
     for(rs2::sensor sensor : sensors) {
         std::vector<rs2::stream_profile> streams = sensor.get_active_streams();
         for(rs2::stream_profile stream : streams) {
@@ -214,7 +231,7 @@ void RS2Camera::_post_start() {
     if (depth_fps != color_fps) {
         std::cerr << "RS2Camera: Warning: depth_fps=" << depth_fps << " and color_fps=" << color_fps << std::endl;
     }
-    fps = depth_fps;
+    hardware.fps = depth_fps;
    
 }
 
@@ -235,8 +252,8 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
 
     // Compute 2D coordinates of adjacent pixels in the middle of the field of view
     float pixel0[2], pixel1[2];
-    pixel0[0] = depth_width / 2;
-    pixel0[1] = depth_height / 2;
+    pixel0[0] = hardware.depth_width / 2;
+    pixel0[1] = hardware.depth_height / 2;
     if (postprocessing.do_decimation) {
         pixel1[0] = pixel0[0] + postprocessing.decimation_value;
         pixel1[1] = pixel0[1] + postprocessing.decimation_value;
@@ -380,10 +397,10 @@ void RS2Camera::_processing_thread_main() {
         assert(color);
 
         // set width/height to what the frames have.
-        color_width = color.get_width();
-        color_height = color.get_height();
-        depth_width = depth.get_width();
-        depth_height = depth.get_height();
+        hardware.color_width = color.get_width();
+        hardware.color_height = color.get_height();
+        hardware.depth_width = depth.get_width();
+        hardware.depth_height = depth.get_height();
 
         if (postprocessing.depth_x_erosion >0 || postprocessing.depth_y_erosion > 0) {
             _erode_depth(depth, postprocessing.depth_x_erosion, postprocessing.depth_y_erosion);

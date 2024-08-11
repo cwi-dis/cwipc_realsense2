@@ -66,13 +66,11 @@ protected:
 protected:
     RS2CameraConfig& camera_config;
     RS2CameraProcessingParameters& postprocessing;
+    RS2CameraHardwareConfig& hardware;
     cwipc_pcl_pointcloud current_pointcloud;
+
 public:
-    int color_width;
-    int color_height;
-    int depth_width;
-    int depth_height;
-    int fps;
+    bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
 protected:
     bool do_greenscreen_removal;
     bool do_height_filtering;
