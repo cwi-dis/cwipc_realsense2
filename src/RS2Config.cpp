@@ -40,7 +40,8 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(system_data, depth_height, config, depth_height);
     _MY_JSON_GET(system_data, fps, config, fps);
     _MY_JSON_GET(system_data, density_preferred, config, density);
-    _MY_JSON_GET(system_data, exposure, config, exposure);
+    _MY_JSON_GET(system_data, color_exposure, config, color_exposure);
+    _MY_JSON_GET(system_data, depth_exposure, config, depth_exposure);
     _MY_JSON_GET(system_data, whitebalance, config, whitebalance);
     _MY_JSON_GET(system_data, backlight_compensation, config, backlight_compensation);
     _MY_JSON_GET(system_data, laser_power, config, laser_power);
@@ -156,7 +157,8 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(system_data, depth_height, config, depth_height);
     _MY_JSON_PUT(system_data, fps, config, fps);
     _MY_JSON_PUT(system_data, density_preferred, config, density);
-    _MY_JSON_PUT(system_data, exposure, config, exposure);
+    _MY_JSON_PUT(system_data, color_exposure, config, color_exposure);
+    _MY_JSON_PUT(system_data, depth_exposure, config, depth_exposure);
     _MY_JSON_PUT(system_data, whitebalance, config, whitebalance);
     _MY_JSON_PUT(system_data, backlight_compensation, config, backlight_compensation);
     _MY_JSON_PUT(system_data, laser_power, config, laser_power);
@@ -275,7 +277,8 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
         systemElement->QueryIntAttribute("usb3height", &(config->depth_height));
         systemElement->QueryIntAttribute("usb3fps", &(config->fps));
         systemElement->QueryBoolAttribute("density_preferred", &(config->density));
-        systemElement->QueryIntAttribute("exposure", &(config->exposure));
+        systemElement->QueryIntAttribute("exposure", &(config->color_exposure));
+        systemElement->QueryIntAttribute("exposure", &(config->depth_exposure));
         systemElement->QueryIntAttribute("whitebalance", &(config->whitebalance));
         systemElement->QueryIntAttribute("backlight_compensation", &(config->backlight_compensation));
         systemElement->QueryIntAttribute("laser_power", &(config->laser_power));

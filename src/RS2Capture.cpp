@@ -146,56 +146,59 @@ void RS2Capture::_setup_camera_hardware_parameters() {
     rs2::device_list devs = ctx().query_devices();
     for (auto dev : devs) {
         auto allSensors = dev.query_sensors();
-
-        for (auto sensor : allSensors) {
-            // Options for color sensor (but may work inadvertantly on dept sensors too?)
-            if (configuration.exposure >= 0) {
-                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-                }
-
-                if (sensor.supports(RS2_OPTION_EXPOSURE)) {
-                    sensor.set_option(RS2_OPTION_EXPOSURE, configuration.exposure);
-                }
-            } else {
-                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
-                }
+        auto depth_sensor = dev.first<rs2::depth_sensor>();
+        auto color_sensor = dev.first<rs2::color_sensor>();
+        // Options for color sensor
+        if (configuration.color_exposure >= 0) {
+            assert(color_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
+            color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+            assert (color_sensor.supports(RS2_OPTION_EXPOSURE));
+            color_sensor.set_option(RS2_OPTION_EXPOSURE, configuration.color_exposure);
+        } else {
+            if (color_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
+                color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
+            }
+        }
+        if (configuration.whitebalance >= 0) {
+            if (color_sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) {
+                color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 0);
             }
 
-            if (configuration.whitebalance >= 0) {
-                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) {
-                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 0);
-                }
-
-                if (sensor.supports(RS2_OPTION_WHITE_BALANCE)) {
-                    sensor.set_option(RS2_OPTION_WHITE_BALANCE, configuration.whitebalance);
-                }
-            } else {
-                if (sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) {
-                    sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 1);
-                }
+            if (color_sensor.supports(RS2_OPTION_WHITE_BALANCE)) {
+                color_sensor.set_option(RS2_OPTION_WHITE_BALANCE, configuration.whitebalance);
             }
-
-            if (configuration.backlight_compensation >= 0) {
-                if (sensor.supports(RS2_OPTION_BACKLIGHT_COMPENSATION)) {
-                    sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.backlight_compensation);
-                }
+        } else {
+            if (color_sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) {
+                color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 1);
             }
-
-            // Options for depth sensor
-            if (sensor.supports(RS2_OPTION_LASER_POWER) && configuration.laser_power >= 0) {
-                sensor.set_option(RS2_OPTION_LASER_POWER, configuration.laser_power);
+        }
+        if (configuration.backlight_compensation >= 0) {
+            if (color_sensor.supports(RS2_OPTION_BACKLIGHT_COMPENSATION)) {
+                color_sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.backlight_compensation);
             }
-
-            // xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
-            // suggests that this may depend on using 1280x720@30 with decimation=3. Need to check.
-            if (sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
-                sensor.set_option(
-                    RS2_OPTION_VISUAL_PRESET,
-                    configuration.density ? RS2_RS400_VISUAL_PRESET_HIGH_DENSITY : RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY
-                );
+        }
+        // Options for depth sensor
+        if (configuration.depth_exposure >= 0) {
+            assert(depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
+            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+            assert(depth_sensor.supports(RS2_OPTION_EXPOSURE));
+            depth_sensor.set_option(RS2_OPTION_EXPOSURE, configuration.depth_exposure);
+        } else {
+            if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
+                depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
             }
+        }
+        if (depth_sensor.supports(RS2_OPTION_LASER_POWER) && configuration.laser_power >= 0) {
+            depth_sensor.set_option(RS2_OPTION_LASER_POWER, configuration.laser_power);
+        }
+
+        // xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
+        // suggests that this may depend on using 1280x720@30 with decimation=3. Need to check.
+        if (depth_sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
+            depth_sensor.set_option(
+                RS2_OPTION_VISUAL_PRESET,
+                configuration.density ? RS2_RS400_VISUAL_PRESET_HIGH_DENSITY : RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY
+            );
         }
     }
 }
