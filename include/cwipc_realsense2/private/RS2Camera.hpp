@@ -65,7 +65,7 @@ protected:
 
 protected:
     RS2CameraConfig& camera_config;
-    RS2CameraProcessingParameters& camera_processing;
+    RS2CameraProcessingParameters& postprocessing;
     cwipc_pcl_pointcloud current_pointcloud;
 public:
     int color_width;

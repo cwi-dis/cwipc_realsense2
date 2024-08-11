@@ -54,6 +54,11 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
 };
 
 struct RS2CameraHardwareConfig {
+    int color_width = 0;
+    int color_height = 0;
+    int depth_width = 0;
+    int depth_height = 0;
+    int fps = 0;
     bool density = false;                 // Grab with high density (alternative is high accuracy)
     int color_exposure = -1;              // Set exposure for color. -1 is auto.
     int depth_exposure = -1;              // Set exposure for depth. -1 is auto.
@@ -64,11 +69,6 @@ struct RS2CameraHardwareConfig {
 
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // system data
-    int color_width = 0;
-    int color_height = 0;
-    int depth_width = 0;
-    int depth_height = 0;
-    int fps = 0;
     
     // processing data
     bool greenscreen_removal = false;     // If true include greenscreen removal
@@ -80,7 +80,7 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     bool want_auxdata_depth = false;
     std::string record_to_directory = ""; // If non-empty all camera streams will be recorded to this directory.
 
-    RS2CameraProcessingParameters camera_processing;
+    RS2CameraProcessingParameters postprocessing;
     // realsense specific post processing filtering
     RS2CameraHardwareConfig hardware;
 

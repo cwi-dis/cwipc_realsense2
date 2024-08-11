@@ -90,13 +90,13 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   stopped(true),
   captured_frame_queue(1),
   camera_config(_camera_config),
-  camera_processing(configuration.camera_processing),
+  postprocessing(configuration.postprocessing),
   current_pointcloud(nullptr),
-  color_width(configuration.color_width),
-  color_height(configuration.color_height),
-  depth_width(configuration.depth_width),
-  depth_height(configuration.depth_height),
-  fps(configuration.fps),
+  color_width(configuration.hardware.color_width),
+  color_height(configuration.hardware.color_height),
+  depth_width(configuration.hardware.depth_width),
+  depth_height(configuration.hardware.depth_height),
+  fps(configuration.hardware.fps),
   do_greenscreen_removal(configuration.greenscreen_removal),
   do_height_filtering(configuration.height_min != configuration.height_max),
   height_min(configuration.height_min),
@@ -127,26 +127,26 @@ RS2Camera::~RS2Camera() {
 }
 
 void RS2Camera::_init_filters() {
-    if (camera_processing.do_decimation) {
-        dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, camera_processing.decimation_value);
+    if (postprocessing.do_decimation) {
+        dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, postprocessing.decimation_value);
     }
 
-    if (camera_processing.do_threshold) {
-        threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, camera_processing.threshold_near);
-        threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, camera_processing.threshold_far);
+    if (postprocessing.do_threshold) {
+        threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, postprocessing.threshold_near);
+        threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, postprocessing.threshold_far);
     }
 
-    if (camera_processing.do_spatial) {
-        spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, camera_processing.spatial_iterations);
-        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, camera_processing.spatial_alpha);
-        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, camera_processing.spatial_delta);
-        spat_filter.set_option(RS2_OPTION_HOLES_FILL, camera_processing.spatial_filling);
+    if (postprocessing.do_spatial) {
+        spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, postprocessing.spatial_iterations);
+        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, postprocessing.spatial_alpha);
+        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, postprocessing.spatial_delta);
+        spat_filter.set_option(RS2_OPTION_HOLES_FILL, postprocessing.spatial_filling);
     }
 
-    if (camera_processing.do_temporal) {
-        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, camera_processing.temporal_alpha);
-        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, camera_processing.temporal_delta);
-        temp_filter.set_option(RS2_OPTION_HOLES_FILL, camera_processing.temporal_percistency);
+    if (postprocessing.do_temporal) {
+        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, postprocessing.temporal_alpha);
+        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, postprocessing.temporal_delta);
+        temp_filter.set_option(RS2_OPTION_HOLES_FILL, postprocessing.temporal_percistency);
     }
 }
 
@@ -237,9 +237,9 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
     float pixel0[2], pixel1[2];
     pixel0[0] = depth_width / 2;
     pixel0[1] = depth_height / 2;
-    if (camera_processing.do_decimation) {
-        pixel1[0] = pixel0[0] + camera_processing.decimation_value;
-        pixel1[1] = pixel0[1] + camera_processing.decimation_value;
+    if (postprocessing.do_decimation) {
+        pixel1[0] = pixel0[0] + postprocessing.decimation_value;
+        pixel1[1] = pixel0[1] + postprocessing.decimation_value;
     } else {
         pixel1[0] = pixel0[0] + 1;
         pixel1[1] = pixel0[1] + 1;
@@ -345,26 +345,26 @@ void RS2Camera::_processing_thread_main() {
 
         std::lock_guard<std::mutex> lock(processing_mutex);
 
-        bool do_depth_filtering = camera_processing.do_decimation || camera_processing.do_threshold || camera_processing.do_spatial || camera_processing.do_temporal;
+        bool do_depth_filtering = postprocessing.do_decimation || postprocessing.do_threshold || postprocessing.do_spatial || postprocessing.do_temporal;
         if (do_depth_filtering) {
             processing_frameset = processing_frameset.apply_filter(aligner);
 
-            if (camera_processing.do_decimation) {
+            if (postprocessing.do_decimation) {
                 processing_frameset = processing_frameset.apply_filter(dec_filter);
             }
 
-            if (camera_processing.do_threshold) {
+            if (postprocessing.do_threshold) {
                 processing_frameset = processing_frameset.apply_filter(threshold_filter);
             }
 
-            if (camera_processing.do_spatial || camera_processing.do_temporal) {
+            if (postprocessing.do_spatial || postprocessing.do_temporal) {
                 processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
 
-                if (camera_processing.do_spatial) {
+                if (postprocessing.do_spatial) {
                     processing_frameset = processing_frameset.apply_filter(spat_filter);
                 }
 
-                if (camera_processing.do_temporal) {
+                if (postprocessing.do_temporal) {
                     processing_frameset = processing_frameset.apply_filter(temp_filter);
                 }
 
@@ -385,8 +385,8 @@ void RS2Camera::_processing_thread_main() {
         depth_width = depth.get_width();
         depth_height = depth.get_height();
 
-        if (camera_processing.depth_x_erosion >0 || camera_processing.depth_y_erosion > 0) {
-            _erode_depth(depth, camera_processing.depth_x_erosion, camera_processing.depth_y_erosion);
+        if (postprocessing.depth_x_erosion >0 || postprocessing.depth_y_erosion > 0) {
+            _erode_depth(depth, postprocessing.depth_x_erosion, postprocessing.depth_y_erosion);
         }
 #ifdef CWIPC_DEBUG
         std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
@@ -481,8 +481,8 @@ void RS2Camera::_erode_depth(rs2::depth_frame depth_frame, int x_delta, int y_de
     assert(depth_frame.get_bytes_per_pixel() == 2);
     int width = depth_frame.get_width();
     int height = depth_frame.get_height();
-    int16_t min_depth = (int16_t)(camera_processing.threshold_near * 1000);
-    int16_t max_depth = (int16_t)(camera_processing.threshold_far * 1000);
+    int16_t min_depth = (int16_t)(postprocessing.threshold_near * 1000);
+    int16_t max_depth = (int16_t)(postprocessing.threshold_far * 1000);
     int16_t *z_values = (int16_t *)malloc(width * height*sizeof(int16_t));
 
     // Pass one: Copy Z values to temporary buffer.

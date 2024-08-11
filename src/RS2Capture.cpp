@@ -134,11 +134,11 @@ std::string RS2Capture::config_get() {
         if (depth_height == 0) depth_height = cam->depth_height;
         // xxxjack should we check that all cameras match?
     }
-    configuration.fps = fps;
-    configuration.color_width = color_width;
-    configuration.color_height = color_height;
-    configuration.depth_width = depth_width;
-    configuration.depth_height = depth_height;
+    configuration.hardware.fps = fps;
+    configuration.hardware.color_width = color_width;
+    configuration.hardware.color_height = color_height;
+    configuration.hardware.depth_width = depth_width;
+    configuration.hardware.depth_height = depth_height;
     return cwipc_rs2_config2string(&configuration);
 }
 

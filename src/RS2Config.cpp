@@ -34,12 +34,12 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
 
     json system_data = json_data.at("system");
     json hardware_data = json_data.at("hardware");
-    _MY_JSON_GET(system_data, color_width, config, color_width);
-    _MY_JSON_GET(system_data, color_height, config, color_height);
-    _MY_JSON_GET(system_data, fps, config, fps);
-    _MY_JSON_GET(system_data, depth_width, config, depth_width);
-    _MY_JSON_GET(system_data, depth_height, config, depth_height);
-    _MY_JSON_GET(system_data, fps, config, fps);
+    _MY_JSON_GET(hardware_data, color_width, config.hardware, color_width);
+    _MY_JSON_GET(hardware_data, color_height, config.hardware, color_height);
+    _MY_JSON_GET(hardware_data, fps, config.hardware, fps);
+    _MY_JSON_GET(hardware_data, depth_width, config.hardware, depth_width);
+    _MY_JSON_GET(hardware_data, depth_height, config.hardware, depth_height);
+    _MY_JSON_GET(hardware_data, fps, config.hardware, fps);
     _MY_JSON_GET(hardware_data, density_preferred, config.hardware, density);
     _MY_JSON_GET(hardware_data, color_exposure, config.hardware, color_exposure);
     _MY_JSON_GET(hardware_data, depth_exposure, config.hardware, depth_exposure);
@@ -54,20 +54,20 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(postprocessing, height_max, config, height_max);
 
     json depthfilterparameters = postprocessing.at("depthfilterparameters");
-    _MY_JSON_GET(depthfilterparameters, do_decimation, config.camera_processing, do_decimation);
-    _MY_JSON_GET(depthfilterparameters, decimation_value, config.camera_processing, decimation_value);
-    _MY_JSON_GET(depthfilterparameters, do_threshold, config.camera_processing, do_threshold);
-    _MY_JSON_GET(depthfilterparameters, threshold_near, config.camera_processing, threshold_near);
-    _MY_JSON_GET(depthfilterparameters, threshold_far, config.camera_processing, threshold_far);
-    _MY_JSON_GET(depthfilterparameters, do_spatial, config.camera_processing, do_spatial);
-    _MY_JSON_GET(depthfilterparameters, spatial_iterations, config.camera_processing, spatial_iterations);
-    _MY_JSON_GET(depthfilterparameters, spatial_alpha, config.camera_processing, spatial_alpha);
-    _MY_JSON_GET(depthfilterparameters, spatial_delta, config.camera_processing, spatial_delta);
-    _MY_JSON_GET(depthfilterparameters, spatial_filling, config.camera_processing, spatial_filling);
-    _MY_JSON_GET(depthfilterparameters, do_temporal, config.camera_processing, do_temporal);
-    _MY_JSON_GET(depthfilterparameters, temporal_alpha, config.camera_processing, temporal_alpha);
-    _MY_JSON_GET(depthfilterparameters, temporal_delta, config.camera_processing, temporal_delta);
-    _MY_JSON_GET(depthfilterparameters, temporal_percistency, config.camera_processing, temporal_percistency);
+    _MY_JSON_GET(depthfilterparameters, do_decimation, config.postprocessing, do_decimation);
+    _MY_JSON_GET(depthfilterparameters, decimation_value, config.postprocessing, decimation_value);
+    _MY_JSON_GET(depthfilterparameters, do_threshold, config.postprocessing, do_threshold);
+    _MY_JSON_GET(depthfilterparameters, threshold_near, config.postprocessing, threshold_near);
+    _MY_JSON_GET(depthfilterparameters, threshold_far, config.postprocessing, threshold_far);
+    _MY_JSON_GET(depthfilterparameters, do_spatial, config.postprocessing, do_spatial);
+    _MY_JSON_GET(depthfilterparameters, spatial_iterations, config.postprocessing, spatial_iterations);
+    _MY_JSON_GET(depthfilterparameters, spatial_alpha, config.postprocessing, spatial_alpha);
+    _MY_JSON_GET(depthfilterparameters, spatial_delta, config.postprocessing, spatial_delta);
+    _MY_JSON_GET(depthfilterparameters, spatial_filling, config.postprocessing, spatial_filling);
+    _MY_JSON_GET(depthfilterparameters, do_temporal, config.postprocessing, do_temporal);
+    _MY_JSON_GET(depthfilterparameters, temporal_alpha, config.postprocessing, temporal_alpha);
+    _MY_JSON_GET(depthfilterparameters, temporal_delta, config.postprocessing, temporal_delta);
+    _MY_JSON_GET(depthfilterparameters, temporal_percistency, config.postprocessing, temporal_percistency);
 
     json cameras = json_data.at("camera");
     int camera_index = 0;
@@ -128,20 +128,20 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json_data["camera"] = cameras;
 
     json depthfilterparameters;
-    _MY_JSON_PUT(depthfilterparameters, do_decimation, config.camera_processing, do_decimation);
-    _MY_JSON_PUT(depthfilterparameters, decimation_value, config.camera_processing, decimation_value);
-    _MY_JSON_PUT(depthfilterparameters, do_threshold, config.camera_processing, do_threshold);
-    _MY_JSON_PUT(depthfilterparameters, threshold_near, config.camera_processing, threshold_near);
-    _MY_JSON_PUT(depthfilterparameters, threshold_far, config.camera_processing, threshold_far);
-    _MY_JSON_PUT(depthfilterparameters, do_spatial, config.camera_processing, do_spatial);
-    _MY_JSON_PUT(depthfilterparameters, spatial_iterations, config.camera_processing, spatial_iterations);
-    _MY_JSON_PUT(depthfilterparameters, spatial_alpha, config.camera_processing, spatial_alpha);
-    _MY_JSON_PUT(depthfilterparameters, spatial_delta, config.camera_processing, spatial_delta);
-    _MY_JSON_PUT(depthfilterparameters, spatial_filling, config.camera_processing, spatial_filling);
-    _MY_JSON_PUT(depthfilterparameters, do_temporal, config.camera_processing, do_temporal);
-    _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.camera_processing, temporal_alpha);
-    _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.camera_processing, temporal_delta);
-    _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.camera_processing, temporal_percistency);
+    _MY_JSON_PUT(depthfilterparameters, do_decimation, config.postprocessing, do_decimation);
+    _MY_JSON_PUT(depthfilterparameters, decimation_value, config.postprocessing, decimation_value);
+    _MY_JSON_PUT(depthfilterparameters, do_threshold, config.postprocessing, do_threshold);
+    _MY_JSON_PUT(depthfilterparameters, threshold_near, config.postprocessing, threshold_near);
+    _MY_JSON_PUT(depthfilterparameters, threshold_far, config.postprocessing, threshold_far);
+    _MY_JSON_PUT(depthfilterparameters, do_spatial, config.postprocessing, do_spatial);
+    _MY_JSON_PUT(depthfilterparameters, spatial_iterations, config.postprocessing, spatial_iterations);
+    _MY_JSON_PUT(depthfilterparameters, spatial_alpha, config.postprocessing, spatial_alpha);
+    _MY_JSON_PUT(depthfilterparameters, spatial_delta, config.postprocessing, spatial_delta);
+    _MY_JSON_PUT(depthfilterparameters, spatial_filling, config.postprocessing, spatial_filling);
+    _MY_JSON_PUT(depthfilterparameters, do_temporal, config.postprocessing, do_temporal);
+    _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.postprocessing, temporal_alpha);
+    _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.postprocessing, temporal_delta);
+    _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.postprocessing, temporal_percistency);
 
     json postprocessing;
     postprocessing["depthfilterparameters"] = depthfilterparameters;
@@ -153,11 +153,11 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
 
     json system_data;
     json hardware_data;
-    _MY_JSON_PUT(system_data, color_width, config, color_width);
-    _MY_JSON_PUT(system_data, color_height, config, color_height);
-    _MY_JSON_PUT(system_data, depth_width, config, depth_width);
-    _MY_JSON_PUT(system_data, depth_height, config, depth_height);
-    _MY_JSON_PUT(system_data, fps, config, fps);
+    _MY_JSON_PUT(hardware_data, color_width, config.hardware, color_width);
+    _MY_JSON_PUT(hardware_data, color_height, config.hardware, color_height);
+    _MY_JSON_PUT(hardware_data, depth_width, config.hardware, depth_width);
+    _MY_JSON_PUT(hardware_data, depth_height, config.hardware, depth_height);
+    _MY_JSON_PUT(hardware_data, fps, config.hardware, fps);
     _MY_JSON_PUT(hardware_data, density_preferred, config.hardware, density);
     _MY_JSON_PUT(hardware_data, color_exposure, config.hardware, color_exposure);
     _MY_JSON_PUT(hardware_data, depth_exposure, config.hardware, depth_exposure);
@@ -274,11 +274,11 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
     // get the system related information
     TiXmlElement* systemElement = configElement->FirstChildElement("system");
     if (systemElement) {
-        systemElement->QueryIntAttribute("usb3width", &(config->color_width));
-        systemElement->QueryIntAttribute("usb3height", &(config->color_height));
-        systemElement->QueryIntAttribute("usb3width", &(config->depth_width));
-        systemElement->QueryIntAttribute("usb3height", &(config->depth_height));
-        systemElement->QueryIntAttribute("usb3fps", &(config->fps));
+        systemElement->QueryIntAttribute("usb3width", &(config->hardware.color_width));
+        systemElement->QueryIntAttribute("usb3height", &(config->hardware.color_height));
+        systemElement->QueryIntAttribute("usb3width", &(config->hardware.depth_width));
+        systemElement->QueryIntAttribute("usb3height", &(config->hardware.depth_height));
+        systemElement->QueryIntAttribute("usb3fps", &(config->hardware.fps));
         systemElement->QueryBoolAttribute("density_preferred", &(config->hardware.density));
         systemElement->QueryIntAttribute("exposure", &(config->hardware.color_exposure));
         systemElement->QueryIntAttribute("exposure", &(config->hardware.depth_exposure));
@@ -296,22 +296,22 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
 
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
-            parameterElement->QueryBoolAttribute("do_decimation", &(config->camera_processing.do_decimation));
-            parameterElement->QueryIntAttribute("decimation_value", &(config->camera_processing.decimation_value));
-            parameterElement->QueryBoolAttribute("do_threshold", &(config->camera_processing.do_threshold));
-            parameterElement->QueryDoubleAttribute("threshold_near", &(config->camera_processing.threshold_near));
-            parameterElement->QueryDoubleAttribute("threshold_far", &(config->camera_processing.threshold_far));
-            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->camera_processing.depth_x_erosion));
-            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->camera_processing.depth_y_erosion));
-            parameterElement->QueryBoolAttribute("do_spatial", &(config->camera_processing.do_spatial));
-            parameterElement->QueryIntAttribute("spatial_iterations", &(config->camera_processing.spatial_iterations));
-            parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->camera_processing.spatial_alpha));
-            parameterElement->QueryIntAttribute("spatial_delta", &(config->camera_processing.spatial_delta));
-            parameterElement->QueryIntAttribute("spatial_filling", &(config->camera_processing.spatial_filling));
-            parameterElement->QueryBoolAttribute("do_temporal", &(config->camera_processing.do_temporal));
-            parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->camera_processing.temporal_alpha));
-            parameterElement->QueryIntAttribute("temporal_delta", &(config->camera_processing.temporal_delta));
-            parameterElement->QueryIntAttribute("temporal_percistency", &(config->camera_processing.temporal_percistency));
+            parameterElement->QueryBoolAttribute("do_decimation", &(config->postprocessing.do_decimation));
+            parameterElement->QueryIntAttribute("decimation_value", &(config->postprocessing.decimation_value));
+            parameterElement->QueryBoolAttribute("do_threshold", &(config->postprocessing.do_threshold));
+            parameterElement->QueryDoubleAttribute("threshold_near", &(config->postprocessing.threshold_near));
+            parameterElement->QueryDoubleAttribute("threshold_far", &(config->postprocessing.threshold_far));
+            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->postprocessing.depth_x_erosion));
+            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->postprocessing.depth_y_erosion));
+            parameterElement->QueryBoolAttribute("do_spatial", &(config->postprocessing.do_spatial));
+            parameterElement->QueryIntAttribute("spatial_iterations", &(config->postprocessing.spatial_iterations));
+            parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->postprocessing.spatial_alpha));
+            parameterElement->QueryIntAttribute("spatial_delta", &(config->postprocessing.spatial_delta));
+            parameterElement->QueryIntAttribute("spatial_filling", &(config->postprocessing.spatial_filling));
+            parameterElement->QueryBoolAttribute("do_temporal", &(config->postprocessing.do_temporal));
+            parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->postprocessing.temporal_alpha));
+            parameterElement->QueryIntAttribute("temporal_delta", &(config->postprocessing.temporal_delta));
+            parameterElement->QueryIntAttribute("temporal_percistency", &(config->postprocessing.temporal_percistency));
         }
     }
 
