@@ -90,7 +90,7 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   stopped(true),
   captured_frame_queue(1),
   camera_config(_camera_config),
-  postprocessing(configuration.postprocessing),
+  filtering(configuration.filtering),
   processing(configuration.processing),
   hardware(configuration.hardware),
   current_pointcloud(nullptr),
@@ -141,26 +141,26 @@ bool RS2Camera::getHardwareParameters(RS2CameraHardwareConfig& output, bool matc
 }
 
 void RS2Camera::_init_filters() {
-    if (postprocessing.do_decimation) {
-        dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, postprocessing.decimation_value);
+    if (filtering.do_decimation) {
+        dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.decimation_value);
     }
 
-    if (postprocessing.do_threshold) {
-        threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, postprocessing.threshold_near);
-        threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, postprocessing.threshold_far);
+    if (filtering.do_threshold) {
+        threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, filtering.threshold_near);
+        threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, filtering.threshold_far);
     }
 
-    if (postprocessing.do_spatial) {
-        spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, postprocessing.spatial_iterations);
-        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, postprocessing.spatial_alpha);
-        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, postprocessing.spatial_delta);
-        spat_filter.set_option(RS2_OPTION_HOLES_FILL, postprocessing.spatial_filling);
+    if (filtering.do_spatial) {
+        spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.spatial_iterations);
+        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.spatial_alpha);
+        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.spatial_delta);
+        spat_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.spatial_filling);
     }
 
-    if (postprocessing.do_temporal) {
-        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, postprocessing.temporal_alpha);
-        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, postprocessing.temporal_delta);
-        temp_filter.set_option(RS2_OPTION_HOLES_FILL, postprocessing.temporal_percistency);
+    if (filtering.do_temporal) {
+        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.temporal_alpha);
+        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.temporal_delta);
+        temp_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.temporal_percistency);
     }
 }
 
@@ -251,9 +251,9 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
     float pixel0[2], pixel1[2];
     pixel0[0] = hardware.depth_width / 2;
     pixel0[1] = hardware.depth_height / 2;
-    if (postprocessing.do_decimation) {
-        pixel1[0] = pixel0[0] + postprocessing.decimation_value;
-        pixel1[1] = pixel0[1] + postprocessing.decimation_value;
+    if (filtering.do_decimation) {
+        pixel1[0] = pixel0[0] + filtering.decimation_value;
+        pixel1[1] = pixel0[1] + filtering.decimation_value;
     } else {
         pixel1[0] = pixel0[0] + 1;
         pixel1[1] = pixel0[1] + 1;
@@ -359,26 +359,26 @@ void RS2Camera::_processing_thread_main() {
 
         std::lock_guard<std::mutex> lock(processing_mutex);
 
-        bool do_depth_filtering = postprocessing.do_decimation || postprocessing.do_threshold || postprocessing.do_spatial || postprocessing.do_temporal;
+        bool do_depth_filtering = filtering.do_decimation || filtering.do_threshold || filtering.do_spatial || filtering.do_temporal;
         if (do_depth_filtering) {
             processing_frameset = processing_frameset.apply_filter(aligner);
 
-            if (postprocessing.do_decimation) {
+            if (filtering.do_decimation) {
                 processing_frameset = processing_frameset.apply_filter(dec_filter);
             }
 
-            if (postprocessing.do_threshold) {
+            if (filtering.do_threshold) {
                 processing_frameset = processing_frameset.apply_filter(threshold_filter);
             }
 
-            if (postprocessing.do_spatial || postprocessing.do_temporal) {
+            if (filtering.do_spatial || filtering.do_temporal) {
                 processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
 
-                if (postprocessing.do_spatial) {
+                if (filtering.do_spatial) {
                     processing_frameset = processing_frameset.apply_filter(spat_filter);
                 }
 
-                if (postprocessing.do_temporal) {
+                if (filtering.do_temporal) {
                     processing_frameset = processing_frameset.apply_filter(temp_filter);
                 }
 
@@ -399,8 +399,8 @@ void RS2Camera::_processing_thread_main() {
         hardware.depth_width = depth.get_width();
         hardware.depth_height = depth.get_height();
 
-        if (postprocessing.depth_x_erosion >0 || postprocessing.depth_y_erosion > 0) {
-            _erode_depth(depth, postprocessing.depth_x_erosion, postprocessing.depth_y_erosion);
+        if (filtering.depth_x_erosion >0 || filtering.depth_y_erosion > 0) {
+            _erode_depth(depth, filtering.depth_x_erosion, filtering.depth_y_erosion);
         }
 #ifdef CWIPC_DEBUG
         std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
@@ -499,8 +499,8 @@ void RS2Camera::_erode_depth(rs2::depth_frame depth_frame, int x_delta, int y_de
     assert(depth_frame.get_bytes_per_pixel() == 2);
     int width = depth_frame.get_width();
     int height = depth_frame.get_height();
-    int16_t min_depth = (int16_t)(postprocessing.threshold_near * 1000);
-    int16_t max_depth = (int16_t)(postprocessing.threshold_far * 1000);
+    int16_t min_depth = (int16_t)(filtering.threshold_near * 1000);
+    int16_t max_depth = (int16_t)(filtering.threshold_far * 1000);
     int16_t *z_values = (int16_t *)malloc(width * height*sizeof(int16_t));
 
     // Pass one: Copy Z values to temporary buffer.

@@ -66,7 +66,7 @@ protected:
 protected:
     RS2CameraConfig& camera_config;
     RS2CaptureProcessingConfig& processing;
-    RS2CameraProcessingParameters& postprocessing;
+    RS2CameraProcessingParameters& filtering;
     RS2CameraHardwareConfig& hardware;
     cwipc_pcl_pointcloud current_pointcloud;
 

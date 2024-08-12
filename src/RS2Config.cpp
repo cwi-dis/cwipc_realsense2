@@ -54,20 +54,20 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(processing, height_max, config.processing, height_max);
 
     json depthfilterparameters = json_data.at("depthfilterparameters");
-    _MY_JSON_GET(depthfilterparameters, do_decimation, config.postprocessing, do_decimation);
-    _MY_JSON_GET(depthfilterparameters, decimation_value, config.postprocessing, decimation_value);
-    _MY_JSON_GET(depthfilterparameters, do_threshold, config.postprocessing, do_threshold);
-    _MY_JSON_GET(depthfilterparameters, threshold_near, config.postprocessing, threshold_near);
-    _MY_JSON_GET(depthfilterparameters, threshold_far, config.postprocessing, threshold_far);
-    _MY_JSON_GET(depthfilterparameters, do_spatial, config.postprocessing, do_spatial);
-    _MY_JSON_GET(depthfilterparameters, spatial_iterations, config.postprocessing, spatial_iterations);
-    _MY_JSON_GET(depthfilterparameters, spatial_alpha, config.postprocessing, spatial_alpha);
-    _MY_JSON_GET(depthfilterparameters, spatial_delta, config.postprocessing, spatial_delta);
-    _MY_JSON_GET(depthfilterparameters, spatial_filling, config.postprocessing, spatial_filling);
-    _MY_JSON_GET(depthfilterparameters, do_temporal, config.postprocessing, do_temporal);
-    _MY_JSON_GET(depthfilterparameters, temporal_alpha, config.postprocessing, temporal_alpha);
-    _MY_JSON_GET(depthfilterparameters, temporal_delta, config.postprocessing, temporal_delta);
-    _MY_JSON_GET(depthfilterparameters, temporal_percistency, config.postprocessing, temporal_percistency);
+    _MY_JSON_GET(depthfilterparameters, do_decimation, config.filtering, do_decimation);
+    _MY_JSON_GET(depthfilterparameters, decimation_value, config.filtering, decimation_value);
+    _MY_JSON_GET(depthfilterparameters, do_threshold, config.filtering, do_threshold);
+    _MY_JSON_GET(depthfilterparameters, threshold_near, config.filtering, threshold_near);
+    _MY_JSON_GET(depthfilterparameters, threshold_far, config.filtering, threshold_far);
+    _MY_JSON_GET(depthfilterparameters, do_spatial, config.filtering, do_spatial);
+    _MY_JSON_GET(depthfilterparameters, spatial_iterations, config.filtering, spatial_iterations);
+    _MY_JSON_GET(depthfilterparameters, spatial_alpha, config.filtering, spatial_alpha);
+    _MY_JSON_GET(depthfilterparameters, spatial_delta, config.filtering, spatial_delta);
+    _MY_JSON_GET(depthfilterparameters, spatial_filling, config.filtering, spatial_filling);
+    _MY_JSON_GET(depthfilterparameters, do_temporal, config.filtering, do_temporal);
+    _MY_JSON_GET(depthfilterparameters, temporal_alpha, config.filtering, temporal_alpha);
+    _MY_JSON_GET(depthfilterparameters, temporal_delta, config.filtering, temporal_delta);
+    _MY_JSON_GET(depthfilterparameters, temporal_percistency, config.filtering, temporal_percistency);
 
     json cameras = json_data.at("camera");
     int camera_index = 0;
@@ -128,20 +128,20 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json_data["camera"] = cameras;
 
     json depthfilterparameters;
-    _MY_JSON_PUT(depthfilterparameters, do_decimation, config.postprocessing, do_decimation);
-    _MY_JSON_PUT(depthfilterparameters, decimation_value, config.postprocessing, decimation_value);
-    _MY_JSON_PUT(depthfilterparameters, do_threshold, config.postprocessing, do_threshold);
-    _MY_JSON_PUT(depthfilterparameters, threshold_near, config.postprocessing, threshold_near);
-    _MY_JSON_PUT(depthfilterparameters, threshold_far, config.postprocessing, threshold_far);
-    _MY_JSON_PUT(depthfilterparameters, do_spatial, config.postprocessing, do_spatial);
-    _MY_JSON_PUT(depthfilterparameters, spatial_iterations, config.postprocessing, spatial_iterations);
-    _MY_JSON_PUT(depthfilterparameters, spatial_alpha, config.postprocessing, spatial_alpha);
-    _MY_JSON_PUT(depthfilterparameters, spatial_delta, config.postprocessing, spatial_delta);
-    _MY_JSON_PUT(depthfilterparameters, spatial_filling, config.postprocessing, spatial_filling);
-    _MY_JSON_PUT(depthfilterparameters, do_temporal, config.postprocessing, do_temporal);
-    _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.postprocessing, temporal_alpha);
-    _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.postprocessing, temporal_delta);
-    _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.postprocessing, temporal_percistency);
+    _MY_JSON_PUT(depthfilterparameters, do_decimation, config.filtering, do_decimation);
+    _MY_JSON_PUT(depthfilterparameters, decimation_value, config.filtering, decimation_value);
+    _MY_JSON_PUT(depthfilterparameters, do_threshold, config.filtering, do_threshold);
+    _MY_JSON_PUT(depthfilterparameters, threshold_near, config.filtering, threshold_near);
+    _MY_JSON_PUT(depthfilterparameters, threshold_far, config.filtering, threshold_far);
+    _MY_JSON_PUT(depthfilterparameters, do_spatial, config.filtering, do_spatial);
+    _MY_JSON_PUT(depthfilterparameters, spatial_iterations, config.filtering, spatial_iterations);
+    _MY_JSON_PUT(depthfilterparameters, spatial_alpha, config.filtering, spatial_alpha);
+    _MY_JSON_PUT(depthfilterparameters, spatial_delta, config.filtering, spatial_delta);
+    _MY_JSON_PUT(depthfilterparameters, spatial_filling, config.filtering, spatial_filling);
+    _MY_JSON_PUT(depthfilterparameters, do_temporal, config.filtering, do_temporal);
+    _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.filtering, temporal_alpha);
+    _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.filtering, temporal_delta);
+    _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.filtering, temporal_percistency);
     json_data["depthfilterparameters"] = depthfilterparameters;
 
     json processing;
@@ -295,22 +295,22 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
 
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
-            parameterElement->QueryBoolAttribute("do_decimation", &(config->postprocessing.do_decimation));
-            parameterElement->QueryIntAttribute("decimation_value", &(config->postprocessing.decimation_value));
-            parameterElement->QueryBoolAttribute("do_threshold", &(config->postprocessing.do_threshold));
-            parameterElement->QueryDoubleAttribute("threshold_near", &(config->postprocessing.threshold_near));
-            parameterElement->QueryDoubleAttribute("threshold_far", &(config->postprocessing.threshold_far));
-            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->postprocessing.depth_x_erosion));
-            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->postprocessing.depth_y_erosion));
-            parameterElement->QueryBoolAttribute("do_spatial", &(config->postprocessing.do_spatial));
-            parameterElement->QueryIntAttribute("spatial_iterations", &(config->postprocessing.spatial_iterations));
-            parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->postprocessing.spatial_alpha));
-            parameterElement->QueryIntAttribute("spatial_delta", &(config->postprocessing.spatial_delta));
-            parameterElement->QueryIntAttribute("spatial_filling", &(config->postprocessing.spatial_filling));
-            parameterElement->QueryBoolAttribute("do_temporal", &(config->postprocessing.do_temporal));
-            parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->postprocessing.temporal_alpha));
-            parameterElement->QueryIntAttribute("temporal_delta", &(config->postprocessing.temporal_delta));
-            parameterElement->QueryIntAttribute("temporal_percistency", &(config->postprocessing.temporal_percistency));
+            parameterElement->QueryBoolAttribute("do_decimation", &(config->filtering.do_decimation));
+            parameterElement->QueryIntAttribute("decimation_value", &(config->filtering.decimation_value));
+            parameterElement->QueryBoolAttribute("do_threshold", &(config->filtering.do_threshold));
+            parameterElement->QueryDoubleAttribute("threshold_near", &(config->filtering.threshold_near));
+            parameterElement->QueryDoubleAttribute("threshold_far", &(config->filtering.threshold_far));
+            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->filtering.depth_x_erosion));
+            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->filtering.depth_y_erosion));
+            parameterElement->QueryBoolAttribute("do_spatial", &(config->filtering.do_spatial));
+            parameterElement->QueryIntAttribute("spatial_iterations", &(config->filtering.spatial_iterations));
+            parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->filtering.spatial_alpha));
+            parameterElement->QueryIntAttribute("spatial_delta", &(config->filtering.spatial_delta));
+            parameterElement->QueryIntAttribute("spatial_filling", &(config->filtering.spatial_filling));
+            parameterElement->QueryBoolAttribute("do_temporal", &(config->filtering.do_temporal));
+            parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->filtering.temporal_alpha));
+            parameterElement->QueryIntAttribute("temporal_delta", &(config->filtering.temporal_delta));
+            parameterElement->QueryIntAttribute("temporal_percistency", &(config->filtering.temporal_percistency));
         }
     }
 

@@ -79,7 +79,7 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // camera-independent processing (implemented in our code)
     RS2CaptureProcessingConfig processing;
     // Realsense-dependent processing (implemented in librealsense)
-    RS2CameraProcessingParameters postprocessing;
+    RS2CameraProcessingParameters filtering;
     // Hardware parameters and processing (implemented in the camera hardware)
     RS2CameraHardwareConfig hardware;
 
