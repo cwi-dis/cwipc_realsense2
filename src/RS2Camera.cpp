@@ -400,13 +400,30 @@ void RS2Camera::_processing_thread_main() {
         assert(depth);
         assert(color);
 
-        // compare width/height to what the frames have.
-        assert(hardware.color_width == color.get_width());
-        assert(hardware.color_height == color.get_height());
-        assert(hardware.depth_width == depth.get_width());
-        assert(hardware.depth_height == depth.get_height());
+        int color_width = color.get_width();
+        int color_height = color.get_height();
+        int depth_width = depth.get_width();
+        int depth_height = depth.get_height();
 
-        if (processing.depth_x_erosion >0 || processing.depth_y_erosion > 0) {
+        // compare width/height to what the frames have.
+        if(hardware.color_width != 0 && hardware.color_width != color_width) {
+            std::cerr << "RS2Camera: color frame width " << color_width << ", expected " << hardware.color_width << std::endl;
+        }
+        if(hardware.color_height != 0 && hardware.color_height != color_height) {
+            std::cerr << "RS2Camera: color frame height " << color_height << ", expected " << hardware.color_height << std::endl;
+        }
+        if(hardware.depth_width != 0 && hardware.depth_width != depth_width) {
+            std::cerr << "RS2Camera: depth frame width " << depth_width << ", expected " << hardware.depth_width << std::endl;
+        }
+        if(hardware.depth_height != 0 && hardware.depth_height != depth_height) {
+            std::cerr << "RS2Camera: depth frame height " << depth_height << ", expected " << hardware.depth_height << std::endl;
+        }
+        hardware.color_width = color_width;
+        hardware.color_height = color_height;
+        hardware.depth_width = depth_width;
+        hardware.depth_height = depth_height;
+
+        if (processing.depth_x_erosion > 0 || processing.depth_y_erosion > 0) {
             _erode_depth(depth, processing.depth_x_erosion, processing.depth_y_erosion);
         }
 #ifdef CWIPC_DEBUG
