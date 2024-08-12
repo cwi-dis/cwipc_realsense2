@@ -91,12 +91,9 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   captured_frame_queue(1),
   camera_config(_camera_config),
   postprocessing(configuration.postprocessing),
+  processing(configuration.processing),
   hardware(configuration.hardware),
   current_pointcloud(nullptr),
-  do_greenscreen_removal(configuration.processing.greenscreen_removal),
-  do_height_filtering(configuration.processing.height_min != configuration.processing.height_max),
-  height_min(configuration.processing.height_min),
-  height_max(configuration.processing.height_max),
   grabber_thread(nullptr),
   processing_frame_queue(1),
   context(ctx),
@@ -429,6 +426,10 @@ void RS2Camera::_processing_thread_main() {
 
         {
             // Make PointCloud
+            float height_min = processing.height_min;
+            float height_max = processing.height_max;
+            bool do_height_filtering = height_min < height_max;
+            bool do_greenscreen_removal = processing.greenscreen_removal;
             for (int i = 0; i < points.size(); i++) {
                 // Skip points with z=0 (they don't exist)
                 if (vertices[i].z == 0) {

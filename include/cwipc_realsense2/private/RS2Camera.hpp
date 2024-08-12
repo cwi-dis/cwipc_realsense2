@@ -65,6 +65,7 @@ protected:
 
 protected:
     RS2CameraConfig& camera_config;
+    RS2CaptureProcessingConfig& processing;
     RS2CameraProcessingParameters& postprocessing;
     RS2CameraHardwareConfig& hardware;
     cwipc_pcl_pointcloud current_pointcloud;
@@ -72,10 +73,6 @@ protected:
 public:
     bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
 protected:
-    bool do_greenscreen_removal;
-    bool do_height_filtering;
-    double height_min;
-    double height_max;
 
     std::string record_to_file;
 
