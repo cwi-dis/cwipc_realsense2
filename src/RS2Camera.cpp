@@ -142,25 +142,29 @@ bool RS2Camera::getHardwareParameters(RS2CameraHardwareConfig& output, bool matc
 
 void RS2Camera::_init_filters() {
     if (filtering.do_decimation) {
-        dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.decimation_value);
+        dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.decimation_magnitude);
     }
 
     if (filtering.do_threshold) {
-        threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, filtering.threshold_near);
-        threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, filtering.threshold_far);
+        threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, filtering.threshold_min_distance);
+        threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, filtering.threshold_max_distance);
     }
 
     if (filtering.do_spatial) {
-        spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.spatial_iterations);
-        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.spatial_alpha);
-        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.spatial_delta);
-        spat_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.spatial_filling);
+        spatial_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.spatial_magnitude);
+        spatial_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.spatial_smooth_alpha);
+        spatial_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.spatial_smooth_delta);
+        spatial_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.spatial_holes_fill);
     }
 
     if (filtering.do_temporal) {
-        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.temporal_alpha);
-        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.temporal_delta);
-        temp_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.temporal_percistency);
+        temporal_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.temporal_smooth_alpha);
+        temporal_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.temporal_smooth_delta);
+        // Note by Jack: the following is correct. The temporal persistency is set with the HOLES_FILL parameter...
+        temporal_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.temporal_persistency);
+    }
+    if (filtering.do_hole_filling) {
+        hole_filling_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.hole_filling_mode);
     }
 }
 
@@ -252,8 +256,8 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
     pixel0[0] = hardware.depth_width / 2;
     pixel0[1] = hardware.depth_height / 2;
     if (filtering.do_decimation) {
-        pixel1[0] = pixel0[0] + filtering.decimation_value;
-        pixel1[1] = pixel0[1] + filtering.decimation_value;
+        pixel1[0] = pixel0[0] + filtering.decimation_magnitude;
+        pixel1[1] = pixel0[1] + filtering.decimation_magnitude;
     } else {
         pixel1[0] = pixel0[0] + 1;
         pixel1[1] = pixel0[1] + 1;
@@ -371,15 +375,18 @@ void RS2Camera::_processing_thread_main() {
                 processing_frameset = processing_frameset.apply_filter(threshold_filter);
             }
 
-            if (filtering.do_spatial || filtering.do_temporal) {
+            if (filtering.do_spatial || filtering.do_temporal || filtering.do_hole_filling) {
                 processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
 
                 if (filtering.do_spatial) {
-                    processing_frameset = processing_frameset.apply_filter(spat_filter);
+                    processing_frameset = processing_frameset.apply_filter(spatial_filter);
                 }
 
                 if (filtering.do_temporal) {
-                    processing_frameset = processing_frameset.apply_filter(temp_filter);
+                    processing_frameset = processing_frameset.apply_filter(temporal_filter);
+                }
+                if (filtering.do_hole_filling) {
+                    processing_frameset = processing_frameset.apply_filter(hole_filling_filter);
                 }
 
                 processing_frameset = processing_frameset.apply_filter(disparity_to_depth);
@@ -499,8 +506,8 @@ void RS2Camera::_erode_depth(rs2::depth_frame depth_frame, int x_delta, int y_de
     assert(depth_frame.get_bytes_per_pixel() == 2);
     int width = depth_frame.get_width();
     int height = depth_frame.get_height();
-    int16_t min_depth = (int16_t)(filtering.threshold_near * 1000);
-    int16_t max_depth = (int16_t)(filtering.threshold_far * 1000);
+    int16_t min_depth = (int16_t)(filtering.threshold_min_distance * 1000);
+    int16_t max_depth = (int16_t)(filtering.threshold_max_distance * 1000);
     int16_t *z_values = (int16_t *)malloc(width * height*sizeof(int16_t));
 
     // Pass one: Copy Z values to temporary buffer.

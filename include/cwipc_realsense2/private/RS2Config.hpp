@@ -24,22 +24,30 @@
 #include "cwipc_util/internal.h"
 
 struct RS2CameraProcessingParameters {
-    bool do_decimation = false;
-    int decimation_value = 1;             // int value between 2 and 8
-    bool do_threshold = true;
-    double threshold_near = 0.15;         // float, near point for distance threshold
-    double threshold_far = 6.0;           // float, far point for distance threshold
     int depth_x_erosion = 0;              // How many valid depth pixels to remove in camera x direction
     int depth_y_erosion = 0;              // How many valid depth pixels to remove in camera y direction
+    
+    bool do_decimation = false;
+    int decimation_magnitude = 1;             // int value between 2 and 8
+
+    bool do_threshold = true;
+    float threshold_min_distance = 0.15;         // float, near point for distance threshold
+    float threshold_max_distance = 4.0;           // float, far point for distance threshold
+    
     bool do_spatial = true;
-    int spatial_iterations = 2;           // int val between 1 and 5
-    double spatial_alpha = 0.5;          // val between 0.25 and 1.0
-    int spatial_delta = 30;               // int val between 1 and 50
-    int spatial_filling = 0;              // int val between 0 and 6
+    int spatial_magnitude = 2;           // int val between 1 and 5
+    float spatial_smooth_alpha = 0.5;          // val between 0.25 and 1.0
+    int spatial_smooth_delta = 20;               // int val between 1 and 50
+    int spatial_holes_fill = 0;              // int val between 0 and 6
+    
     bool do_temporal = false;
-    double temporal_alpha = 0.4;          // val between 0 and 1
-    int temporal_delta = 20;              // val between 1 and 100
-    int temporal_percistency = 3;         // val between 0 and 8
+    float temporal_smooth_alpha = 0.4;          // val between 0 and 1
+    int temporal_smooth_delta = 20;              // val between 1 and 100
+    int temporal_persistency = 3;         // val between 0 and 8
+
+    bool do_hole_filling = false;
+    int hole_filling_mode = 0; 
+
 };
 
 struct RS2CameraConfig : CwipcBaseCameraConfig {
@@ -54,6 +62,8 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
 };
 
 struct RS2CameraHardwareConfig {
+    // Limited documentation on the filters can be found at https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md
+
     int color_width = 0;
     int color_height = 0;
     int depth_width = 0;

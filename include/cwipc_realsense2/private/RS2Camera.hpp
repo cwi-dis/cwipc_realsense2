@@ -88,10 +88,13 @@ protected:
     // for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
     rs2::align aligner;                 // Align depth and color data
     rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
+    // rs2::hdr_merge not supported yet.
+    // rs2::sequence_id_filter not supported yet
     rs2::threshold_filter threshold_filter;                   // Thresholding: minimum and maximum distance
     rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
-    rs2::spatial_filter spat_filter;                          // Spatial    - edge-preserving spatial smoothing
-    rs2::temporal_filter temp_filter;                         // Temporal   - reduces temporal noise
+    rs2::spatial_filter spatial_filter;                          // Spatial    - edge-preserving spatial smoothing
+    rs2::temporal_filter temporal_filter;                         // Temporal   - reduces temporal noise
+    rs2::hole_filling_filter hole_filling_filter;
     rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
     rs2::pointcloud pointcloud;     // The pointcloud constructor
 

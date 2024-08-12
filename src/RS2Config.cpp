@@ -59,19 +59,21 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
 
     json filtering_data = json_data.at("filtering");
     _MY_JSON_GET(filtering_data, do_decimation, filtering, do_decimation);
-    _MY_JSON_GET(filtering_data, decimation_value, filtering, decimation_value);
+    _MY_JSON_GET(filtering_data, decimation_magnitude, filtering, decimation_magnitude);
     _MY_JSON_GET(filtering_data, do_threshold, filtering, do_threshold);
-    _MY_JSON_GET(filtering_data, threshold_near, filtering, threshold_near);
-    _MY_JSON_GET(filtering_data, threshold_far, filtering, threshold_far);
+    _MY_JSON_GET(filtering_data, threshold_min_distance, filtering, threshold_min_distance);
+    _MY_JSON_GET(filtering_data, threshold_max_distance, filtering, threshold_max_distance);
     _MY_JSON_GET(filtering_data, do_spatial, filtering, do_spatial);
-    _MY_JSON_GET(filtering_data, spatial_iterations, filtering, spatial_iterations);
-    _MY_JSON_GET(filtering_data, spatial_alpha, filtering, spatial_alpha);
-    _MY_JSON_GET(filtering_data, spatial_delta, filtering, spatial_delta);
-    _MY_JSON_GET(filtering_data, spatial_filling, filtering, spatial_filling);
+    _MY_JSON_GET(filtering_data, spatial_magnitude, filtering, spatial_magnitude);
+    _MY_JSON_GET(filtering_data, spatial_smooth_alpha, filtering, spatial_smooth_alpha);
+    _MY_JSON_GET(filtering_data, spatial_smooth_delta, filtering, spatial_smooth_delta);
+    _MY_JSON_GET(filtering_data, spatial_holes_fill, filtering, spatial_holes_fill);
     _MY_JSON_GET(filtering_data, do_temporal, filtering, do_temporal);
-    _MY_JSON_GET(filtering_data, temporal_alpha, filtering, temporal_alpha);
-    _MY_JSON_GET(filtering_data, temporal_delta, filtering, temporal_delta);
-    _MY_JSON_GET(filtering_data, temporal_percistency, filtering, temporal_percistency);
+    _MY_JSON_GET(filtering_data, temporal_smooth_alpha, filtering, temporal_smooth_alpha);
+    _MY_JSON_GET(filtering_data, temporal_smooth_delta, filtering, temporal_smooth_delta);
+    _MY_JSON_GET(filtering_data, temporal_persistency, filtering, temporal_persistency);
+    _MY_JSON_GET(filtering_data, do_hole_filling, filtering, do_hole_filling);
+    _MY_JSON_GET(filtering_data, hole_filling_mode, filtering, hole_filling_mode);
 
     json cameras = json_data.at("camera");
     int camera_index = 0;
@@ -134,19 +136,21 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     const RS2CameraProcessingParameters& filtering(config.filtering);
     json filtering_data;
     _MY_JSON_PUT(filtering_data, do_decimation, filtering, do_decimation);
-    _MY_JSON_PUT(filtering_data, decimation_value, filtering, decimation_value);
+    _MY_JSON_PUT(filtering_data, decimation_magnitude, filtering, decimation_magnitude);
     _MY_JSON_PUT(filtering_data, do_threshold, filtering, do_threshold);
-    _MY_JSON_PUT(filtering_data, threshold_near, filtering, threshold_near);
-    _MY_JSON_PUT(filtering_data, threshold_far, filtering, threshold_far);
+    _MY_JSON_PUT(filtering_data, threshold_min_distance, filtering, threshold_min_distance);
+    _MY_JSON_PUT(filtering_data, threshold_max_distance, filtering, threshold_max_distance);
     _MY_JSON_PUT(filtering_data, do_spatial, filtering, do_spatial);
-    _MY_JSON_PUT(filtering_data, spatial_iterations, filtering, spatial_iterations);
-    _MY_JSON_PUT(filtering_data, spatial_alpha, filtering, spatial_alpha);
-    _MY_JSON_PUT(filtering_data, spatial_delta, filtering, spatial_delta);
-    _MY_JSON_PUT(filtering_data, spatial_filling, filtering, spatial_filling);
+    _MY_JSON_PUT(filtering_data, spatial_magnitude, filtering, spatial_magnitude);
+    _MY_JSON_PUT(filtering_data, spatial_smooth_alpha, filtering, spatial_smooth_alpha);
+    _MY_JSON_PUT(filtering_data, spatial_smooth_delta, filtering, spatial_smooth_delta);
+    _MY_JSON_PUT(filtering_data, spatial_holes_fill, filtering, spatial_holes_fill);
     _MY_JSON_PUT(filtering_data, do_temporal, filtering, do_temporal);
-    _MY_JSON_PUT(filtering_data, temporal_alpha, filtering, temporal_alpha);
-    _MY_JSON_PUT(filtering_data, temporal_delta, filtering, temporal_delta);
-    _MY_JSON_PUT(filtering_data, temporal_percistency, filtering, temporal_percistency);
+    _MY_JSON_PUT(filtering_data, temporal_smooth_alpha, filtering, temporal_smooth_alpha);
+    _MY_JSON_PUT(filtering_data, temporal_smooth_delta, filtering, temporal_smooth_delta);
+    _MY_JSON_PUT(filtering_data, temporal_persistency, filtering, temporal_persistency);
+    _MY_JSON_PUT(filtering_data, do_hole_filling, filtering, do_hole_filling);
+    _MY_JSON_PUT(filtering_data, hole_filling_mode, filtering, hole_filling_mode);
     json_data["filtering"] = filtering_data;
 
     const RS2CaptureProcessingConfig processing;
@@ -304,21 +308,21 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
             parameterElement->QueryBoolAttribute("do_decimation", &(config->filtering.do_decimation));
-            parameterElement->QueryIntAttribute("decimation_value", &(config->filtering.decimation_value));
+            parameterElement->QueryIntAttribute("decimation_value", &(config->filtering.decimation_magnitude));
             parameterElement->QueryBoolAttribute("do_threshold", &(config->filtering.do_threshold));
-            parameterElement->QueryDoubleAttribute("threshold_near", &(config->filtering.threshold_near));
-            parameterElement->QueryDoubleAttribute("threshold_far", &(config->filtering.threshold_far));
+            parameterElement->QueryFloatAttribute("threshold_near", &(config->filtering.threshold_min_distance));
+            parameterElement->QueryFloatAttribute("threshold_far", &(config->filtering.threshold_max_distance));
             parameterElement->QueryIntAttribute("depth_x_erosion", &(config->filtering.depth_x_erosion));
             parameterElement->QueryIntAttribute("depth_y_erosion", &(config->filtering.depth_y_erosion));
             parameterElement->QueryBoolAttribute("do_spatial", &(config->filtering.do_spatial));
-            parameterElement->QueryIntAttribute("spatial_iterations", &(config->filtering.spatial_iterations));
-            parameterElement->QueryDoubleAttribute("spatial_alpha", &(config->filtering.spatial_alpha));
-            parameterElement->QueryIntAttribute("spatial_delta", &(config->filtering.spatial_delta));
-            parameterElement->QueryIntAttribute("spatial_filling", &(config->filtering.spatial_filling));
+            parameterElement->QueryIntAttribute("spatial_iterations", &(config->filtering.spatial_magnitude));
+            parameterElement->QueryFloatAttribute("spatial_alpha", &(config->filtering.spatial_smooth_alpha));
+            parameterElement->QueryIntAttribute("spatial_delta", &(config->filtering.spatial_smooth_delta));
+            parameterElement->QueryIntAttribute("spatial_filling", &(config->filtering.spatial_holes_fill));
             parameterElement->QueryBoolAttribute("do_temporal", &(config->filtering.do_temporal));
-            parameterElement->QueryDoubleAttribute("temporal_alpha", &(config->filtering.temporal_alpha));
-            parameterElement->QueryIntAttribute("temporal_delta", &(config->filtering.temporal_delta));
-            parameterElement->QueryIntAttribute("temporal_percistency", &(config->filtering.temporal_percistency));
+            parameterElement->QueryFloatAttribute("temporal_alpha", &(config->filtering.temporal_smooth_alpha));
+            parameterElement->QueryIntAttribute("temporal_delta", &(config->filtering.temporal_smooth_delta));
+            parameterElement->QueryIntAttribute("temporal_percistency", &(config->filtering.temporal_persistency));
         }
     }
 
