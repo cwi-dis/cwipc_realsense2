@@ -24,6 +24,7 @@
 #include "cwipc_util/internal.h"
 
 struct RS2CameraProcessingParameters {
+    bool map_color_to_depth = true;
     
     bool do_decimation = false;
     int decimation_magnitude = 1;             // int value between 2 and 8
@@ -82,7 +83,7 @@ struct RS2CaptureProcessingConfig {
     int depth_y_erosion = 0;              // How many valid depth pixels to remove in camera y direction
     double height_min = 0.0;              // If height_min != height_max perform height filtering
     double height_max = 0.0;              // If height_min != height_max perform height filtering
-
+    double radius_filter = 0.0;           // if > 0 apply filter around x=z=0 line.
 };
 
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {

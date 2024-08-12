@@ -56,8 +56,10 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(processing_data, greenscreen_removal, processing, greenscreen_removal);
     _MY_JSON_GET(processing_data, height_min, processing, height_min);
     _MY_JSON_GET(processing_data, height_max, processing, height_max);
+    _MY_JSON_GET(processing_data, radius_filter, processing, radius_filter);
 
     json filtering_data = json_data.at("filtering");
+    _MY_JSON_GET(filtering_data, map_color_to_depth, filtering, map_color_to_depth);
     _MY_JSON_GET(filtering_data, do_decimation, filtering, do_decimation);
     _MY_JSON_GET(filtering_data, decimation_magnitude, filtering, decimation_magnitude);
     _MY_JSON_GET(filtering_data, do_threshold, filtering, do_threshold);
@@ -135,6 +137,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
 
     const RS2CameraProcessingParameters& filtering(config.filtering);
     json filtering_data;
+    _MY_JSON_PUT(filtering_data, map_color_to_depth, filtering, map_color_to_depth);
     _MY_JSON_PUT(filtering_data, do_decimation, filtering, do_decimation);
     _MY_JSON_PUT(filtering_data, decimation_magnitude, filtering, decimation_magnitude);
     _MY_JSON_PUT(filtering_data, do_threshold, filtering, do_threshold);
@@ -158,6 +161,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(processing_data, greenscreen_removal, processing, greenscreen_removal);
     _MY_JSON_PUT(processing_data, height_min, processing, height_min);
     _MY_JSON_PUT(processing_data, height_max, processing, height_max);
+    _MY_JSON_PUT(processing_data, radius_filter, processing, radius_filter);
     json_data["processing"] = processing_data;
 
     json system_data;

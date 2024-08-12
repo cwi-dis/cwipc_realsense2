@@ -83,6 +83,12 @@ static bool isNotGreen(cwipc_pcl_point* p) {
     return true;
 }
 
+
+inline bool isPointInRadius(cwipc_pcl_point& pt, float radius_filter) {
+    float distance_2 = pow(pt.x, 2) + pow(pt.z, 2);
+    return distance_2 < radius_filter * radius_filter; // radius^2 to avoid sqrt
+}
+
 RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camera_config) :
   pointSize(0), minx(0), minz(0), maxz(0),
   camera_index(_camera_index),
@@ -99,7 +105,8 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   context(ctx),
   pipe(ctx),
   pipe_started(false),
-  aligner(RS2_STREAM_DEPTH)
+  align_color_to_depth(RS2_STREAM_DEPTH),
+  align_depth_to_color(RS2_STREAM_COLOR)
 {
 #ifdef CWIPC_DEBUG
     std::cout << "cwipc_realsense2: creating camera " << serial << std::endl;
@@ -364,9 +371,13 @@ void RS2Camera::_processing_thread_main() {
         std::lock_guard<std::mutex> lock(processing_mutex);
 
         bool do_depth_filtering = filtering.do_decimation || filtering.do_threshold || filtering.do_spatial || filtering.do_temporal;
+        if (filtering.map_color_to_depth) {
+            processing_frameset = processing_frameset.apply_filter(align_color_to_depth);
+        } else {
+            processing_frameset = processing_frameset.apply_filter(align_depth_to_color);
+        }
         if (do_depth_filtering) {
-            processing_frameset = processing_frameset.apply_filter(aligner);
-
+          
             if (filtering.do_decimation) {
                 processing_frameset = processing_frameset.apply_filter(dec_filter);
             }
@@ -393,6 +404,7 @@ void RS2Camera::_processing_thread_main() {
             }
 
         }
+        processed_frameset = processing_frameset;
 
         rs2::depth_frame depth = processing_frameset.get_depth_frame();
         rs2::video_frame color = processing_frameset.get_color_frame();
@@ -454,6 +466,7 @@ void RS2Camera::_processing_thread_main() {
             float height_max = processing.height_max;
             bool do_height_filtering = height_min < height_max;
             bool do_greenscreen_removal = processing.greenscreen_removal;
+            bool do_radius_filtering = processing.radius_filter > 0;
             for (int i = 0; i < points.size(); i++) {
                 // Skip points with z=0 (they don't exist)
                 if (vertices[i].z == 0) {
@@ -466,7 +479,9 @@ void RS2Camera::_processing_thread_main() {
                 if (do_height_filtering && (pt.y < height_min || pt.y > height_max)) {
                     continue;
                 }
-
+                if (do_radius_filtering && !isPointInRadius(pt, processing.radius_filter)) {
+                    continue;
+                }
                 float u = texture_coordinates[i].u;
                 float v = texture_coordinates[i].v;
 
@@ -598,11 +613,11 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     float tmp3d[3] = {0, 0, 0};
     // Now get the intrinsics for the depth stream
     rs2::pipeline_profile profile = pipe.get_active_profile();
-#ifdef MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
-    rs2::video_stream_profile stream = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
-#else
-    rs2::video_stream_profile stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-#endif
+    rs2::video_stream_profile stream = (
+        filtering.map_color_to_depth ?
+        profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>() :
+        profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>()
+    );
     rs2_intrinsics intrinsics = stream.get_intrinsics(); // Calibration data
     rs2_deproject_pixel_to_point(tmp3d, &intrinsics, in2d, indepth);
     transformPoint(out3d, tmp3d);
@@ -611,23 +626,20 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
 void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
 {
     if (!rgb && !depth) return;
-#ifdef MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
-    rs2::align aligner(RS2_STREAM_COLOR);
-#else
-    rs2::align aligner(RS2_STREAM_DEPTH);
-#endif
-    auto aligned_frameset = aligner.process(current_frameset);
+    std::unique_lock<std::mutex> lock(processing_mutex);
 
+    auto aligned_frameset = processed_frameset;
+    if (aligned_frameset.size() == 0) return;
     if (rgb) {
         std::string name = "rgb." + serial;
-        rs2::video_frame image = aligned_frameset.get_color_frame();
-
+        rs2::video_frame color_image = aligned_frameset.get_color_frame();
+        
         //const void* pointer = color.get_data();
-        const size_t size = image.get_data_size();
-        int width = image.get_width();
-        int height = image.get_height();
-        int stride = image.get_stride_in_bytes();
-        int bpp = image.get_bytes_per_pixel();
+        const size_t size = color_image.get_data_size();
+        int width = color_image.get_width();
+        int height = color_image.get_height();
+        int stride = color_image.get_stride_in_bytes();
+        int bpp = color_image.get_bytes_per_pixel();
 
         std::string description =
             "width="+std::to_string(width)+
@@ -638,7 +650,7 @@ void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
         void* pointer = malloc(size);
 
         if (pointer) {
-            memcpy(pointer, image.get_data(), size);
+            memcpy(pointer, color_image.get_data(), size);
             cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
             ap->_add(name, description, pointer, size, ::free);
         }
@@ -646,12 +658,12 @@ void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
 
     if (depth) {
         std::string name = "depth." + serial;
-        rs2::video_frame image = aligned_frameset.get_depth_frame();
-        const size_t size = image.get_data_size();
-        int width = image.get_width();
-        int height = image.get_height();
-        int stride = image.get_stride_in_bytes();
-        int bpp = image.get_bytes_per_pixel();
+        rs2::video_frame depth_image = aligned_frameset.get_depth_frame();
+        const size_t size = depth_image.get_data_size();
+        int width = depth_image.get_width();
+        int height = depth_image.get_height();
+        int stride = depth_image.get_stride_in_bytes();
+        int bpp = depth_image.get_bytes_per_pixel();
 
         std::string description =
             "width="+std::to_string(width)+
@@ -662,7 +674,7 @@ void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
         void* pointer = malloc(size);
 
         if (pointer) {
-            memcpy(pointer, image.get_data(), size);
+            memcpy(pointer, depth_image.get_data(), size);
             cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
             ap->_add(name, description, pointer, size, ::free);
         }

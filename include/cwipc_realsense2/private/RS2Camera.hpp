@@ -79,6 +79,7 @@ protected:
     std::thread *grabber_thread;
     rs2::frame_queue processing_frame_queue;
     std::mutex processing_mutex;
+    rs2::frameset processed_frameset;
     std::condition_variable processing_done_cv;
     bool processing_done;
 
@@ -86,7 +87,8 @@ protected:
     rs2::pipeline pipe;
     bool pipe_started;
     // for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
-    rs2::align aligner;                 // Align depth and color data
+    rs2::align align_color_to_depth;                 // Align depth and color data
+    rs2::align align_depth_to_color;                   // Align depth and color data
     rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
     // rs2::hdr_merge not supported yet.
     // rs2::sequence_id_filter not supported yet
