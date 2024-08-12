@@ -133,7 +133,7 @@ bool RS2Camera::getHardwareParameters(RS2CameraHardwareConfig& output, bool matc
             output.depth_exposure == hardware.depth_exposure &&
             output.depth_height == hardware.depth_height &&
             output.depth_width == hardware.depth_width &&
-            output.density == hardware.density &&
+            output.visual_preset == hardware.visual_preset &&
             output.laser_power == hardware.laser_power;
     }
     output = hardware;
@@ -400,14 +400,14 @@ void RS2Camera::_processing_thread_main() {
         assert(depth);
         assert(color);
 
-        // set width/height to what the frames have.
-        hardware.color_width = color.get_width();
-        hardware.color_height = color.get_height();
-        hardware.depth_width = depth.get_width();
-        hardware.depth_height = depth.get_height();
+        // compare width/height to what the frames have.
+        assert(hardware.color_width == color.get_width());
+        assert(hardware.color_height == color.get_height());
+        assert(hardware.depth_width == depth.get_width());
+        assert(hardware.depth_height == depth.get_height());
 
-        if (filtering.depth_x_erosion >0 || filtering.depth_y_erosion > 0) {
-            _erode_depth(depth, filtering.depth_x_erosion, filtering.depth_y_erosion);
+        if (processing.depth_x_erosion >0 || processing.depth_y_erosion > 0) {
+            _erode_depth(depth, processing.depth_x_erosion, processing.depth_y_erosion);
         }
 #ifdef CWIPC_DEBUG
         std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;

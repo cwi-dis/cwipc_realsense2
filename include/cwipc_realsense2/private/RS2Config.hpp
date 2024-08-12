@@ -24,8 +24,6 @@
 #include "cwipc_util/internal.h"
 
 struct RS2CameraProcessingParameters {
-    int depth_x_erosion = 0;              // How many valid depth pixels to remove in camera x direction
-    int depth_y_erosion = 0;              // How many valid depth pixels to remove in camera y direction
     
     bool do_decimation = false;
     int decimation_magnitude = 1;             // int value between 2 and 8
@@ -69,7 +67,7 @@ struct RS2CameraHardwareConfig {
     int depth_width = 0;
     int depth_height = 0;
     int fps = 0;
-    bool density = false;                 // Grab with high density (alternative is high accuracy)
+    int visual_preset = 0;                 // Visual preset mode for depth capturing. See emun rs2_rs400_visual_preset in rs_option.h
     int color_exposure = -1;              // Set exposure for color. -1 is auto.
     int depth_exposure = -1;              // Set exposure for depth. -1 is auto.
     int whitebalance = -1;                // Set whitebalance for color camera. -1 is auto.
@@ -80,6 +78,8 @@ struct RS2CameraHardwareConfig {
 struct RS2CaptureProcessingConfig {
     // processing data
     bool greenscreen_removal = false;     // If true include greenscreen removal
+    int depth_x_erosion = 0;              // How many valid depth pixels to remove in camera x direction
+    int depth_y_erosion = 0;              // How many valid depth pixels to remove in camera y direction
     double height_min = 0.0;              // If height_min != height_max perform height filtering
     double height_max = 0.0;              // If height_min != height_max perform height filtering
 

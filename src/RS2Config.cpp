@@ -45,7 +45,7 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(hardware_data, depth_width, hardware, depth_width);
     _MY_JSON_GET(hardware_data, depth_height, hardware, depth_height);
     _MY_JSON_GET(hardware_data, fps, hardware, fps);
-    _MY_JSON_GET(hardware_data, density_preferred, hardware, density);
+    _MY_JSON_GET(hardware_data, visual_preset, hardware, visual_preset);
     _MY_JSON_GET(hardware_data, color_exposure, hardware, color_exposure);
     _MY_JSON_GET(hardware_data, depth_exposure, hardware, depth_exposure);
     _MY_JSON_GET(hardware_data, whitebalance, hardware, whitebalance);
@@ -171,7 +171,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(hardware_data, depth_width, hardware, depth_width);
     _MY_JSON_PUT(hardware_data, depth_height, hardware, depth_height);
     _MY_JSON_PUT(hardware_data, fps, hardware, fps);
-    _MY_JSON_PUT(hardware_data, density_preferred, hardware, density);
+    _MY_JSON_PUT(hardware_data, visual_preset, hardware, visual_preset);
     _MY_JSON_PUT(hardware_data, color_exposure, hardware, color_exposure);
     _MY_JSON_PUT(hardware_data, depth_exposure, hardware, depth_exposure);
     _MY_JSON_PUT(hardware_data, whitebalance, hardware, whitebalance);
@@ -290,7 +290,7 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
         systemElement->QueryIntAttribute("usb3width", &(config->hardware.depth_width));
         systemElement->QueryIntAttribute("usb3height", &(config->hardware.depth_height));
         systemElement->QueryIntAttribute("usb3fps", &(config->hardware.fps));
-        systemElement->QueryBoolAttribute("density_preferred", &(config->hardware.density));
+        //systemElement->QueryBoolAttribute("density_preferred", &(config->hardware.density));
         systemElement->QueryIntAttribute("exposure", &(config->hardware.color_exposure));
         systemElement->QueryIntAttribute("exposure", &(config->hardware.depth_exposure));
         systemElement->QueryIntAttribute("whitebalance", &(config->hardware.whitebalance));
@@ -312,8 +312,8 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
             parameterElement->QueryBoolAttribute("do_threshold", &(config->filtering.do_threshold));
             parameterElement->QueryFloatAttribute("threshold_near", &(config->filtering.threshold_min_distance));
             parameterElement->QueryFloatAttribute("threshold_far", &(config->filtering.threshold_max_distance));
-            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->filtering.depth_x_erosion));
-            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->filtering.depth_y_erosion));
+            parameterElement->QueryIntAttribute("depth_x_erosion", &(config->processing.depth_x_erosion));
+            parameterElement->QueryIntAttribute("depth_y_erosion", &(config->processing.depth_y_erosion));
             parameterElement->QueryBoolAttribute("do_spatial", &(config->filtering.do_spatial));
             parameterElement->QueryIntAttribute("spatial_iterations", &(config->filtering.spatial_magnitude));
             parameterElement->QueryFloatAttribute("spatial_alpha", &(config->filtering.spatial_smooth_alpha));

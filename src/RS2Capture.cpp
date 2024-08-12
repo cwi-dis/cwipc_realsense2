@@ -187,7 +187,7 @@ void RS2Capture::_setup_camera_hardware_parameters() {
         if (depth_sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
             depth_sensor.set_option(
                 RS2_OPTION_VISUAL_PRESET,
-                configuration.hardware.density ? RS2_RS400_VISUAL_PRESET_HIGH_DENSITY : RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY
+                configuration.hardware.visual_preset
             );
         }
     }
