@@ -67,22 +67,27 @@ struct RS2CameraHardwareConfig {
     int laser_power = 360;                // Laser power. -1 is don't change.
 };
 
-struct RS2CaptureConfig : CwipcBaseCaptureConfig {
-    // system data
-    
+struct RS2CaptureProcessingConfig {
     // processing data
     bool greenscreen_removal = false;     // If true include greenscreen removal
     double height_min = 0.0;              // If height_min != height_max perform height filtering
     double height_max = 0.0;              // If height_min != height_max perform height filtering
+
+};
+
+struct RS2CaptureConfig : CwipcBaseCaptureConfig {
+    // camera-independent processing (implemented in our code)
+    RS2CaptureProcessingConfig processing;
+    // Realsense-dependent processing (implemented in librealsense)
+    RS2CameraProcessingParameters postprocessing;
+    // Hardware parameters and processing (implemented in the camera hardware)
+    RS2CameraHardwareConfig hardware;
 
     // special features
     bool want_auxdata_rgb = false;
     bool want_auxdata_depth = false;
     std::string record_to_directory = ""; // If non-empty all camera streams will be recorded to this directory.
 
-    RS2CameraProcessingParameters postprocessing;
-    // realsense specific post processing filtering
-    RS2CameraHardwareConfig hardware;
 
     // per camera data
     std::vector<RS2CameraConfig> all_camera_configs;

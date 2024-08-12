@@ -48,12 +48,12 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(hardware_data, laser_power, config.hardware, laser_power);
     _MY_JSON_GET(system_data, record_to_directory, config, record_to_directory);
 
-    json postprocessing = json_data.at("postprocessing");
-    _MY_JSON_GET(postprocessing, greenscreenremoval, config, greenscreen_removal);
-    _MY_JSON_GET(postprocessing, height_min, config, height_min);
-    _MY_JSON_GET(postprocessing, height_max, config, height_max);
+    json processing = json_data.at("processing");
+    _MY_JSON_GET(processing, greenscreenremoval, config.processing, greenscreen_removal);
+    _MY_JSON_GET(processing, height_min, config.processing, height_min);
+    _MY_JSON_GET(processing, height_max, config.processing, height_max);
 
-    json depthfilterparameters = postprocessing.at("depthfilterparameters");
+    json depthfilterparameters = json_data.at("depthfilterparameters");
     _MY_JSON_GET(depthfilterparameters, do_decimation, config.postprocessing, do_decimation);
     _MY_JSON_GET(depthfilterparameters, decimation_value, config.postprocessing, decimation_value);
     _MY_JSON_GET(depthfilterparameters, do_threshold, config.postprocessing, do_threshold);
@@ -142,14 +142,13 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.postprocessing, temporal_alpha);
     _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.postprocessing, temporal_delta);
     _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.postprocessing, temporal_percistency);
+    json_data["depthfilterparameters"] = depthfilterparameters;
 
-    json postprocessing;
-    postprocessing["depthfilterparameters"] = depthfilterparameters;
-
-    _MY_JSON_PUT(postprocessing, greenscreenremoval, config, greenscreen_removal);
-    _MY_JSON_PUT(postprocessing, height_min, config, height_min);
-    _MY_JSON_PUT(postprocessing, height_max, config, height_max);
-    json_data["postprocessing"] = postprocessing;
+    json processing;
+    _MY_JSON_PUT(processing, greenscreenremoval, config.processing, greenscreen_removal);
+    _MY_JSON_PUT(processing, height_min, config.processing, height_min);
+    _MY_JSON_PUT(processing, height_max, config.processing, height_max);
+    json_data["processing"] = processing;
 
     json system_data;
     json hardware_data;
@@ -290,9 +289,9 @@ bool cwipc_rs2_xmlfile2config(const char* filename, RS2CaptureConfig* config, st
     // get the processing related information
     TiXmlElement* postprocessingElement = configElement->FirstChildElement("postprocessing");
     if (postprocessingElement) {
-        postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->greenscreen_removal));
-        postprocessingElement->QueryDoubleAttribute("height_min", &(config->height_min));
-        postprocessingElement->QueryDoubleAttribute("height_max", &(config->height_max));
+        postprocessingElement->QueryBoolAttribute("greenscreenremoval", &(config->processing.greenscreen_removal));
+        postprocessingElement->QueryDoubleAttribute("height_min", &(config->processing.height_min));
+        postprocessingElement->QueryDoubleAttribute("height_max", &(config->processing.height_max));
 
         TiXmlElement* parameterElement = postprocessingElement->FirstChildElement("depthfilterparameters");
         if (parameterElement) {
