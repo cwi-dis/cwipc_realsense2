@@ -31,43 +31,47 @@ void cwipc_rs2_log_warning(std::string warning) {
 
 void from_json(const json& json_data, RS2CaptureConfig& config) {
     // version and type should already have been checked.
+    RS2CameraHardwareConfig& hardware(config.hardware);
+    RS2CameraProcessingParameters filtering(config.filtering);
+    RS2CaptureProcessingConfig& processing(config.processing);
 
     json system_data = json_data.at("system");
-    json hardware_data = json_data.at("hardware");
-    _MY_JSON_GET(hardware_data, color_width, config.hardware, color_width);
-    _MY_JSON_GET(hardware_data, color_height, config.hardware, color_height);
-    _MY_JSON_GET(hardware_data, fps, config.hardware, fps);
-    _MY_JSON_GET(hardware_data, depth_width, config.hardware, depth_width);
-    _MY_JSON_GET(hardware_data, depth_height, config.hardware, depth_height);
-    _MY_JSON_GET(hardware_data, fps, config.hardware, fps);
-    _MY_JSON_GET(hardware_data, density_preferred, config.hardware, density);
-    _MY_JSON_GET(hardware_data, color_exposure, config.hardware, color_exposure);
-    _MY_JSON_GET(hardware_data, depth_exposure, config.hardware, depth_exposure);
-    _MY_JSON_GET(hardware_data, whitebalance, config.hardware, whitebalance);
-    _MY_JSON_GET(hardware_data, backlight_compensation, config.hardware, backlight_compensation);
-    _MY_JSON_GET(hardware_data, laser_power, config.hardware, laser_power);
     _MY_JSON_GET(system_data, record_to_directory, config, record_to_directory);
 
-    json processing = json_data.at("processing");
-    _MY_JSON_GET(processing, greenscreenremoval, config.processing, greenscreen_removal);
-    _MY_JSON_GET(processing, height_min, config.processing, height_min);
-    _MY_JSON_GET(processing, height_max, config.processing, height_max);
+    json hardware_data = json_data.at("hardware");
+    _MY_JSON_GET(hardware_data, color_width, hardware, color_width);
+    _MY_JSON_GET(hardware_data, color_height, hardware, color_height);
+    _MY_JSON_GET(hardware_data, fps, hardware, fps);
+    _MY_JSON_GET(hardware_data, depth_width, hardware, depth_width);
+    _MY_JSON_GET(hardware_data, depth_height, hardware, depth_height);
+    _MY_JSON_GET(hardware_data, fps, hardware, fps);
+    _MY_JSON_GET(hardware_data, density_preferred, hardware, density);
+    _MY_JSON_GET(hardware_data, color_exposure, hardware, color_exposure);
+    _MY_JSON_GET(hardware_data, depth_exposure, hardware, depth_exposure);
+    _MY_JSON_GET(hardware_data, whitebalance, hardware, whitebalance);
+    _MY_JSON_GET(hardware_data, backlight_compensation, hardware, backlight_compensation);
+    _MY_JSON_GET(hardware_data, laser_power, hardware, laser_power);
 
-    json depthfilterparameters = json_data.at("depthfilterparameters");
-    _MY_JSON_GET(depthfilterparameters, do_decimation, config.filtering, do_decimation);
-    _MY_JSON_GET(depthfilterparameters, decimation_value, config.filtering, decimation_value);
-    _MY_JSON_GET(depthfilterparameters, do_threshold, config.filtering, do_threshold);
-    _MY_JSON_GET(depthfilterparameters, threshold_near, config.filtering, threshold_near);
-    _MY_JSON_GET(depthfilterparameters, threshold_far, config.filtering, threshold_far);
-    _MY_JSON_GET(depthfilterparameters, do_spatial, config.filtering, do_spatial);
-    _MY_JSON_GET(depthfilterparameters, spatial_iterations, config.filtering, spatial_iterations);
-    _MY_JSON_GET(depthfilterparameters, spatial_alpha, config.filtering, spatial_alpha);
-    _MY_JSON_GET(depthfilterparameters, spatial_delta, config.filtering, spatial_delta);
-    _MY_JSON_GET(depthfilterparameters, spatial_filling, config.filtering, spatial_filling);
-    _MY_JSON_GET(depthfilterparameters, do_temporal, config.filtering, do_temporal);
-    _MY_JSON_GET(depthfilterparameters, temporal_alpha, config.filtering, temporal_alpha);
-    _MY_JSON_GET(depthfilterparameters, temporal_delta, config.filtering, temporal_delta);
-    _MY_JSON_GET(depthfilterparameters, temporal_percistency, config.filtering, temporal_percistency);
+    json processing_data = json_data.at("processing");
+    _MY_JSON_GET(processing_data, greenscreen_removal, processing, greenscreen_removal);
+    _MY_JSON_GET(processing_data, height_min, processing, height_min);
+    _MY_JSON_GET(processing_data, height_max, processing, height_max);
+
+    json filtering_data = json_data.at("filtering");
+    _MY_JSON_GET(filtering_data, do_decimation, filtering, do_decimation);
+    _MY_JSON_GET(filtering_data, decimation_value, filtering, decimation_value);
+    _MY_JSON_GET(filtering_data, do_threshold, filtering, do_threshold);
+    _MY_JSON_GET(filtering_data, threshold_near, filtering, threshold_near);
+    _MY_JSON_GET(filtering_data, threshold_far, filtering, threshold_far);
+    _MY_JSON_GET(filtering_data, do_spatial, filtering, do_spatial);
+    _MY_JSON_GET(filtering_data, spatial_iterations, filtering, spatial_iterations);
+    _MY_JSON_GET(filtering_data, spatial_alpha, filtering, spatial_alpha);
+    _MY_JSON_GET(filtering_data, spatial_delta, filtering, spatial_delta);
+    _MY_JSON_GET(filtering_data, spatial_filling, filtering, spatial_filling);
+    _MY_JSON_GET(filtering_data, do_temporal, filtering, do_temporal);
+    _MY_JSON_GET(filtering_data, temporal_alpha, filtering, temporal_alpha);
+    _MY_JSON_GET(filtering_data, temporal_delta, filtering, temporal_delta);
+    _MY_JSON_GET(filtering_data, temporal_percistency, filtering, temporal_percistency);
 
     json cameras = json_data.at("camera");
     int camera_index = 0;
@@ -127,44 +131,48 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
 
     json_data["camera"] = cameras;
 
-    json depthfilterparameters;
-    _MY_JSON_PUT(depthfilterparameters, do_decimation, config.filtering, do_decimation);
-    _MY_JSON_PUT(depthfilterparameters, decimation_value, config.filtering, decimation_value);
-    _MY_JSON_PUT(depthfilterparameters, do_threshold, config.filtering, do_threshold);
-    _MY_JSON_PUT(depthfilterparameters, threshold_near, config.filtering, threshold_near);
-    _MY_JSON_PUT(depthfilterparameters, threshold_far, config.filtering, threshold_far);
-    _MY_JSON_PUT(depthfilterparameters, do_spatial, config.filtering, do_spatial);
-    _MY_JSON_PUT(depthfilterparameters, spatial_iterations, config.filtering, spatial_iterations);
-    _MY_JSON_PUT(depthfilterparameters, spatial_alpha, config.filtering, spatial_alpha);
-    _MY_JSON_PUT(depthfilterparameters, spatial_delta, config.filtering, spatial_delta);
-    _MY_JSON_PUT(depthfilterparameters, spatial_filling, config.filtering, spatial_filling);
-    _MY_JSON_PUT(depthfilterparameters, do_temporal, config.filtering, do_temporal);
-    _MY_JSON_PUT(depthfilterparameters, temporal_alpha, config.filtering, temporal_alpha);
-    _MY_JSON_PUT(depthfilterparameters, temporal_delta, config.filtering, temporal_delta);
-    _MY_JSON_PUT(depthfilterparameters, temporal_percistency, config.filtering, temporal_percistency);
-    json_data["depthfilterparameters"] = depthfilterparameters;
+    const RS2CameraProcessingParameters& filtering(config.filtering);
+    json filtering_data;
+    _MY_JSON_PUT(filtering_data, do_decimation, filtering, do_decimation);
+    _MY_JSON_PUT(filtering_data, decimation_value, filtering, decimation_value);
+    _MY_JSON_PUT(filtering_data, do_threshold, filtering, do_threshold);
+    _MY_JSON_PUT(filtering_data, threshold_near, filtering, threshold_near);
+    _MY_JSON_PUT(filtering_data, threshold_far, filtering, threshold_far);
+    _MY_JSON_PUT(filtering_data, do_spatial, filtering, do_spatial);
+    _MY_JSON_PUT(filtering_data, spatial_iterations, filtering, spatial_iterations);
+    _MY_JSON_PUT(filtering_data, spatial_alpha, filtering, spatial_alpha);
+    _MY_JSON_PUT(filtering_data, spatial_delta, filtering, spatial_delta);
+    _MY_JSON_PUT(filtering_data, spatial_filling, filtering, spatial_filling);
+    _MY_JSON_PUT(filtering_data, do_temporal, filtering, do_temporal);
+    _MY_JSON_PUT(filtering_data, temporal_alpha, filtering, temporal_alpha);
+    _MY_JSON_PUT(filtering_data, temporal_delta, filtering, temporal_delta);
+    _MY_JSON_PUT(filtering_data, temporal_percistency, filtering, temporal_percistency);
+    json_data["filtering"] = filtering_data;
 
-    json processing;
-    _MY_JSON_PUT(processing, greenscreenremoval, config.processing, greenscreen_removal);
-    _MY_JSON_PUT(processing, height_min, config.processing, height_min);
-    _MY_JSON_PUT(processing, height_max, config.processing, height_max);
-    json_data["processing"] = processing;
+    const RS2CaptureProcessingConfig processing;
+    json processing_data;
+    _MY_JSON_PUT(processing_data, greenscreen_removal, processing, greenscreen_removal);
+    _MY_JSON_PUT(processing_data, height_min, processing, height_min);
+    _MY_JSON_PUT(processing_data, height_max, processing, height_max);
+    json_data["processing"] = processing_data;
 
     json system_data;
-    json hardware_data;
-    _MY_JSON_PUT(hardware_data, color_width, config.hardware, color_width);
-    _MY_JSON_PUT(hardware_data, color_height, config.hardware, color_height);
-    _MY_JSON_PUT(hardware_data, depth_width, config.hardware, depth_width);
-    _MY_JSON_PUT(hardware_data, depth_height, config.hardware, depth_height);
-    _MY_JSON_PUT(hardware_data, fps, config.hardware, fps);
-    _MY_JSON_PUT(hardware_data, density_preferred, config.hardware, density);
-    _MY_JSON_PUT(hardware_data, color_exposure, config.hardware, color_exposure);
-    _MY_JSON_PUT(hardware_data, depth_exposure, config.hardware, depth_exposure);
-    _MY_JSON_PUT(hardware_data, whitebalance, config.hardware, whitebalance);
-    _MY_JSON_PUT(hardware_data, backlight_compensation, config.hardware, backlight_compensation);
-    _MY_JSON_PUT(hardware_data, laser_power, config.hardware, laser_power);
-    _MY_JSON_PUT(hardware_data, record_to_directory, config, record_to_directory);
+    _MY_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
     json_data["system"] = system_data;
+    
+    const RS2CameraHardwareConfig hardware;
+    json hardware_data;
+    _MY_JSON_PUT(hardware_data, color_width, hardware, color_width);
+    _MY_JSON_PUT(hardware_data, color_height, hardware, color_height);
+    _MY_JSON_PUT(hardware_data, depth_width, hardware, depth_width);
+    _MY_JSON_PUT(hardware_data, depth_height, hardware, depth_height);
+    _MY_JSON_PUT(hardware_data, fps, hardware, fps);
+    _MY_JSON_PUT(hardware_data, density_preferred, hardware, density);
+    _MY_JSON_PUT(hardware_data, color_exposure, hardware, color_exposure);
+    _MY_JSON_PUT(hardware_data, depth_exposure, hardware, depth_exposure);
+    _MY_JSON_PUT(hardware_data, whitebalance, hardware, whitebalance);
+    _MY_JSON_PUT(hardware_data, backlight_compensation, hardware, backlight_compensation);
+    _MY_JSON_PUT(hardware_data, laser_power, hardware, laser_power);
     json_data["hardware"] = hardware_data;
 
     json_data["version"] = 4;
