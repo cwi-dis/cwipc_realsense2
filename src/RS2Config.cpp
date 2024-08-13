@@ -32,7 +32,7 @@ void cwipc_rs2_log_warning(std::string warning) {
 void from_json(const json& json_data, RS2CaptureConfig& config) {
     // version and type should already have been checked.
     RS2CameraHardwareConfig& hardware(config.hardware);
-    RS2CameraProcessingParameters filtering(config.filtering);
+    RS2CameraProcessingParameters& filtering(config.filtering);
     RS2CaptureProcessingConfig& processing(config.processing);
 
     json system_data = json_data.at("system");
