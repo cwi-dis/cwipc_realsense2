@@ -121,10 +121,10 @@ bool RS2Capture::_check_cameras_connected() {
 std::string RS2Capture::config_get() {
     // get fps/width/height from all cameras
     // xxxjack this is a design flaw: these parameters should be stored in the camera configuration, not the capture configuration.
-    bool must_set = true;
+    bool match_only = false;
     for(auto cam : cameras) {
-        bool ok = cam->getHardwareParameters(configuration.hardware, must_set);
-        must_set = false;
+        bool ok = cam->getHardwareParameters(configuration.hardware, match_only);
+        match_only = true;
         if (!ok) {
             cwipc_rs2_log_warning("Not all cameras have the same hardware configuration");
         }
