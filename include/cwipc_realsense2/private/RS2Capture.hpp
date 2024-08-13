@@ -23,6 +23,7 @@ protected:
     void _find_camera_positions();
     virtual void _setup_camera_sync();
     virtual void _setup_camera_hardware_parameters();
+    virtual void _refresh_camera_hardware_parameters();
     virtual bool _check_cameras_connected();
     void _unload_cameras();
 

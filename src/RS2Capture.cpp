@@ -119,18 +119,49 @@ bool RS2Capture::_check_cameras_connected() {
 }
 
 std::string RS2Capture::config_get() {
-    // get fps/width/height from all cameras
-    // xxxjack this is a design flaw: these parameters should be stored in the camera configuration, not the capture configuration.
     bool match_only = false;
+    // We get parameters like exposure here.
+    // But framerate and width/height are gotten in the camera code.
+    _refresh_camera_hardware_parameters();
     for(auto cam : cameras) {
         bool ok = cam->getHardwareParameters(configuration.hardware, match_only);
-        match_only = true;
         if (!ok) {
-            cwipc_rs2_log_warning("Not all cameras have the same hardware configuration");
+            if (!match_only) {
+                cwipc_rs2_log_warning("First camera does not have hardware configuration");
+            } else {
+                cwipc_rs2_log_warning("Not all cameras have the same hardware configuration");
+            }
         }
+        match_only = true;
     }
     return cwipc_rs2_config2string(&configuration);
 }
+
+void RS2Capture::_refresh_camera_hardware_parameters() {
+    rs2::device_list devs = ctx().query_devices();
+    rs2::device dev = *devs.begin();
+    rs2::depth_sensor depth_sensor = dev.first<rs2::depth_sensor>();
+    rs2::color_sensor color_sensor = dev.first<rs2::color_sensor>();
+
+    bool auto_color_exposure = (bool)color_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+    int color_exposure = (int)color_sensor.get_option(RS2_OPTION_EXPOSURE);
+    configuration.hardware.color_exposure = auto_color_exposure ? -color_exposure : color_exposure;  
+
+    bool auto_whitebalance = (bool)color_sensor.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+    int whitebalance = (int)color_sensor.get_option(RS2_OPTION_WHITE_BALANCE);
+    configuration.hardware.whitebalance = auto_whitebalance ? -whitebalance : whitebalance;  
+
+    configuration.hardware.backlight_compensation = (int)color_sensor.get_option(RS2_OPTION_BACKLIGHT_COMPENSATION);
+
+    bool auto_depth_exposure = (bool)depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+    int depth_exposure = (int)depth_sensor.get_option(RS2_OPTION_EXPOSURE);
+    configuration.hardware.depth_exposure = auto_depth_exposure ? -depth_exposure : depth_exposure;  
+
+    configuration.hardware.laser_power = (int)depth_sensor.get_option(RS2_OPTION_LASER_POWER);
+
+    configuration.hardware.visual_preset = (int)depth_sensor.get_option(RS2_OPTION_VISUAL_PRESET);
+}
+
 
 void RS2Capture::_setup_camera_hardware_parameters() {
     rs2::device_list devs = ctx().query_devices();

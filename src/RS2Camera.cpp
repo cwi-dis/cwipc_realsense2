@@ -144,7 +144,7 @@ bool RS2Camera::getHardwareParameters(RS2CameraHardwareConfig& output, bool matc
             output.laser_power == hardware.laser_power;
     }
     output = hardware;
-    return true;
+    return output.fps != 0;
 }
 
 void RS2Camera::_init_filters() {
