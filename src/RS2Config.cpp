@@ -156,7 +156,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(filtering_data, hole_filling_mode, filtering, hole_filling_mode);
     json_data["filtering"] = filtering_data;
 
-    const RS2CaptureProcessingConfig processing;
+    const RS2CaptureProcessingConfig& processing(config.processing);
     json processing_data;
     _MY_JSON_PUT(processing_data, greenscreen_removal, processing, greenscreen_removal);
     _MY_JSON_PUT(processing_data, height_min, processing, height_min);
@@ -168,7 +168,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
     json_data["system"] = system_data;
     
-    const RS2CameraHardwareConfig hardware;
+    const RS2CameraHardwareConfig& hardware(config.hardware);
     json hardware_data;
     _MY_JSON_PUT(hardware_data, color_width, hardware, color_width);
     _MY_JSON_PUT(hardware_data, color_height, hardware, color_height);
