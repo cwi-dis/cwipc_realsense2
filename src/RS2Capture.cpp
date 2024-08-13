@@ -169,6 +169,14 @@ void RS2Capture::_setup_camera_hardware_parameters() {
         auto allSensors = dev.query_sensors();
         auto depth_sensor = dev.first<rs2::depth_sensor>();
         auto color_sensor = dev.first<rs2::color_sensor>();
+        // We set visual preset first, because Jack is not sure whether it
+        // contains values for some of the next settings.
+        if (depth_sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
+            depth_sensor.set_option(
+                RS2_OPTION_VISUAL_PRESET,
+                (float)configuration.hardware.visual_preset
+            );
+        }
         // Options for color sensor
         if (configuration.hardware.color_exposure >= 0) {
             assert(color_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
@@ -213,14 +221,7 @@ void RS2Capture::_setup_camera_hardware_parameters() {
             depth_sensor.set_option(RS2_OPTION_LASER_POWER, configuration.hardware.laser_power);
         }
 
-        // xxxjack note: the document at <https://github.com/IntelRealSense/librealsense/wiki/D400-Series-Visual-Presets>
-        // suggests that this may depend on using 1280x720@30 with decimation=3. Need to check.
-        if (depth_sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
-            depth_sensor.set_option(
-                RS2_OPTION_VISUAL_PRESET,
-                configuration.hardware.visual_preset
-            );
-        }
+    
     }
 }
 
