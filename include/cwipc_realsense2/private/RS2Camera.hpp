@@ -64,13 +64,10 @@ protected:
     
 
 public:
-    float pointSize;
-    // These are public because pcl_align wants to access them
-    double minx;
-    double minz;
-    double maxz;
-    int camera_index;
-    std::string serial;
+    float pointSize; ///< Needed by RS2Capture, computed once at camera start
+
+    int camera_index; ///< Needed by RS2Capture
+    std::string serial; ///< Needed by RS2Capture
 
 protected:
     RS2CameraConfig& camera_config;

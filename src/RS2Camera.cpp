@@ -90,7 +90,10 @@ inline bool isPointInRadius(cwipc_pcl_point& pt, float radius_filter) {
 }
 
 RS2Camera::RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index) :
-  pointSize(0), minx(0), minz(0), maxz(0),
+  pointSize(0), 
+#if 0
+  minx(0), minz(0), maxz(0),
+#endif
   camera_index(_camera_index),
   serial(configuration.all_camera_configs[_camera_index].serial),
   camera_stopped(true),
