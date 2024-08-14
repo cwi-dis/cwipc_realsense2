@@ -91,7 +91,6 @@ bool RS2Capture::config_reload(const char *configFilename) {
         throw;
     }
 
-    starttime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     //
     // start the per-camera capture threads
     //
@@ -503,7 +502,6 @@ cwipc* RS2Capture::get_pointcloud() {
         });
 
         mergedPC_is_fresh = false;
-        numberOfPCsProduced++;
         rv = mergedPC;
     }
 

@@ -47,8 +47,7 @@ protected:
     void _unload_cameras();
 
     RS2CameraConfig* get_camera_config(std::string serial);
-    void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
-    
+    void _control_thread_main();
     void _find_camera_positions();
     virtual bool _apply_config(const char* configFilename);
     bool _apply_default_config();
@@ -62,13 +61,10 @@ protected:
     void _request_new_pointcloud();           // Internal: request a new pointcloud to be grabbed and processed
 
 public:
-
-    // variables
+    /// Current configuration. Has to be public because cwipc_realsense2 needs access to all sorts of internals
+    /// of it, but it would be better if this access was readonly...
     RS2CaptureConfig configuration;
-    uint64_t starttime = 0;
-    int numberOfPCsProduced = 0;
-    int camera_count = 0; // number of cameras
-                          //
+    int camera_count = 0;
 
 protected:
     static rs2::context* ctx_p;             // librealsense2 context (coordinates all cameras)
