@@ -430,7 +430,9 @@ void RS2Camera::_processing_thread_main() {
         
         assert(depth);
         assert(color);
-
+#if xxxjack_dont_want
+        // This code is disabled, because here we get the size of the processed
+        // images, not the images as captured.
         int color_width = color.get_width();
         int color_height = color.get_height();
         int depth_width = depth.get_width();
@@ -453,6 +455,7 @@ void RS2Camera::_processing_thread_main() {
         hardware.color_height = color_height;
         hardware.depth_width = depth_width;
         hardware.depth_height = depth_height;
+#endif
 
         if (processing.depth_x_erosion > 0 || processing.depth_y_erosion > 0) {
             _erode_depth(depth, processing.depth_x_erosion, processing.depth_y_erosion);

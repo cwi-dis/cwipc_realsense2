@@ -67,6 +67,8 @@ public:
     int camera_count = 0;
 
 protected:
+    rs2::context capturer_context;
+#if 0
     static rs2::context* ctx_p;             // librealsense2 context (coordinates all cameras)
                                             //
     static inline rs2::context& ctx() { 
@@ -75,7 +77,7 @@ protected:
         }
         return *ctx_p;
     }
-
+#endif
     std::vector<RS2Camera*> cameras;                // Storage of camera specifics
     bool stopped = false;
     std::thread *control_thread = nullptr;

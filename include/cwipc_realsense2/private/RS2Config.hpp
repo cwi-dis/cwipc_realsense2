@@ -73,7 +73,7 @@ struct RS2CameraHardwareConfig {
     int depth_exposure = -1;              // Set exposure for depth. -1 is auto.
     int whitebalance = -1;                // Set whitebalance for color camera. -1 is auto.
     int backlight_compensation = -1;      // Set backlight compesnation for color camera. -1 is don't change.
-    int laser_power = 360;                // Laser power. -1 is don't change.
+    int laser_power = -1;                // Laser power. -1 is don't change.
 };
 
 struct RS2CaptureProcessingConfig {

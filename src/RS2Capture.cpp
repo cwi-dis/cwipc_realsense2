@@ -28,7 +28,9 @@
 // if there is another one open.
 static int numberOfCapturersActive = 0;
 
+#if 0
 rs2::context* RS2Capture::ctx_p = nullptr;
+#endif
 
 RS2Capture::RS2Capture() {
     type = "realsense";
@@ -142,7 +144,7 @@ std::string RS2Capture::config_get() {
 }
 
 void RS2Capture::_refresh_camera_hardware_parameters() {
-    rs2::device_list devs = ctx().query_devices();
+    rs2::device_list devs = capturer_context.query_devices();
     rs2::device dev = *devs.begin();
     rs2::depth_sensor depth_sensor = dev.first<rs2::depth_sensor>();
     rs2::color_sensor color_sensor = dev.first<rs2::color_sensor>();
@@ -168,7 +170,7 @@ void RS2Capture::_refresh_camera_hardware_parameters() {
 
 
 void RS2Capture::_setup_camera_hardware_parameters() {
-    rs2::device_list devs = ctx().query_devices();
+    rs2::device_list devs = capturer_context.query_devices();
     for (auto dev : devs) {
         auto allSensors = dev.query_sensors();
         auto depth_sensor = dev.first<rs2::depth_sensor>();
@@ -231,7 +233,7 @@ void RS2Capture::_setup_camera_hardware_parameters() {
 
 void RS2Capture::_setup_camera_sync() {
 #ifdef WITH_INTER_CAM_SYNC
-    rs2::device_list devs = ctx().query_devices();
+    rs2::device_list devs = capturer_context.query_devices();
     bool master_set = false;
 
     for (auto dev : devs) {
@@ -282,10 +284,11 @@ void RS2Capture::_find_camera_positions() {
 int RS2Capture::count_devices() {
     // Determine how many realsense cameras (not platform cameras like webcams) are connected
     const std::string platform_camera_name = "Platform Camera";
-    rs2::device_list devs = ctx().query_devices();
+    rs2::context temp_context;
+    rs2::device_list devs = temp_context.query_devices();
     int camera_count = 0;
 
-    for (auto dev : devs) {
+    for (rs2::device dev : devs) {
         if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
             camera_count++;
         }
@@ -336,7 +339,7 @@ bool RS2Capture::_apply_config(const char* configFilename) {
 bool RS2Capture::_apply_default_config() {
     // Determine how many realsense cameras (not platform cameras like webcams) are connected
     const std::string platform_camera_name = "Platform Camera";
-    rs2::device_list devs = ctx().query_devices();
+    rs2::device_list devs = capturer_context.query_devices();
 
     //
     // Enumerate over all connected cameras, create their default RS2CameraData structures
@@ -393,7 +396,7 @@ bool RS2Capture::_apply_default_config() {
 }
 
 bool RS2Capture::_create_cameras() {
-    rs2::device_list devs = ctx().query_devices();
+    rs2::device_list devs = capturer_context.query_devices();
     const std::string platform_camera_name = "Platform Camera";
 
     for (auto dev : devs) {
@@ -425,7 +428,7 @@ bool RS2Capture::_create_cameras() {
         if (cd->disabled) {
             // xxxnacho do we need to close the device, like the kinect case?
         } else {
-            auto cam = new RS2Camera(ctx(), configuration, camera_index, *cd);
+            auto cam = new RS2Camera(capturer_context, configuration, camera_index, *cd);
             cameras.push_back(cam);
             cd->connected = true;
         }
