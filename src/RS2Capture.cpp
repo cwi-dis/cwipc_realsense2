@@ -100,7 +100,7 @@ bool RS2Capture::config_reload(const char *configFilename) {
     }
     
     for (auto cam: cameras) {
-        cam->all_cameras_started();
+        cam->post_start_all_cameras();
     }
    
     //

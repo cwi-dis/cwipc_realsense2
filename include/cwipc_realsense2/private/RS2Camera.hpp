@@ -25,8 +25,9 @@ public:
 
     void start();
     virtual void start_capturer();
-    virtual void all_cameras_started() {}
+    virtual void post_start_all_cameras() {}
     void stop();
+
     bool capture_frameset();
     void create_pc_from_frames();
     void wait_for_pc();
@@ -34,15 +35,29 @@ public:
     uint64_t get_capture_timestamp();
     cwipc_pcl_pointcloud get_current_pointcloud() { return current_pointcloud; }
     bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d);
+    bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
 
-    // This is public because RS2Capture needs it when dumping the color images
-    rs2::frameset current_frameset;
-    float pointSize;
 protected:
     virtual void _pre_start(rs2::config &cfg);
     virtual void _post_start();
 
+    void _init_pointcloud(int size);
+    void _init_filters();
+
+    virtual void _start_processing_thread();
+    void _processing_thread_main();
+    virtual void _start_capture_thread();
+    virtual void _capture_thread_main();
+    
+    void _computePointSize(rs2::pipeline_profile profile);
+    void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
+    void transformPoint(float *out, const float *in);
+    
+    void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
+
 public:
+    rs2::frameset current_frameset;
+    float pointSize;
     // These are public because pcl_align wants to access them
     double minx;
     double minz;
@@ -53,17 +68,7 @@ public:
 protected:
     bool stopped;
     std::thread *processing_thread;
-    void _init_pointcloud(int size);
-    void _computePointSize(rs2::pipeline_profile profile);
-    void _processing_thread_main();
-    virtual void _start_capture_thread();
-    virtual void _capture_thread_main();
     rs2::frame_queue captured_frame_queue;
-    void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
-    void transformPoint(float *out, const float *in);
-    void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
-
-protected:
     RS2CameraConfig& camera_config;
     RS2CaptureProcessingConfig& processing;
     RS2CameraProcessingParameters& filtering;
@@ -71,13 +76,9 @@ protected:
     RS2CaptureAuxdataConfig& auxData;
     cwipc_pcl_pointcloud current_pointcloud;
 
-public:
-    bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
-protected:
-
     std::string record_to_file;
 
-    std::thread *grabber_thread;
+    std::thread *capture_thread;
     rs2::frame_queue processing_frame_queue;
     std::mutex processing_mutex;
     rs2::frameset processed_frameset;
@@ -101,7 +102,6 @@ protected:
     rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
     rs2::pointcloud pointcloud;     // The pointcloud constructor
 
-    void _init_filters();
 };
 
 #endif // cwipc_realsense_RS2Camera_hpp

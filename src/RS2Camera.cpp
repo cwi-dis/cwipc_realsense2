@@ -101,7 +101,7 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   hardware(configuration.hardware),
   auxData(configuration.auxData),
   current_pointcloud(nullptr),
-  grabber_thread(nullptr),
+  capture_thread(nullptr),
   processing_frame_queue(1),
   context(ctx),
   pipe(ctx),
@@ -296,12 +296,12 @@ void RS2Camera::stop() {
         if (!ok) break;
     }
     // Join and delete the grabber thread
-    if (grabber_thread) {
-        grabber_thread->join();
+    if (capture_thread) {
+        capture_thread->join();
     }
 
-    delete grabber_thread;
-    grabber_thread = nullptr;
+    delete capture_thread;
+    capture_thread = nullptr;
 
     // Join and delete the processor thread
     if (processing_thread) {
@@ -326,13 +326,17 @@ void RS2Camera::start_capturer() {
     stopped = false;
 
     _start_capture_thread();
+    _start_processing_thread();
+}
+
+void RS2Camera::_start_processing_thread() {
     processing_thread = new std::thread(&RS2Camera::_processing_thread_main, this);
     _cwipc_setThreadName(processing_thread, L"cwipc_realsense2::RS2Camera::processing_thread");
 }
 
 void RS2Camera::_start_capture_thread() {
-    grabber_thread = new std::thread(&RS2Camera::_capture_thread_main, this);
-    _cwipc_setThreadName(grabber_thread, L"cwipc_realsense2::RS2Camera::capture_thread");
+    capture_thread = new std::thread(&RS2Camera::_capture_thread_main, this);
+    _cwipc_setThreadName(capture_thread, L"cwipc_realsense2::RS2Camera::capture_thread");
 }
 
 void RS2Camera::_capture_thread_main() {

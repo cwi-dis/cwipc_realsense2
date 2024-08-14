@@ -54,7 +54,7 @@ void RS2PlaybackCamera::_post_start() {
     }
 }
 
-void RS2PlaybackCamera::all_cameras_started() {
+void RS2PlaybackCamera::post_start_all_cameras() {
     rs2::pipeline_profile prof = pipe.get_active_profile();
     rs2::device dev = prof.get_device();
     rs2::playback playback = dev.as<rs2::playback>();
