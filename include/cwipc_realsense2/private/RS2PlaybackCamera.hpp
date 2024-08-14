@@ -20,7 +20,7 @@ public:
     virtual void post_start_all_cameras() override;
 protected:
     virtual void _pre_start(rs2::config &cfg) override;
-    virtual void _post_start() override;
+    virtual void _post_start(rs2::pipeline_profile& profile) override;
 private:
     std::string playback_filename;
 

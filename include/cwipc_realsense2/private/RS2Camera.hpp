@@ -14,7 +14,7 @@
 
 class RS2Camera : CwipcBaseCamera {
 public:
-    RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData);
+    RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData);
     virtual ~RS2Camera();
 
     /// First step in starting: starts the camera. Called for all cameras. 
@@ -45,12 +45,12 @@ public:
     bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
 
 protected:
-    virtual void _pre_start(rs2::config &cfg);
-    virtual void _post_start();
+    virtual void _pre_start(rs2::config& cfg);
+    virtual void _post_start(rs2::pipeline_profile& profile);
 
     void _init_filters();
 
-    virtual void _start_processing_thread();
+    void _start_processing_thread();
     void _processing_thread_main();
     virtual void _start_capture_thread();
     virtual void _capture_thread_main();
@@ -81,14 +81,14 @@ protected:
     RS2CaptureAuxdataConfig& auxData;
     std::string record_to_file;
     
-    bool stopped;
-    bool pipe_started;
+    bool camera_stopped;
+    bool camera_pipeline_started;
 
-    std::thread *processing_thread;
-    std::thread *capture_thread;
+    std::thread *camera_processing_thread;
+    std::thread *camera_capture_thread;
     
-    rs2::context context;
-    rs2::pipeline pipe;
+    rs2::context capturer_context;
+    rs2::pipeline camera_pipeline;
     
     rs2::frame_queue captured_frame_queue;
     rs2::frame_queue processing_frame_queue;

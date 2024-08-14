@@ -26,9 +26,10 @@ public:
     /// Create a new RS2Capture multi-camera capturer.
     static RS2Capture* factory() { return new RS2Capture(); }
 
+    /// Reload configuration, possibly restarting capturer and cameras.
     virtual bool config_reload(const char *configFilename);
+    /// Get complete current configuration as JSON string.
     std::string config_get();
-    RS2CameraConfig* get_camera_config(std::string serial);
 
     /// Returns true when a new point cloud is available.
     bool pointcloud_available(bool wait);
@@ -45,6 +46,7 @@ protected:
     virtual bool _create_cameras();
     void _unload_cameras();
 
+    RS2CameraConfig* get_camera_config(std::string serial);
     void _control_thread_main();              // Internal: main thread that controls per-camera grabbing and processing and combines pointclouds.
     
     void _find_camera_positions();

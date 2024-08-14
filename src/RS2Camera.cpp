@@ -89,11 +89,11 @@ inline bool isPointInRadius(cwipc_pcl_point& pt, float radius_filter) {
     return distance_2 < radius_filter * radius_filter; // radius^2 to avoid sqrt
 }
 
-RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camera_config) :
+RS2Camera::RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camera_config) :
   pointSize(0), minx(0), minz(0), maxz(0),
   camera_index(_camera_index),
   serial(_camera_config.serial),
-  stopped(true),
+  camera_stopped(true),
   captured_frame_queue(1),
   camera_config(_camera_config),
   filtering(configuration.filtering),
@@ -101,11 +101,11 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   hardware(configuration.hardware),
   auxData(configuration.auxData),
   current_pointcloud(nullptr),
-  capture_thread(nullptr),
+  camera_capture_thread(nullptr),
   processing_frame_queue(1),
-  context(ctx),
-  pipe(ctx),
-  pipe_started(false),
+  capturer_context(_ctx),
+  camera_pipeline(_ctx),
+  camera_pipeline_started(false),
   align_color_to_depth(RS2_STREAM_DEPTH),
   align_depth_to_color(RS2_STREAM_COLOR)
 {
@@ -124,7 +124,7 @@ RS2Camera::~RS2Camera() {
 #ifdef CWIPC_DEBUG
     std::cout << "cwipc_realsense2: destroying " << serial << std::endl;
 #endif
-    assert(stopped);
+    assert(camera_stopped);
 }
 
 bool RS2Camera::getHardwareParameters(RS2CameraHardwareConfig& output, bool match) {
@@ -191,20 +191,19 @@ bool RS2Camera::wait_for_captured_frameset() {
 
 // Configure and initialize caputuring of one camera
 void RS2Camera::start_camera() {
-    assert(stopped);
+    assert(camera_stopped);
+    assert(!camera_pipeline_started);
+    assert(camera_capture_thread == nullptr);
+    assert(camera_processing_thread == nullptr);
     rs2::config cfg;
 #ifdef CWIPC_DEBUG
     std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
 #endif
     _pre_start(cfg);
-    cfg.enable_stream(RS2_STREAM_COLOR, hardware.color_width, hardware.color_height, RS2_FORMAT_RGB8, hardware.fps);
-    cfg.enable_stream(RS2_STREAM_DEPTH, hardware.depth_width, hardware.depth_height, RS2_FORMAT_Z16, hardware.fps);
-    // xxxjack need to set things like disabling color correction and auto-exposure
-    // xxxjack need to allow setting things like laser power
-    auto profile = pipe.start(cfg);   // Start streaming with the configuration just set
-    _post_start();
+    rs2::pipeline_profile profile = camera_pipeline.start(cfg);   // Start streaming with the configuration just set
+    _post_start(profile);
     _computePointSize(profile);
-    pipe_started = true;
+    camera_pipeline_started = true;
 }
 
 void RS2Camera::_pre_start(rs2::config &cfg) {
@@ -213,27 +212,39 @@ void RS2Camera::_pre_start(rs2::config &cfg) {
         std::cerr << "RS2Camera::_pre_start: recording to " << record_to_file << std::endl;
         cfg.enable_record_to_file(record_to_file);
     }
+    cfg.enable_stream(RS2_STREAM_COLOR, hardware.color_width, hardware.color_height, RS2_FORMAT_RGB8, hardware.fps);
+    cfg.enable_stream(RS2_STREAM_DEPTH, hardware.depth_width, hardware.depth_height, RS2_FORMAT_Z16, hardware.fps);
 }
 
-void RS2Camera::_post_start() {
+void RS2Camera::_post_start(rs2::pipeline_profile& profile) {
     // Obtain actual serial number and fps. Most important for playback cameras, but also useful for
     // live cameras (because the user program can obtain correct cameraconfig data with get_config()).
-    rs2::pipeline_profile prof = pipe.get_active_profile();
-    rs2::device dev = prof.get_device();
+    rs2::device dev = profile.get_device();
     // Keep actual serial number, also in cameraconfig
     serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     camera_config.serial = serial;
     std::vector<rs2::sensor> sensors = dev.query_sensors();
     int depth_fps = hardware.fps;
+    int depth_width = hardware.depth_width;
+    int depth_height = hardware.depth_height;
     int color_fps = hardware.fps;
+    int color_width = hardware.color_width;
+    int color_height = hardware.color_height;
     for(rs2::sensor sensor : sensors) {
         std::vector<rs2::stream_profile> streams = sensor.get_active_streams();
         for(rs2::stream_profile stream : streams) {
-            if (stream.stream_type() == RS2_STREAM_DEPTH) {
-                depth_fps = stream.fps();
+            rs2::video_stream_profile vstream = stream.as<rs2::video_stream_profile>();
+
+            if (vstream.stream_type() == RS2_STREAM_DEPTH) {
+                depth_fps = vstream.fps();
+                depth_width = vstream.width();
+                depth_height = vstream.height();
+
             }
             if (stream.stream_type() == RS2_STREAM_COLOR) {
-                color_fps = stream.fps();
+                color_fps = vstream.fps();
+                color_width = vstream.width();
+                color_height = vstream.height();
             }
         }
     }
@@ -241,7 +252,10 @@ void RS2Camera::_post_start() {
         std::cerr << "RS2Camera: Warning: depth_fps=" << depth_fps << " and color_fps=" << color_fps << std::endl;
     }
     hardware.fps = depth_fps;
-   
+    hardware.depth_width = depth_width;
+    hardware.depth_height = depth_height;
+    hardware.color_width = color_width;
+    hardware.color_height = color_height;
 }
 
 void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
@@ -281,8 +295,8 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
 
 void RS2Camera::stop_camera_and_capturer() {
     // Tell the grabber and processor thread that we want to stop.
-    assert(!stopped);
-    stopped = true;
+    assert(!camera_stopped);
+    camera_stopped = true;
 
     // Clear out the queues so we don't get into a deadlock
     while (true) {
@@ -296,47 +310,47 @@ void RS2Camera::stop_camera_and_capturer() {
         if (!ok) break;
     }
     // Join and delete the grabber thread
-    if (capture_thread) {
-        capture_thread->join();
+    if (camera_capture_thread) {
+        camera_capture_thread->join();
     }
 
-    delete capture_thread;
-    capture_thread = nullptr;
+    delete camera_capture_thread;
+    camera_capture_thread = nullptr;
 
     // Join and delete the processor thread
-    if (processing_thread) {
-        processing_thread->join();
+    if (camera_processing_thread) {
+        camera_processing_thread->join();
     }
 
-    delete processing_thread;
-    processing_thread = nullptr;
+    delete camera_processing_thread;
+    camera_processing_thread = nullptr;
 
     // stop the pipeline.
-    if (pipe_started) {
-        pipe.stop();
+    if (camera_pipeline_started) {
+        camera_pipeline.stop();
     }
 
-    pipe_started = false;
+    camera_pipeline_started = false;
     processing_done = true;
     processing_done_cv.notify_one();
 }
 
 void RS2Camera::start_capturer() {
-    assert(stopped);
-    stopped = false;
+    assert(camera_stopped);
+    camera_stopped = false;
 
     _start_capture_thread();
     _start_processing_thread();
 }
 
 void RS2Camera::_start_processing_thread() {
-    processing_thread = new std::thread(&RS2Camera::_processing_thread_main, this);
-    _cwipc_setThreadName(processing_thread, L"cwipc_realsense2::RS2Camera::processing_thread");
+    camera_processing_thread = new std::thread(&RS2Camera::_processing_thread_main, this);
+    _cwipc_setThreadName(camera_processing_thread, L"cwipc_realsense2::RS2Camera::processing_thread");
 }
 
 void RS2Camera::_start_capture_thread() {
-    capture_thread = new std::thread(&RS2Camera::_capture_thread_main, this);
-    _cwipc_setThreadName(capture_thread, L"cwipc_realsense2::RS2Camera::capture_thread");
+    camera_capture_thread = new std::thread(&RS2Camera::_capture_thread_main, this);
+    _cwipc_setThreadName(camera_capture_thread, L"cwipc_realsense2::RS2Camera::capture_thread");
 }
 
 void RS2Camera::_capture_thread_main() {
@@ -344,9 +358,9 @@ void RS2Camera::_capture_thread_main() {
     std::cerr << "frame capture: cam=" << serial << " thread started" << std::endl;
 #endif
 
-    while(!stopped) {
+    while(!camera_stopped) {
         // Wait to find if there is a next set of frames from the camera
-        rs2::frameset frames = pipe.wait_for_frames();
+        rs2::frameset frames = camera_pipeline.wait_for_frames();
 
 #ifdef CWIPC_DEBUG_THREAD
         std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
@@ -365,7 +379,7 @@ void RS2Camera::_processing_thread_main() {
     std::cerr << "frame processing: cam=" << serial << " thread started" << std::endl;
 #endif
 
-    while(!stopped) {
+    while(!camera_stopped) {
         // Wait for next frame to process. Allow aborting in case of stopped becoming false...
         rs2::frameset processing_frameset;
         bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset, 1000);
@@ -617,7 +631,7 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     float indepth = float(d_2d) / 1000.0;
     float tmp3d[3] = {0, 0, 0};
     // Now get the intrinsics for the depth stream
-    rs2::pipeline_profile profile = pipe.get_active_profile();
+    rs2::pipeline_profile profile = camera_pipeline.get_active_profile();
     rs2::video_stream_profile stream = (
         filtering.map_color_to_depth ?
         profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>() :

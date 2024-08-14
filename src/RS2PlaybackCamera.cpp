@@ -31,9 +31,8 @@ void RS2PlaybackCamera::_pre_start(rs2::config &cfg) {
     cfg.enable_device_from_file(playback_filename);
 }
 
-void RS2PlaybackCamera::_post_start() {
-    rs2::pipeline_profile prof = pipe.get_active_profile();
-    rs2::device dev = prof.get_device();
+void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
+    rs2::device dev = profile.get_device();
     rs2::playback playback = dev.as<rs2::playback>();
 #if 0
     // xxxjack for some reason pause() here and resume() in all_cameras_started doesn't work:
@@ -41,21 +40,21 @@ void RS2PlaybackCamera::_post_start() {
     playback.pause();
 #endif
     playback.set_real_time(false);
-    RS2Camera::_post_start();
-
+    
      // Seek device, if needed
-    if (camera_config.inPointMicroSeconds != 0) {
-        uint64_t new_pos = ((uint64_t)1000) * camera_config.inPointMicroSeconds;
+    if (camera_config.playback_inpoint_micros != 0) {
+        uint64_t new_pos = ((uint64_t)1000) * camera_config.playback_inpoint_micros;
         uint64_t old_pos = playback.get_position();
 #ifdef CWIPC_DEBUG
         std::cerr << "RS2PlaybackCamera::_post_start: pos was " << old_pos << " seek to " << new_pos << std::endl;
 #endif
         playback.seek(std::chrono::nanoseconds(new_pos));
     }
+    RS2Camera::_post_start(profile);
 }
 
 void RS2PlaybackCamera::post_start_all_cameras() {
-    rs2::pipeline_profile prof = pipe.get_active_profile();
+    rs2::pipeline_profile prof = camera_pipeline.get_active_profile();
     rs2::device dev = prof.get_device();
     rs2::playback playback = dev.as<rs2::playback>();
     playback.resume();

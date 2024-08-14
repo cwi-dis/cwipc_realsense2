@@ -50,9 +50,9 @@ bool RS2PlaybackCapture::_create_cameras() {
     for (RS2CameraConfig& cd : configuration.all_camera_configs) {
         // Ensure we have a serial
         if (cd.serial == "") {
-            cd.serial = cd.filename;
+            cd.serial = cd.playback_filename;
         }
-        if (cd.filename == "") {
+        if (cd.playback_filename == "") {
             cwipc_rs2_log_warning("Camera has no filename");
             return false;
         }
@@ -69,9 +69,9 @@ bool RS2PlaybackCapture::_create_cameras() {
         else {
             std::string recording_filename;
             if (base_directory == "") {
-                recording_filename = cd.filename;
+                recording_filename = cd.playback_filename;
             } else {
-                recording_filename = base_directory + cd.filename;
+                recording_filename = base_directory + cd.playback_filename;
             }
             auto cam = new RS2PlaybackCamera(ctx(), configuration, camera_index, cd, recording_filename);
             cameras.push_back(cam);
