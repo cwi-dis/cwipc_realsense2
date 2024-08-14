@@ -13,12 +13,6 @@
 #include "cwipc_realsense2/private/RS2Config.hpp"
 
 class RS2Camera : CwipcBaseCamera {
-    RS2Camera(const RS2Camera&);    // Disable copy constructor
-    RS2Camera& operator=(const RS2Camera&); // Disable assignment
-                                            //
-protected:
-    RS2Camera(int _camera_index, rs2::context& ctx, RS2CaptureConfig& configuration, RS2CameraConfig& _camData);
-
 public:
     RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData);
     virtual ~RS2Camera();

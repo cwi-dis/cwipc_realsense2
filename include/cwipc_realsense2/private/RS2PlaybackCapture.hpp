@@ -13,12 +13,13 @@
 #include "cwipc_realsense2/private/RS2PlaybackCamera.hpp"
 
 class RS2PlaybackCapture : public RS2Capture {
+private:
+    RS2PlaybackCapture();   
 public:
-    // methods
-    RS2PlaybackCapture();
     ~RS2PlaybackCapture();
-     static int count_devices() { return 0; }
+    static int count_devices() { return 0; }
     static RS2PlaybackCapture* factory() { return new RS2PlaybackCapture(); }
+    
 protected:
     virtual void _setup_camera_sync() override {};
     virtual void _setup_camera_hardware_parameters() override {};
