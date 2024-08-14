@@ -86,6 +86,11 @@ struct RS2CaptureProcessingConfig {
     double radius_filter = 0.0;           // if > 0 apply filter around x=z=0 line.
 };
 
+struct RS2CaptureAuxdataConfig {
+    bool want_auxdata_rgb = false;
+    bool want_auxdata_depth = false;
+};
+
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // camera-independent processing (implemented in our code)
     RS2CaptureProcessingConfig processing;
@@ -95,8 +100,7 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     RS2CameraHardwareConfig hardware;
 
     // special features
-    bool want_auxdata_rgb = false;
-    bool want_auxdata_depth = false;
+    RS2CaptureAuxdataConfig auxData;
     std::string record_to_directory = ""; // If non-empty all camera streams will be recorded to this directory.
 
 

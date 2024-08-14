@@ -41,6 +41,11 @@ RS2Capture::RS2Capture() {
     }
 }
 
+void RS2Capture::request_image_auxdata(bool _rgb, bool _depth) {
+    configuration.auxData.want_auxdata_rgb = _rgb;
+    configuration.auxData.want_auxdata_depth = _depth;
+}
+
 bool RS2Capture::config_reload(const char *configFilename) {
     _unload_cameras();
     camera_count = 0;
@@ -292,8 +297,9 @@ int RS2Capture::count_devices() {
 
 bool RS2Capture::_apply_config(const char* configFilename) {
     // Clear out old configuration
-    RS2CaptureConfig empty;
-    configuration = empty;
+    RS2CaptureConfig newConfiguration;
+    newConfiguration.auxData = configuration.auxData;
+    configuration = newConfiguration;
 
     //
     // Read the configuration. We do this only now because for historical reasons the configuration
@@ -598,9 +604,9 @@ void RS2Capture::_control_thread_main() {
         cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
         mergedPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
 
-        if (want_auxdata_rgb || want_auxdata_depth) {
+        if (configuration.auxData.want_auxdata_rgb || configuration.auxData.want_auxdata_depth) {
             for (auto cam : cameras) {
-                cam->save_auxdata(mergedPC, want_auxdata_rgb, want_auxdata_depth);
+                cam->save_auxdata(mergedPC);
             }
         }
 

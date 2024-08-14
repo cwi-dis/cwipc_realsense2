@@ -30,7 +30,7 @@ public:
     bool capture_frameset();
     void create_pc_from_frames();
     void wait_for_pc();
-    void save_auxdata(cwipc *pc, bool rgb, bool depth);
+    void save_auxdata(cwipc *pc);
     uint64_t get_capture_timestamp();
     cwipc_pcl_pointcloud get_current_pointcloud() { return current_pointcloud; }
     bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d);
@@ -68,6 +68,7 @@ protected:
     RS2CaptureProcessingConfig& processing;
     RS2CameraProcessingParameters& filtering;
     RS2CameraHardwareConfig& hardware;
+    RS2CaptureAuxdataConfig& auxData;
     cwipc_pcl_pointcloud current_pointcloud;
 
 public:

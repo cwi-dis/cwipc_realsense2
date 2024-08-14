@@ -99,6 +99,7 @@ RS2Camera::RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _ca
   filtering(configuration.filtering),
   processing(configuration.processing),
   hardware(configuration.hardware),
+  auxData(configuration.auxData),
   current_pointcloud(nullptr),
   grabber_thread(nullptr),
   processing_frame_queue(1),
@@ -623,14 +624,15 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     transformPoint(out3d, tmp3d);
     return true;
 }
-void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
+
+void RS2Camera::save_auxdata(cwipc *pc)
 {
-    if (!rgb && !depth) return;
+    if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb) return;
     std::unique_lock<std::mutex> lock(processing_mutex);
 
     auto aligned_frameset = processed_frameset;
     if (aligned_frameset.size() == 0) return;
-    if (rgb) {
+    if (auxData.want_auxdata_rgb) {
         std::string name = "rgb." + serial;
         rs2::video_frame color_image = aligned_frameset.get_color_frame();
         
@@ -656,7 +658,7 @@ void RS2Camera::save_auxdata(cwipc *pc, bool rgb, bool depth)
         }
     }
 
-    if (depth) {
+    if (auxData.want_auxdata_depth) {
         std::string name = "depth." + serial;
         rs2::video_frame depth_image = aligned_frameset.get_depth_frame();
         const size_t size = depth_image.get_data_size();

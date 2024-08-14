@@ -47,13 +47,7 @@ public:
     int numberOfPCsProduced = 0;
     int camera_count = 0; // number of cameras
                           //
-    void request_image_auxdata(bool _rgb, bool _depth) {
-        want_auxdata_rgb = _rgb;
-        want_auxdata_depth = _depth;
-    }
-
-    bool want_auxdata_rgb = false;
-    bool want_auxdata_depth = false;
+    void request_image_auxdata(bool _rgb, bool _depth);
 
 protected:
     static rs2::context* ctx_p;             // librealsense2 context (coordinates all cameras)
