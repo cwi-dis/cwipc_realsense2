@@ -367,32 +367,6 @@ bool RS2Capture::_apply_default_config() {
 
     return true;
 
-#ifdef xxxjack_old
-    // the configuration file did not fully match the current situation so we have to update the admin
-    std::vector<std::string> serials;
-    std::vector<RS2CameraData> realcams;
-
-    // collect serial numbers of all connected cameras
-    for (auto dev : devs) {
-        if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
-            serials.push_back(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
-        }
-    }
-
-    // collect all camera's in the config that are connected
-    for (RS2CameraData cd : configuration.all_camera_configs) {
-        if ((find(serials.begin(), serials.end(), cd.serial) != serials.end())) {
-            if (!cd.disabled) {
-                realcams.push_back(cd);
-            }
-        } else {
-            cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
-        }
-    }
-
-    // Reduce the active configuration to cameras that are connected
-    configuration.all_camera_configs = realcams;
-#endif
 }
 
 bool RS2Capture::_create_cameras() {
@@ -428,7 +402,7 @@ bool RS2Capture::_create_cameras() {
         if (cd->disabled) {
             // xxxnacho do we need to close the device, like the kinect case?
         } else {
-            auto cam = new RS2Camera(capturer_context, configuration, camera_index, *cd);
+            auto cam = new RS2Camera(capturer_context, configuration, camera_index);
             cameras.push_back(cam);
             cd->connected = true;
         }

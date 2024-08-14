@@ -89,13 +89,13 @@ inline bool isPointInRadius(cwipc_pcl_point& pt, float radius_filter) {
     return distance_2 < radius_filter * radius_filter; // radius^2 to avoid sqrt
 }
 
-RS2Camera::RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camera_config) :
+RS2Camera::RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index) :
   pointSize(0), minx(0), minz(0), maxz(0),
   camera_index(_camera_index),
-  serial(_camera_config.serial),
+  serial(configuration.all_camera_configs[_camera_index].serial),
   camera_stopped(true),
   captured_frame_queue(1),
-  camera_config(_camera_config),
+  camera_config(configuration.all_camera_configs[_camera_index]),
   filtering(configuration.filtering),
   processing(configuration.processing),
   hardware(configuration.hardware),
@@ -186,7 +186,7 @@ void RS2Camera::_init_current_pointcloud(int size) {
 }
 
 bool RS2Camera::wait_for_captured_frameset() {
-    return captured_frame_queue.try_wait_for_frame(&current_frameset);
+    return captured_frame_queue.try_wait_for_frame(&current_captured_frameset);
 }
 
 // Configure and initialize caputuring of one camera
@@ -423,7 +423,7 @@ void RS2Camera::_processing_thread_main() {
             }
 
         }
-        processed_frameset = processing_frameset;
+        current_processed_frameset = processing_frameset;
 
         rs2::depth_frame depth = processing_frameset.get_depth_frame();
         rs2::video_frame color = processing_frameset.get_color_frame();
@@ -610,7 +610,7 @@ void RS2Camera::transformPoint(float out[3], const float in[3]) {
 }
 
 void RS2Camera::create_pc_from_frameset() {
-    processing_frame_queue.enqueue(current_frameset);
+    processing_frame_queue.enqueue(current_captured_frameset);
 }
 
 void RS2Camera::wait_for_pc_created() {
@@ -651,7 +651,7 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
     if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb) return;
     std::unique_lock<std::mutex> lock(processing_mutex);
 
-    auto aligned_frameset = processed_frameset;
+    auto aligned_frameset = current_processed_frameset;
     if (aligned_frameset.size() == 0) return;
     if (auxData.want_auxdata_rgb) {
         std::string name = "rgb." + serial;

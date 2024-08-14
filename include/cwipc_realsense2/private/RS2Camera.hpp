@@ -14,7 +14,7 @@
 
 class RS2Camera : CwipcBaseCamera {
 public:
-    RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData);
+    RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index);
     virtual ~RS2Camera();
 
     /// First step in starting: starts the camera. Called for all cameras. 
@@ -64,7 +64,6 @@ protected:
     
 
 public:
-    rs2::frameset current_frameset;
     float pointSize;
     // These are public because pcl_align wants to access them
     double minx;
@@ -93,10 +92,11 @@ protected:
     rs2::frame_queue captured_frame_queue;
     rs2::frame_queue processing_frame_queue;
     std::mutex processing_mutex;
-    rs2::frameset processed_frameset;
     std::condition_variable processing_done_cv;
     bool processing_done;
     
+    rs2::frameset current_captured_frameset;
+    rs2::frameset current_processed_frameset;
     cwipc_pcl_pointcloud current_pointcloud;
 
     // for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
