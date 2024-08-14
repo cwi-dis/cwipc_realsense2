@@ -708,13 +708,3 @@ RS2CameraConfig* RS2Capture::get_camera_config(std::string serial) {
     cwipc_rs2_log_warning("Unknown camera " + serial);
     return nullptr;
 }
-
-RS2Camera* RS2Capture::get_camera(std::string serial) {
-    for (auto cam : cameras) {
-        if (cam->serial == serial) {
-            return cam;
-        }
-    }
-
-    return NULL;
-}

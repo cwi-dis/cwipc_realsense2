@@ -29,10 +29,11 @@ public:
     virtual bool config_reload(const char *configFilename);
     std::string config_get();
     RS2CameraConfig* get_camera_config(std::string serial);
-    RS2Camera* get_camera(std::string serial);
-    
-    bool pointcloud_available(bool wait);                     // Returns true if a pointcloud is available
-    cwipc* get_pointcloud(); // API function that returns the merged pointcloud
+
+    /// Returns true when a new point cloud is available.
+    bool pointcloud_available(bool wait);
+    /// Returns the new point cloud. The caller is now the owner of this point cloud.
+    cwipc* get_pointcloud();
     /// Returns a reasonable point size for the current capturer.
     float get_pointSize();
     /// Tell the capturer that each point cloud should also include RGB and/or D images.
