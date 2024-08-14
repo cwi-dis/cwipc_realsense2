@@ -657,18 +657,6 @@ void RS2Capture::_control_thread_main() {
 #endif
 }
 
-// return the merged cloud
-cwipc* RS2Capture::get_mostRecentPointCloud() {
-    if (camera_count == 0) {
-        return nullptr;
-    }
-
-    // This call doesn't need a fresh pointcloud (Jack thinks), but it does need one that is
-    // consistent. So we lock, but don't wait on the condition.
-    std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-    return mergedPC;
-}
-
 void RS2Capture::_request_new_pointcloud() {
     std::unique_lock<std::mutex> mylock(mergedPC_mutex);
 

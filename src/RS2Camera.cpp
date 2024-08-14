@@ -448,8 +448,8 @@ void RS2Camera::_processing_thread_main() {
 #endif
 
         // Calculate new pointcloud, map to the color images and get vertices and color indices
-        pointcloud.map_to(color);
-        auto points = pointcloud.calculate(depth);
+        depth_to_pointcloud.map_to(color);
+        auto points = depth_to_pointcloud.calculate(depth);
         auto vertices = points.get_vertices();
         auto texture_coordinates = points.get_texture_coordinates();
 

@@ -54,7 +54,6 @@ protected:
     virtual void _pre_start(rs2::config &cfg);
     virtual void _post_start();
 
-    void _init_current_pointcloud(int size);
     void _init_filters();
 
     virtual void _start_processing_thread();
@@ -62,11 +61,13 @@ protected:
     virtual void _start_capture_thread();
     virtual void _capture_thread_main();
     
+    void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
+
+    void _init_current_pointcloud(int size);
     void _computePointSize(rs2::pipeline_profile profile);
     void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
     void transformPoint(float *out, const float *in);
     
-    void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 
 public:
     rs2::frameset current_frameset;
@@ -79,28 +80,31 @@ public:
     std::string serial;
 
 protected:
-    bool stopped;
-    std::thread *processing_thread;
-    rs2::frame_queue captured_frame_queue;
     RS2CameraConfig& camera_config;
     RS2CaptureProcessingConfig& processing;
     RS2CameraProcessingParameters& filtering;
     RS2CameraHardwareConfig& hardware;
     RS2CaptureAuxdataConfig& auxData;
-    cwipc_pcl_pointcloud current_pointcloud;
-
     std::string record_to_file;
+    
+    bool stopped;
+    bool pipe_started;
 
+    std::thread *processing_thread;
     std::thread *capture_thread;
+    
+    rs2::context context;
+    rs2::pipeline pipe;
+    
+    rs2::frame_queue captured_frame_queue;
     rs2::frame_queue processing_frame_queue;
     std::mutex processing_mutex;
     rs2::frameset processed_frameset;
     std::condition_variable processing_done_cv;
     bool processing_done;
+    
+    cwipc_pcl_pointcloud current_pointcloud;
 
-    rs2::context context;
-    rs2::pipeline pipe;
-    bool pipe_started;
     // for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
     rs2::align align_color_to_depth;                 // Align depth and color data
     rs2::align align_depth_to_color;                   // Align depth and color data
@@ -113,7 +117,7 @@ protected:
     rs2::temporal_filter temporal_filter;                         // Temporal   - reduces temporal noise
     rs2::hole_filling_filter hole_filling_filter;
     rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
-    rs2::pointcloud pointcloud;     // The pointcloud constructor
+    rs2::pointcloud depth_to_pointcloud;     // The pointcloud constructor
 
 };
 

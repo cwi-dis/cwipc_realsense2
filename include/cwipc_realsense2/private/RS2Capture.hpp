@@ -21,9 +21,11 @@ protected:
 public:
     virtual ~RS2Capture();
     
-    static RS2Capture* factory() { return new RS2Capture(); }
-    
+    /// Return the number of RealSense cameras attached to this computer.
     static int count_devices();
+    /// Create a new RS2Capture multi-camera capturer.
+    static RS2Capture* factory() { return new RS2Capture(); }
+
     virtual bool config_reload(const char *configFilename);
     std::string config_get();
     RS2CameraConfig* get_camera_config(std::string serial);
@@ -31,10 +33,11 @@ public:
     
     bool pointcloud_available(bool wait);                     // Returns true if a pointcloud is available
     cwipc* get_pointcloud(); // API function that returns the merged pointcloud
-    cwipc* get_mostRecentPointCloud();                     // return the merged cloud most recently captured/merged (don't grab a new one)
+    /// Returns a reasonable point size for the current capturer.
     float get_pointSize();
+    /// Tell the capturer that each point cloud should also include RGB and/or D images.
     void request_image_auxdata(bool _rgb, bool _depth);
-
+    /// Return 3D point for a given camera, given RGB image 2D coordinates.
     bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d);
 
 protected:
