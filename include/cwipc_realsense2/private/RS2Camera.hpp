@@ -23,25 +23,38 @@ public:
     RS2Camera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, RS2CameraConfig& _camData);
     virtual ~RS2Camera();
 
-    void start();
+    /// First step in starting: starts the camera. Called for all cameras. 
+    void start_camera();
+    /// Second step in starting: starts the capturer. Called after all cameras have been started.
     virtual void start_capturer();
+    /// Third step in starting, called after all capturers have been started.
     virtual void post_start_all_cameras() {}
-    void stop();
+    /// Completely stops camera and capturer, releases all resources. Can be re-started with start_camera, etc.
+    void stop_camera_and_capturer();
 
-    bool capture_frameset();
-    void create_pc_from_frames();
-    void wait_for_pc();
-    void save_auxdata(cwipc *pc);
-    uint64_t get_capture_timestamp();
-    cwipc_pcl_pointcloud get_current_pointcloud() { return current_pointcloud; }
+    /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
+    bool wait_for_captured_frameset();
+    /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
+    void create_pc_from_frameset();
+    /// Step 2a: Save auxdata from frameset into given cwipc object.
+    void save_frameset_auxdata(cwipc *pc);
+    /// Step 2b: get timestamp from frameset.
+    uint64_t get_frameset_timestamp();
+    /// Step 3: Wait for the point cloud processing.
+    void wait_for_pc_created();
+    /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
+    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pointcloud; }
+    
+    /// Implementation of mapping 2D color image coordinates to 3D coordinates.
     bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d);
+    /// Get camera hardware parameters, or check that they match what we got from another camera.
     bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
 
 protected:
     virtual void _pre_start(rs2::config &cfg);
     virtual void _post_start();
 
-    void _init_pointcloud(int size);
+    void _init_current_pointcloud(int size);
     void _init_filters();
 
     virtual void _start_processing_thread();

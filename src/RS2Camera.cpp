@@ -176,7 +176,7 @@ void RS2Camera::_init_filters() {
     }
 }
 
-void RS2Camera::_init_pointcloud(int size) {
+void RS2Camera::_init_current_pointcloud(int size) {
     if (current_pointcloud == nullptr) {
         current_pointcloud = new_cwipc_pcl_pointcloud();
     }
@@ -185,12 +185,12 @@ void RS2Camera::_init_pointcloud(int size) {
     current_pointcloud->reserve(size);
 }
 
-bool RS2Camera::capture_frameset() {
+bool RS2Camera::wait_for_captured_frameset() {
     return captured_frame_queue.try_wait_for_frame(&current_frameset);
 }
 
 // Configure and initialize caputuring of one camera
-void RS2Camera::start() {
+void RS2Camera::start_camera() {
     assert(stopped);
     rs2::config cfg;
 #ifdef CWIPC_DEBUG
@@ -279,7 +279,7 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
     pointSize = rv;
 }
 
-void RS2Camera::stop() {
+void RS2Camera::stop_camera_and_capturer() {
     // Tell the grabber and processor thread that we want to stop.
     assert(!stopped);
     stopped = true;
@@ -462,7 +462,7 @@ void RS2Camera::_processing_thread_main() {
         const uint8_t camera_label = (uint8_t)1 << camera_index;
 
         // Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
-        _init_pointcloud((int)points.size());
+        _init_current_pointcloud((int)points.size());
         cwipc_pcl_pointcloud pcl_pointcloud = current_pointcloud;
 
         {
@@ -592,17 +592,17 @@ void RS2Camera::transformPoint(float out[3], const float in[3]) {
     out[2] = (*camera_config.trafo)(2,0)*in[0] + (*camera_config.trafo)(2,1)*in[1] + (*camera_config.trafo)(2,2)*in[2] + (*camera_config.trafo)(2,3);
 }
 
-void RS2Camera::create_pc_from_frames() {
+void RS2Camera::create_pc_from_frameset() {
     processing_frame_queue.enqueue(current_frameset);
 }
 
-void RS2Camera::wait_for_pc() {
+void RS2Camera::wait_for_pc_created() {
     std::unique_lock<std::mutex> lock(processing_mutex);
     processing_done_cv.wait(lock, [this]{ return processing_done; });
     processing_done = false;
 }
 
-uint64_t RS2Camera::get_capture_timestamp() {
+uint64_t RS2Camera::get_frameset_timestamp() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
@@ -629,7 +629,7 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     return true;
 }
 
-void RS2Camera::save_auxdata(cwipc *pc)
+void RS2Camera::save_frameset_auxdata(cwipc *pc)
 {
     if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb) return;
     std::unique_lock<std::mutex> lock(processing_mutex);

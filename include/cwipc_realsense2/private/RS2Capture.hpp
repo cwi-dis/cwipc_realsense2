@@ -52,7 +52,7 @@ protected:
     virtual void _refresh_camera_hardware_parameters();
     virtual bool _check_cameras_connected();
 
-    void merge_views();                       // Internal: merge all camera's pointclouds into one
+    void merge_camera_pointclouds();                       // Internal: merge all camera's pointclouds into one
     void _request_new_pointcloud();           // Internal: request a new pointcloud to be grabbed and processed
 
 public:

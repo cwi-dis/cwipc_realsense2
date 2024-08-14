@@ -84,7 +84,7 @@ bool RS2Capture::config_reload(const char *configFilename) {
     //
     try {
         for (auto cam: cameras) {
-            cam->start();
+            cam->start_camera();
         }
     } catch(const rs2::error& e) {
         cwipc_rs2_log_warning("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
@@ -445,7 +445,7 @@ void RS2Capture::_unload_cameras() {
 
     // Stop all cameras
     for (auto cam : cameras) {
-        cam->stop();
+        cam->stop_camera_and_capturer();
     }
 
     camera_count = 0;
@@ -581,13 +581,13 @@ void RS2Capture::_control_thread_main() {
         // because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
         // camera.
         for(auto cam : cameras) {
-            if (!cam->capture_frameset()) continue;
+            if (!cam->wait_for_captured_frameset()) continue;
         }
 
         // And get the best timestamp
         uint64_t timestamp = 0;
         for(auto cam: cameras) {
-            uint64_t camts = cam->get_capture_timestamp();
+            uint64_t camts = cam->get_frameset_timestamp();
             if (camts > timestamp) timestamp = camts;
         }
 
@@ -606,13 +606,13 @@ void RS2Capture::_control_thread_main() {
 
         if (configuration.auxData.want_auxdata_rgb || configuration.auxData.want_auxdata_depth) {
             for (auto cam : cameras) {
-                cam->save_auxdata(mergedPC);
+                cam->save_frameset_auxdata(mergedPC);
             }
         }
 
         // Step 3: start processing frames to pointclouds, for each camera
         for(auto cam : cameras) {
-            cam->create_pc_from_frames();
+            cam->create_pc_from_frameset();
         }
 
         // Lock mergedPC already while we are waiting for the per-camera
@@ -622,11 +622,11 @@ void RS2Capture::_control_thread_main() {
 
         // Step 4: wait for frame processing to complete.
         for(auto cam : cameras) {
-            cam->wait_for_pc();
+            cam->wait_for_pc_created();
         }
 
         // Step 5: merge views
-        merge_views();
+        merge_camera_pointclouds();
 
         if (mergedPC->access_pcl_pointcloud()->size() > 0) {
 #ifdef CWIPC_DEBUG
@@ -678,14 +678,14 @@ void RS2Capture::_request_new_pointcloud() {
     }
 }
 
-void RS2Capture::merge_views() {
+void RS2Capture::merge_camera_pointclouds() {
     cwipc_pcl_pointcloud aligned_cld(mergedPC->access_pcl_pointcloud());
 
     // Pre-allocate space in the merged pointcloud
     size_t nPoints = 0;
 
     for (auto cam : cameras) {
-        cwipc_pcl_pointcloud cam_cld = cam->get_current_pointcloud();
+        cwipc_pcl_pointcloud cam_cld = cam->access_current_pcl_pointcloud();
 
         if (cam_cld == 0) {
             cwipc_rs2_log_warning("Camera " + cam->serial + " has NULL cloud");
@@ -698,7 +698,7 @@ void RS2Capture::merge_views() {
 
     // Now merge all pointclouds
     for (auto cam : cameras) {
-        cwipc_pcl_pointcloud cam_cld = cam->get_current_pointcloud();
+        cwipc_pcl_pointcloud cam_cld = cam->access_current_pcl_pointcloud();
 
         if (cam_cld == NULL) {
             continue;
