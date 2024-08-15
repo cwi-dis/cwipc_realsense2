@@ -64,31 +64,21 @@ public:
     /// Current configuration. Has to be public because cwipc_realsense2 needs access to all sorts of internals
     /// of it, but it would be better if this access was readonly...
     RS2CaptureConfig configuration;
+    /// This is the number of active, working, cameras.
     int camera_count = 0;
 
 protected:
     rs2::context capturer_context;
-#if 0
-    static rs2::context* ctx_p;             // librealsense2 context (coordinates all cameras)
-                                            //
-    static inline rs2::context& ctx() { 
-        if (ctx_p == nullptr) {
-            ctx_p = new rs2::context();
-        }
-        return *ctx_p;
-    }
-#endif
-    std::vector<RS2Camera*> cameras;                // Storage of camera specifics
+
+    std::vector<RS2Camera*> cameras;    ///< The per-camera capturers
     bool stopped = false;
     std::thread *control_thread = nullptr;
-
-private:
-    cwipc* mergedPC = nullptr;                            // Merged pointcloud
-    std::mutex mergedPC_mutex;                                // Lock for all mergedPC-related dta structures
-    bool mergedPC_is_fresh = false;                                   // True if mergedPC contains a freshly-created pointcloud
-    std::condition_variable mergedPC_is_fresh_cv;             // Condition variable for signalling freshly-created pointcloud
-    bool mergedPC_want_new = false;                                   // Set to true to request a new pointcloud
-    std::condition_variable mergedPC_want_new_cv;             // Condition variable for signalling we want a new pointcloud
+    cwipc* mergedPC = nullptr;          ///< Merged pointcloud
+    std::mutex mergedPC_mutex;          ///< Lock for all mergedPC-related dta structures
+    bool mergedPC_is_fresh = false;     ///< True if mergedPC contains a freshly-created pointcloud
+    std::condition_variable mergedPC_is_fresh_cv;   ///< Condition variable for signalling freshly-created pointcloud
+    bool mergedPC_want_new = false;     ///< Set to true to request a new pointcloud
+    std::condition_variable mergedPC_want_new_cv;   ///< Condition variable for signalling we want a new pointcloud
 };
 
 #endif // cwipc_realsense_RS2Capture_hpp

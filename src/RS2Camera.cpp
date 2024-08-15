@@ -393,10 +393,12 @@ void RS2Camera::_processing_thread_main() {
         std::lock_guard<std::mutex> lock(processing_mutex);
 
         bool do_depth_filtering = filtering.do_decimation || filtering.do_threshold || filtering.do_spatial || filtering.do_temporal;
-        if (filtering.map_color_to_depth) {
+        if (filtering.map_color_to_depth == 1) {
             processing_frameset = processing_frameset.apply_filter(align_color_to_depth);
-        } else {
+        } else if (filtering.map_color_to_depth == 0) {
             processing_frameset = processing_frameset.apply_filter(align_depth_to_color);
+        } else {
+            // map_color_to_depth == -1 means no mapping t all.
         }
         if (do_depth_filtering) {
           
@@ -636,14 +638,22 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     // depth unit. xxxjack it should use get_depth_scale().
     float indepth = float(d_2d) / 1000.0;
     float tmp3d[3] = {0, 0, 0};
+#if 0
     // Now get the intrinsics for the depth stream
-    rs2::pipeline_profile profile = camera_pipeline.get_active_profile();
-    rs2::video_stream_profile stream = (
-        filtering.map_color_to_depth ?
-        profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>() :
-        profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>()
+    rs2::pipeline_profile pipeline_profile = camera_pipeline.get_active_profile();
+    rs2::video_stream_profile stream_profile = (
+        filtering.map_color_to_depth != 0 ?
+        pipeline_profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>() :
+        pipeline_profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>()
     );
-    rs2_intrinsics intrinsics = stream.get_intrinsics(); // Calibration data
+#else
+    rs2::video_stream_profile stream_profile = current_processed_frameset.get_depth_frame().get_profile().as<rs2::video_stream_profile>();
+    if (stream_profile == nullptr) {
+        std::cerr << "RS2Camera: map2d3d: cannot get stream_profile for intrinsics" << std::endl;
+        return false;
+    }
+#endif
+    rs2_intrinsics intrinsics = stream_profile.get_intrinsics(); // Calibration data
     rs2_deproject_pixel_to_point(tmp3d, &intrinsics, in2d, indepth);
     transformPoint(out3d, tmp3d);
     return true;

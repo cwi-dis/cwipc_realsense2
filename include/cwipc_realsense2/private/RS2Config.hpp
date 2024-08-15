@@ -24,7 +24,7 @@
 #include "cwipc_util/internal.h"
 
 struct RS2CameraProcessingParameters {
-    bool map_color_to_depth = true;
+    int map_color_to_depth = 1;     // -1 means: no mapping at all.
     
     bool do_decimation = false;
     int decimation_magnitude = 1;             // int value between 2 and 8
