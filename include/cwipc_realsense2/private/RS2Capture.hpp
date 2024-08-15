@@ -57,9 +57,9 @@ protected:
     virtual void _refresh_camera_hardware_parameters();
     virtual bool _check_cameras_connected();
 
-    void merge_camera_pointclouds();                       // Internal: merge all camera's pointclouds into one
-    void _request_new_pointcloud();           // Internal: request a new pointcloud to be grabbed and processed
-
+    void merge_camera_pointclouds();
+    void _request_new_pointcloud();
+    
 public:
     /// Current configuration. Has to be public because cwipc_realsense2 needs access to all sorts of internals
     /// of it, but it would be better if this access was readonly...

@@ -630,6 +630,8 @@ uint64_t RS2Camera::get_frameset_timestamp() {
 
 bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
 {
+    float tmp3d[3] = {0, 0, 0};
+#if 0
     float in2d[2] = {
         (float)x_2d,
         (float)y_2d
@@ -637,7 +639,7 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     // Note by Jack: the 1000.0 is a magic value, somewhere it is stated that the D4xx cameras use 1mm as the
     // depth unit. xxxjack it should use get_depth_scale().
     float indepth = float(d_2d) / 1000.0;
-    float tmp3d[3] = {0, 0, 0};
+    
 #if 0
     // Now get the intrinsics for the depth stream
     rs2::pipeline_profile pipeline_profile = camera_pipeline.get_active_profile();
@@ -655,6 +657,42 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
 #endif
     rs2_intrinsics intrinsics = stream_profile.get_intrinsics(); // Calibration data
     rs2_deproject_pixel_to_point(tmp3d, &intrinsics, in2d, indepth);
+#else
+    // Different route. We look up the depth value.
+    // First we need to get the four matrices.
+    rs2::depth_frame depth_frame = current_processed_frameset.get_depth_frame();
+    rs2::video_frame color_frame = current_processed_frameset.get_color_frame();
+    rs2::video_stream_profile depth_profile = depth_frame.get_profile().as<rs2::video_stream_profile>();
+    rs2::video_stream_profile color_profile = color_frame.get_profile().as<rs2::video_stream_profile>();
+    rs2_intrinsics depth_intrinsics = depth_profile.get_intrinsics();
+    rs2_intrinsics color_intrinsics = color_profile.get_intrinsics();
+    rs2_extrinsics depth_to_color = depth_profile.get_extrinsics_to(color_profile);
+    rs2_extrinsics color_to_depth = color_profile.get_extrinsics_to(depth_profile);
+    const uint16_t* depth_data = (const uint16_t *)depth_frame.get_data();
+    // Now we can convert the RGB x,y coordinates to depth x,y coordinates.
+    float xy_color[2] { 
+        float(x_2d), 
+        float(y_2d)
+        };
+    float xy_depth[2];
+    float min_distance = filtering.threshold_min_distance;
+    float max_distance = filtering.threshold_max_distance;
+    rs2_project_color_pixel_to_depth_pixel(
+        xy_depth,
+        depth_data,
+        1000,
+        min_distance,
+        max_distance,
+        &depth_intrinsics,
+        &color_intrinsics,
+        &color_to_depth,
+        &depth_to_color,
+        xy_color
+    );
+    // Now we can use uv_depth to find the correct depth value.
+    uint16_t depth_i = depth_data[(int)xy_depth[1]*depth_intrinsics.width + (int)xy_depth[0]];
+    rs2_deproject_pixel_to_point(tmp3d, &depth_intrinsics, xy_depth, depth_i / 1000.0);
+#endif
     transformPoint(out3d, tmp3d);
     return true;
 }
