@@ -165,7 +165,11 @@ void RS2Capture::_refresh_camera_hardware_parameters() {
 
     configuration.hardware.laser_power = (int)depth_sensor.get_option(RS2_OPTION_LASER_POWER);
 
+#ifdef xxxjack_disabled
+    // It seems the visual preset is always returned as 0 (also seen in realsense-viewer)
+    // so we don't try to get the value.
     configuration.hardware.visual_preset = (int)depth_sensor.get_option(RS2_OPTION_VISUAL_PRESET);
+#endif
 }
 
 
