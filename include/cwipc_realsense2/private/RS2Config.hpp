@@ -86,6 +86,11 @@ struct RS2CaptureProcessingConfig {
     double radius_filter = 0.0;           // if > 0 apply filter around x=z=0 line.
 };
 
+struct RS2CaptureSyncConfig {
+    std::string sync_master_serial = ""; // Serial number of master camera or "external"
+    int sync_mode = 2; // For non-master cameras, when running synced: value for RS2_OPTION_INTER_CAM_SYNC_MODE
+};
+
 struct RS2CaptureAuxdataConfig {
     bool want_auxdata_rgb = false;
     bool want_auxdata_depth = false;
@@ -98,6 +103,8 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     RS2CameraProcessingParameters filtering;
     // Hardware parameters and processing (implemented in the camera hardware)
     RS2CameraHardwareConfig hardware;
+    // Sync parameters
+    RS2CaptureSyncConfig sync;
 
     // special features
     RS2CaptureAuxdataConfig auxData;

@@ -34,9 +34,14 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     RS2CameraHardwareConfig& hardware(config.hardware);
     RS2CameraProcessingParameters& filtering(config.filtering);
     RS2CaptureProcessingConfig& processing(config.processing);
+    RS2CaptureSyncConfig& sync(config.sync);
 
     json system_data = json_data.at("system");
     _MY_JSON_GET(system_data, record_to_directory, config, record_to_directory);
+
+    json sync_data = json_data.at("sync");
+    _MY_JSON_GET(sync_data, sync_master_serial, sync, sync_master_serial);
+    _MY_JSON_GET(sync_data, sync_mode, sync, sync_mode);
 
     json hardware_data = json_data.at("hardware");
     _MY_JSON_GET(hardware_data, color_width, hardware, color_width);
@@ -134,7 +139,12 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     }
 
     json_data["camera"] = cameras;
-
+    const RS2CaptureSyncConfig& sync(config.sync);
+    json sync_data;
+    _MY_JSON_PUT(sync_data, sync_master_serial, sync, sync_master_serial);
+    _MY_JSON_PUT(sync_data, sync_mode, sync, sync_mode);
+    json_data["sync"] = sync_data;
+    
     const RS2CameraProcessingParameters& filtering(config.filtering);
     json filtering_data;
     _MY_JSON_PUT(filtering_data, map_color_to_depth, filtering, map_color_to_depth);
