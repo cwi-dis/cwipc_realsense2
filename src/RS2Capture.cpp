@@ -4,9 +4,6 @@
 //  Created by Fons Kuijk on 23-04-18
 //
 
-// Define to try and use hardware sync to synchronize multiple cameras
-#define WITH_INTER_CAM_SYNC
-
 // Define to get (a little) debug prints
 #undef CWIPC_DEBUG
 #undef CWIPC_DEBUG_THREAD
@@ -236,8 +233,43 @@ void RS2Capture::_setup_camera_hardware_parameters() {
 }
 
 void RS2Capture::_setup_camera_sync() {
-#ifdef WITH_INTER_CAM_SYNC
+    std::string master_serial = configuration.sync.sync_master_serial;
+    int nonmaster_sync_mode = configuration.sync.sync_mode;
+    bool use_sync = nonmaster_sync_mode != 0;
+    bool use_external_sync = master_serial == "external";
+    bool master_found = use_external_sync;
+
+    if (use_sync && master_serial == "") {
+        cwipc_rs2_log_warning("Sync mode requested but no sync_master_serial");
+        use_sync = false;
+    } else if (!use_sync && master_serial != "") {
+        cwipc_rs2_log_warning("Sync_master_serial set, but no sync mode requested");
+        use_sync = false;
+    }
+    if (!use_sync) {
+        return;
+    }
+
     rs2::device_list devs = capturer_context.query_devices();
+    for (auto dev : devs) {
+        std::string serial(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
+        bool is_master = serial == master_serial;
+        for (auto sensor : dev.query_sensors()) {
+            if (sensor.supports(RS2_OPTION_INTER_CAM_SYNC_MODE)) {
+                    
+                if (is_master) {
+                    sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 1);
+                    master_found = true;
+                } else {
+                    sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, nonmaster_sync_mode);
+                }
+            }
+        }
+    }
+    if (!master_found) {
+        cwipc_rs2_log_warning("Camera sync_master_serial=" + master_serial + " not found");
+    }
+#if 0
     bool master_set = false;
 
     for (auto dev : devs) {
@@ -262,7 +294,7 @@ void RS2Capture::_setup_camera_sync() {
             }
         }
     }
-#endif // WITH_INTER_CAM_SYNC
+#endif
 }
 
 void RS2Capture::_find_camera_positions() {
