@@ -236,7 +236,7 @@ public:
 
     void request_auxiliary_data(const std::string& name) override {
         cwipc_tiledsource::request_auxiliary_data(name);
-        m_grabber->request_image_auxdata(auxiliary_data_requested("rgb"), auxiliary_data_requested("depth"));
+        m_grabber->request_auxdata(auxiliary_data_requested("rgb"), auxiliary_data_requested("depth"), auxiliary_data_requested("timestamps"));
     }
 
     bool auxiliary_operation(const std::string op, const void* inbuf, size_t insize, void* outbuf, size_t outsize) override {
@@ -402,8 +402,8 @@ public:
 
     void request_auxiliary_data(const std::string& name) override {
         cwipc_tiledsource::request_auxiliary_data(name);
-        m_grabber->request_image_auxdata(auxiliary_data_requested("rgb"), auxiliary_data_requested("depth"));
-    }
+        m_grabber->request_auxdata(auxiliary_data_requested("rgb"), auxiliary_data_requested("depth"), auxiliary_data_requested("timestamps"));
+   }
 
     bool auxiliary_operation(const std::string op, const void* inbuf, size_t insize, void* outbuf, size_t outsize) override {
         // For test purposes, really...

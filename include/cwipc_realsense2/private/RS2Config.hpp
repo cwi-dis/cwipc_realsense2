@@ -94,6 +94,7 @@ struct RS2CaptureSyncConfig {
 struct RS2CaptureAuxdataConfig {
     bool want_auxdata_rgb = false;
     bool want_auxdata_depth = false;
+    bool want_image_timestamps = false;
 };
 
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {

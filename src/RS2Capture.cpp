@@ -40,7 +40,7 @@ RS2Capture::RS2Capture() {
     }
 }
 
-void RS2Capture::request_image_auxdata(bool _rgb, bool _depth) {
+void RS2Capture::request_auxdata(bool _rgb, bool _depth, bool _timestamps) {
     configuration.auxData.want_auxdata_rgb = _rgb;
     configuration.auxData.want_auxdata_depth = _depth;
 }

@@ -37,8 +37,8 @@ public:
     cwipc* get_pointcloud();
     /// Returns a reasonable point size for the current capturer.
     float get_pointSize();
-    /// Tell the capturer that each point cloud should also include RGB and/or D images.
-    void request_image_auxdata(bool _rgb, bool _depth);
+    /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
+    void request_auxdata(bool _rgb, bool _depth, bool _timestamps);
     /// Return 3D point for a given camera, given RGB image 2D coordinates.
     bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d);
 

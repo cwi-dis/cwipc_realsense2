@@ -699,15 +699,30 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
 
 void RS2Camera::save_frameset_auxdata(cwipc *pc)
 {
-    if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb) return;
+    if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb && !auxData.want_image_timestamps) return;
     std::unique_lock<std::mutex> lock(processing_mutex);
 
     auto aligned_frameset = current_processed_frameset;
     if (aligned_frameset.size() == 0) return;
+    rs2::video_frame color_image = aligned_frameset.get_color_frame();
+    rs2::video_frame depth_image = aligned_frameset.get_depth_frame();
+        
+    if (auxData.want_image_timestamps) {
+        
+        int64_t depth_timestamp = depth_image.get_frame_number();
+        int32_t depth_clock = depth_image.get_frame_timestamp_domain();
+        int64_t color_timestamp = color_image.get_frame_number();
+        int32_t color_clock = color_image.get_frame_timestamp_domain();
+        std::string timestamp_data = 
+            "depth_timestamp=" + std::to_string(depth_timestamp) +
+            "depth_clock=" + std::to_string(depth_clock) +
+            "color_timestamp=" + std::to_string(color_timestamp) +
+            "color_clock=" + std::to_string(color_clock);
+        cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
+        ap->_add("timestamps", timestamp_data, nullptr, 0, ::free);
+    }
     if (auxData.want_auxdata_rgb) {
         std::string name = "rgb." + serial;
-        rs2::video_frame color_image = aligned_frameset.get_color_frame();
-        
         //const void* pointer = color.get_data();
         const size_t size = color_image.get_data_size();
         int width = color_image.get_width();
@@ -732,7 +747,6 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
 
     if (auxData.want_auxdata_depth) {
         std::string name = "depth." + serial;
-        rs2::video_frame depth_image = aligned_frameset.get_depth_frame();
         const size_t size = depth_image.get_data_size();
         int width = depth_image.get_width();
         int height = depth_image.get_height();
