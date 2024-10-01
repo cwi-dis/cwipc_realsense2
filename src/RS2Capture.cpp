@@ -234,21 +234,16 @@ void RS2Capture::_setup_camera_hardware_parameters() {
 
 void RS2Capture::_setup_camera_sync() {
     std::string master_serial = configuration.sync.sync_master_serial;
-    int nonmaster_sync_mode = configuration.sync.sync_mode;
-    bool use_sync = nonmaster_sync_mode != 0;
-    bool use_external_sync = master_serial == "external";
-    bool master_found = use_external_sync;
-
-    if (use_sync && master_serial == "") {
-        cwipc_rs2_log_warning("Sync mode requested but no sync_master_serial");
-        use_sync = false;
-    } else if (!use_sync && master_serial != "") {
-        cwipc_rs2_log_warning("Sync_master_serial set, but no sync mode requested");
-        use_sync = false;
-    }
-    if (!use_sync) {
+    if (master_serial == "") {
         return;
     }
+    int nonmaster_sync_mode = configuration.sync.sync_mode;
+    if (nonmaster_sync_mode == 0) {
+        cwipc_rs2_log_warning("Sync_master_serial set, but no sync mode requested");
+        return;
+    }
+    bool use_external_sync = master_serial == "external";
+    bool master_found = use_external_sync;
 
     rs2::device_list devs = capturer_context.query_devices();
     for (auto dev : devs) {
