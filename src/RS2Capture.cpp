@@ -43,6 +43,7 @@ RS2Capture::RS2Capture() {
 void RS2Capture::request_auxdata(bool _rgb, bool _depth, bool _timestamps) {
     configuration.auxData.want_auxdata_rgb = _rgb;
     configuration.auxData.want_auxdata_depth = _depth;
+    configuration.auxData.want_image_timestamps = _timestamps;
 }
 
 bool RS2Capture::config_reload(const char *configFilename) {
@@ -610,12 +611,10 @@ void RS2Capture::_control_thread_main() {
         cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
         mergedPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
 
-        if (configuration.auxData.want_auxdata_rgb || configuration.auxData.want_auxdata_depth) {
-            for (auto cam : cameras) {
-                cam->save_frameset_auxdata(mergedPC);
-            }
+        for (auto cam : cameras) {
+            cam->save_frameset_auxdata(mergedPC);
         }
-
+    
         // Step 3: start processing frames to pointclouds, for each camera
         for(auto cam : cameras) {
             cam->create_pc_from_frameset();

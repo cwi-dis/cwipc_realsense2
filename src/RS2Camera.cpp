@@ -715,9 +715,9 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
         int32_t color_clock = color_image.get_frame_timestamp_domain();
         std::string timestamp_data = 
             "depth_timestamp=" + std::to_string(depth_timestamp) +
-            "depth_clock=" + std::to_string(depth_clock) +
-            "color_timestamp=" + std::to_string(color_timestamp) +
-            "color_clock=" + std::to_string(color_clock);
+            ",depth_clock=" + std::to_string(depth_clock) +
+            ",color_timestamp=" + std::to_string(color_timestamp) +
+            ",color_clock=" + std::to_string(color_clock);
         cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
         ap->_add("timestamps", timestamp_data, nullptr, 0, ::free);
     }
