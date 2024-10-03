@@ -709,17 +709,22 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
         
     if (auxData.want_image_timestamps) {
         
-        int64_t depth_timestamp = depth_image.get_frame_number();
+        int64_t depth_framenum = depth_image.get_frame_number();
+        int64_t depth_timestamp = depth_image.get_timestamp();
         int32_t depth_clock = depth_image.get_frame_timestamp_domain();
-        int64_t color_timestamp = color_image.get_frame_number();
+        int64_t color_framenum = color_image.get_frame_number();
+        int64_t color_timestamp = color_image.get_timestamp();
         int32_t color_clock = color_image.get_frame_timestamp_domain();
         std::string timestamp_data = 
-            "depth_timestamp=" + std::to_string(depth_timestamp) +
+            "depth_framenum=" + std::to_string(depth_framenum) +
+            ",depth_timestamp=" + std::to_string(depth_timestamp) +
             ",depth_clock=" + std::to_string(depth_clock) +
+            ",color_framenum=" + std::to_string(color_framenum) +
             ",color_timestamp=" + std::to_string(color_timestamp) +
             ",color_clock=" + std::to_string(color_clock);
         cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
-        ap->_add("timestamps", timestamp_data, nullptr, 0, ::free);
+        std::string name = "timestamps." + serial;
+        ap->_add(name, timestamp_data, nullptr, 0, ::free);
     }
     if (auxData.want_auxdata_rgb) {
         std::string name = "rgb." + serial;
