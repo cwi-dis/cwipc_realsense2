@@ -33,16 +33,26 @@ target_link_libraries(cwipc_realsense2 PUBLIC cwipc_util)
 target_link_libraries(cwipc_realsense2 PRIVATE ${PCL_LIBRARIES} REALSENSE2::REALSENSE2)
 target_link_libraries(cwipc_realsense2 PRIVATE nlohmann_json::nlohmann_json)
 
-install(TARGETS cwipc_realsense2
+if(WINDOWS)
+	install(TARGETS cwipc_realsense2
 	RUNTIME_DEPENDENCIES
 	PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
 	POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
-    EXPORT cwipc_realsense2
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION "include/cwipc_realsense2"
-)
+	EXPORT cwipc_realsense2
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	PUBLIC_HEADER DESTINATION "include/cwipc_realsense2"
+	)
+else()
+	install(TARGETS cwipc_realsense2
+	EXPORT cwipc_realsense2
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	PUBLIC_HEADER DESTINATION "include/cwipc_realsense2"
+	)
+endif()
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/cwipc_realsense2
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
