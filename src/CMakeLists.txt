@@ -34,6 +34,9 @@ target_link_libraries(cwipc_realsense2 PRIVATE ${PCL_LIBRARIES} REALSENSE2::REAL
 target_link_libraries(cwipc_realsense2 PRIVATE nlohmann_json::nlohmann_json)
 
 install(TARGETS cwipc_realsense2
+	RUNTIME_DEPENDENCIES
+	PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
+	POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
     EXPORT cwipc_realsense2
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -51,7 +54,7 @@ install(EXPORT cwipc_realsense2 DESTINATION lib/cmake/cwipc_realsense2)
 
 if(WIN32)
 	# Copy the dependent DLLs that cmake/vcpkg have created
-	install(FILES $<TARGET_RUNTIME_DLLS:cwipc_realsense2> DESTINATION ${CMAKE_INSTALL_BINDIR})
+	#install(FILES $<TARGET_RUNTIME_DLLS:cwipc_realsense2> DESTINATION ${CMAKE_INSTALL_BINDIR})
 	# Copy the PDB file, if it exists
 	install(FILES $<TARGET_PDB_FILE:cwipc_realsense2> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
 endif()
