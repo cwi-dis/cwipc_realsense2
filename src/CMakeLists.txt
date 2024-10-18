@@ -33,7 +33,7 @@ target_link_libraries(cwipc_realsense2 PUBLIC cwipc_util)
 target_link_libraries(cwipc_realsense2 PRIVATE ${PCL_LIBRARIES} REALSENSE2::REALSENSE2)
 target_link_libraries(cwipc_realsense2 PRIVATE nlohmann_json::nlohmann_json)
 
-if(WINDOWS)
+if(WIN32)
 	install(TARGETS cwipc_realsense2
 	RUNTIME_DEPENDENCIES
 	PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
