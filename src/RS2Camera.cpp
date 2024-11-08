@@ -625,7 +625,19 @@ void RS2Camera::wait_for_pc_created() {
 }
 
 uint64_t RS2Camera::get_frameset_timestamp() {
+#if 0
+    // whoahhh.. We really don't want the system time of capture...
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+#else
+    double rv = 0;
+    for(rs2::frame frame: current_captured_frameset) {
+        auto frame_timestamp = frame.get_timestamp();
+        if (frame_timestamp > rv) {
+            rv = frame_timestamp;
+        }
+    }
+    return (uint64_t)rv;
+#endif
 }
 
 bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
