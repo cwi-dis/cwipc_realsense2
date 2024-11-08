@@ -236,6 +236,12 @@ void RS2Capture::_setup_camera_hardware_parameters() {
 void RS2Capture::_setup_camera_sync() {
     std::string master_serial = configuration.sync.sync_master_serial;
     if (master_serial == "") {
+        // Disable sync
+        for(auto sensor : capturer_context.query_all_sensors()) {
+           if (sensor.supports(RS2_OPTION_INTER_CAM_SYNC_MODE)) {
+                sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 0);
+           }
+        }
         return;
     }
     int nonmaster_sync_mode = configuration.sync.sync_mode;
