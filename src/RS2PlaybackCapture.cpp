@@ -53,7 +53,7 @@ bool RS2PlaybackCapture::_create_cameras() {
             cd.serial = cd.playback_filename;
         }
         if (cd.playback_filename == "") {
-            cwipc_rs2_log_warning("Camera has no filename");
+            cwipc_rs2_log_warning("Camera " + cd.serial + " has no playback_filename");
             return false;
         }
         if (cd.type != "realsense_playback") {
