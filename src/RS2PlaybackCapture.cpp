@@ -52,12 +52,15 @@ bool RS2PlaybackCapture::_create_cameras() {
         if (cd.serial == "") {
             cd.serial = cd.playback_filename;
         }
-        if (cd.playback_filename == "") {
-            cwipc_rs2_log_warning("Camera " + cd.serial + " has no playback_filename");
+        if (cd.playback_filename == "" && cd.serial == "") {
+            cwipc_rs2_log_warning("Camera " + cd.serial + " has no playback_filename nor serial");
             return false;
         }
+        if (cd.type == "realsense"){
+            cwipc_rs2_log_warning("Camera " + cd.serial + " is type realsense, override to realsense_playback");
+        }
         if (cd.type != "realsense_playback") {
-            cwipc_rs2_log_warning("Camera " + cd.serial + " is type " + cd.type + " in stead of realsense");
+            cwipc_rs2_log_warning("Camera " + cd.serial + " is type " + cd.type + " in stead of realsense_playback");
             return false;
         }
 
@@ -67,11 +70,10 @@ bool RS2PlaybackCapture::_create_cameras() {
             // xxxnacho do we need to close the device, like the kinect case?
         }
         else {
-            std::string recording_filename;
-            if (base_directory == "") {
-                recording_filename = cd.playback_filename;
-            } else {
-                recording_filename = base_directory + cd.playback_filename;
+            std::string recording_filename = cd.playback_filename;
+            if (recording_filename == "") recording_filename = cd.serial + ".bag";
+            if (base_directory != "") {
+                recording_filename = base_directory + recording_filename;
             }
             auto cam = new RS2PlaybackCamera(capturer_context, configuration, camera_index, recording_filename);
             cameras.push_back(cam);
