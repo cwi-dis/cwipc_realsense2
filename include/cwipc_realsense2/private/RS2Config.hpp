@@ -70,7 +70,9 @@ struct RS2CameraHardwareConfig {
     int fps = 0;
     int visual_preset = 0;                 // Visual preset mode for depth capturing. See emun rs2_rs400_visual_preset in rs_option.h
     int color_exposure = -1;              // Set exposure for color. -1 is auto.
+    int color_gain = -1;                    // Set gain for color. -1 is auto.
     int depth_exposure = -1;              // Set exposure for depth. -1 is auto.
+    int depth_gain = -1;                // Set gain for depth. -1 is auto.
     int whitebalance = -1;                // Set whitebalance for color camera. -1 is auto.
     int backlight_compensation = -1;      // Set backlight compesnation for color camera. -1 is don't change.
     int laser_power = -1;                // Laser power. -1 is don't change.

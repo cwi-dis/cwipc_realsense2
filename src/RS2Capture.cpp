@@ -151,6 +151,9 @@ void RS2Capture::_refresh_camera_hardware_parameters() {
     int color_exposure = (int)color_sensor.get_option(RS2_OPTION_EXPOSURE);
     configuration.hardware.color_exposure = auto_color_exposure ? -color_exposure : color_exposure;  
 
+    int color_gain = (int)color_sensor.get_option(RS2_OPTION_GAIN);
+    configuration.hardware.color_gain = color_gain;
+    
     bool auto_whitebalance = (bool)color_sensor.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
     int whitebalance = (int)color_sensor.get_option(RS2_OPTION_WHITE_BALANCE);
     configuration.hardware.whitebalance = auto_whitebalance ? -whitebalance : whitebalance;  
@@ -159,7 +162,10 @@ void RS2Capture::_refresh_camera_hardware_parameters() {
 
     bool auto_depth_exposure = (bool)depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
     int depth_exposure = (int)depth_sensor.get_option(RS2_OPTION_EXPOSURE);
-    configuration.hardware.depth_exposure = auto_depth_exposure ? -depth_exposure : depth_exposure;  
+    configuration.hardware.depth_exposure = auto_depth_exposure ? -depth_exposure : depth_exposure;
+
+    int depth_gain = (int)depth_sensor.get_option(RS2_OPTION_GAIN);
+    configuration.hardware.depth_gain = depth_gain;
 
     configuration.hardware.laser_power = (int)depth_sensor.get_option(RS2_OPTION_LASER_POWER);
 
@@ -186,6 +192,10 @@ void RS2Capture::_setup_camera_hardware_parameters() {
             );
         }
         // Options for color sensor
+        if (configuration.hardware.color_gain >= 0) {
+            assert(color_sensor.supports(RS2_OPTION_GAIN));
+            color_sensor.set_option(RS2_OPTION_GAIN, configuration.hardware.color_gain);
+        }
         if (configuration.hardware.color_exposure >= 0) {
             assert(color_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
             color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
@@ -215,6 +225,10 @@ void RS2Capture::_setup_camera_hardware_parameters() {
             }
         }
         // Options for depth sensor
+         if (configuration.hardware.depth_gain >= 0) {
+            assert(depth_sensor.supports(RS2_OPTION_GAIN));
+            depth_sensor.set_option(RS2_OPTION_GAIN, configuration.hardware.depth_gain);
+        }
         if (configuration.hardware.depth_exposure >= 0) {
             assert(depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
             depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);

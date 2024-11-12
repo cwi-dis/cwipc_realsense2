@@ -138,10 +138,12 @@ bool RS2Camera::getHardwareParameters(RS2CameraHardwareConfig& output, bool matc
             output.color_height == hardware.color_height &&
             output.color_width == hardware.color_width &&
             output.color_exposure == hardware.color_exposure &&
+            output.color_gain == hardware.color_gain &&
             output.backlight_compensation == hardware.backlight_compensation &&
             output.whitebalance == hardware.whitebalance &&
 
             output.depth_exposure == hardware.depth_exposure &&
+            output.depth_gain == hardware.depth_gain &&
             output.depth_height == hardware.depth_height &&
             output.depth_width == hardware.depth_width &&
             output.visual_preset == hardware.visual_preset &&

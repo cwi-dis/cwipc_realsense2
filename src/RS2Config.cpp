@@ -52,7 +52,9 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(hardware_data, fps, hardware, fps);
     _MY_JSON_GET(hardware_data, visual_preset, hardware, visual_preset);
     _MY_JSON_GET(hardware_data, color_exposure, hardware, color_exposure);
+    _MY_JSON_GET(hardware_data, color_gain, hardware, color_gain);
     _MY_JSON_GET(hardware_data, depth_exposure, hardware, depth_exposure);
+    _MY_JSON_GET(hardware_data, depth_gain, hardware, depth_gain);
     _MY_JSON_GET(hardware_data, whitebalance, hardware, whitebalance);
     _MY_JSON_GET(hardware_data, backlight_compensation, hardware, backlight_compensation);
     _MY_JSON_GET(hardware_data, laser_power, hardware, laser_power);
@@ -187,7 +189,9 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(hardware_data, fps, hardware, fps);
     _MY_JSON_PUT(hardware_data, visual_preset, hardware, visual_preset);
     _MY_JSON_PUT(hardware_data, color_exposure, hardware, color_exposure);
+    _MY_JSON_PUT(hardware_data, color_gain, hardware, color_gain);
     _MY_JSON_PUT(hardware_data, depth_exposure, hardware, depth_exposure);
+    _MY_JSON_PUT(hardware_data, depth_gain, hardware, depth_gain);
     _MY_JSON_PUT(hardware_data, whitebalance, hardware, whitebalance);
     _MY_JSON_PUT(hardware_data, backlight_compensation, hardware, backlight_compensation);
     _MY_JSON_PUT(hardware_data, laser_power, hardware, laser_power);
