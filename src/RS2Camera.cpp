@@ -190,8 +190,14 @@ void RS2Camera::_init_current_pointcloud(int size) {
     current_pointcloud->reserve(size);
 }
 
-bool RS2Camera::wait_for_captured_frameset() {
-    return captured_frame_queue.try_wait_for_frame(&current_captured_frameset);
+uint64_t RS2Camera::wait_for_captured_frameset() {
+    bool ok = captured_frame_queue.try_wait_for_frame(&current_captured_frameset);
+    if (ok) {
+        rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
+        uint64_t timestamp = (uint64_t)depth_frame.get_timestamp();
+        return timestamp;
+    }
+    return 0;
 }
 
 // Configure and initialize caputuring of one camera

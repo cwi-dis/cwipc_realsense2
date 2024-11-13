@@ -27,7 +27,8 @@ public:
     void stop_camera_and_capturer();
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
-    bool wait_for_captured_frameset();
+    /// Returns timestamp of depth frame, or zero if none available.
+    uint64_t wait_for_captured_frameset();
     /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
     void create_pc_from_frameset();
     /// Step 2a: Save auxdata from frameset into given cwipc object.

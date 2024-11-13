@@ -612,8 +612,12 @@ void RS2Capture::_control_thread_main() {
         // Step one: grab frames from all cameras. This should happen as close together in time as possible,
         // because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
         // camera.
+        uint64_t first_timestamp = 0;
         for(auto cam : cameras) {
-            if (!cam->wait_for_captured_frameset()) continue;
+            uint64_t this_cam_timestamp = cam->wait_for_captured_frameset();
+            if (first_timestamp == 0) {
+                first_timestamp = this_cam_timestamp;
+            }
         }
 
         // And get the best timestamp
