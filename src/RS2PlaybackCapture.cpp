@@ -57,7 +57,7 @@ bool RS2PlaybackCapture::_create_cameras() {
             return false;
         }
         if (cd.type == "realsense"){
-            cwipc_rs2_log_warning("Camera " + cd.serial + " is type realsense, override to realsense_playback");
+            // cwipc_rs2_log_warning("Camera " + cd.serial + " is type realsense, override to realsense_playback");
             cd.type = "realsense_playback";
         }
         if (cd.type != "realsense_playback") {

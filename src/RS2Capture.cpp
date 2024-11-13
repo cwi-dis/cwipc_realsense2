@@ -267,6 +267,7 @@ void RS2Capture::_setup_camera_sync() {
     bool master_found = use_external_sync;
 
     rs2::device_list devs = capturer_context.query_devices();
+    bool is_first_camera = true;
     for (auto dev : devs) {
         std::string serial(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
         bool is_master = serial == master_serial;
@@ -276,11 +277,15 @@ void RS2Capture::_setup_camera_sync() {
                 if (is_master) {
                     sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 1);
                     master_found = true;
+                    if (!is_first_camera) {
+                        cwipc_rs2_log_warning("Camera " + master_serial + " is not the first camera found. This may influence sync");
+                    }
                 } else {
                     sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, nonmaster_sync_mode);
                 }
             }
         }
+        is_first_camera = false;
     }
     if (!master_found) {
         cwipc_rs2_log_warning("Camera sync_master_serial=" + master_serial + " not found");
