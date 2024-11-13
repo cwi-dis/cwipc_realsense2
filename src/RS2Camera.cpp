@@ -638,12 +638,17 @@ uint64_t RS2Camera::get_frameset_timestamp() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 #else
     double rv = 0;
+#if 0
     for(rs2::frame frame: current_captured_frameset) {
         auto frame_timestamp = frame.get_timestamp();
         if (frame_timestamp > rv) {
             rv = frame_timestamp;
         }
     }
+#else
+    rs2::frame depth_frame = current_captured_frameset.get_depth_frame();
+    rv = depth_frame.get_timestamp();
+#endif
     return (uint64_t)rv;
 #endif
 }
