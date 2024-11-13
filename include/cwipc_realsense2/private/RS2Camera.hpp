@@ -26,6 +26,8 @@ public:
     /// Completely stops camera and capturer, releases all resources. Can be re-started with start_camera, etc.
     void stop_camera_and_capturer();
 
+    /// Pre-inform capturer of the timestamp we would prefer to be captured.
+    void set_preferred_timestamp(uint64_t timestamp);
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
     /// Returns timestamp of depth frame, or zero if none available.
     uint64_t wait_for_captured_frameset();
@@ -56,6 +58,8 @@ protected:
     virtual void _start_capture_thread();
     virtual void _capture_thread_main();
     
+    int64_t _frameset_timedelta_preferred(rs2::frameset frames);
+
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 
     void _init_current_pointcloud(int size);
@@ -111,6 +115,7 @@ protected:
     rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
     rs2::pointcloud depth_to_pointcloud;     // The pointcloud constructor
 
+    uint64_t preferred_timestamp = 0;
 };
 
 #endif // cwipc_realsense_RS2Camera_hpp

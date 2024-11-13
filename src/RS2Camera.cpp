@@ -190,6 +190,10 @@ void RS2Camera::_init_current_pointcloud(int size) {
     current_pointcloud->reserve(size);
 }
 
+void RS2Camera::set_preferred_timestamp(uint64_t timestamp) {
+    preferred_timestamp = timestamp;
+}
+
 uint64_t RS2Camera::wait_for_captured_frameset() {
     bool ok = captured_frame_queue.try_wait_for_frame(&current_captured_frameset);
     if (ok) {
@@ -364,6 +368,22 @@ void RS2Camera::_start_capture_thread() {
     _cwipc_setThreadName(camera_capture_thread, L"cwipc_realsense2::RS2Camera::capture_thread");
 }
 
+int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
+    if (preferred_timestamp == 0) return 0;
+    rs2::frame depth_frame = frames.get_depth_frame();
+    uint64_t frame_timestamp = (uint64_t)depth_frame.get_timestamp();
+    int64_t delta = preferred_timestamp - frame_timestamp;
+    if (delta < 0) {
+        // frame_timestamp > preferred timestamp, so frame is in the future
+        std::cerr << "cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
+        return delta;
+    } else {
+        // frame_timestamp > preferred_timestamp, so frame is in the past
+        std::cerr << "cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
+        return delta;
+    }
+    return 0;
+}
 void RS2Camera::_capture_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
     std::cerr << "frame capture: cam=" << serial << " thread started" << std::endl;
@@ -372,7 +392,21 @@ void RS2Camera::_capture_thread_main() {
     while(!camera_stopped) {
         // Wait to find if there is a next set of frames from the camera
         rs2::frameset frames = camera_pipeline.wait_for_frames();
-
+        if (preferred_timestamp > 0) {
+            rs2::frame depth_frame = frames.get_depth_frame();
+            uint64_t frame_timestamp = (uint64_t)depth_frame.get_timestamp();
+            int64_t delta = preferred_timestamp - frame_timestamp;
+            if (delta < 0) {
+                // frame_timestamp > preferred timestamp, so frame is in the future
+                std::cerr << "cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
+            
+            } else {
+                // frame_timestamp > preferred_timestamp, so frame is in the past
+                std::cerr << "cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
+            
+            }
+            preferred_timestamp = 0;
+        }
 #ifdef CWIPC_DEBUG_THREAD
         std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
 #endif

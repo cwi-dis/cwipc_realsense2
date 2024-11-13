@@ -614,6 +614,7 @@ void RS2Capture::_control_thread_main() {
         // camera.
         uint64_t first_timestamp = 0;
         for(auto cam : cameras) {
+            if (first_timestamp > 0) cam->set_preferred_timestamp(first_timestamp);
             uint64_t this_cam_timestamp = cam->wait_for_captured_frameset();
             if (first_timestamp == 0) {
                 first_timestamp = this_cam_timestamp;
