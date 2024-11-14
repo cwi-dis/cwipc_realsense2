@@ -384,6 +384,7 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
     }
     return 0;
 }
+
 void RS2Camera::_capture_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
     std::cerr << "frame capture: cam=" << serial << " thread started" << std::endl;
@@ -393,17 +394,9 @@ void RS2Camera::_capture_thread_main() {
         // Wait to find if there is a next set of frames from the camera
         rs2::frameset frames = camera_pipeline.wait_for_frames();
         if (preferred_timestamp > 0) {
-            rs2::frame depth_frame = frames.get_depth_frame();
-            uint64_t frame_timestamp = (uint64_t)depth_frame.get_timestamp();
-            int64_t delta = preferred_timestamp - frame_timestamp;
-            if (delta < 0) {
-                // frame_timestamp > preferred timestamp, so frame is in the future
-                std::cerr << "cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
-            
-            } else {
-                // frame_timestamp > preferred_timestamp, so frame is in the past
-                std::cerr << "cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
-            
+            int64_t delta = _frameset_timedelta_preferred(frames);
+            if (delta > 0) {
+                std::cerr << 
             }
             preferred_timestamp = 0;
         }
