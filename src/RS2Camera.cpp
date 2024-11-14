@@ -373,13 +373,14 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
     rs2::frame depth_frame = frames.get_depth_frame();
     uint64_t frame_timestamp = (uint64_t)depth_frame.get_timestamp();
     int64_t delta = preferred_timestamp - frame_timestamp;
-    if (delta < 0) {
-        // frame_timestamp > preferred timestamp, so frame is in the future
-        std::cerr << "cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
+    int64_t frame_duration = (1000 / hardware.fps);
+    if (delta < -frame_duration) {
+        // frame_timestamp > preferred timestamp, so frame is more than one frametime in the future
+        std::cerr << "xxxjack cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
         return delta;
-    } else {
-        // frame_timestamp > preferred_timestamp, so frame is in the past
-        std::cerr << "cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
+    } else if( delta > frame_duration/2) {
+        // frame_timestamp > preferred_timestamp, so frame is in the past (by more than half a frame)
+        std::cerr << "xxxjack cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
         return delta;
     }
     return 0;
@@ -389,14 +390,36 @@ void RS2Camera::_capture_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
     std::cerr << "frame capture: cam=" << serial << " thread started" << std::endl;
 #endif
-
+    rs2::frameset kept_future_frameset;
     while(!camera_stopped) {
+        rs2::frameset frames;
+        // See if we should return the kept frame
+        bool use_kept_frameset = false;
+        if (preferred_timestamp > 0 && kept_future_frameset) {
+            int64_t delta = _frameset_timedelta_preferred(kept_future_frameset);
+            if (delta < 0) {
+                use_kept_frameset = true;
+                std::cerr << "cam=" << serial << ", reuse an old frame, delta=" << delta << std::endl;
+            }
+        }
         // Wait to find if there is a next set of frames from the camera
-        rs2::frameset frames = camera_pipeline.wait_for_frames();
+        if (use_kept_frameset) {
+            // We re-use a previous frame
+            frames = kept_future_frameset;
+            kept_future_frameset = rs2::frameset();
+        } else {
+            frames = camera_pipeline.wait_for_frames();
+        }
         if (preferred_timestamp > 0) {
             int64_t delta = _frameset_timedelta_preferred(frames);
-            if (delta > 0) {
-                std::cerr << 
+            while (delta > 0) {
+                std::cerr << "cam=" << serial << ", skip a frame, delta=" << delta << std::endl;
+                frames = camera_pipeline.wait_for_frames();
+                delta = _frameset_timedelta_preferred(frames);
+            }
+            if (delta < 0) {
+                std::cerr << "cam=" << serial << ", keep frame for future reuse frame, delta=" << delta << std::endl;
+                kept_future_frameset = frames;
             }
             preferred_timestamp = 0;
         }

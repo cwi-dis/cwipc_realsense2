@@ -115,7 +115,7 @@ protected:
     rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
     rs2::pointcloud depth_to_pointcloud;     // The pointcloud constructor
 
-    uint64_t preferred_timestamp = 0;
+    uint64_t preferred_timestamp = 0;   // Will be set for the slave cameras, so they can capture the closest frame
 };
 
 #endif // cwipc_realsense_RS2Camera_hpp
