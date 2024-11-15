@@ -59,3 +59,19 @@ void RS2PlaybackCamera::post_start_all_cameras() {
     rs2::playback playback = dev.as<rs2::playback>();
     playback.resume();
 }
+
+#if 0
+rs2::frameset RS2PlaybackCamera::wait_for_frames() {
+    rs2::frameset frameset = camera_pipeline.wait_for_frames();
+    if (frameset) {
+        uint64_t timestamp = (uint64_t)frameset.get_depth_frame().get_timestamp();
+        if (timestamp != 0 && timestamp == previous_color_timestamp) {
+            // Hack: we wait for the next frame
+            std::this_thread::yield();
+            frameset = camera_pipeline.wait_for_frames();
+        }
+    }
+    previous_color_timestamp = (uint64_t)frameset.get_depth_frame().get_timestamp();
+    return frameset;
+}
+#endif

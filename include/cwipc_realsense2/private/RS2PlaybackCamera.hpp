@@ -21,6 +21,10 @@ public:
 protected:
     virtual void _pre_start(rs2::config &cfg) override;
     virtual void _post_start(rs2::pipeline_profile& profile) override;
+#if 0
+    virtual rs2::frameset wait_for_frames() override;
+#endif
+    uint64_t previous_color_timestamp = 0;
 private:
     std::string playback_filename;
 
