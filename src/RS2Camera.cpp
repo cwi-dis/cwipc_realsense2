@@ -391,6 +391,10 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
     return 0;
 }
 
+rs2::frameset RS2Camera::wait_for_frames() {
+    return camera_pipeline.wait_for_frames();
+}
+
 void RS2Camera::_capture_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
     std::cerr << "frame capture: cam=" << camera_index << " thread started" << std::endl;
@@ -414,7 +418,7 @@ void RS2Camera::_capture_thread_main() {
             // We re-use a previous frame
             frames = kept_future_frameset;
         } else {
-            frames = camera_pipeline.wait_for_frames();
+            frames = wait_for_frames();
         }
         kept_future_frameset = rs2::frameset();
         if (preferred_timestamp > 0) {
@@ -432,7 +436,7 @@ void RS2Camera::_capture_thread_main() {
 #ifdef CWIPC_DEBUG_SYNC
                 std::cerr << "cam=" << camera_index << ", drop a frame, ts=" << (int64_t)frames.get_depth_frame().get_timestamp() << ", colorts=" <<(int64_t)frames.get_color_frame().get_timestamp() <<", delta=" << delta << std::endl;
 #endif
-                frames = camera_pipeline.wait_for_frames();
+                frames = wait_for_frames();
                 delta = _frameset_timedelta_preferred(frames);
 #ifdef CWIPC_DEBUG_SYNC
                 std::cerr << "cam=" << camera_index << ", new frame, ts=" << (int64_t)frames.get_depth_frame().get_timestamp() << ", colorts=" <<(int64_t)frames.get_color_frame().get_timestamp()<<", delta=" << delta << std::endl;

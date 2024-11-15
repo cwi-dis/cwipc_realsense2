@@ -53,6 +53,8 @@ protected:
 
     void _init_filters();
 
+    virtual rs2::frameset wait_for_frames();
+
     void _start_processing_thread();
     void _processing_thread_main();
     virtual void _start_capture_thread();
