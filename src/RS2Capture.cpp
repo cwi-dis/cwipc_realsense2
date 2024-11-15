@@ -625,10 +625,11 @@ void RS2Capture::_control_thread_main() {
         uint64_t timestamp = 0;
         for(auto cam: cameras) {
             uint64_t camts = cam->get_frameset_timestamp();
-            if (camts > 0 && camts < timestamp) timestamp = camts;
+            if (camts > 0 && (camts < timestamp || timestamp == 0)) timestamp = camts;
         }
 
         if (timestamp == 0) {
+            std::cerr << "cwipc_realsense2: Warning: using system clock timestamp" << std::endl;
             timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         }
 
