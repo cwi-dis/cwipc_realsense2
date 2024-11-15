@@ -377,13 +377,13 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
     int64_t frame_duration = (1000 / hardware.fps);
     if (delta < -frame_duration) {
         // frame_timestamp > preferred timestamp, so frame is more than one frametime in the future
-#ifdef CWIPC_DEBUG_SYNC
+#ifdef CWIPC_DEBUG_SYNCext
         std::cerr << "xxxjack cam=" << camera_index << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
 #endif
         return delta;
-    } else if( delta > frame_duration/2) {
+    } else if( delta > 1 /* ms */) {
         // frame_timestamp > preferred_timestamp, so frame is in the past (by more than half a frame)
-#ifdef CWIPC_DEBUG_SYNC
+#ifdef CWIPC_DEBUG_SYNCext
         std::cerr << "xxxjack cam=" << camera_index << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
 #endif
         return delta;
