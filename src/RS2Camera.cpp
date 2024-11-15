@@ -8,6 +8,7 @@
 // Define to get (a little) debug prints
 #undef CWIPC_DEBUG
 #undef CWIPC_DEBUG_THREAD
+#define CWIPC_DEBUG_SYNC
 
 // Only for RGB and Depth auxdata: we have the option of mapping depth to color or color to depth.
 #define MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
@@ -376,11 +377,15 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
     int64_t frame_duration = (1000 / hardware.fps);
     if (delta < -frame_duration) {
         // frame_timestamp > preferred timestamp, so frame is more than one frametime in the future
-        std::cerr << "xxxjack cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
+#ifdef CWIPC_DEBUG_SYNC
+        std::cerr << "xxxjack cam=" << camera_index << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
+#endif
         return delta;
     } else if( delta > frame_duration/2) {
         // frame_timestamp > preferred_timestamp, so frame is in the past (by more than half a frame)
-        std::cerr << "xxxjack cam=" << serial << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
+#ifdef CWIPC_DEBUG_SYNC
+        std::cerr << "xxxjack cam=" << camera_index << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
+#endif
         return delta;
     }
     return 0;
@@ -388,7 +393,7 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
 
 void RS2Camera::_capture_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "frame capture: cam=" << serial << " thread started" << std::endl;
+    std::cerr << "frame capture: cam=" << camera_index << " thread started" << std::endl;
 #endif
     rs2::frameset kept_future_frameset;
     while(!camera_stopped) {
@@ -399,45 +404,51 @@ void RS2Camera::_capture_thread_main() {
             int64_t delta = _frameset_timedelta_preferred(kept_future_frameset);
             if (delta < 0) {
                 use_kept_frameset = true;
-                std::cerr << "cam=" << serial << ", reuse an old frame, delta=" << delta << std::endl;
+#ifdef CWIPC_DEBUG_SYNC
+                std::cerr << "cam=" << camera_index << ", reuse an old frame, delta=" << delta << std::endl;
+#endif
             }
         }
         // Wait to find if there is a next set of frames from the camera
         if (use_kept_frameset) {
             // We re-use a previous frame
             frames = kept_future_frameset;
-            kept_future_frameset = rs2::frameset();
         } else {
             frames = camera_pipeline.wait_for_frames();
         }
+        kept_future_frameset = rs2::frameset();
         if (preferred_timestamp > 0) {
             int64_t delta = _frameset_timedelta_preferred(frames);
             while (delta > 0) {
-                std::cerr << "cam=" << serial << ", skip a frame, delta=" << delta << std::endl;
+#ifdef CWIPC_DEBUG_SYNC
+                std::cerr << "cam=" << camera_index << ", skip a frame, delta=" << delta << std::endl;
+#endif
                 frames = camera_pipeline.wait_for_frames();
                 delta = _frameset_timedelta_preferred(frames);
             }
             if (delta < 0) {
-                std::cerr << "cam=" << serial << ", keep frame for future reuse frame, delta=" << delta << std::endl;
+#ifdef CWIPC_DEBUG_SYNC
+                std::cerr << "cam=" << camera_index << ", keep frame for future reuse frame, delta=" << delta << std::endl;
+#endif
                 kept_future_frameset = frames;
             }
             preferred_timestamp = 0;
         }
 #ifdef CWIPC_DEBUG_THREAD
-        std::cerr << "frame capture: cam=" << serial << ", seq=" << frames.get_frame_number() << std::endl;
+        std::cerr << "frame capture: cam=" << camera_index << ", seq=" << frames.get_frame_number() << std::endl;
 #endif
         captured_frame_queue.enqueue(frames);
         std::this_thread::yield();
     }
 
 #ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "frame capture: cam=" << serial << " thread stopped" << std::endl;
+    std::cerr << "frame capture: cam=" << camera_index << " thread stopped" << std::endl;
 #endif
 }
 
 void RS2Camera::_processing_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "frame processing: cam=" << serial << " thread started" << std::endl;
+    std::cerr << "frame processing: cam=" << camera_index << " thread started" << std::endl;
 #endif
 
     while(!camera_stopped) {
@@ -524,7 +535,7 @@ void RS2Camera::_processing_thread_main() {
             _erode_depth(depth, processing.depth_x_erosion, processing.depth_y_erosion);
         }
 #ifdef CWIPC_DEBUG
-        std::cerr << "frame processing: cam=" << serial << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
+        std::cerr << "frame processing: cam=" << camera_index << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif
 
         // Calculate new pointcloud, map to the color images and get vertices and color indices
@@ -614,7 +625,7 @@ void RS2Camera::_processing_thread_main() {
     }
 
 #ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "frame processing: cam=" << serial << " thread stopped" << std::endl;
+    std::cerr << "frame processing: cam=" << camera_index << " thread stopped" << std::endl;
 #endif
 }
 
