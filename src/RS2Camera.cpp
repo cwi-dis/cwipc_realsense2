@@ -8,7 +8,7 @@
 // Define to get (a little) debug prints
 #undef CWIPC_DEBUG
 #undef CWIPC_DEBUG_THREAD
-#define CWIPC_DEBUG_SYNC
+#undef CWIPC_DEBUG_SYNC
 
 // Only for RGB and Depth auxdata: we have the option of mapping depth to color or color to depth.
 #define MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
@@ -818,6 +818,10 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
             ",color_framenum=" + std::to_string(color_framenum) +
             ",color_timestamp=" + std::to_string(color_timestamp) +
             ",color_clock=" + std::to_string(color_clock);
+        rs2::playback playback = camera_pipeline.get_active_profile().get_device().as<rs2::playback>();
+        if (playback) {
+            timestamp_data += ",filetime_ns=" + std::to_string(playback.get_position());
+        }
         cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
         std::string name = "timestamps." + serial;
         ap->_add(name, timestamp_data, nullptr, 0, ::free);
