@@ -419,21 +419,31 @@ void RS2Camera::_capture_thread_main() {
         kept_future_frameset = rs2::frameset();
         if (preferred_timestamp > 0) {
             int64_t delta = _frameset_timedelta_preferred(frames);
-            while (delta > 0) {
-#ifdef CWIPC_DEBUG_SYNC
-                std::cerr << "cam=" << camera_index << ", skip a frame, delta=" << delta << std::endl;
-#endif
-                frames = camera_pipeline.wait_for_frames();
-                delta = _frameset_timedelta_preferred(frames);
-            }
             if (delta < 0) {
 #ifdef CWIPC_DEBUG_SYNC
                 std::cerr << "cam=" << camera_index << ", keep frame for future reuse frame, delta=" << delta << std::endl;
 #endif
                 kept_future_frameset = frames;
             }
+#ifdef CWIPC_DROP_FRAMES_TO_CATCH_UP
+            // Dropping frames seems to be a bad idea, because it only drops
+            // either color or depth.
+            if (delta > 0) {
+#ifdef CWIPC_DEBUG_SYNC
+                std::cerr << "cam=" << camera_index << ", drop a frame, ts=" << (int64_t)frames.get_depth_frame().get_timestamp() << ", colorts=" <<(int64_t)frames.get_color_frame().get_timestamp() <<", delta=" << delta << std::endl;
+#endif
+                frames = camera_pipeline.wait_for_frames();
+                delta = _frameset_timedelta_preferred(frames);
+#ifdef CWIPC_DEBUG_SYNC
+                std::cerr << "cam=" << camera_index << ", new frame, ts=" << (int64_t)frames.get_depth_frame().get_timestamp() << ", colorts=" <<(int64_t)frames.get_color_frame().get_timestamp()<<", delta=" << delta << std::endl;
+#endif
+            }
+#endif
             preferred_timestamp = 0;
         }
+#ifdef CWIPC_DEBUG_SYNC
+        std::cerr << "cam=" << camera_index << ", use frame ts=" << (int64_t)frames.get_depth_frame().get_timestamp()<< ", colorts=" <<(int64_t)frames.get_color_frame().get_timestamp() << std::endl;
+#endif
 #ifdef CWIPC_DEBUG_THREAD
         std::cerr << "frame capture: cam=" << camera_index << ", seq=" << frames.get_frame_number() << std::endl;
 #endif
