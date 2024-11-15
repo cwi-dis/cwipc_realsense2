@@ -97,6 +97,7 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
         cd.trafo = default_trafo;
         
         _MY_JSON_GET(camera, serial, cd, serial);
+        _MY_JSON_GET(camera, disabled, cd, disabled);
         _MY_JSON_GET(camera, playback_filename, cd, playback_filename);
         _MY_JSON_GET(camera, playback_inpoint_micros, cd, playback_inpoint_micros);
         _MY_JSON_GET(camera, type, cd, type);
@@ -122,6 +123,9 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     for (RS2CameraConfig cd : config.all_camera_configs) {
         json camera;
         _MY_JSON_PUT(camera, serial, cd, serial);
+        if (cd.disabled) {
+            _MY_JSON_PUT(camera, disabled, cd, disabled);
+        }
         if (cd.playback_filename != "") {
             _MY_JSON_PUT(camera, playback_filename, cd, playback_filename);
         }
