@@ -8,7 +8,7 @@
 // Define to get (a little) debug prints
 #undef CWIPC_DEBUG
 #undef CWIPC_DEBUG_THREAD
-#undef CWIPC_DEBUG_SYNC
+#define CWIPC_DEBUG_SYNC
 
 // Only for RGB and Depth auxdata: we have the option of mapping depth to color or color to depth.
 #define MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
@@ -98,14 +98,12 @@ RS2Camera::RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _c
   camera_index(_camera_index),
   serial(configuration.all_camera_configs[_camera_index].serial),
   camera_stopped(true),
-  captured_frame_queue(1),
   camera_config(configuration.all_camera_configs[_camera_index]),
   filtering(configuration.filtering),
   processing(configuration.processing),
   hardware(configuration.hardware),
   auxData(configuration.auxData),
   current_pointcloud(nullptr),
-  camera_capture_thread(nullptr),
   processing_frame_queue(1),
   capturer_context(_ctx),
   camera_pipeline(_ctx),
@@ -196,13 +194,11 @@ void RS2Camera::set_preferred_timestamp(uint64_t timestamp) {
 }
 
 uint64_t RS2Camera::wait_for_captured_frameset() {
-    bool ok = captured_frame_queue.try_wait_for_frame(&current_captured_frameset);
-    if (ok) {
-        rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
-        uint64_t timestamp = (uint64_t)depth_frame.get_timestamp();
-        return timestamp;
-    }
-    return 0;
+    previous_captured_frameset = current_captured_frameset;
+    current_captured_frameset = wait_for_frames();
+    rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
+    uint64_t timestamp = (uint64_t)depth_frame.get_timestamp();
+    return timestamp;
 }
 
 // Configure and initialize caputuring of one camera
@@ -315,24 +311,13 @@ void RS2Camera::stop_camera_and_capturer() {
     camera_stopped = true;
 
     // Clear out the queues so we don't get into a deadlock
-    while (true) {
-        rs2::frameset tmp;
-        bool ok = captured_frame_queue.try_wait_for_frame(&tmp, 1);
-        if (!ok) break;
-    }
+    
     while (true) {
         rs2::frameset tmp;
         bool ok = processing_frame_queue.try_wait_for_frame(&tmp, 1);
         if (!ok) break;
     }
-    // Join and delete the grabber thread
-    if (camera_capture_thread) {
-        camera_capture_thread->join();
-    }
-
-    delete camera_capture_thread;
-    camera_capture_thread = nullptr;
-
+    
     // Join and delete the processor thread
     if (camera_processing_thread) {
         camera_processing_thread->join();
@@ -355,7 +340,6 @@ void RS2Camera::start_capturer() {
     assert(camera_stopped);
     camera_stopped = false;
 
-    _start_capture_thread();
     _start_processing_thread();
 }
 
@@ -364,10 +348,6 @@ void RS2Camera::_start_processing_thread() {
     _cwipc_setThreadName(camera_processing_thread, L"cwipc_realsense2::RS2Camera::processing_thread");
 }
 
-void RS2Camera::_start_capture_thread() {
-    camera_capture_thread = new std::thread(&RS2Camera::_capture_thread_main, this);
-    _cwipc_setThreadName(camera_capture_thread, L"cwipc_realsense2::RS2Camera::capture_thread");
-}
 
 int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
     if (preferred_timestamp == 0) return 0;
@@ -393,71 +373,6 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
 
 rs2::frameset RS2Camera::wait_for_frames() {
     return camera_pipeline.wait_for_frames();
-}
-
-void RS2Camera::_capture_thread_main() {
-#ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "frame capture: cam=" << camera_index << " thread started" << std::endl;
-#endif
-    rs2::frameset kept_future_frameset;
-    while(!camera_stopped) {
-        rs2::frameset frames;
-        // See if we should return the kept frame
-        bool use_kept_frameset = false;
-        if (preferred_timestamp > 0 && kept_future_frameset) {
-            int64_t delta = _frameset_timedelta_preferred(kept_future_frameset);
-            if (delta < 0) {
-                use_kept_frameset = true;
-#ifdef CWIPC_DEBUG_SYNC
-                std::cerr << "cam=" << camera_index << ", reuse an old frame, delta=" << delta << std::endl;
-#endif
-            }
-        }
-        // Wait to find if there is a next set of frames from the camera
-        if (use_kept_frameset) {
-            // We re-use a previous frame
-            frames = kept_future_frameset;
-        } else {
-            frames = wait_for_frames();
-        }
-        kept_future_frameset = rs2::frameset();
-        while (preferred_timestamp > 0) {
-            int64_t delta = _frameset_timedelta_preferred(frames);
-            if (delta < 0) {
-#ifdef CWIPC_DEBUG_SYNC
-                std::cerr << "cam=" << camera_index << ", keep frame for future reuse frame, delta=" << delta << std::endl;
-#endif
-                kept_future_frameset = frames;
-            }
-#ifndef CWIPC_DONT_DROP_FRAMES_TO_CATCH_UP
-            // Dropping frames seems to be a bad idea, because it only drops
-            // either color or depth.
-            if (delta > 0) {
-#ifdef CWIPC_DEBUG_SYNC
-                std::cerr << "cam=" << camera_index << ", drop a frame, ts=" << (int64_t)frames.get_depth_frame().get_timestamp() << ", colorts=" <<(int64_t)frames.get_color_frame().get_timestamp() <<", delta=" << delta << std::endl;
-#endif
-                frames = wait_for_frames();
-                delta = _frameset_timedelta_preferred(frames);
-#ifdef CWIPC_DEBUG_SYNC
-                std::cerr << "cam=" << camera_index << ", new frame, ts=" << (int64_t)frames.get_depth_frame().get_timestamp() << ", colorts=" <<(int64_t)frames.get_color_frame().get_timestamp()<<", delta=" << delta << std::endl;
-#endif
-            }
-#endif
-            preferred_timestamp = 0;
-        }
-#ifdef CWIPC_DEBUG_SYNC
-        std::cerr << "cam=" << camera_index << ", use frame ts=" << (int64_t)frames.get_depth_frame().get_timestamp()<< ", colorts=" <<(int64_t)frames.get_color_frame().get_timestamp() << std::endl;
-#endif
-#ifdef CWIPC_DEBUG_THREAD
-        std::cerr << "frame capture: cam=" << camera_index << ", seq=" << frames.get_frame_number() << std::endl;
-#endif
-        captured_frame_queue.enqueue(frames);
-        std::this_thread::yield();
-    }
-
-#ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "frame capture: cam=" << camera_index << " thread stopped" << std::endl;
-#endif
 }
 
 void RS2Camera::_processing_thread_main() {

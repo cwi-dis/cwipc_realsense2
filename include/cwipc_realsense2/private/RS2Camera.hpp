@@ -57,8 +57,6 @@ protected:
 
     void _start_processing_thread();
     void _processing_thread_main();
-    virtual void _start_capture_thread();
-    virtual void _capture_thread_main();
     
     int64_t _frameset_timedelta_preferred(rs2::frameset frames);
 
@@ -88,17 +86,16 @@ protected:
     bool camera_pipeline_started;
 
     std::thread *camera_processing_thread;
-    std::thread *camera_capture_thread;
     
     rs2::context capturer_context;
     rs2::pipeline camera_pipeline;
     
-    rs2::frame_queue captured_frame_queue;
     rs2::frame_queue processing_frame_queue;
     std::mutex processing_mutex;
     std::condition_variable processing_done_cv;
     bool processing_done;
     
+    rs2::frameset previous_captured_frameset;
     rs2::frameset current_captured_frameset;
     rs2::frameset current_processed_frameset;
     cwipc_pcl_pointcloud current_pointcloud;
