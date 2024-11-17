@@ -38,8 +38,8 @@ void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
     // xxxjack for some reason pause() here and resume() in all_cameras_started doesn't work:
     // the first resume() call will hang.
     playback.pause();
-#endif
     playback.set_real_time(false);
+#endif
     
      // Seek device, if needed
     if (camera_config.playback_inpoint_micros != 0) {
@@ -54,10 +54,12 @@ void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
 }
 
 void RS2PlaybackCamera::post_start_all_cameras() {
+#if 0
     rs2::pipeline_profile prof = camera_pipeline.get_active_profile();
     rs2::device dev = prof.get_device();
     rs2::playback playback = dev.as<rs2::playback>();
     playback.resume();
+#endif
 }
 
 #if 0
