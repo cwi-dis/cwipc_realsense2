@@ -27,6 +27,7 @@ protected:
     uint64_t previous_color_timestamp = 0;
 private:
     std::string playback_filename;
+    bool playback_realtime;
 
 };
 #endif // cwipc_realsense_RS2PlaybackCamera_hpp

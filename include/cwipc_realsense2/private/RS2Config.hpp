@@ -112,7 +112,7 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // special features
     RS2CaptureAuxdataConfig auxData;
     std::string record_to_directory = ""; // If non-empty all camera streams will be recorded to this directory.
-
+    bool playback_realtime = false; // If true try to playback in realtime (possibly dropping a lot of frames)
 
     // per camera data
     std::vector<RS2CameraConfig> all_camera_configs;
