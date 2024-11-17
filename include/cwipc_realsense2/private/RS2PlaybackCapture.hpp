@@ -26,6 +26,7 @@ protected:
     virtual bool _check_cameras_connected() override { return true; /* xxxjack could check filenames... */};
     virtual bool _apply_config(const char* configFilename) override;
     virtual bool _create_cameras() override;
+    virtual void _initial_camera_synchronization() override;
     std::string base_directory = "";
 };
 #endif // cwipc_realsense_RS2PlaybackCapture_hpp

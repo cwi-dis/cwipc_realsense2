@@ -421,7 +421,7 @@ void RS2Camera::_capture_thread_main() {
             frames = wait_for_frames();
         }
         kept_future_frameset = rs2::frameset();
-        if (preferred_timestamp > 0) {
+        while (preferred_timestamp > 0) {
             int64_t delta = _frameset_timedelta_preferred(frames);
             if (delta < 0) {
 #ifdef CWIPC_DEBUG_SYNC
@@ -429,7 +429,7 @@ void RS2Camera::_capture_thread_main() {
 #endif
                 kept_future_frameset = frames;
             }
-#ifdef CWIPC_DROP_FRAMES_TO_CATCH_UP
+#ifndef CWIPC_DONT_DROP_FRAMES_TO_CATCH_UP
             // Dropping frames seems to be a bad idea, because it only drops
             // either color or depth.
             if (delta > 0) {

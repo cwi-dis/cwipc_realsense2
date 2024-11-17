@@ -84,3 +84,20 @@ bool RS2PlaybackCapture::_create_cameras() {
     }
     return true;
 }
+
+
+void RS2PlaybackCapture::_initial_camera_synchronization() {
+    uint64_t newest_first_timestamp = 0;
+    // Find the newest timestamp (the camera that started last)
+    for(auto cam : cameras) {
+        uint64_t this_cam_timestamp = cam->wait_for_captured_frameset();
+        if (this_cam_timestamp > newest_first_timestamp) {
+            newest_first_timestamp = this_cam_timestamp;
+        }
+    }
+    // Seek all cameras to that timestamp
+    for(auto cam : cameras) {
+        cam->set_preferred_timestamp(newest_first_timestamp);
+        cam->wait_for_captured_frameset();
+    }
+}

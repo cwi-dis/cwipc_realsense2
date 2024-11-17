@@ -591,10 +591,15 @@ bool RS2Capture::pointcloud_available(bool wait)
     return mergedPC_is_fresh;
 }
 
+void RS2Capture::_initial_camera_synchronization() {
+
+}
+
 void RS2Capture::_control_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
     std::cerr << "cwipc_realsense2: processing thread started" << std::endl;
 #endif
+    _initial_camera_synchronization();
     while(!stopped) {
         {
             std::unique_lock<std::mutex> mylock(mergedPC_mutex);
