@@ -392,7 +392,13 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
 #endif
 
 rs2::frameset RS2Camera::wait_for_frames() {
-    return camera_pipeline.wait_for_frames();
+    rs2::frameset frames = camera_pipeline.wait_for_frames();
+#ifdef CWIPC_DEBUG_SYNC
+    uint64_t depth_timestamp = frames.get_depth_frame().get_timestamp();
+    uint64_t color_timestamp = frames.get_color_frame().get_timestamp();
+    std::cerr << "wait_for_frames: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+#endif
+    return frames;
 }
 
 void RS2Camera::_processing_thread_main() {
