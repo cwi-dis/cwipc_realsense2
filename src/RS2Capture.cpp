@@ -619,19 +619,14 @@ void RS2Capture::_control_thread_main() {
         // camera.
         uint64_t first_timestamp = 0;
         for(auto cam : cameras) {
-            if (first_timestamp > 0) cam->set_preferred_timestamp(first_timestamp);
-            uint64_t this_cam_timestamp = cam->wait_for_captured_frameset();
+            uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
             if (first_timestamp == 0) {
                 first_timestamp = this_cam_timestamp;
             }
         }
 
         // And get the best timestamp
-        uint64_t timestamp = 0;
-        for(auto cam: cameras) {
-            uint64_t camts = cam->get_frameset_timestamp();
-            if (camts > 0 && (camts < timestamp || timestamp == 0)) timestamp = camts;
-        }
+        uint64_t timestamp = first_timestamp;
 
         if (timestamp == 0) {
             std::cerr << "cwipc_realsense2: Warning: using system clock timestamp" << std::endl;

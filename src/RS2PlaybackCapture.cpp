@@ -91,7 +91,7 @@ void RS2PlaybackCapture::_initial_camera_synchronization() {
     // Find the newest timestamp (the camera that started last)
     std::cerr << "xxxjack search first timestamp" << std::endl;
     for(auto cam : cameras) {
-        uint64_t this_cam_timestamp = cam->wait_for_captured_frameset();
+        uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(0);
         if (this_cam_timestamp > newest_first_timestamp) {
             newest_first_timestamp = this_cam_timestamp;
         }
@@ -99,8 +99,7 @@ void RS2PlaybackCapture::_initial_camera_synchronization() {
     std::cerr << "xxxjack first timestamp=" << newest_first_timestamp << std::endl;
     // Seek all cameras to that timestamp
     for(auto cam : cameras) {
-        cam->set_preferred_timestamp(newest_first_timestamp);
-        uint64_t this_cam_timestamp = cam->wait_for_captured_frameset();
-        std::cerr << "xxxjack camera seeked to ts=" << this_cam_timestamp << std::endl;
+        uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(newest_first_timestamp);
+        std::cerr << "xxxjack camera after seek ts=" << this_cam_timestamp << std::endl;
     }
 }

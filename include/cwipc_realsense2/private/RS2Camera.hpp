@@ -26,17 +26,13 @@ public:
     /// Completely stops camera and capturer, releases all resources. Can be re-started with start_camera, etc.
     void stop_camera_and_capturer();
 
-    /// Pre-inform capturer of the timestamp we would prefer to be captured.
-    void set_preferred_timestamp(uint64_t timestamp);
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
     /// Returns timestamp of depth frame, or zero if none available.
-    uint64_t wait_for_captured_frameset();
+    uint64_t wait_for_captured_frameset(uint64_t minimum_timestamp);
     /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
     void create_pc_from_frameset();
     /// Step 2a: Save auxdata from frameset into given cwipc object.
     void save_frameset_auxdata(cwipc *pc);
-    /// Step 2b: get timestamp from frameset.
-    uint64_t get_frameset_timestamp();
     /// Step 3: Wait for the point cloud processing.
     void wait_for_pc_created();
     /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
@@ -58,7 +54,9 @@ protected:
     void _start_processing_thread();
     void _processing_thread_main();
     
+#if 0
     int64_t _frameset_timedelta_preferred(rs2::frameset frames);
+#endif
 
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 
@@ -113,8 +111,6 @@ protected:
     rs2::hole_filling_filter hole_filling_filter;
     rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
     rs2::pointcloud depth_to_pointcloud;     // The pointcloud constructor
-
-    uint64_t preferred_timestamp = 0;   // Will be set for the slave cameras, so they can capture the closest frame
 };
 
 #endif // cwipc_realsense_RS2Camera_hpp

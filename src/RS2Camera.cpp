@@ -189,16 +189,34 @@ void RS2Camera::_init_current_pointcloud(int size) {
     current_pointcloud->reserve(size);
 }
 
-void RS2Camera::set_preferred_timestamp(uint64_t timestamp) {
-    preferred_timestamp = timestamp;
-}
+uint64_t RS2Camera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
+    uint64_t resultant_timestamp = 0;
+    if (minimum_timestamp > 0 && previous_captured_frameset) {
+        uint64_t previous_timestamp = previous_captured_frameset.get_depth_frame().get_timestamp();
+        if (previous_timestamp > minimum_timestamp) {
+            current_captured_frameset = previous_captured_frameset;
+            return previous_timestamp;
+        }
+    }
+    do {
+        if (current_captured_frameset) {
+            previous_captured_frameset = current_captured_frameset;
+        } else {
+            // First frame. So fill previous_captured_frameset.
+            previous_captured_frameset = wait_for_frames();
+        }
+        current_captured_frameset = wait_for_frames();
+        // We now have both a previous and a current captured frameset.
+        // If they both have the same depth timestamp we capture another one.
+        if (current_captured_frameset.get_depth_frame().get_timestamp() == previous_captured_frameset.get_depth_frame().get_timestamp()) {
+            previous_captured_frameset = current_captured_frameset;
+            current_captured_frameset = wait_for_frames();
+        }
+        rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
+        resultant_timestamp = (uint64_t)depth_frame.get_timestamp();
+    } while(resultant_timestamp < minimum_timestamp);
 
-uint64_t RS2Camera::wait_for_captured_frameset() {
-    previous_captured_frameset = current_captured_frameset;
-    current_captured_frameset = wait_for_frames();
-    rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
-    uint64_t timestamp = (uint64_t)depth_frame.get_timestamp();
-    return timestamp;
+    return resultant_timestamp;
 }
 
 // Configure and initialize caputuring of one camera
@@ -348,6 +366,7 @@ void RS2Camera::_start_processing_thread() {
     _cwipc_setThreadName(camera_processing_thread, L"cwipc_realsense2::RS2Camera::processing_thread");
 }
 
+#if 0
 
 int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
     if (preferred_timestamp == 0) return 0;
@@ -370,6 +389,7 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
     }
     return 0;
 }
+#endif
 
 rs2::frameset RS2Camera::wait_for_frames() {
     return camera_pipeline.wait_for_frames();
@@ -620,27 +640,6 @@ void RS2Camera::wait_for_pc_created() {
     std::unique_lock<std::mutex> lock(processing_mutex);
     processing_done_cv.wait(lock, [this]{ return processing_done; });
     processing_done = false;
-}
-
-uint64_t RS2Camera::get_frameset_timestamp() {
-#if 0
-    // whoahhh.. We really don't want the system time of capture...
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-#else
-    double rv = 0;
-#if 0
-    for(rs2::frame frame: current_captured_frameset) {
-        auto frame_timestamp = frame.get_timestamp();
-        if (frame_timestamp > rv) {
-            rv = frame_timestamp;
-        }
-    }
-#else
-    rs2::frame depth_frame = current_captured_frameset.get_depth_frame();
-    rv = depth_frame.get_timestamp();
-#endif
-    return (uint64_t)rv;
-#endif
 }
 
 bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
