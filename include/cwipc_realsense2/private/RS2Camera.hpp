@@ -111,6 +111,8 @@ protected:
     rs2::hole_filling_filter hole_filling_filter;
     rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
     rs2::pointcloud depth_to_pointcloud;     // The pointcloud constructor
+
+    bool debug = false;
 };
 
 #endif // cwipc_realsense_RS2Camera_hpp

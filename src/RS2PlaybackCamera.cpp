@@ -47,7 +47,7 @@ void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
         uint64_t new_pos = ((uint64_t)1000) * camera_config.playback_inpoint_micros;
         uint64_t old_pos = playback.get_position();
 #ifdef CWIPC_DEBUG
-        std::cerr << "RS2PlaybackCamera::_post_start: pos was " << old_pos << " seek to " << new_pos << std::endl;
+        if (debug) std::cerr << "RS2PlaybackCamera::_post_start: pos was " << old_pos << " seek to " << new_pos << std::endl;
 #endif
         playback.seek(std::chrono::nanoseconds(new_pos));
     }

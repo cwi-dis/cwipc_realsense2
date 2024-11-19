@@ -109,10 +109,11 @@ RS2Camera::RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _c
   camera_pipeline(_ctx),
   camera_pipeline_started(false),
   align_color_to_depth(RS2_STREAM_DEPTH),
-  align_depth_to_color(RS2_STREAM_COLOR)
+  align_depth_to_color(RS2_STREAM_COLOR),
+  debug(configuration.debug)
 {
 #ifdef CWIPC_DEBUG
-    std::cout << "cwipc_realsense2: creating camera " << serial << std::endl;
+    if (debug) std::cout << "cwipc_realsense2: creating camera " << serial << std::endl;
 #endif
 
     if (configuration.record_to_directory != "") {
@@ -124,7 +125,7 @@ RS2Camera::RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _c
 
 RS2Camera::~RS2Camera() {
 #ifdef CWIPC_DEBUG
-    std::cout << "cwipc_realsense2: destroying " << serial << std::endl;
+    if (debug) std::cout << "cwipc_realsense2: destroying " << serial << std::endl;
 #endif
     assert(camera_stopped);
 }
@@ -227,7 +228,7 @@ void RS2Camera::start_camera() {
     assert(camera_processing_thread == nullptr);
     rs2::config cfg;
 #ifdef CWIPC_DEBUG
-    std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
+    if (debug) std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
 #endif
     _pre_start(cfg);
     rs2::pipeline_profile profile = camera_pipeline.start(cfg);   // Start streaming with the configuration just set
@@ -394,16 +395,18 @@ int64_t RS2Camera::_frameset_timedelta_preferred(rs2::frameset frames) {
 rs2::frameset RS2Camera::wait_for_frames() {
     rs2::frameset frames = camera_pipeline.wait_for_frames();
 #ifdef CWIPC_DEBUG_SYNC
-    uint64_t depth_timestamp = frames.get_depth_frame().get_timestamp();
-    uint64_t color_timestamp = frames.get_color_frame().get_timestamp();
-    std::cerr << "wait_for_frames: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+    if (debug) {
+        uint64_t depth_timestamp = frames.get_depth_frame().get_timestamp();
+        uint64_t color_timestamp = frames.get_color_frame().get_timestamp();
+        std::cerr << "wait_for_frames: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+    }
 #endif
     return frames;
 }
 
 void RS2Camera::_processing_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "frame processing: cam=" << camera_index << " thread started" << std::endl;
+    if (debug) std::cerr << "frame processing: cam=" << camera_index << " thread started" << std::endl;
 #endif
 
     while(!camera_stopped) {
@@ -490,7 +493,7 @@ void RS2Camera::_processing_thread_main() {
             _erode_depth(depth, processing.depth_x_erosion, processing.depth_y_erosion);
         }
 #ifdef CWIPC_DEBUG
-        std::cerr << "frame processing: cam=" << camera_index << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
+        if (debug) std::cerr << "frame processing: cam=" << camera_index << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
 #endif
 
         // Calculate new pointcloud, map to the color images and get vertices and color indices
@@ -569,7 +572,7 @@ void RS2Camera::_processing_thread_main() {
 
         if (pcl_pointcloud->size() == 0) {
 #ifdef CWIPC_DEBUG
-          std::cerr << "cwipc_realsense2: warning: captured empty pointcloud from camera " << camera_config.serial << std::endl;
+          if (debug) std::cerr << "cwipc_realsense2: warning: captured empty pointcloud from camera " << camera_config.serial << std::endl;
 #endif
           //continue;
         }
@@ -580,7 +583,7 @@ void RS2Camera::_processing_thread_main() {
     }
 
 #ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "frame processing: cam=" << camera_index << " thread stopped" << std::endl;
+    if (debug) std::cerr << "frame processing: cam=" << camera_index << " thread stopped" << std::endl;
 #endif
 }
 

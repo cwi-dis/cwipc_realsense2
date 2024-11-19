@@ -39,6 +39,7 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     json system_data = json_data.at("system");
     _MY_JSON_GET(system_data, record_to_directory, config, record_to_directory);
     _MY_JSON_GET(system_data, playback_realtime, config, playback_realtime);
+    _MY_JSON_GET(system_data, debug, config, debug);
 
     json sync_data = json_data.at("sync");
     _MY_JSON_GET(sync_data, sync_master_serial, sync, sync_master_serial);
@@ -184,6 +185,9 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json system_data;
     _MY_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
     _MY_JSON_PUT(system_data, playback_realtime, config, playback_realtime);
+    if (config.debug) {
+        _MY_JSON_PUT(system_data, debug, config, debug);
+}
     json_data["system"] = system_data;
     
     const RS2CameraHardwareConfig& hardware(config.hardware);
