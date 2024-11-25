@@ -28,6 +28,5 @@ protected:
 private:
     std::string playback_filename;
     bool playback_realtime;
-    bool debug = false;
 };
 #endif // cwipc_realsense_RS2PlaybackCamera_hpp
