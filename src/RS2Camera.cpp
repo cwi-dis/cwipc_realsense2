@@ -110,7 +110,8 @@ RS2Camera::RS2Camera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _c
   camera_pipeline_started(false),
   align_color_to_depth(RS2_STREAM_DEPTH),
   align_depth_to_color(RS2_STREAM_COLOR),
-  debug(configuration.debug)
+  debug(configuration.debug),
+  prefer_color_timing(configuration.prefer_color_timing)
 {
 #ifdef CWIPC_DEBUG
     if (debug) std::cout << "cwipc_realsense2: creating camera " << serial << std::endl;
@@ -208,10 +209,12 @@ uint64_t RS2Camera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
         }
         current_captured_frameset = wait_for_frames();
         // We now have both a previous and a current captured frameset.
-        // If they both have the same depth timestamp we capture another one.
-        if (current_captured_frameset.get_depth_frame().get_timestamp() == previous_captured_frameset.get_depth_frame().get_timestamp()) {
-            previous_captured_frameset = current_captured_frameset;
-            current_captured_frameset = wait_for_frames();
+        if(prefer_color_timing) {
+            // If they both have the same depth timestamp we capture another one.
+            if (current_captured_frameset.get_depth_frame().get_timestamp() == previous_captured_frameset.get_depth_frame().get_timestamp()) {
+                previous_captured_frameset = current_captured_frameset;
+                current_captured_frameset = wait_for_frames();
+            }
         }
         rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
         resultant_timestamp = (uint64_t)depth_frame.get_timestamp();

@@ -113,6 +113,7 @@ protected:
     rs2::pointcloud depth_to_pointcloud;     // The pointcloud constructor
 
     bool debug = false;
+    bool prefer_color_timing = true;    // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.
 };
 
 #endif // cwipc_realsense_RS2Camera_hpp

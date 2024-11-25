@@ -113,7 +113,8 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     RS2CaptureAuxdataConfig auxData;
     std::string record_to_directory = ""; // If non-empty all camera streams will be recorded to this directory.
     bool playback_realtime = false; // If true try to playback in realtime (possibly dropping a lot of frames)
-    bool debug = false;
+    bool debug = false; // If true and if the relevant preprocessor symbol is defined print debug output to stdout.
+    bool prefer_color_timing = true; // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.
 
     // per camera data
     std::vector<RS2CameraConfig> all_camera_configs;
