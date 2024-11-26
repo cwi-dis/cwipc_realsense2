@@ -197,6 +197,13 @@ uint64_t RS2Camera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
         uint64_t previous_timestamp = previous_captured_frameset.get_depth_frame().get_timestamp();
         if (previous_timestamp > minimum_timestamp) {
             current_captured_frameset = previous_captured_frameset;
+#ifdef CWIPC_DEBUG_SYNC
+            if (debug) {
+                uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
+                uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
+                std::cerr << "wait_for_captured_frameset: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << " (previous)" << std::endl;
+            }
+#endif
             return previous_timestamp;
         }
     }
@@ -219,7 +226,13 @@ uint64_t RS2Camera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
         rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
         resultant_timestamp = (uint64_t)depth_frame.get_timestamp();
     } while(resultant_timestamp < minimum_timestamp);
-
+#ifdef CWIPC_DEBUG_SYNC
+    if (debug) {
+        uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
+        uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
+        std::cerr << "wait_for_captured_frameset: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+    }
+#endif
     return resultant_timestamp;
 }
 

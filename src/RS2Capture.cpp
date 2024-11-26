@@ -409,7 +409,7 @@ bool RS2Capture::_apply_default_config() {
         }
 
 #ifdef CWIPC_DEBUG
-        std::cout << "cwipc_realsense2: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+        if (configuration.debug) std::cerr << "cwipc_realsense2: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 #endif
 
         // Found a realsense camera. Create a default data entry for it.
@@ -436,7 +436,7 @@ bool RS2Capture::_create_cameras() {
         }
 
 #ifdef CWIPC_DEBUG
-        std::cout << "cwipc_realsense2: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+        if (configuration.debug) std::cerr << "cwipc_realsense2: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 #endif
 
         // Found a realsense camera. Create a default data entry for it.
@@ -499,7 +499,7 @@ void RS2Capture::_unload_cameras() {
         control_thread = nullptr;
     }
 #ifdef CWIPC_DEBUG
-    std::cerr << "cwipc_realsense2: stopped all cameras\n";
+    if (configuration.debug) std::cerr << "cwipc_realsense2: stopped all cameras\n";
 #endif
 
     // Delete all cameras (which will stop their threads as well)
@@ -509,10 +509,10 @@ void RS2Capture::_unload_cameras() {
 
     cameras.clear();
 #ifdef CWIPC_DEBUG
-    std::cerr << "cwipc_realsense2: deleted all cameras\n";
+    if (configuration.debug) std::cerr << "cwipc_realsense2: deleted all cameras\n";
 
     float deltaT = (stopTime - starttime) / 1000.0;
-    std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
+    if (configuration.debug) std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
 #endif
 }
 
@@ -597,7 +597,7 @@ void RS2Capture::_initial_camera_synchronization() {
 
 void RS2Capture::_control_thread_main() {
 #ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "cwipc_realsense2: processing thread started" << std::endl;
+    if (configuration.debug) std::cerr << "cwipc_realsense2: processing thread started" << std::endl;
 #endif
     _initial_camera_synchronization();
     while(!stopped) {
@@ -632,7 +632,7 @@ void RS2Capture::_control_thread_main() {
             std::cerr << "cwipc_realsense2: Warning: using system clock timestamp" << std::endl;
             timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         }
-
+        if (configuration.debug) std::cerr << "RS2Capture: creating pc with ts=" << timestamp << std::endl;
         // step 2 : create pointcloud, and save rgb/depth frames if wanted
         if (mergedPC && mergedPC_is_fresh) {
             mergedPC->free();
@@ -666,11 +666,11 @@ void RS2Capture::_control_thread_main() {
 
         if (mergedPC->access_pcl_pointcloud()->size() > 0) {
 #ifdef CWIPC_DEBUG
-            std::cerr << "cwipc_realsense2: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
+            if (configuration.debug) std::cerr << "cwipc_realsense2: capturer produced a merged cloud of " << mergedPC->size() << " points" << std::endl;
 #endif
         } else {
 #ifdef CWIPC_DEBUG
-            std::cerr << "cwipc_realsense2: Warning: capturer got an empty pointcloud\n";
+            if (configuration.debug) std::cerr << "cwipc_realsense2: Warning: capturer got an empty pointcloud\n";
 #endif
 #if 0
             // HACK to make sure the encoder does not get an empty pointcloud
@@ -689,7 +689,7 @@ void RS2Capture::_control_thread_main() {
     }
 
 #ifdef CWIPC_DEBUG_THREAD
-    std::cerr << "cwipc_realsense2: processing thread stopped" << std::endl;
+    if (configuration.debug) std::cerr << "cwipc_realsense2: processing thread stopped" << std::endl;
 #endif
 }
 
