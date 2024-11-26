@@ -419,6 +419,13 @@ void RS2Camera::_processing_thread_main() {
         if (!ok) {
             continue;
         }
+#ifdef CWIPC_DEBUG_SYNC
+    if (debug) {
+        uint64_t depth_timestamp = processing_frameset.get_depth_frame().get_timestamp();
+        uint64_t color_timestamp = processing_frameset.get_color_frame().get_timestamp();
+        std::cerr << "processing_thread: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+    }
+#endif
 
         std::lock_guard<std::mutex> lock(processing_mutex);
 
@@ -645,6 +652,13 @@ void RS2Camera::transformPoint(float out[3], const float in[3]) {
 }
 
 void RS2Camera::create_pc_from_frameset() {
+#ifdef CWIPC_DEBUG_SYNC
+    if (debug) {
+        uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
+        uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
+        std::cerr << "create_pc_from_frameset: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+    }
+#endif
     processing_frame_queue.enqueue(current_captured_frameset);
 }
 
