@@ -22,9 +22,11 @@ public:
     /// Second step in starting: starts the capturer. Called after all cameras have been started.
     virtual void start_capturer();
     /// Third step in starting, called after all capturers have been started.
-    virtual void post_start_all_cameras() {}
+    virtual void post_start_all_cameras();
+    /// Prepare for stopping the cameras. May do something like stopping the recording.
+    virtual void pre_stop_camera();
     /// Completely stops camera and capturer, releases all resources. Can be re-started with start_camera, etc.
-    void stop_camera_and_capturer();
+    void stop_camera();
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
     /// Returns timestamp of depth frame, or zero if none available.
@@ -79,6 +81,7 @@ protected:
     RS2CameraHardwareConfig& hardware;
     RS2CaptureAuxdataConfig& auxData;
     std::string record_to_file;
+    bool uses_recorder = false;
     
     bool camera_stopped;
     bool camera_pipeline_started;

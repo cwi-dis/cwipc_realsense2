@@ -478,7 +478,10 @@ void RS2Capture::_unload_cameras() {
 
     // Stop all cameras
     for (auto cam : cameras) {
-        cam->stop_camera_and_capturer();
+        cam->pre_stop_camera();
+    }
+    for (auto cam : cameras) {
+        cam->stop_camera();
     }
 
     camera_count = 0;

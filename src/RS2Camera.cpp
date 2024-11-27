@@ -255,7 +255,8 @@ void RS2Camera::start_camera() {
 
 void RS2Camera::_pre_start(rs2::config &cfg) {
     cfg.enable_device(serial);
-    if (record_to_file != "") {
+    uses_recorder = record_to_file != "";
+    if (uses_recorder) {
         std::cerr << "RS2Camera::_pre_start: recording to " << record_to_file << std::endl;
         cfg.enable_record_to_file(record_to_file);
     }
@@ -264,9 +265,18 @@ void RS2Camera::_pre_start(rs2::config &cfg) {
 }
 
 void RS2Camera::_post_start(rs2::pipeline_profile& profile) {
+    rs2::device dev = profile.get_device();
+    // First pause the recorder, if there is one.
+    if (uses_recorder) {
+        rs2::recorder recorder = dev.as<rs2::recorder>();
+        if (!recorder) {
+            std::cerr << "RS2Camera::_post_start: uses_recorder but no recorder" << std::endl;
+        } else {
+            recorder.pause();
+        }
+    }
     // Obtain actual serial number and fps. Most important for playback cameras, but also useful for
     // live cameras (because the user program can obtain correct cameraconfig data with get_config()).
-    rs2::device dev = profile.get_device();
     // Keep actual serial number, also in cameraconfig
     serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     camera_config.serial = serial;
@@ -305,6 +315,20 @@ void RS2Camera::_post_start(rs2::pipeline_profile& profile) {
     hardware.color_height = color_height;
 }
 
+void RS2Camera::post_start_all_cameras() {
+    // First pause the recorder, if there is one.
+    if (uses_recorder) {
+        rs2::pipeline_profile profile = camera_pipeline.get_active_profile();
+        rs2::device dev = profile.get_device();
+        rs2::recorder recorder = dev.as<rs2::recorder>();
+        if (!recorder) {
+            std::cerr << "RS2Camera::post_start_all_cameras: uses_recorder but no recorder" << std::endl;
+        } else {
+            recorder.resume();
+        }
+    } 
+}
+
 void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
     // Get the 3D distance between camera and (0,0,0) or use 1m if unreasonable
     float tx = (*camera_config.trafo)(0,3);
@@ -340,7 +364,20 @@ void RS2Camera::_computePointSize(rs2::pipeline_profile profile) {
     pointSize = rv;
 }
 
-void RS2Camera::stop_camera_and_capturer() {
+void RS2Camera::pre_stop_camera() {
+    if (uses_recorder) {
+        rs2::pipeline_profile profile = camera_pipeline.get_active_profile();
+        rs2::device dev = profile.get_device();
+        rs2::recorder recorder = dev.as<rs2::recorder>();
+        if (!recorder) {
+            std::cerr << "RS2Camera::post_start_all_cameras: uses_recorder but no recorder" << std::endl;
+        } else {
+            recorder.pause();
+        }
+    }
+}
+
+void RS2Camera::stop_camera() {
     // Tell the grabber and processor thread that we want to stop.
     assert(!camera_stopped);
     camera_stopped = true;
