@@ -117,6 +117,8 @@ protected:
 
     bool debug = false;
     bool prefer_color_timing = true;    // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.
+    const char *depth_format = "unknown";
+    const char *color_format = "unknown";
 };
 
 #endif // cwipc_realsense_RS2Camera_hpp

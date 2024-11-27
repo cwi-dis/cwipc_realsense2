@@ -296,12 +296,14 @@ void RS2Camera::_post_start(rs2::pipeline_profile& profile) {
                 depth_fps = vstream.fps();
                 depth_width = vstream.width();
                 depth_height = vstream.height();
+                depth_format = rs2_format_to_string(vstream.format());
 
             }
             if (stream.stream_type() == RS2_STREAM_COLOR) {
                 color_fps = vstream.fps();
                 color_width = vstream.width();
                 color_height = vstream.height();
+                color_format = rs2_format_to_string(vstream.format());
             }
         }
     }
@@ -833,7 +835,8 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
             "width="+std::to_string(width)+
             ",height="+std::to_string(height)+
             ",stride="+std::to_string(stride)+
-            ",bpp="+std::to_string(bpp);
+            ",bpp="+std::to_string(bpp)+
+            ",format="+std::string(color_format);
 
         void* pointer = malloc(size);
 
@@ -856,7 +859,8 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
             "width="+std::to_string(width)+
             ",height="+std::to_string(height)+
             ",stride="+std::to_string(stride)+
-            ",bpp="+std::to_string(bpp);
+            ",bpp="+std::to_string(bpp)+
+            "format="+std::string(color_format);
 
         void* pointer = malloc(size);
 
