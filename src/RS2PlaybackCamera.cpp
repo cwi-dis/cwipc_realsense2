@@ -6,8 +6,9 @@
 #include <cstdlib>
 
 // Define to get (a little) debug prints
-#undef CWIPC_DEBUG
+#define CWIPC_DEBUG
 #undef CWIPC_DEBUG_THREAD
+#define CWIPC_DEBUG_SYNC
 
 // This is the dll source, so define external symbols as dllexport on windows.
 
@@ -19,7 +20,8 @@
 
 RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, std::string _filename)
 :   RS2Camera(ctx, configuration, _camera_index),
-    playback_filename(_filename)
+    playback_filename(_filename),
+    playback_realtime(configuration.playback_realtime)
 {
 
 }
@@ -34,19 +36,16 @@ void RS2PlaybackCamera::_pre_start(rs2::config &cfg) {
 void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
     rs2::device dev = profile.get_device();
     rs2::playback playback = dev.as<rs2::playback>();
-#if 0
-    // xxxjack for some reason pause() here and resume() in all_cameras_started doesn't work:
-    // the first resume() call will hang.
+
     playback.pause();
-#endif
-    playback.set_real_time(false);
+    playback.set_real_time(playback_realtime);
     
-     // Seek device, if needed
+    // Seek device, if needed
     if (camera_config.playback_inpoint_micros != 0) {
         uint64_t new_pos = ((uint64_t)1000) * camera_config.playback_inpoint_micros;
         uint64_t old_pos = playback.get_position();
 #ifdef CWIPC_DEBUG
-        std::cerr << "RS2PlaybackCamera::_post_start: pos was " << old_pos << " seek to " << new_pos << std::endl;
+        if (debug) std::cerr << "RS2PlaybackCamera::_post_start: pos was " << old_pos << " seek to " << new_pos << std::endl;
 #endif
         playback.seek(std::chrono::nanoseconds(new_pos));
     }
@@ -58,4 +57,5 @@ void RS2PlaybackCamera::post_start_all_cameras() {
     rs2::device dev = prof.get_device();
     rs2::playback playback = dev.as<rs2::playback>();
     playback.resume();
+    if (debug) std::cerr << "RS2PlaybackCamera::_post_start_all_cameras: playback resumed at " << playback.get_position() << std::endl;
 }

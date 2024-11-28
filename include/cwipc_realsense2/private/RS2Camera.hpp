@@ -22,18 +22,19 @@ public:
     /// Second step in starting: starts the capturer. Called after all cameras have been started.
     virtual void start_capturer();
     /// Third step in starting, called after all capturers have been started.
-    virtual void post_start_all_cameras() {}
+    virtual void post_start_all_cameras();
+    /// Prepare for stopping the cameras. May do something like stopping the recording.
+    virtual void pre_stop_camera();
     /// Completely stops camera and capturer, releases all resources. Can be re-started with start_camera, etc.
-    void stop_camera_and_capturer();
+    void stop_camera();
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
-    bool wait_for_captured_frameset();
+    /// Returns timestamp of depth frame, or zero if none available.
+    uint64_t wait_for_captured_frameset(uint64_t minimum_timestamp);
     /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
     void create_pc_from_frameset();
     /// Step 2a: Save auxdata from frameset into given cwipc object.
     void save_frameset_auxdata(cwipc *pc);
-    /// Step 2b: get timestamp from frameset.
-    uint64_t get_frameset_timestamp();
     /// Step 3: Wait for the point cloud processing.
     void wait_for_pc_created();
     /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
@@ -50,11 +51,15 @@ protected:
 
     void _init_filters();
 
+    virtual rs2::frameset wait_for_frames();
+
     void _start_processing_thread();
     void _processing_thread_main();
-    virtual void _start_capture_thread();
-    virtual void _capture_thread_main();
     
+#if 0
+    int64_t _frameset_timedelta_preferred(rs2::frameset frames);
+#endif
+
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 
     void _init_current_pointcloud(int size);
@@ -76,22 +81,22 @@ protected:
     RS2CameraHardwareConfig& hardware;
     RS2CaptureAuxdataConfig& auxData;
     std::string record_to_file;
+    bool uses_recorder = false;
     
     bool camera_stopped;
     bool camera_pipeline_started;
 
     std::thread *camera_processing_thread;
-    std::thread *camera_capture_thread;
     
     rs2::context capturer_context;
     rs2::pipeline camera_pipeline;
     
-    rs2::frame_queue captured_frame_queue;
     rs2::frame_queue processing_frame_queue;
     std::mutex processing_mutex;
     std::condition_variable processing_done_cv;
     bool processing_done;
     
+    rs2::frameset previous_captured_frameset;
     rs2::frameset current_captured_frameset;
     rs2::frameset current_processed_frameset;
     cwipc_pcl_pointcloud current_pointcloud;
@@ -110,6 +115,10 @@ protected:
     rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
     rs2::pointcloud depth_to_pointcloud;     // The pointcloud constructor
 
+    bool debug = false;
+    bool prefer_color_timing = true;    // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.
+    const char *depth_format = "unknown";
+    const char *color_format = "unknown";
 };
 
 #endif // cwipc_realsense_RS2Camera_hpp

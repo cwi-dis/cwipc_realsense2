@@ -48,6 +48,7 @@ protected:
 
     RS2CameraConfig* get_camera_config(std::string serial);
     void _control_thread_main();
+    virtual void _initial_camera_synchronization();
     void _find_camera_positions();
     virtual bool _apply_config(const char* configFilename);
     bool _apply_default_config();
