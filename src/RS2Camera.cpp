@@ -860,7 +860,7 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
             ",height="+std::to_string(height)+
             ",stride="+std::to_string(stride)+
             ",bpp="+std::to_string(bpp)+
-            "format="+std::string(color_format);
+            ",format="+std::string(depth_format);
 
         void* pointer = malloc(size);
 
