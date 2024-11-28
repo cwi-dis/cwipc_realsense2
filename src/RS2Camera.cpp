@@ -814,6 +814,8 @@ void RS2Camera::save_frameset_auxdata(cwipc *pc)
             ",color_framenum=" + std::to_string(color_framenum) +
             ",color_timestamp=" + std::to_string(color_timestamp) +
             ",color_clock=" + std::to_string(color_clock);
+        // xxxjack the following code is wrong. It gets the _current_ file position, not the file position
+        // we were at when we read this frame. 
         rs2::playback playback = camera_pipeline.get_active_profile().get_device().as<rs2::playback>();
         if (playback) {
             timestamp_data += ",filetime_ns=" + std::to_string(playback.get_position());
