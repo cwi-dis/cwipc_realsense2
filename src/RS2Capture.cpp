@@ -366,7 +366,7 @@ bool RS2Capture::_apply_config(const char* configFilename) {
     // current hardware setup. To be fixed at some point.
     //
     if (configFilename == NULL || *configFilename == '\0') {
-        // Empty config filename: use default cameraconfig.xml.
+        // Empty config filename: use default cameraconfig.json.
         configFilename = "cameraconfig.json";
     }
 
