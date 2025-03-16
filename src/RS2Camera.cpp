@@ -789,6 +789,43 @@ bool RS2Camera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     return true;
 }
 
+bool RS2Camera::mapcolordepth(int x_c, int y_c, int *out2d)
+{
+    // First we need to get the four matrices.
+    rs2::depth_frame depth_frame = current_processed_frameset.get_depth_frame();
+    rs2::video_frame color_frame = current_processed_frameset.get_color_frame();
+    rs2::video_stream_profile depth_profile = depth_frame.get_profile().as<rs2::video_stream_profile>();
+    rs2::video_stream_profile color_profile = color_frame.get_profile().as<rs2::video_stream_profile>();
+    rs2_intrinsics depth_intrinsics = depth_profile.get_intrinsics();
+    rs2_intrinsics color_intrinsics = color_profile.get_intrinsics();
+    rs2_extrinsics depth_to_color = depth_profile.get_extrinsics_to(color_profile);
+    rs2_extrinsics color_to_depth = color_profile.get_extrinsics_to(depth_profile);
+    const uint16_t* depth_data = (const uint16_t *)depth_frame.get_data();
+    // Now we can convert the RGB x,y coordinates to depth x,y coordinates.
+    float xy_color[2] { 
+        float(x_c), 
+        float(y_c)
+        };
+    float xy_depth[2];
+    float min_distance = filtering.threshold_min_distance;
+    float max_distance = filtering.threshold_max_distance;
+    rs2_project_color_pixel_to_depth_pixel(
+        xy_depth,
+        depth_data,
+        1000,
+        min_distance,
+        max_distance,
+        &depth_intrinsics,
+        &color_intrinsics,
+        &color_to_depth,
+        &depth_to_color,
+        xy_color
+    );
+    out2d[0] = (int)xy_depth[0];
+    out2d[1] = (int)xy_depth[1];
+    return true;
+}
+
 void RS2Camera::save_frameset_auxdata(cwipc *pc)
 {
     if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb && !auxData.want_image_timestamps) return;

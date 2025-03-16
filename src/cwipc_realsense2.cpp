@@ -240,18 +240,28 @@ public:
     }
 
     bool auxiliary_operation(const std::string op, const void* inbuf, size_t insize, void* outbuf, size_t outsize) override {
-        // For test purposes, really...
-        if (op != "map2d3d") return false;
-        if (inbuf == nullptr || insize != 4*sizeof(float)) return false;
-        if (outbuf == nullptr || outsize != 3*sizeof(float)) return false;
-        float *infloat = (float *)inbuf;
-        float *outfloat = (float *)outbuf;
-        int tilenum = (int)infloat[0];
-        int x_2d = (int)infloat[1];
-        int y_2d = (int)infloat[2];
-        float d_2d = infloat[3];
+        if (op == "map2d3d") {
+            if (inbuf == nullptr || insize != 4*sizeof(float)) return false;
+            if (outbuf == nullptr || outsize != 3*sizeof(float)) return false;
+            float *infloat = (float *)inbuf;
+            float *outfloat = (float *)outbuf;
+            int tilenum = (int)infloat[0];
+            int x_2d = (int)infloat[1];
+            int y_2d = (int)infloat[2];
+            float d_2d = infloat[3];
 
-        return m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
+            return m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
+        } else if (op == "mapcolordepth") {
+            if (inbuf == nullptr || insize != 3*sizeof(int)) return false;
+            if (outbuf == nullptr || outsize != 2*sizeof(int)) return false;
+            int *inint = (int *)inbuf;
+            int *outint = (int *)outbuf;
+
+            return m_grabber->mapcolordepth(inint[0], inint[1], inint[2], outint);
+
+        } else {
+            return false;
+        }
     }
 };
 
@@ -406,17 +416,28 @@ public:
    }
 
     bool auxiliary_operation(const std::string op, const void* inbuf, size_t insize, void* outbuf, size_t outsize) override {
-        // For test purposes, really...
-        if (op != "map2d3d") return false;
-        if (inbuf == nullptr || insize != 4*sizeof(float)) return false;
-        if (outbuf == nullptr || outsize != 3*sizeof(float)) return false;
-        float *infloat = (float *)inbuf;
-        float *outfloat = (float *)outbuf;
-        int tilenum = (int)infloat[0];
-        int x_2d = (int)infloat[1];
-        int y_2d = (int)infloat[2];
-        float d_2d = infloat[3];
-        return m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
+        if (op == "map2d3d") {
+            if (inbuf == nullptr || insize != 4*sizeof(float)) return false;
+            if (outbuf == nullptr || outsize != 3*sizeof(float)) return false;
+            float *infloat = (float *)inbuf;
+            float *outfloat = (float *)outbuf;
+            int tilenum = (int)infloat[0];
+            int x_2d = (int)infloat[1];
+            int y_2d = (int)infloat[2];
+            float d_2d = infloat[3];
+
+            return m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
+        } else if (op == "mapcolordepth") {
+            if (inbuf == nullptr || insize != 3*sizeof(int)) return false;
+            if (outbuf == nullptr || outsize != 2*sizeof(int)) return false;
+            int *inint = (int *)inbuf;
+            int *outint = (int *)outbuf;
+
+            return m_grabber->mapcolordepth(inint[0], inint[1], inint[2], outint);
+
+        } else {
+            return false;
+        }
     }
 };
 

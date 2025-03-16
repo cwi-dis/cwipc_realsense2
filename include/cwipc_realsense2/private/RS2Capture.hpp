@@ -41,6 +41,8 @@ public:
     void request_auxdata(bool _rgb, bool _depth, bool _timestamps);
     /// Return 3D point for a given camera, given RGB image 2D coordinates.
     bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d);
+    /// Return 2D point in depth image coordinates given 2D point in color image coordinates.
+    bool mapcolordepth(int tile, int u, int v, int* out2d);
 
 protected:
     virtual bool _create_cameras();

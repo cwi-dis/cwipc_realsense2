@@ -42,6 +42,8 @@ public:
     
     /// Implementation of mapping 2D color image coordinates to 3D coordinates.
     bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d);
+    /// Implementation of mapping 2D color image coordinates to 2D depth image coordinates.
+    bool mapcolordepth(int x_c, int y_c, int *out2d);
     /// Get camera hardware parameters, or check that they match what we got from another camera.
     bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
 

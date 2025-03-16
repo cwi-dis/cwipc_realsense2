@@ -575,6 +575,16 @@ bool RS2Capture::map2d3d(int tile, int x_2d, int y_2d, int d_2d, float *out3d)
     return false;
 }
 
+bool RS2Capture::mapcolordepth(int tile, int u, int v, int *out2d)
+{
+    for(auto cam : cameras) {
+        if (tile == (1 << cam->camera_index)) {
+            return cam->mapcolordepth(u, v, out2d);
+        }
+    }
+    return false;
+}
+
 bool RS2Capture::pointcloud_available(bool wait)
 {
     if (camera_count == 0) {
