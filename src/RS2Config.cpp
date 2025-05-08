@@ -67,6 +67,8 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     _MY_JSON_GET(processing_data, height_min, processing, height_min);
     _MY_JSON_GET(processing_data, height_max, processing, height_max);
     _MY_JSON_GET(processing_data, radius_filter, processing, radius_filter);
+    _MY_JSON_GET(processing_data, depth_x_erosion, processing, depth_x_erosion);
+    _MY_JSON_GET(processing_data, depth_y_erosion, processing, depth_y_erosion);
 
     json filtering_data = json_data.at("filtering");
     _MY_JSON_GET(filtering_data, map_color_to_depth, filtering, map_color_to_depth);
@@ -181,6 +183,8 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     _MY_JSON_PUT(processing_data, height_min, processing, height_min);
     _MY_JSON_PUT(processing_data, height_max, processing, height_max);
     _MY_JSON_PUT(processing_data, radius_filter, processing, radius_filter);
+    _MY_JSON_PUT(processing_data, depth_x_erosion, processing, depth_x_erosion);
+    _MY_JSON_PUT(processing_data, depth_y_erosion, processing, depth_y_erosion);
     json_data["processing"] = processing_data;
 
     json system_data;
