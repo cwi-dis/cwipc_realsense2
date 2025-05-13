@@ -62,5 +62,16 @@ void RS2PlaybackCamera::post_start_all_cameras() {
 
 
 bool RS2PlaybackCamera::seek(uint64_t timestamp) {
-    return false;
+    // We want a position in nanoseconds. So we need to do a lot of multiplying.
+    // We start with the inpoint from cameraconfig for this camera (microseconds)
+    uint64_t pos = camera_config.playback_inpoint_micros * 1000;
+    // We add the relative timestamp passed to seek (milliseconds)
+    pos += timestamp * 1000000;
+
+    rs2::device dev = camera_pipeline.get_active_profile().get_device();
+    rs2::playback playback = dev.as<rs2::playback>();
+    playback.pause();
+    playback.seek(std::chrono::nanoseconds(pos));
+    playback.resume();
+    return true;
 } 

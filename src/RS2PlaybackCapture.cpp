@@ -92,6 +92,9 @@ void RS2PlaybackCapture::_initial_camera_synchronization() {
     // std::cerr << "xxxjack search first timestamp" << std::endl;
     for(auto cam : cameras) {
         uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(0);
+        if (earliest_recording_timestamp_seen == 0) {
+            earliest_recording_timestamp_seen = this_cam_timestamp;
+        }
         if (this_cam_timestamp > newest_first_timestamp) {
             newest_first_timestamp = this_cam_timestamp;
         }
@@ -105,6 +108,21 @@ void RS2PlaybackCapture::_initial_camera_synchronization() {
 }
 
 bool RS2PlaybackCapture::seek(uint64_t timestamp) {
-    return false;
+    if (earliest_recording_timestamp_seen == 0) {
+        std::cerr << "RS2PlaybackCapture: no timestamps seen yet, seek() may fail" << std::endl;
+    }
+    uint64_t delta = timestamp - earliest_recording_timestamp_seen;
+    for (auto cam : cameras) { //SUBORDINATE or STANDALONE
+        if (cam->seek(delta) != true) {
+            std::cerr << "RS2PlaybackCapture: Camera " << cam->serial << " failed to seek to delta-timestamp " << delta << std::endl;
+            return false;
+        }
+    }
+
+#if 0
+    _initial_camera_synchronization();
+#endif
+
+    return true;
 } 
 

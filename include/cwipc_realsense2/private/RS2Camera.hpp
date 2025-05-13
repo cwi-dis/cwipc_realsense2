@@ -46,7 +46,8 @@ public:
     bool mapcolordepth(int x_c, int y_c, int *out2d);
     /// Get camera hardware parameters, or check that they match what we got from another camera.
     bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
-
+    /// Seek. Fails for cameras, overriden for playback cameras.
+    virtual bool seek(uint64_t timestamp) { return false; };
 protected:
     virtual void _pre_start(rs2::config& cfg);
     virtual void _post_start(rs2::pipeline_profile& profile);

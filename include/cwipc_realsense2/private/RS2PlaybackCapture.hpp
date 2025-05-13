@@ -28,5 +28,6 @@ protected:
     virtual bool _create_cameras() override;
     virtual void _initial_camera_synchronization() override;
     std::string base_directory = "";
+    uint64_t earliest_recording_timestamp_seen = 0;
 };
 #endif // cwipc_realsense_RS2PlaybackCapture_hpp
