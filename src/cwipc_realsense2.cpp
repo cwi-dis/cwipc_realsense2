@@ -439,6 +439,15 @@ public:
             return false;
         }
     }
+
+    bool seek(uint64_t timestamp) {
+        if (m_grabber == NULL) {
+            return NULL;
+        }
+
+        bool rv = m_grabber->seek(timestamp);
+        return rv;
+    }
 };
 
 //

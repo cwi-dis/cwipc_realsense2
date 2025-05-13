@@ -59,3 +59,8 @@ void RS2PlaybackCamera::post_start_all_cameras() {
     playback.resume();
     if (debug) std::cerr << "RS2PlaybackCamera::_post_start_all_cameras: playback resumed at " << playback.get_position() << std::endl;
 }
+
+
+bool RS2PlaybackCamera::seek(uint64_t timestamp) {
+    return false;
+} 

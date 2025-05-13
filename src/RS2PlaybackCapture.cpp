@@ -103,3 +103,8 @@ void RS2PlaybackCapture::_initial_camera_synchronization() {
         // std::cerr << "xxxjack camera after seek ts=" << this_cam_timestamp << std::endl;
     }
 }
+
+bool RS2PlaybackCapture::seek(uint64_t timestamp) {
+    return false;
+} 
+
