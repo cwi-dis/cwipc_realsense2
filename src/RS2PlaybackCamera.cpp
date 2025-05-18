@@ -32,6 +32,7 @@ RS2PlaybackCamera::~RS2PlaybackCamera() {
 void RS2PlaybackCamera::pause() {
     rs2::device dev = camera_pipeline.get_active_profile().get_device();
     rs2::playback playback = dev.as<rs2::playback>();
+    playback.set_real_time(true);
     playback.pause();
 }
 
@@ -39,10 +40,11 @@ void RS2PlaybackCamera::resume() {
     rs2::device dev = camera_pipeline.get_active_profile().get_device();
     rs2::playback playback = dev.as<rs2::playback>();
     playback.resume();
+    playback.set_real_time(playback_realtime);
 }
 
 void RS2PlaybackCamera::_pre_start(rs2::config &cfg) {
-    cfg.enable_device_from_file(playback_filename);
+    cfg.enable_device_from_file(playback_filename, false);
 }
 
 void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
