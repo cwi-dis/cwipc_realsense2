@@ -29,6 +29,18 @@ RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& config
 RS2PlaybackCamera::~RS2PlaybackCamera() {
 }
 
+void RS2PlaybackCamera::pause() {
+    rs2::device dev = camera_pipeline.get_active_profile().get_device();
+    rs2::playback playback = dev.as<rs2::playback>();
+    playback.pause();
+}
+
+void RS2PlaybackCamera::resume() {
+    rs2::device dev = camera_pipeline.get_active_profile().get_device();
+    rs2::playback playback = dev.as<rs2::playback>();
+    playback.resume();
+}
+
 void RS2PlaybackCamera::_pre_start(rs2::config &cfg) {
     cfg.enable_device_from_file(playback_filename);
 }
@@ -70,8 +82,6 @@ bool RS2PlaybackCamera::seek(uint64_t timestamp) {
 
     rs2::device dev = camera_pipeline.get_active_profile().get_device();
     rs2::playback playback = dev.as<rs2::playback>();
-    playback.pause();
     playback.seek(std::chrono::nanoseconds(pos));
-    playback.resume();
     return true;
 } 

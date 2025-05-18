@@ -18,7 +18,9 @@ public:
     ~RS2PlaybackCamera();
 
     virtual void post_start_all_cameras() override;
-    virtual bool seek(uint64_t timestamp) override; 
+    virtual bool seek(uint64_t timestamp) override;
+    virtual void pause();
+    virtual void resume();
 protected:
     virtual void _pre_start(rs2::config &cfg) override;
     virtual void _post_start(rs2::pipeline_profile& profile) override;

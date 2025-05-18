@@ -440,9 +440,9 @@ public:
         }
     }
 
-    bool seek(uint64_t timestamp) {
+    bool seek(uint64_t timestamp) override {
         if (m_grabber == NULL) {
-            return NULL;
+            return false;
         }
 
         bool rv = m_grabber->seek(timestamp);
