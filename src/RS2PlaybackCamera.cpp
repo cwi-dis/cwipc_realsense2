@@ -21,7 +21,8 @@
 RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, std::string _filename)
 :   RS2Camera(ctx, configuration, _camera_index),
     playback_filename(_filename),
-    playback_realtime(configuration.playback_realtime)
+    playback_realtime(configuration.playback_realtime),
+    playback_loop(configuration.playback_loop)
 {
 
 }
@@ -44,7 +45,7 @@ void RS2PlaybackCamera::resume() {
 }
 
 void RS2PlaybackCamera::_pre_start(rs2::config &cfg) {
-    cfg.enable_device_from_file(playback_filename, false);
+    cfg.enable_device_from_file(playback_filename, playback_loop);
 }
 
 void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
