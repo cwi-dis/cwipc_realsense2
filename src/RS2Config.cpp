@@ -39,6 +39,7 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     json system_data = json_data.at("system");
     _MY_JSON_GET(system_data, record_to_directory, config, record_to_directory);
     _MY_JSON_GET(system_data, playback_realtime, config, playback_realtime);
+    _MY_JSON_GET(system_data, new_timestamps, config, new_timestamps);
     _MY_JSON_GET(system_data, debug, config, debug);
     _MY_JSON_GET(system_data, prefer_color_timing, config, prefer_color_timing);
 
@@ -190,6 +191,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json system_data;
     _MY_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
     _MY_JSON_PUT(system_data, playback_realtime, config, playback_realtime);
+    _MY_JSON_PUT(system_data, new_timestamps, config, new_timestamps);
     _MY_JSON_PUT(system_data, debug, config, debug);
     _MY_JSON_PUT(system_data, prefer_color_timing, config, prefer_color_timing);
     json_data["system"] = system_data;

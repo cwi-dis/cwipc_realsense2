@@ -640,8 +640,9 @@ void RS2Capture::_control_thread_main() {
 
         // And get the best timestamp
         uint64_t timestamp = first_timestamp;
-
-        if (timestamp == 0) {
+        if (configuration.new_timestamps) {
+            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        } else if (timestamp == 0) {
             std::cerr << "cwipc_realsense2: Warning: using system clock timestamp" << std::endl;
             timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         }
