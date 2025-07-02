@@ -168,7 +168,7 @@ public:
             return nCamera;
         }
 
-        return 1<<nCamera;
+        return nCamera+1;
     }
 
     bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo) override {
@@ -182,55 +182,27 @@ public:
             return false;
         }
 
-        if (tilenum < 0 || tilenum >= (1<<nCamera)) {
+        if (tilenum < 0 || tilenum >= nCamera+1) {
             return false;
         }
 
-        // nCamera > 0
-        cwipc_vector camcenter = { 0, 0, 0 };
-
-        // calculate the center of all cameras
-        for (auto camdat : m_grabber->configuration.all_camera_configs) {
-            add_vectors(camcenter, camdat.cameraposition, &camcenter);
-        }
-        mult_vector(1.0 / nCamera, &camcenter);
-
-        // calculate normalized direction vectors from the center towards each camera
-        std::vector<cwipc_vector> camera_directions;
-        for (auto camdat : m_grabber->configuration.all_camera_configs) {
-            cwipc_vector normal;
-            diff_vectors(camdat.cameraposition, camcenter, &normal);
-            norm_vector(&normal);
-            camera_directions.push_back(normal);
-        }
-
-        // add all cameradirections that contributed
-        int ncontribcam = 0;
-        int lastcontribcamid = 0;
-        cwipc_vector tile_direction = { 0, 0, 0 };
-        for (int i = 0; i < m_grabber->configuration.all_camera_configs.size(); i++) {
-            uint8_t camera_label = (uint8_t)1 << i;
-
-            if (tilenum == 0 || (tilenum & camera_label)) {
-                add_vectors(tile_direction, camera_directions[i], &tile_direction);
-                ncontribcam++;
-                lastcontribcamid = i;
+        if (tilenum == 0) {
+            // Special case: the whole pointcloud
+            if (tileinfo) {
+                tileinfo->normal = { 0, 0, 0 };
+                tileinfo->cameraName = NULL;
+                tileinfo->ncamera = nCamera;
+                tileinfo->cameraMask = 0; // All cameras contributes to this
             }
+            return true;
         }
-        norm_vector(&tile_direction);
-
+        RS2CameraConfig &cameraConfig = m_grabber->configuration.all_camera_configs[tilenum-1];
         if (tileinfo) {
-            tileinfo->normal = tile_direction;
-            tileinfo->cameraName = NULL;
-            tileinfo->ncamera = ncontribcam;
-            tileinfo->cameraMask = tilenum;
-
-            if (ncontribcam == 1) {
-                // A single camera contributed to this
-                tileinfo->cameraName = (char *)m_grabber->configuration.all_camera_configs[lastcontribcamid].serial.c_str();
-            }
+            tileinfo->normal = cameraConfig.cameraposition; // Use the camera position as the normal
+            tileinfo->cameraName = (char *)cameraConfig.serial.c_str();
+            tileinfo->ncamera = 1; // Only one camera contributes to this
+            tileinfo->cameraMask = (uint8_t)1 << (tilenum-1); // Only this camera contributes
         }
-
         return true;
     }
 
@@ -344,7 +316,7 @@ public:
             return nCamera;
         }
 
-        return 1<<nCamera;
+        return nCamera+1;
     }
 
     bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo) override {
