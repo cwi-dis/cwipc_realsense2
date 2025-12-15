@@ -240,7 +240,6 @@ uint64_t RS2Camera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
 void RS2Camera::start_camera() {
     assert(camera_stopped);
     assert(!camera_pipeline_started);
-    assert(camera_capture_thread == nullptr);
     assert(camera_processing_thread == nullptr);
     rs2::config cfg;
 #ifdef CWIPC_DEBUG
