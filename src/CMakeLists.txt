@@ -21,11 +21,11 @@ add_library(cwipc_realsense2
 
 target_sources(cwipc_realsense2
 	PRIVATE
-	"../include/cwipc_realsense2/private/RS2Config.hpp"
-	"../include/cwipc_realsense2/private/RS2Capture.hpp"
-	"../include/cwipc_realsense2/private/RS2Camera.hpp"
-	"../include/cwipc_realsense2/private/RS2PlaybackCapture.hpp"
-	"../include/cwipc_realsense2/private/RS2PlaybackCamera.hpp"
+	"RS2Config.hpp"
+	"RS2Capture.hpp"
+	"RS2Camera.hpp"
+	"RS2PlaybackCapture.hpp"
+	"RS2PlaybackCamera.hpp"
 	"../include/cwipc_realsense2/api.h"
 )
 
