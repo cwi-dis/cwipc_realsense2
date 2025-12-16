@@ -10,7 +10,7 @@
 
 #include <cwipc_util/internal.h>
 
-#include "cwipc_realsense2/private/RS2Config.hpp"
+#include "RS2Config.hpp"
 
 class RS2Camera : CwipcBaseCamera {
 public:

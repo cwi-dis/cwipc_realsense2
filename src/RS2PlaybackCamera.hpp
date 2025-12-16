@@ -9,8 +9,8 @@
 #include <librealsense2/rs.hpp>
 #include <librealsense2/hpp/rs_internal.hpp>
 
-#include "cwipc_realsense2/private/RS2Config.hpp"
-#include "cwipc_realsense2/private/RS2Camera.hpp"
+#include "RS2Config.hpp"
+#include "RS2Camera.hpp"
 
 class RS2PlaybackCamera : public RS2Camera {
 public:

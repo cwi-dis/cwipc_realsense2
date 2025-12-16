@@ -7,11 +7,11 @@
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
 
-#include "cwipc_realsense2/private/RS2Config.hpp"
-#include "cwipc_realsense2/private/RS2Capture.hpp"
-#include "cwipc_realsense2/private/RS2Camera.hpp"
-#include "cwipc_realsense2/private/RS2PlaybackCapture.hpp"
-#include "cwipc_realsense2/private/RS2PlaybackCamera.hpp"
+#include "RS2Config.hpp"
+#include "RS2Capture.hpp"
+#include "RS2Camera.hpp"
+#include "RS2PlaybackCapture.hpp"
+#include "RS2PlaybackCamera.hpp"
 
 // Global variables (constants, really)
 

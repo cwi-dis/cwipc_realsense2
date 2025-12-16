@@ -15,7 +15,7 @@
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
 
-#include "cwipc_realsense2/private/RS2PlaybackCapture.hpp"
+#include "RS2PlaybackCapture.hpp"
 
 RS2PlaybackCapture::RS2PlaybackCapture()
 :   RS2Capture()

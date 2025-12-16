@@ -21,8 +21,8 @@
 
 #include <librealsense2/rsutil.h>
 
-#include "cwipc_realsense2/private/RS2Config.hpp"
-#include "cwipc_realsense2/private/RS2Camera.hpp"
+#include "RS2Config.hpp"
+#include "RS2Camera.hpp"
 
 typedef struct HsvColor {
     unsigned char h;

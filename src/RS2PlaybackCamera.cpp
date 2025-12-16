@@ -16,7 +16,7 @@
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
 
-#include "cwipc_realsense2/private/RS2PlaybackCamera.hpp"
+#include "RS2PlaybackCamera.hpp"
 
 RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, std::string _filename)
 :   RS2Camera(ctx, configuration, _camera_index),

@@ -17,9 +17,9 @@
 
 #include <chrono>
 
-#include "cwipc_realsense2/private/RS2Config.hpp"
-#include "cwipc_realsense2/private/RS2Capture.hpp"
-#include "cwipc_realsense2/private/RS2Camera.hpp"
+#include "RS2Config.hpp"
+#include "RS2Capture.hpp"
+#include "RS2Camera.hpp"
 
 // Static variable used to print a warning message when we re-create an RS2Capture
 // if there is another one open.
