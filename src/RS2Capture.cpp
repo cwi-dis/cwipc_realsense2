@@ -380,12 +380,8 @@ bool RS2Capture::_apply_config(const char* configFilename) {
         return cwipc_rs2_jsonbuffer2config(configFilename, &configuration, type);
     }
 
-    // Otherwise we check the extension. It can be .xml or .json.
+    // Otherwise we check the extension. It can be .json.
     const char *extension = strrchr(configFilename, '.');
-    if (extension != nullptr && strcmp(extension, ".xml") == 0) {
-        return cwipc_rs2_xmlfile2config(configFilename, &configuration, type);
-    }
-
     if (extension != nullptr && strcmp(extension, ".json") == 0) {
         return cwipc_rs2_jsonfile2config(configFilename, &configuration, type);
     }

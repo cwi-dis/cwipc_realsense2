@@ -29,10 +29,6 @@ endif()
 #
 find_package(REALSENSE2 REQUIRED)
 
-# we need the thirdparty tinyXML
-include(third-party/tinyXML/CMakeLists.txt)
-include_directories(third-party/tinyXML)
-
 # If we're on Linux os MacOS we need libusb
 #
 #if(NOT WIN32)
