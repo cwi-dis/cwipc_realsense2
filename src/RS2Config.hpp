@@ -20,6 +20,13 @@
 #include "cwipc_util/api_pcl.h"
 #include "cwipc_util/internal.h"
 
+#ifdef _CWIPC_NLOHMANN_JSON
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+#else
+class json;
+#endif
+
 struct RS2CameraProcessingParameters {
     int map_color_to_depth = 1;     // -1 means: no mapping at all.
     
@@ -55,6 +62,9 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
     int playback_inpoint_micros = 0; // for realsense_playback: initial seek for this camera.
     pcl::shared_ptr<Eigen::Affine3d> trafo; //!< Transformation matrix from camera coorindates to world coordinates
     cwipc_vector cameraposition = { 0,0,0 };    //!< Position of this camera in real world coordinates
+
+    void _from_json(const json& json_data);
+    void _to_json(json& json_data);
 };
 
 struct RS2CameraHardwareConfig {
@@ -121,6 +131,9 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     std::string to_string();
     bool from_string(const char* buffer, std::string typeWanted);
     bool from_file(const char* filename, std::string typeWanted);
+
+    void _from_json(const json& json_data);
+    void _to_json(json& json_data);
 };
 
 #endif /* cwipc_realsense2_rs2config_h */
