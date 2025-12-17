@@ -117,23 +117,10 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
 
     // per camera data
     std::vector<RS2CameraConfig> all_camera_configs;
+
+    std::string to_string();
+    bool from_string(const char* buffer, std::string typeWanted);
+    bool from_file(const char* filename, std::string typeWanted);
 };
-
-struct RS2CaptureConfig;
-
-bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config, std::string typeWanted);
-bool cwipc_rs2_jsonbuffer2config(const char* jsonbuffer, RS2CaptureConfig* config, std::string typeWanted);
-std::string cwipc_rs2_config2string(RS2CaptureConfig *config);
-
-#ifdef _WIN32
-#include <Windows.h>
-
-inline void _cwipc_setThreadName(std::thread* thr, const wchar_t* name) {
-    HANDLE threadHandle = static_cast<HANDLE>(thr->native_handle());
-    SetThreadDescription(threadHandle, name);
-}
-#else
-inline void _cwipc_setThreadName(std::thread* thr, const wchar_t* name) {}
-#endif
 
 #endif /* cwipc_realsense2_rs2config_h */

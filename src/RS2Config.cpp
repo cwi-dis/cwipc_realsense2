@@ -17,7 +17,7 @@ using json = nlohmann::json;
 
 static std::string cwipc_rs2_most_recent_warning;
 
-void from_json(const json& json_data, RS2CaptureConfig& config) {
+void _from_json(const json& json_data, RS2CaptureConfig& config) {
     // version and type should already have been checked.
     RS2CameraHardwareConfig& hardware(config.hardware);
     RS2CameraProcessingParameters& filtering(config.filtering);
@@ -110,7 +110,7 @@ void from_json(const json& json_data, RS2CaptureConfig& config) {
     }
 }
 
-void to_json(json& json_data, const RS2CaptureConfig& config) {
+void _to_json(json& json_data, const RS2CaptureConfig& config) {
     json cameras;
     int camera_index = 0;
 
@@ -205,7 +205,7 @@ void to_json(json& json_data, const RS2CaptureConfig& config) {
     json_data["type"] = config.type;
 }
 
-bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config, std::string typeWanted) {
+bool RS2CaptureConfig::from_file(const char* filename, std::string typeWanted) {
     json json_data;
 
     try {
@@ -233,7 +233,7 @@ bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config, s
             return false;
         }
 
-        from_json(json_data, *config);
+        _from_json(json_data, *this);
     } catch (const std::exception& e) {
         cwipc_log(LOG_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + filename + ": exception " + e.what() );
         return false;
@@ -242,7 +242,7 @@ bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config, s
     return true;
 }
 
-bool cwipc_rs2_jsonbuffer2config(const char* jsonBuffer, RS2CaptureConfig* config, std::string typeWanted) {
+bool RS2CaptureConfig::from_string(const char* jsonBuffer, std::string typeWanted) {
     json json_data;
 
     try {
@@ -264,21 +264,18 @@ bool cwipc_rs2_jsonbuffer2config(const char* jsonBuffer, RS2CaptureConfig* confi
             return false;
         }
 
-        from_json(json_data, *config);
+        _from_json(json_data, *this);
     } catch (const std::exception& e) {
         cwipc_log(LOG_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + "(inline buffer) " + ": exception " + e.what() );
         return false;
     }
 
-    json dbg_result;
-    to_json(dbg_result, *config);
-    
     return true;
 }
 
-std::string cwipc_rs2_config2string(RS2CaptureConfig *config) {
+std::string RS2CaptureConfig::to_string() {
     json result;
-    to_json(result, *config);
+    _to_json(result, *this);
 
     return result.dump();
 }

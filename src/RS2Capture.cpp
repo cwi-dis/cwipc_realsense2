@@ -138,7 +138,7 @@ std::string RS2Capture::config_get() {
         }
         match_only = true;
     }
-    return cwipc_rs2_config2string(&configuration);
+    return configuration.to_string();
 }
 
 void RS2Capture::_refresh_camera_hardware_parameters() {
@@ -377,13 +377,13 @@ bool RS2Capture::_apply_config(const char* configFilename) {
 
     if (configFilename[0] == '{') {
         // Special case 2: a string starting with { is considered a JSON literal
-        return cwipc_rs2_jsonbuffer2config(configFilename, &configuration, type);
+        return configuration.from_string(configFilename, type);
     }
 
     // Otherwise we check the extension. It can be .json.
     const char *extension = strrchr(configFilename, '.');
     if (extension != nullptr && strcmp(extension, ".json") == 0) {
-        return cwipc_rs2_jsonfile2config(configFilename, &configuration, type);
+        return configuration.from_file(configFilename, type);
     }
 
     return false;
