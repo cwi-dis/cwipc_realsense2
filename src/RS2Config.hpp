@@ -14,9 +14,6 @@
 #include <pcl/common/common_headers.h>
 #include <pcl/filters/voxel_grid.h>
 
-// Define to enable optional dumping of RGB video frames (to test hardware sync)
-#define WITH_DUMP_VIDEO_FRAMES
-
 //
 // Definitions of types used across cwipc_realsense2, cwipc_codec and cwipc_util.
 //
@@ -123,9 +120,6 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
 };
 
 struct RS2CaptureConfig;
-
-void cwipc_rs2_log_warning(std::string warning);
-extern char **cwipc_rs2_warning_store;
 
 bool cwipc_rs2_jsonfile2config(const char* filename, RS2CaptureConfig* config, std::string typeWanted);
 bool cwipc_rs2_jsonbuffer2config(const char* jsonbuffer, RS2CaptureConfig* config, std::string typeWanted);

@@ -36,7 +36,7 @@ RS2Capture::RS2Capture() {
     numberOfCapturersActive++;
 
     if (numberOfCapturersActive > 1) {
-        cwipc_rs2_log_warning("Attempting to create capturer while one is already active.");
+        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Attempting to create capturer while one is already active.");
     }
 }
 
@@ -87,7 +87,7 @@ bool RS2Capture::config_reload(const char *configFilename) {
             cam->start_camera();
         }
     } catch(const rs2::error& e) {
-        cwipc_rs2_log_warning("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
+        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
         throw;
     }
 
@@ -115,7 +115,7 @@ bool RS2Capture::config_reload(const char *configFilename) {
 bool RS2Capture::_check_cameras_connected() {
     for (RS2CameraConfig& cd : configuration.all_camera_configs) {
         if (!cd.connected && !cd.disabled) {
-            cwipc_rs2_log_warning("Camera " + cd.serial + " is not connected");
+            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is not connected");
             return false;
         }
     }
@@ -131,9 +131,9 @@ std::string RS2Capture::config_get() {
         bool ok = cam->getHardwareParameters(configuration.hardware, match_only);
         if (!ok) {
             if (!match_only) {
-                cwipc_rs2_log_warning("First camera does not have hardware configuration");
+                cwipc_log(LOG_WARNING, "cwipc_realsense2", "First camera does not have hardware configuration");
             } else {
-                cwipc_rs2_log_warning("Not all cameras have the same hardware configuration");
+                cwipc_log(LOG_WARNING, "cwipc_realsense2", "Not all cameras have the same hardware configuration");
             }
         }
         match_only = true;
@@ -260,7 +260,7 @@ void RS2Capture::_setup_camera_sync() {
     }
     int nonmaster_sync_mode = configuration.sync.sync_mode;
     if (nonmaster_sync_mode == 0) {
-        cwipc_rs2_log_warning("Sync_master_serial set, but no sync mode requested");
+        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Sync_master_serial set, but no sync mode requested");
         return;
     }
     bool use_external_sync = master_serial == "external";
@@ -278,7 +278,7 @@ void RS2Capture::_setup_camera_sync() {
                     sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 1);
                     master_found = true;
                     if (!is_first_camera) {
-                        cwipc_rs2_log_warning("Camera " + master_serial + " is not the first camera found. This may influence sync");
+                        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + master_serial + " is not the first camera found. This may influence sync");
                     }
                 } else {
                     sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, nonmaster_sync_mode);
@@ -288,7 +288,7 @@ void RS2Capture::_setup_camera_sync() {
         is_first_camera = false;
     }
     if (!master_found) {
-        cwipc_rs2_log_warning("Camera sync_master_serial=" + master_serial + " not found");
+        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera sync_master_serial=" + master_serial + " not found");
     }
 #if 0
     bool master_set = false;
@@ -311,7 +311,7 @@ void RS2Capture::_setup_camera_sync() {
             }
 
             if (!foundSensorSupportingSync) {
-                cwipc_rs2_log_warning("Camera " + std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) + " does not support inter-camera-sync");
+                cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) + " does not support inter-camera-sync");
             }
         }
     }
@@ -441,12 +441,12 @@ bool RS2Capture::_create_cameras() {
         RS2CameraConfig* cd = get_camera_config(serial);
 
         if (cd == nullptr) {
-            cwipc_rs2_log_warning("Camera " + serial + " is connected but not configured");
+            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + serial + " is connected but not configured");
             return false;
         }
 
         if (cd->type != "realsense") {
-            cwipc_rs2_log_warning("Camera " + serial + " is type " + cd->type + " in stead of realsense");
+            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + serial + " is type " + cd->type + " in stead of realsense");
             return false;
         }
 
@@ -722,7 +722,7 @@ void RS2Capture::merge_camera_pointclouds() {
         cwipc_pcl_pointcloud cam_cld = cam->access_current_pcl_pointcloud();
 
         if (cam_cld == 0) {
-            cwipc_rs2_log_warning("Camera " + cam->serial + " has NULL cloud");
+            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cam->serial + " has NULL cloud");
             continue;
         }
         nPoints += cam_cld->size();
@@ -751,6 +751,6 @@ RS2CameraConfig* RS2Capture::get_camera_config(std::string serial) {
         }
     }
 
-    cwipc_rs2_log_warning("Unknown camera " + serial);
+    cwipc_log(LOG_WARNING, "cwipc_realsense2", "Unknown camera " + serial);
     return nullptr;
 }

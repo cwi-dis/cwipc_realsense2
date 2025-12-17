@@ -12,6 +12,7 @@
 #include "RS2Camera.hpp"
 #include "RS2PlaybackCapture.hpp"
 #include "RS2PlaybackCamera.hpp"
+#include <string>
 
 // Global variables (constants, really)
 
@@ -23,7 +24,7 @@ static bool rs2_versioncheck(char **errorMessage) {
     if ((version/100) == (RS2_API_VERSION/100)) {
         return true;
     }
-
+    cwipc_log(LOG_ERROR, "cwipc_realsense2", "Built against librealsense " + std::to_string(RS2_API_VERSION) + " but " + std::to_string(version) + " is installed.");
     if (errorMessage) {
         static char errorBuf[80];
         snprintf(errorBuf, sizeof(errorBuf), "Built against librealsense %d but %d is installed.", RS2_API_VERSION, version);
@@ -31,6 +32,19 @@ static bool rs2_versioncheck(char **errorMessage) {
     }
 
     return false;
+}
+
+static bool rs2_api_versioncheck(char **errorMessage, uint64_t apiVersion) {
+    if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
+        char* msgbuf = (char*)malloc(1024);
+        snprintf(msgbuf, 1024, "cwipc_realsense2: incorrect apiVersion 0x%08" PRIx64 " expected 0x%08" PRIx64 "..0x%08" PRIx64 "", apiVersion, CWIPC_API_VERSION_OLD, CWIPC_API_VERSION);
+        if (errorMessage) {
+            *errorMessage = msgbuf;
+        }
+        cwipc_log(LOG_ERROR, "cwipc_realsense2", msgbuf + 18);
+        return false;
+    }
+    return true;
 }
 
 static cwipc_vector* add_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
@@ -427,13 +441,7 @@ public:
 //
 
 cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
-    if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
-        if (errorMessage) {
-            char* msgbuf = (char*)malloc(1024);
-            snprintf(msgbuf, 1024, "cwipc_realsense2: incorrect apiVersion 0x%08" PRIx64 " expected 0x%08" PRIx64 "..0x%08" PRIx64 "", apiVersion, CWIPC_API_VERSION_OLD, CWIPC_API_VERSION);
-            *errorMessage = msgbuf;
-        }
-
+    if (!rs2_api_versioncheck(errorMessage, apiVersion)) {
         return NULL;
     }
 
@@ -441,9 +449,7 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
         return NULL;
     }
 
-    cwipc_rs2_warning_store = errorMessage;
     cwipc_source_realsense2_impl *rv = new cwipc_source_realsense2_impl(configFilename);
-    cwipc_rs2_warning_store = NULL;
 
     // If the grabber found cameras everything is fine
     if (rv && rv->is_valid()) {
@@ -461,23 +467,14 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 
 
 cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
-    if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
-        if (errorMessage) {
-            char* msgbuf = (char*)malloc(1024);
-            snprintf(msgbuf, 1024, "cwipc_realsense2_playback: incorrect apiVersion 0x%08" PRIx64 " expected 0x%08" PRIx64 "..0x%08" PRIx64 "", apiVersion, CWIPC_API_VERSION_OLD, CWIPC_API_VERSION);
-            *errorMessage = msgbuf;
-        }
-
+    if (!rs2_api_versioncheck(errorMessage, apiVersion)) {
         return NULL;
     }
-
     if (!rs2_versioncheck(errorMessage)) {
         return NULL;
     }
 
-    cwipc_rs2_warning_store = errorMessage;
     cwipc_source_realsense2_playback_impl *rv = new cwipc_source_realsense2_playback_impl(configFilename);
-    cwipc_rs2_warning_store = NULL;
 
     // If the grabber found cameras everything is fine
     if (rv && rv->is_valid()) {
@@ -486,6 +483,7 @@ cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **
 
     delete rv;
 
+    cwipc_log(LOG_ERROR, "cwipc_realsense2", "unspecified error from playback constructor");
     if (errorMessage && *errorMessage == NULL) {
         *errorMessage = (char *)"cwipc_realsense2_playback: unspecified error from constructor";
     }

@@ -53,15 +53,15 @@ bool RS2PlaybackCapture::_create_cameras() {
             cd.serial = cd.playback_filename;
         }
         if (cd.playback_filename == "" && cd.serial == "") {
-            cwipc_rs2_log_warning("Camera " + cd.serial + " has no playback_filename nor serial");
+            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " has no playback_filename nor serial");
             return false;
         }
         if (cd.type == "realsense"){
-            // cwipc_rs2_log_warning("Camera " + cd.serial + " is type realsense, override to realsense_playback");
+            // cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is type realsense, override to realsense_playback");
             cd.type = "realsense_playback";
         }
         if (cd.type != "realsense_playback") {
-            cwipc_rs2_log_warning("Camera " + cd.serial + " is type " + cd.type + " in stead of realsense_playback");
+            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is type " + cd.type + " in stead of realsense_playback");
             return false;
         }
 
