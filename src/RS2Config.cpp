@@ -44,6 +44,14 @@ void RS2CameraConfig::_to_json(json& json_data) {
         _MY_JSON_PUT(json_data, playback_filename, config, playback_filename);
         _MY_JSON_PUT(json_data, playback_inpoint_micros, config, playback_inpoint_micros);
     }
+     // Only write cameraposition if not zero, and ensure we never read it back.
+    if (config.cameraposition.x != 0.0 || config.cameraposition.y != 0.0 || config.cameraposition.z != 0.0) {
+        json_data["_cameraposition"] = {
+            config.cameraposition.x,
+            config.cameraposition.y,
+            config.cameraposition.z
+        };
+    }
     json_data["trafo"] = {
         {(*config.trafo)(0,0), (*config.trafo)(0,1), (*config.trafo)(0,2), (*config.trafo)(0,3)},
         {(*config.trafo)(1,0), (*config.trafo)(1,1), (*config.trafo)(1,2), (*config.trafo)(1,3)},
