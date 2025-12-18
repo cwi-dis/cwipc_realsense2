@@ -5,6 +5,7 @@
 
 #include "cwipc_util/api_pcl.h"
 #include "cwipc_util/api.h"
+#include "cwipc_util/vectors.h"
 #include "cwipc_realsense2/api.h"
 
 #include "RS2Config.hpp"
@@ -45,64 +46,6 @@ static bool rs2_api_versioncheck(char **errorMessage, uint64_t apiVersion) {
         return false;
     }
     return true;
-}
-
-static cwipc_vector* add_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
-    if (result) {
-        result->x = a.x + b.x;
-        result->y = a.y + b.y;
-        result->z = a.z + b.z;
-    }
-
-    return result;
-}
-
-static cwipc_vector* diff_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
-    if (result) {
-        result->x = a.x - b.x;
-        result->y = a.y - b.y;
-        result->z = a.z - b.z;
-    }
-
-    return result;
-}
-
-static double len_vector(cwipc_vector v) {
-    return v.x * v.x + v.y * v.y + v.z * v.z;
-}
-
-static cwipc_vector* mult_vector(double factor, cwipc_vector *v) {
-    if (v) {
-        v->x *= factor;
-        v->y *= factor;
-        v->z *= factor;
-    }
-
-    return v;
-}
-
-static cwipc_vector* norm_vector(cwipc_vector *v) {
-    double len = len_vector(*v);
-
-    if (len > 0) {
-        mult_vector(1.0/len, v);
-    }
-
-    return v;
-}
-
-static double dot_vectors(cwipc_vector a, cwipc_vector b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-static cwipc_vector* cross_vectors(cwipc_vector a, cwipc_vector b, cwipc_vector *result) {
-    if (result) {
-        result->x = a.y*b.z - a.z*b.y;
-        result->y = a.z*b.x - a.x*b.z;
-        result->z = a.x*b.y - a.y*b.x;
-    }
-
-    return result;
 }
 
 class cwipc_source_realsense2_impl : public cwipc_tiledsource {
