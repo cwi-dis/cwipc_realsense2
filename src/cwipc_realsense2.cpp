@@ -20,7 +20,7 @@
 _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16 = RS2_FORMAT_Z16;
 _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_RGB8 = RS2_FORMAT_RGB8;
 
-static bool rs2_versioncheck(char **errorMessage) {
+static bool _rs2_versioncheck(char **errorMessage) {
     int version = rs2_get_api_version(nullptr);
     if ((version/100) == (RS2_API_VERSION/100)) {
         return true;
@@ -35,7 +35,7 @@ static bool rs2_versioncheck(char **errorMessage) {
     return false;
 }
 
-static bool rs2_api_versioncheck(char **errorMessage, uint64_t apiVersion) {
+static bool _api_versioncheck(char **errorMessage, uint64_t apiVersion) {
     if (apiVersion < CWIPC_API_VERSION_OLD || apiVersion > CWIPC_API_VERSION) {
         char* msgbuf = (char*)malloc(1024);
         snprintf(msgbuf, 1024, "cwipc_realsense2: incorrect apiVersion 0x%08" PRIx64 " expected 0x%08" PRIx64 "..0x%08" PRIx64 "", apiVersion, CWIPC_API_VERSION_OLD, CWIPC_API_VERSION);
@@ -48,120 +48,15 @@ static bool rs2_api_versioncheck(char **errorMessage, uint64_t apiVersion) {
     return true;
 }
 
-template<class GrabberClass>
-class cwipc_source_realsense2_impl_base : public cwipc_tiledsource {
-protected:
-    GrabberClass *m_grabber;
+/** Base class for RealSense2 capturer implementations
+ * 
+ * Used for both live RealSense2 and RealSense2 playback, implements functionality
+ * common to both types of capturers.
+ */
+template<class GrabberClass, class CameraConfigClass=RS2CameraConfig>
+class cwipc_source_realsense2_impl_base : public cwipc_capturer_impl_base<GrabberClass, CameraConfigClass>  {
 public:
-    cwipc_source_realsense2_impl_base(const char* configFilename)
-    : m_grabber(GrabberClass::factory()) 
-    {
-        m_grabber->config_reload(configFilename);
-    }
-
-    virtual ~cwipc_source_realsense2_impl_base() {
-        delete m_grabber;
-        m_grabber = NULL;
-    }
-
-    bool is_valid() {
-        return m_grabber->camera_count > 0;
-    }
-
-    void free() override {
-        delete m_grabber;
-        m_grabber = NULL;
-    }
-
-    virtual size_t get_config(char* buffer, size_t size) override {
-        auto config = m_grabber->config_get();
-
-        if (buffer == nullptr) {
-            return config.length();
-        }
-
-        if (size < config.length()) {
-            return 0;
-        }
-
-        memcpy(buffer, config.c_str(), config.length());
-        return config.length();
-    }
-
-    virtual bool reload_config(const char* configFile) override {
-        return m_grabber->config_reload(configFile);
-    }
-
-    bool eof() override {
-        return false;
-    }
-
-    bool available(bool wait) override {
-        if (m_grabber == NULL) {
-            return false;
-        }
-
-        return m_grabber->pointcloud_available(wait);
-    }
-
-    cwipc* get() override {
-        if (m_grabber == NULL) {
-            return NULL;
-        }
-
-        cwipc* rv = m_grabber->get_pointcloud();
-        return rv;
-    }
-
-    int maxtile() override {
-        if (m_grabber == NULL) {
-            return 0;
-        }
-
-        int nCamera = (int)m_grabber->configuration.all_camera_configs.size();
-
-        if (nCamera <= 1) {
-            // Using a single camera or no camera.
-            return nCamera;
-        }
-
-        return nCamera+1;
-    }
-
-    bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo) override {
-        if (m_grabber == NULL) {
-            return false;
-        }
-
-        int nCamera = (int)m_grabber->configuration.all_camera_configs.size();
-
-        if (nCamera == 0) { // No camera
-            return false;
-        }
-
-        if (tilenum < 0 || tilenum >= nCamera+1) {
-            return false;
-        }
-
-        if (tilenum == 0) {
-            // Special case: the whole pointcloud
-            if (tileinfo) {
-                tileinfo->normal = { 0, 0, 0 };
-                tileinfo->cameraName = NULL;
-                tileinfo->ncamera = nCamera;
-                tileinfo->cameraMask = 0; // All cameras contributes to this
-            }
-            return true;
-        }
-        RS2CameraConfig &cameraConfig = m_grabber->configuration.all_camera_configs[tilenum-1];
-        if (tileinfo) {
-            tileinfo->normal = cameraConfig.cameraposition; // Use the camera position as the normal
-            tileinfo->cameraName = (char *)cameraConfig.serial.c_str();
-            tileinfo->ncamera = 1; // Only one camera contributes to this
-            tileinfo->cameraMask = (uint8_t)1 << (tilenum-1); // Only this camera contributes
-        }
-        return true;
-    }
+    using cwipc_capturer_impl_base<GrabberClass, CameraConfigClass>::cwipc_capturer_impl_base;
 
     void request_auxiliary_data(const std::string& name) override {
         cwipc_tiledsource::request_auxiliary_data(name);
@@ -196,6 +91,7 @@ public:
     virtual bool seek(uint64_t timestamp) = 0;
 };
 
+/** Implementation of RealSense2 capturer for live RealSense2 devices */
 class cwipc_source_realsense2_impl : public cwipc_source_realsense2_impl_base<RS2Capture> {
 
 public:
@@ -206,6 +102,7 @@ public:
     }
 };
 
+/** Implementation of RealSense2 capturer for playback */
 class cwipc_source_realsense2_playback_impl : public cwipc_source_realsense2_impl_base<RS2PlaybackCapture> {
 public:
     using cwipc_source_realsense2_impl_base<RS2PlaybackCapture>::cwipc_source_realsense2_impl_base;
@@ -225,11 +122,11 @@ public:
 //
 
 cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
-    if (!rs2_api_versioncheck(errorMessage, apiVersion)) {
+    if (!_api_versioncheck(errorMessage, apiVersion)) {
         return NULL;
     }
 
-    if (!rs2_versioncheck(errorMessage)) {
+    if (!_rs2_versioncheck(errorMessage)) {
         return NULL;
     }
 
@@ -251,10 +148,10 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 
 
 cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
-    if (!rs2_api_versioncheck(errorMessage, apiVersion)) {
+    if (!_api_versioncheck(errorMessage, apiVersion)) {
         return NULL;
     }
-    if (!rs2_versioncheck(errorMessage)) {
+    if (!_rs2_versioncheck(errorMessage)) {
         return NULL;
     }
 

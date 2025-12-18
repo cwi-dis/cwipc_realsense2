@@ -69,6 +69,8 @@ public:
     RS2CaptureConfig configuration;
     /// This is the number of active, working, cameras.
     int camera_count = 0;
+    /// True if end-of-file (for playback) has been reached. Unimplemented for realsense.
+    bool eof = false;
 
 protected:
     rs2::context capturer_context;
