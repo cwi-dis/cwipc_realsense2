@@ -18,7 +18,7 @@ void RS2CameraConfig::_from_json(const json& json_data) {
 
     _CWIPC_CONFIG_JSON_GET(json_data, serial, config, serial);
     _CWIPC_CONFIG_JSON_GET(json_data, disabled, config, disabled);
-    _CWIPC_CONFIG_JSON_GET(json_data, playback_filename, config, playback_filename);
+    _CWIPC_CONFIG_JSON_GET(json_data, filename, config, filename);
     _CWIPC_CONFIG_JSON_GET(json_data, playback_inpoint_micros, config, playback_inpoint_micros);
 
     if (json_data.contains("trafo")) {
@@ -33,28 +33,9 @@ void RS2CameraConfig::_from_json(const json& json_data) {
 void RS2CameraConfig::_to_json(json& json_data) {
     CwipcBaseCameraConfig::_to_json(json_data);
     RS2CameraConfig& config = *this;
-    _CWIPC_CONFIG_JSON_PUT(json_data, serial, config, serial);
-    if (config.disabled){
-        _CWIPC_CONFIG_JSON_PUT(json_data, disabled, config, disabled);
-    }
-    if (config.playback_filename != "") {
-        _CWIPC_CONFIG_JSON_PUT(json_data, playback_filename, config, playback_filename);
+    if (playback_inpoint_micros != 0) {
         _CWIPC_CONFIG_JSON_PUT(json_data, playback_inpoint_micros, config, playback_inpoint_micros);
     }
-     // Only write cameraposition if not zero, and ensure we never read it back.
-    if (config.cameraposition.x != 0.0 || config.cameraposition.y != 0.0 || config.cameraposition.z != 0.0) {
-        json_data["_cameraposition"] = {
-            config.cameraposition.x,
-            config.cameraposition.y,
-            config.cameraposition.z
-        };
-    }
-    json_data["trafo"] = {
-        {(*config.trafo)(0,0), (*config.trafo)(0,1), (*config.trafo)(0,2), (*config.trafo)(0,3)},
-        {(*config.trafo)(1,0), (*config.trafo)(1,1), (*config.trafo)(1,2), (*config.trafo)(1,3)},
-        {(*config.trafo)(2,0), (*config.trafo)(2,1), (*config.trafo)(2,2), (*config.trafo)(2,3)},
-        {(*config.trafo)(3,0), (*config.trafo)(3,1), (*config.trafo)(3,2), (*config.trafo)(3,3)}
-    };
 }
 
 void RS2CaptureConfig::_from_json(const json& json_data) {

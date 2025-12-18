@@ -47,17 +47,10 @@ struct RS2CameraProcessingParameters {
 };
 
 struct RS2CameraConfig : CwipcBaseCameraConfig {
-    bool disabled = false;  // to easily disable cameras without altering too much the cameraconfig
-    bool connected = false; // set to true when the camera is opened.
-    std::string serial;     // Serial number of this camera
-    std::string type = "realsense";       // Camera type (must be realsense or realsense_playback)
-    std::string playback_filename = "";  // filename, for realsense_playback
     int playback_inpoint_micros = 0; // for realsense_playback: initial seek for this camera.
-    pcl::shared_ptr<Eigen::Affine3d> trafo; //!< Transformation matrix from camera coorindates to world coordinates
-    cwipc_vector cameraposition = { 0,0,0 };    //!< Position of this camera in real world coordinates
 
-    void _from_json(const json& json_data);
-    void _to_json(json& json_data);
+    void _from_json(const json& json_data) override;
+    void _to_json(json& json_data) override;
 };
 
 struct RS2CameraHardwareConfig {
@@ -121,12 +114,12 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // per camera data
     std::vector<RS2CameraConfig> all_camera_configs;
 
-    std::string to_string();
-    bool from_string(const char* buffer, std::string typeWanted);
-    bool from_file(const char* filename, std::string typeWanted);
+    std::string to_string() override;
+    bool from_string(const char* buffer, std::string typeWanted) override;
+    bool from_file(const char* filename, std::string typeWanted) override;
 
-    void _from_json(const json& json_data);
-    void _to_json(json& json_data);
+    void _from_json(const json& json_data) override;
+    void _to_json(json& json_data) override;
 };
 
 #endif /* cwipc_realsense2_rs2config_h */

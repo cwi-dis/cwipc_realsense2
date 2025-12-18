@@ -50,10 +50,10 @@ bool RS2PlaybackCapture::_create_cameras() {
     for (RS2CameraConfig& cd : configuration.all_camera_configs) {
         // Ensure we have a serial
         if (cd.serial == "") {
-            cd.serial = cd.playback_filename;
+            cd.serial = cd.filename;
         }
-        if (cd.playback_filename == "" && cd.serial == "") {
-            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " has no playback_filename nor serial");
+        if (cd.filename == "" && cd.serial == "") {
+            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " has no filename nor serial");
             return false;
         }
         if (cd.type == "realsense"){
@@ -71,7 +71,7 @@ bool RS2PlaybackCapture::_create_cameras() {
             // xxxnacho do we need to close the device, like the kinect case?
         }
         else {
-            std::string recording_filename = cd.playback_filename;
+            std::string recording_filename = cd.filename;
             if (recording_filename == "") recording_filename = cd.serial + ".bag";
             if (base_directory != "") {
                 recording_filename = base_directory + recording_filename;
