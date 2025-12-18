@@ -48,18 +48,18 @@ static bool rs2_api_versioncheck(char **errorMessage, uint64_t apiVersion) {
     return true;
 }
 
-class cwipc_source_realsense2_impl : public cwipc_tiledsource {
-    friend class cwipc_source_realsense2_playback_impl;
+template<class GrabberClass>
+class cwipc_source_realsense2_impl_base : public cwipc_tiledsource {
 protected:
-    RS2Capture *m_grabber;
-    cwipc_source_realsense2_impl(RS2Capture *obj) : m_grabber(obj) {}
-
+    GrabberClass *m_grabber;
 public:
-    cwipc_source_realsense2_impl(const char *configFilename=NULL) : m_grabber(RS2Capture::factory()) {
+    cwipc_source_realsense2_impl_base(const char* configFilename)
+    : m_grabber(GrabberClass::factory()) 
+    {
         m_grabber->config_reload(configFilename);
     }
 
-    ~cwipc_source_realsense2_impl() {
+    virtual ~cwipc_source_realsense2_impl_base() {
         delete m_grabber;
         m_grabber = NULL;
     }
@@ -192,182 +192,23 @@ public:
             return false;
         }
     }
+
+    virtual bool seek(uint64_t timestamp) = 0;
 };
 
-class cwipc_source_realsense2_playback_impl : public cwipc_tiledsource {
-    // xxxjack this is stupid: this is a verbatim copy of cwipc_source_realsense2_impl except for the type of m_grabber.
-protected:
-    RS2PlaybackCapture *m_grabber;
-    cwipc_source_realsense2_playback_impl(RS2PlaybackCapture *obj) : m_grabber(obj) {}
+class cwipc_source_realsense2_impl : public cwipc_source_realsense2_impl_base<RS2Capture> {
 
 public:
-    cwipc_source_realsense2_playback_impl(const char *configFilename=NULL)
-    :   m_grabber(RS2PlaybackCapture::factory()) 
-    {
-        m_grabber->config_reload(configFilename);
-    }
+    using cwipc_source_realsense2_impl_base<RS2Capture>::cwipc_source_realsense2_impl_base;
 
-    ~cwipc_source_realsense2_playback_impl() {
-        delete m_grabber;
-        m_grabber = NULL;
-    }
-
-    bool is_valid() {
-        return m_grabber->camera_count > 0;
-    }
-
-    void free() override {
-        delete m_grabber;
-        m_grabber = NULL;
-    }
-
-    virtual size_t get_config(char* buffer, size_t size) override {
-        auto config = m_grabber->config_get();
-
-        if (buffer == nullptr) {
-            return config.length();
-        }
-
-        if (size < config.length()) {
-            return 0;
-        }
-
-        memcpy(buffer, config.c_str(), config.length());
-        return config.length();
-    }
-
-    virtual bool reload_config(const char* configFile) override {
-        return m_grabber->config_reload(configFile);
-    }
-
-    bool eof() override {
+    bool seek(uint64_t timestamp) override {
         return false;
     }
+};
 
-    bool available(bool wait) override {
-        if (m_grabber == NULL) {
-            return false;
-        }
-
-        return m_grabber->pointcloud_available(wait);
-    }
-
-    cwipc* get() override {
-        if (m_grabber == NULL) {
-            return NULL;
-        }
-
-        cwipc* rv = m_grabber->get_pointcloud();
-        return rv;
-    }
-
-    int maxtile() override {
-        if (m_grabber == NULL) {
-            return 0;
-        }
-
-        int nCamera = (int)m_grabber->configuration.all_camera_configs.size();
-
-        if (nCamera <= 1) {
-            // Using a single camera or no camera.
-            return nCamera;
-        }
-
-        return nCamera+1;
-    }
-
-    bool get_tileinfo(int tilenum, struct cwipc_tileinfo *tileinfo) override {
-        if (m_grabber == NULL) {
-            return false;
-        }
-
-        int nCamera = (int)m_grabber->configuration.all_camera_configs.size();
-
-        if (nCamera == 0) { // No camera
-            return false;
-        }
-
-        if (tilenum < 0 || tilenum >= (1<<nCamera)) {
-            return false;
-        }
-
-        // nCamera > 0
-        cwipc_vector camcenter = { 0, 0, 0 };
-
-        // calculate the center of all cameras
-        for (auto camdat : m_grabber->configuration.all_camera_configs) {
-            add_vectors(camcenter, camdat.cameraposition, &camcenter);
-        }
-        mult_vector(1.0 / nCamera, &camcenter);
-
-        // calculate normalized direction vectors from the center towards each camera
-        std::vector<cwipc_vector> camera_directions;
-        for (auto camdat : m_grabber->configuration.all_camera_configs) {
-            cwipc_vector normal;
-            diff_vectors(camdat.cameraposition, camcenter, &normal);
-            norm_vector(&normal);
-            camera_directions.push_back(normal);
-        }
-
-        // add all cameradirections that contributed
-        int ncontribcam = 0;
-        int lastcontribcamid = 0;
-        cwipc_vector tile_direction = { 0, 0, 0 };
-        for (int i = 0; i < m_grabber->configuration.all_camera_configs.size(); i++) {
-            uint8_t camera_label = (uint8_t)1 << i;
-
-            if (tilenum == 0 || (tilenum & camera_label)) {
-                add_vectors(tile_direction, camera_directions[i], &tile_direction);
-                ncontribcam++;
-                lastcontribcamid = i;
-            }
-        }
-        norm_vector(&tile_direction);
-
-        if (tileinfo) {
-            tileinfo->normal = tile_direction;
-            tileinfo->cameraName = NULL;
-            tileinfo->ncamera = ncontribcam;
-            tileinfo->cameraMask = tilenum;
-
-            if (ncontribcam == 1) {
-                // A single camera contributed to this
-                tileinfo->cameraName = (char *)m_grabber->configuration.all_camera_configs[lastcontribcamid].serial.c_str();
-            }
-        }
-
-        return true;
-    }
-
-    void request_auxiliary_data(const std::string& name) override {
-        cwipc_tiledsource::request_auxiliary_data(name);
-        m_grabber->request_auxdata(auxiliary_data_requested("rgb"), auxiliary_data_requested("depth"), auxiliary_data_requested("timestamps"));
-   }
-
-    bool auxiliary_operation(const std::string op, const void* inbuf, size_t insize, void* outbuf, size_t outsize) override {
-        if (op == "map2d3d") {
-            if (inbuf == nullptr || insize != 4*sizeof(float)) return false;
-            if (outbuf == nullptr || outsize != 3*sizeof(float)) return false;
-            float *infloat = (float *)inbuf;
-            float *outfloat = (float *)outbuf;
-            int tilenum = (int)infloat[0];
-            int x_2d = (int)infloat[1];
-            int y_2d = (int)infloat[2];
-            float d_2d = infloat[3];
-
-            return m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
-        } else if (op == "mapcolordepth") {
-            if (inbuf == nullptr || insize != 3*sizeof(int)) return false;
-            if (outbuf == nullptr || outsize != 2*sizeof(int)) return false;
-            int *inint = (int *)inbuf;
-            int *outint = (int *)outbuf;
-
-            return m_grabber->mapcolordepth(inint[0], inint[1], inint[2], outint);
-
-        } else {
-            return false;
-        }
-    }
+class cwipc_source_realsense2_playback_impl : public cwipc_source_realsense2_impl_base<RS2PlaybackCapture> {
+public:
+    using cwipc_source_realsense2_impl_base<RS2PlaybackCapture>::cwipc_source_realsense2_impl_base;
 
     bool seek(uint64_t timestamp) override {
         if (m_grabber == NULL) {
