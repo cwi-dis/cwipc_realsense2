@@ -88,7 +88,7 @@ public:
         }
     }
 
-    virtual bool seek(uint64_t timestamp) = 0;
+    virtual bool seek(uint64_t timestamp) override = 0;
 };
 
 /** Implementation of RealSense2 capturer for live RealSense2 devices */

@@ -53,53 +53,61 @@ void RS2CaptureConfig::_from_json(const json& json_data) {
     _CWIPC_CONFIG_JSON_GET(system_data, new_timestamps, config, new_timestamps);
     _CWIPC_CONFIG_JSON_GET(system_data, debug, config, debug);
     _CWIPC_CONFIG_JSON_GET(system_data, prefer_color_timing, config, prefer_color_timing);
-
-    json sync_data = json_data.at("sync");
-    _CWIPC_CONFIG_JSON_GET(sync_data, sync_master_serial, sync, sync_master_serial);
-    _CWIPC_CONFIG_JSON_GET(sync_data, sync_mode, sync, sync_mode);
-
-    json hardware_data = json_data.at("hardware");
-    _CWIPC_CONFIG_JSON_GET(hardware_data, color_width, hardware, color_width);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, color_height, hardware, color_height);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, fps, hardware, fps);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, depth_width, hardware, depth_width);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, depth_height, hardware, depth_height);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, fps, hardware, fps);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, visual_preset, hardware, visual_preset);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, color_exposure, hardware, color_exposure);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, color_gain, hardware, color_gain);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, depth_exposure, hardware, depth_exposure);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, depth_gain, hardware, depth_gain);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, whitebalance, hardware, whitebalance);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, backlight_compensation, hardware, backlight_compensation);
-    _CWIPC_CONFIG_JSON_GET(hardware_data, laser_power, hardware, laser_power);
-
-    json processing_data = json_data.at("processing");
-    _CWIPC_CONFIG_JSON_GET(processing_data, greenscreen_removal, processing, greenscreen_removal);
-    _CWIPC_CONFIG_JSON_GET(processing_data, height_min, processing, height_min);
-    _CWIPC_CONFIG_JSON_GET(processing_data, height_max, processing, height_max);
-    _CWIPC_CONFIG_JSON_GET(processing_data, radius_filter, processing, radius_filter);
-    _CWIPC_CONFIG_JSON_GET(processing_data, depth_x_erosion, processing, depth_x_erosion);
-    _CWIPC_CONFIG_JSON_GET(processing_data, depth_y_erosion, processing, depth_y_erosion);
-
-    json filtering_data = json_data.at("filtering");
-    _CWIPC_CONFIG_JSON_GET(filtering_data, map_color_to_depth, filtering, map_color_to_depth);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, do_decimation, filtering, do_decimation);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, decimation_magnitude, filtering, decimation_magnitude);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, do_threshold, filtering, do_threshold);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, threshold_min_distance, filtering, threshold_min_distance);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, threshold_max_distance, filtering, threshold_max_distance);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, do_spatial, filtering, do_spatial);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, spatial_magnitude, filtering, spatial_magnitude);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, spatial_smooth_alpha, filtering, spatial_smooth_alpha);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, spatial_smooth_delta, filtering, spatial_smooth_delta);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, spatial_holes_fill, filtering, spatial_holes_fill);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, do_temporal, filtering, do_temporal);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, temporal_smooth_alpha, filtering, temporal_smooth_alpha);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, temporal_smooth_delta, filtering, temporal_smooth_delta);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, temporal_persistency, filtering, temporal_persistency);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, do_hole_filling, filtering, do_hole_filling);
-    _CWIPC_CONFIG_JSON_GET(filtering_data, hole_filling_mode, filtering, hole_filling_mode);
+    if (json_data.contains("sync"))
+    {
+        json sync_data = json_data.at("sync");
+        _CWIPC_CONFIG_JSON_GET(sync_data, sync_master_serial, sync, sync_master_serial);
+        _CWIPC_CONFIG_JSON_GET(sync_data, sync_mode, sync, sync_mode);
+    }
+    if (json_data.contains("hardware"))
+    {
+        json hardware_data = json_data.at("hardware");
+        _CWIPC_CONFIG_JSON_GET(hardware_data, color_width, hardware, color_width);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, color_height, hardware, color_height);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, fps, hardware, fps);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, depth_width, hardware, depth_width);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, depth_height, hardware, depth_height);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, fps, hardware, fps);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, visual_preset, hardware, visual_preset);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, color_exposure, hardware, color_exposure);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, color_gain, hardware, color_gain);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, depth_exposure, hardware, depth_exposure);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, depth_gain, hardware, depth_gain);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, whitebalance, hardware, whitebalance);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, backlight_compensation, hardware, backlight_compensation);
+        _CWIPC_CONFIG_JSON_GET(hardware_data, laser_power, hardware, laser_power);
+    }
+    if (json_data.contains("processing"))
+    {
+        json processing_data = json_data.at("processing");
+        _CWIPC_CONFIG_JSON_GET(processing_data, greenscreen_removal, processing, greenscreen_removal);
+        _CWIPC_CONFIG_JSON_GET(processing_data, height_min, processing, height_min);
+        _CWIPC_CONFIG_JSON_GET(processing_data, height_max, processing, height_max);
+        _CWIPC_CONFIG_JSON_GET(processing_data, radius_filter, processing, radius_filter);
+        _CWIPC_CONFIG_JSON_GET(processing_data, depth_x_erosion, processing, depth_x_erosion);
+        _CWIPC_CONFIG_JSON_GET(processing_data, depth_y_erosion, processing, depth_y_erosion);
+    }
+    if (json_data.contains("filtering"))
+    {   
+        json filtering_data = json_data.at("filtering");
+        _CWIPC_CONFIG_JSON_GET(filtering_data, map_color_to_depth, filtering, map_color_to_depth);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, do_decimation, filtering, do_decimation);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, decimation_magnitude, filtering, decimation_magnitude);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, do_threshold, filtering, do_threshold);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, threshold_min_distance, filtering, threshold_min_distance);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, threshold_max_distance, filtering, threshold_max_distance);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, do_spatial, filtering, do_spatial);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, spatial_magnitude, filtering, spatial_magnitude);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, spatial_smooth_alpha, filtering, spatial_smooth_alpha);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, spatial_smooth_delta, filtering, spatial_smooth_delta);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, spatial_holes_fill, filtering, spatial_holes_fill);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, do_temporal, filtering, do_temporal);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, temporal_smooth_alpha, filtering, temporal_smooth_alpha);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, temporal_smooth_delta, filtering, temporal_smooth_delta);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, temporal_persistency, filtering, temporal_persistency);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, do_hole_filling, filtering, do_hole_filling);
+        _CWIPC_CONFIG_JSON_GET(filtering_data, hole_filling_mode, filtering, hole_filling_mode);
+    }
 
     json cameras = json_data.at("camera");
     int camera_index = 0;
