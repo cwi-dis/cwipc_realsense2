@@ -18,7 +18,7 @@
 // Definitions of types used across cwipc_realsense2, cwipc_codec and cwipc_util.
 //
 #include "cwipc_util/api_pcl.h"
-#include "cwipc_util/internal.h"
+#include "cwipc_util/capturers.hpp"
 
 struct RS2CameraProcessingParameters {
     int map_color_to_depth = 1;     // -1 means: no mapping at all.
