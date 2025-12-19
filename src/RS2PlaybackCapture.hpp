@@ -9,24 +9,26 @@
 #include <librealsense2/rs.hpp>
 
 #include "RS2Config.hpp"
-#include "RS2Capture.hpp"
+#include "RS2BaseCapture.hpp"
 #include "RS2PlaybackCamera.hpp"
 
-class RS2PlaybackCapture : public RS2Capture {
+class RS2PlaybackCapture : public RS2BaseCapture {
 private:
     RS2PlaybackCapture();   
 public:
-    ~RS2PlaybackCapture();
+    virtual ~RS2PlaybackCapture();
     static int count_devices() { return 0; }
     static RS2PlaybackCapture* factory() { return new RS2PlaybackCapture(); }
+
     bool seek(uint64_t timestamp); 
 protected:
+    virtual bool _create_cameras() override;
     virtual void _setup_camera_sync() override {};
     virtual void _setup_camera_hardware_parameters() override {};
-    virtual bool _check_cameras_connected() override { return true; /* xxxjack could check filenames... */};
+    virtual bool _check_cameras_connected() override { return true;};
     virtual bool _apply_config(const char* configFilename) override;
-    virtual bool _create_cameras() override;
     virtual void _initial_camera_synchronization() override;
+private:
     std::string base_directory = "";
     uint64_t earliest_recording_timestamp_seen = 0;
 };

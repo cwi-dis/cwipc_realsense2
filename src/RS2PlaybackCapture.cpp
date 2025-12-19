@@ -18,7 +18,7 @@
 #include "RS2PlaybackCapture.hpp"
 
 RS2PlaybackCapture::RS2PlaybackCapture()
-:   RS2Capture()
+:   RS2BaseCapture()
 {
     type = "realsense_playback";
 }
@@ -27,7 +27,7 @@ RS2PlaybackCapture::~RS2PlaybackCapture() {
 }
 
 bool RS2PlaybackCapture::_apply_config(const char* configFilename) {
-    bool ok = RS2Capture::_apply_config(configFilename);
+    bool ok = RS2BaseCapture::_apply_config(configFilename);
     if (!ok) {
         return ok;
     }

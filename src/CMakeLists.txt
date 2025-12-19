@@ -10,6 +10,8 @@ cmake_minimum_required(VERSION 3.16.0)
 add_library(cwipc_realsense2 
 	SHARED 
 	cwipc_realsense2.cpp 
+	RS2BaseCapture.cpp 
+	RS2BaseCamera.cpp
 	RS2Capture.cpp 
 	RS2Camera.cpp 
 	RS2PlaybackCapture.cpp 
@@ -22,6 +24,8 @@ add_library(cwipc_realsense2
 target_sources(cwipc_realsense2
 	PRIVATE
 	"RS2Config.hpp"
+	"RS2BaseCapture.hpp"
+	"RS2BaseCamera.hpp"
 	"RS2Capture.hpp"
 	"RS2Camera.hpp"
 	"RS2PlaybackCapture.hpp"
