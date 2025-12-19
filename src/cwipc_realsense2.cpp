@@ -60,7 +60,11 @@ public:
 
     void request_auxiliary_data(const std::string& name) override {
         cwipc_tiledsource::request_auxiliary_data(name);
-        m_grabber->request_auxdata(auxiliary_data_requested("rgb"), auxiliary_data_requested("depth"), auxiliary_data_requested("timestamps"));
+        this->m_grabber->request_auxdata(
+            cwipc_tiledsource::auxiliary_data_requested("rgb"), 
+            cwipc_tiledsource::auxiliary_data_requested("depth"), 
+            cwipc_tiledsource::auxiliary_data_requested("timestamps")
+        );
     }
 
     bool auxiliary_operation(const std::string op, const void* inbuf, size_t insize, void* outbuf, size_t outsize) override {
@@ -74,14 +78,14 @@ public:
             int y_2d = (int)infloat[2];
             float d_2d = infloat[3];
 
-            return m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
+            return this->m_grabber->map2d3d(tilenum, x_2d, y_2d, d_2d, outfloat);
         } else if (op == "mapcolordepth") {
             if (inbuf == nullptr || insize != 3*sizeof(int)) return false;
             if (outbuf == nullptr || outsize != 2*sizeof(int)) return false;
             int *inint = (int *)inbuf;
             int *outint = (int *)outbuf;
 
-            return m_grabber->mapcolordepth(inint[0], inint[1], inint[2], outint);
+            return this->m_grabber->mapcolordepth(inint[0], inint[1], inint[2], outint);
 
         } else {
             return false;

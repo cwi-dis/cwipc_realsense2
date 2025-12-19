@@ -11,7 +11,7 @@ public:
     static int count_devices();
     static RS2Capture* factory() { return new RS2Capture(); }
 
-    bool seek(uint64_t timestamp); 
+    bool seek(uint64_t timestamp) override; 
 protected:
     virtual bool _create_cameras() override;
     virtual void _setup_camera_sync() override;
