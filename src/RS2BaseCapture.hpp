@@ -50,9 +50,14 @@ public:
     bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d);
     /// Return 2D point in depth image coordinates given 2D point in color image coordinates.
     bool mapcolordepth(int tile, int u, int v, int* out2d);
-    
+    /// Return the number of cameras connected. Return 0 if something went wrong during initialization.
+    int get_camera_count() { return cameras.size(); }
+    /// Return a boolean stating whether the capturer is working.
+    bool is_valid() { return cameras.size() > 0; }
     /// Seek to given timestamp (only implemented for playback capturers).
     virtual bool seek(uint64_t timestamp) = 0;
+    /// Return true if end-of-file has been reached (only for playback capturers).
+    virtual bool eof() = 0;
 protected:
     /// Methods that are different for live vs playback capturers..
     /// Create the per-camera capturers.
@@ -86,11 +91,7 @@ public:
     /// Current configuration. Has to be public because cwipc_realsense2 needs access to all sorts of internals
     /// of it, but it would be better if this access was readonly...
     RS2CaptureConfig configuration;
-    /// This is the number of active, working, cameras.
-    int camera_count = 0;
-    /// True if end-of-file (for playback) has been reached. Unimplemented for realsense.
-    bool eof = false;
-
+    
 protected:
     rs2::context capturer_context;
 

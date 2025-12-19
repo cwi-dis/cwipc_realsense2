@@ -48,13 +48,12 @@ void RS2BaseCapture::request_auxdata(bool _rgb, bool _depth, bool _timestamps) {
 
 bool RS2BaseCapture::config_reload(const char *configFilename) {
     _unload_cameras();
-    camera_count = 0;
 
     if (!_apply_config(configFilename)) {
         return false;
     }
 
-    camera_count = (int)configuration.all_camera_configs.size();
+    auto camera_count = configuration.all_camera_configs.size();
     if (camera_count == 0) {
         return false;
     }
@@ -69,11 +68,11 @@ bool RS2BaseCapture::config_reload(const char *configFilename) {
 
     // Now we have all the configuration information. Open the cameras.
     if (!_create_cameras()) {
-        camera_count = 0;
+        _unload_cameras();
         return false;
     }
     if (!_check_cameras_connected()) {
-        camera_count = 0;
+        _unload_cameras();
         return false;
     }
 
@@ -464,7 +463,6 @@ void RS2BaseCapture::_unload_cameras() {
         cam->stop_camera();
     }
 
-    camera_count = 0;
     mergedPC_is_fresh = true;
     mergedPC_want_new = false;
     mergedPC_is_fresh_cv.notify_all();
@@ -501,7 +499,8 @@ void RS2BaseCapture::_unload_cameras() {
 
 // API function that triggers the capture and returns the merged pointcloud and timestamp
 cwipc* RS2BaseCapture::get_pointcloud() {
-    if (camera_count == 0) {
+    if (!is_valid()) {
+        // xxxjack should we log a warning here?
         return nullptr;
     }
 
@@ -527,7 +526,8 @@ cwipc* RS2BaseCapture::get_pointcloud() {
 }
 
 float RS2BaseCapture::get_pointSize() {
-    if (camera_count == 0) {
+    if (!is_valid()) {
+        // xxxjack should we log a warning here?
         return 0;
     }
 
@@ -567,7 +567,8 @@ bool RS2BaseCapture::mapcolordepth(int tile, int u, int v, int *out2d)
 
 bool RS2BaseCapture::pointcloud_available(bool wait)
 {
-    if (camera_count == 0) {
+    if (!is_valid()) {
+        // xxxjack should we log a warning here?
         return false;
     }
 

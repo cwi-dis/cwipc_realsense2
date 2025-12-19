@@ -12,6 +12,7 @@ public:
     static RS2Capture* factory() { return new RS2Capture(); }
 
     bool seek(uint64_t timestamp) override; 
+    bool eof() override { return false; }
 protected:
     virtual bool _create_cameras() override;
     virtual void _setup_camera_sync() override;
