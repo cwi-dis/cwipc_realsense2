@@ -13,15 +13,14 @@
 #include "RS2PlaybackCamera.hpp"
 
 class RS2PlaybackCapture : public RS2BaseCapture {
-private:
-    RS2PlaybackCapture();   
 public:
     virtual ~RS2PlaybackCapture();
-    static int count_devices() { return 0; }
-    static RS2PlaybackCapture* factory() { return new RS2PlaybackCapture(); }
-    bool eof() override {return false; }
+    static int count_devices();
+    static RS2PlaybackCapture* factory();
+    bool eof() override;
     bool seek(uint64_t timestamp) override; 
 protected:
+    RS2PlaybackCapture();   
     virtual bool _create_cameras() override;
     virtual void _setup_camera_sync() override {};
     virtual void _setup_camera_hardware_parameters() override {};

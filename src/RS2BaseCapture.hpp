@@ -23,21 +23,21 @@ class RS2Camera;
  * Subclasses need to implement factory() and count_devices().
 */
 class RS2BaseCapture : public CwipcBaseCapture {
-protected:
-    // Constructor is protected (use factory function)
-    RS2BaseCapture();
 public:
+    /// Subclasses need to implement static factory().
+    /// Subclasses need to implement static count_devices().
+
+    using CwipcBaseCapture::CwipcBaseCapture;
     virtual ~RS2BaseCapture();
 
-    /// Subclasses need to implement factory().
-    /// Subclasses need to implement count_devices().
-    ///
-
-    /// Reload configuration, possibly restarting capturer and cameras.
-    virtual bool config_reload(const char *configFilename);
-    /// Get complete current configuration as JSON string.
-    std::string config_get();
-
+    int get_camera_count() override;
+    bool is_valid() override;
+    virtual bool config_reload(const char *configFilename) override;
+    std::string config_get() override;
+    virtual bool eof() override = 0;
+protected:
+    RS2BaseCapture();
+public:
     /// Returns true when a new point cloud is available.
     bool pointcloud_available(bool wait);
     /// Returns the new point cloud. The caller is now the owner of this point cloud.
@@ -50,14 +50,8 @@ public:
     bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d);
     /// Return 2D point in depth image coordinates given 2D point in color image coordinates.
     bool mapcolordepth(int tile, int u, int v, int* out2d);
-    /// Return the number of cameras connected. Return 0 if something went wrong during initialization.
-    int get_camera_count() { return cameras.size(); }
-    /// Return a boolean stating whether the capturer is working.
-    bool is_valid() { return cameras.size() > 0; }
     /// Seek to given timestamp (only implemented for playback capturers).
     virtual bool seek(uint64_t timestamp) = 0;
-    /// Return true if end-of-file has been reached (only for playback capturers).
-    virtual bool eof() = 0;
 protected:
     /// Methods that are different for live vs playback capturers..
     /// Create the per-camera capturers.

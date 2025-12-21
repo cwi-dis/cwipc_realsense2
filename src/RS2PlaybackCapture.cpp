@@ -26,6 +26,21 @@ RS2PlaybackCapture::RS2PlaybackCapture()
 RS2PlaybackCapture::~RS2PlaybackCapture() {
 }
 
+int
+RS2PlaybackCapture::count_devices() { 
+    return 0; 
+}
+
+RS2PlaybackCapture*
+RS2PlaybackCapture::factory() { 
+    return new RS2PlaybackCapture(); 
+}
+
+bool 
+RS2PlaybackCapture::eof() {
+    return false; 
+}
+
 bool RS2PlaybackCapture::_apply_config(const char* configFilename) {
     bool ok = RS2BaseCapture::_apply_config(configFilename);
     if (!ok) {

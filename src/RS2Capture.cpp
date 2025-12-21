@@ -21,8 +21,41 @@
 #include "RS2Capture.hpp"
 #include "RS2Camera.hpp"
 
-bool RS2Capture::seek(uint64_t timestamp) {
+RS2Capture::RS2Capture()
+: RS2BaseCapture("RS2Capture", "realsense")
+{
+}
+
+RS2Capture* 
+RS2Capture::factory() { 
+    return new RS2Capture(); 
+}
+
+int 
+RS2Capture::count_devices() {
+    // Determine how many realsense cameras (not platform cameras like webcams) are connected
+    const std::string platform_camera_name = "Platform Camera";
+    rs2::context temp_context;
+    rs2::device_list devs = temp_context.query_devices();
+    int camera_count = 0;
+
+    for (rs2::device dev : devs) {
+        if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
+            camera_count++;
+        }
+    }
+
+    return camera_count;
+}
+
+bool 
+RS2Capture::seek(uint64_t timestamp) {
     return false;
+}
+
+bool 
+RS2Capture::eof() { 
+    return false; 
 }
 
 bool RS2Capture::_check_cameras_connected() {
@@ -177,22 +210,6 @@ void RS2Capture::_setup_camera_sync() {
 #endif
 }
 
-int RS2Capture::count_devices() {
-    // Determine how many realsense cameras (not platform cameras like webcams) are connected
-    const std::string platform_camera_name = "Platform Camera";
-    rs2::context temp_context;
-    rs2::device_list devs = temp_context.query_devices();
-    int camera_count = 0;
-
-    for (rs2::device dev : devs) {
-        if (dev.get_info(RS2_CAMERA_INFO_NAME) != platform_camera_name) {
-            camera_count++;
-        }
-    }
-
-    return camera_count;
-}
-
 bool RS2Capture::_apply_config(const char* configFilename) {
     // Clear out old configuration
     RS2CaptureConfig newConfiguration;
@@ -261,7 +278,8 @@ bool RS2Capture::_apply_default_config() {
 
 }
 
-bool RS2Capture::_create_cameras() {
+bool RS2Capture::_create_cameras()
+{
     rs2::device_list devs = capturer_context.query_devices();
     const std::string platform_camera_name = "Platform Camera";
 

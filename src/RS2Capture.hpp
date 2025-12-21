@@ -9,11 +9,12 @@ public:
     using RS2BaseCapture::RS2BaseCapture;
     virtual ~RS2Capture();
     static int count_devices();
-    static RS2Capture* factory() { return new RS2Capture(); }
+    static RS2Capture* factory();
 
     bool seek(uint64_t timestamp) override; 
-    bool eof() override { return false; }
+    bool eof() override;
 protected:
+    RS2Capture();
     virtual bool _create_cameras() override;
     virtual void _setup_camera_sync() override;
     virtual void _setup_camera_hardware_parameters() override;

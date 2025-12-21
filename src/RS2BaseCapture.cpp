@@ -29,15 +29,18 @@ static int numberOfCapturersActive = 0;
 rs2::context* RS2BaseCapture::ctx_p = nullptr;
 #endif
 
-RS2BaseCapture::RS2BaseCapture() {
-    type = "realsense";
+RS2BaseCapture::RS2BaseCapture()
+: CwipcBaseCapture("RS2BaseCapture", "realsense2") 
+{
+}
 
-    // First check that no other RS2BaseCapture is active within this process (trying to catch programmer errors)
-    numberOfCapturersActive++;
+int 
+RS2BaseCapture::get_camera_count() { 
+    return cameras.size(); 
+}
 
-    if (numberOfCapturersActive > 1) {
-        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Attempting to create capturer while one is already active.");
-    }
+bool RS2BaseCapture::is_valid() { 
+    return cameras.size() > 0; 
 }
 
 void RS2BaseCapture::request_auxdata(bool _rgb, bool _depth, bool _timestamps) {
