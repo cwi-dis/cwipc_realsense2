@@ -81,7 +81,7 @@ public:
                 cam->start_camera();
             }
         } catch(const rs2::error& e) {
-            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
+            _log_error("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
             throw;
         }
 
@@ -115,9 +115,9 @@ public:
             bool ok = cam->getHardwareParameters(configuration.hardware, match_only);
             if (!ok) {
                 if (!match_only) {
-                    cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "First camera does not have hardware configuration");
+                    _log_warning("Could not get hardware parameters from first camera " + cam->get_serial());
                 } else {
-                    cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Not all cameras have the same hardware configuration");
+                    _log_warning("Not all cameras have the same hardware parameters.");
                 }
             }
             match_only = true;
@@ -332,7 +332,7 @@ protected:
             }
         }
 
-        cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Unknown camera " + serial);
+        _log_warning("Unknown camera " + serial);
         return nullptr;
     }
     void _control_thread_main()  {
@@ -498,7 +498,7 @@ protected:
             cwipc_pcl_pointcloud cam_cld = cam->access_current_pcl_pointcloud();
 
             if (cam_cld == 0) {
-                cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + cam->serial + " has NULL cloud");
+                _log_warning("merge_camera_pointclouds: warning: camera pointcloud is null for camera " + cam->get_serial());
                 continue;
             }
             nPoints += cam_cld->size();
