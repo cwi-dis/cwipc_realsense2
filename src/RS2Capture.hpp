@@ -11,8 +11,8 @@ public:
     static int count_devices();
     static RS2Capture* factory();
 
-    bool seek(uint64_t timestamp) override; 
     bool eof() override;
+    bool seek(uint64_t timestamp) override; 
 protected:
     RS2Capture();
     virtual bool _create_cameras() override;
@@ -23,6 +23,6 @@ protected:
     virtual void _initial_camera_synchronization() override;
 private:
     /// Helper for _apply_config: setup default configuration for all connected cameras.
-    bool _apply_default_config();
+    bool _apply_auto_config();
 };
 #endif // cwipc_realsense_RS2Capture_hpp

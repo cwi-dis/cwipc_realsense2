@@ -30,28 +30,34 @@ public:
     using CwipcBaseCapture::CwipcBaseCapture;
     virtual ~RS2BaseCapture();
 
-    int get_camera_count() override;
-    bool is_valid() override;
-    virtual bool config_reload(const char *configFilename) override;
-    std::string config_get() override;
+    int get_camera_count() override final;
+    bool is_valid() override final;
+    virtual bool config_reload(const char *configFilename) override final;
+    std::string config_get() override final;
+
+    //
+    // This section has the public capturer-independent API used during normal runtime.
+    //
+
+    /// Returns true when a new point cloud is available.
+    bool pointcloud_available(bool wait) override final;
+    /// Returns the new point cloud. The caller is now the owner of this point cloud.
+    cwipc* get_pointcloud() override final;
+    /// Returns a reasonable point size for the current capturer.
+    float get_pointSize() override final;
+    /// Return 3D point for a given camera, given RGB image 2D coordinates.
+    bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d) override final;
+    /// Return 2D point in depth image coordinates given 2D point in color image coordinates.
+    bool mapcolordepth(int tile, int u, int v, int* out2d) override final;
     virtual bool eof() override = 0;
+    /// Seek to given timestamp (only implemented for playback capturers).
+    virtual bool seek(uint64_t timestamp) override = 0;
 protected:
     RS2BaseCapture();
 public:
-    /// Returns true when a new point cloud is available.
-    bool pointcloud_available(bool wait);
-    /// Returns the new point cloud. The caller is now the owner of this point cloud.
-    cwipc* get_pointcloud();
-    /// Returns a reasonable point size for the current capturer.
-    float get_pointSize();
-    /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
+     /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
     void request_auxdata(bool _rgb, bool _depth, bool _timestamps);
-    /// Return 3D point for a given camera, given RGB image 2D coordinates.
-    bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d);
-    /// Return 2D point in depth image coordinates given 2D point in color image coordinates.
-    bool mapcolordepth(int tile, int u, int v, int* out2d);
-    /// Seek to given timestamp (only implemented for playback capturers).
-    virtual bool seek(uint64_t timestamp) = 0;
+   
 protected:
     /// Methods that are different for live vs playback capturers..
     /// Create the per-camera capturers.
@@ -74,8 +80,10 @@ protected:
     void _control_thread_main();
     virtual void _initial_camera_synchronization();
     void _find_camera_positions();
+    /// Load configuration from file or string.
     virtual bool _apply_config(const char* configFilename);
-    bool _apply_default_config();
+    /// Load default configuration based on hardware cameras connected.
+    bool _apply_auto_config();
 
 
     void merge_camera_pointclouds();

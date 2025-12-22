@@ -43,11 +43,6 @@ bool RS2BaseCapture::is_valid() {
     return cameras.size() > 0; 
 }
 
-void RS2BaseCapture::request_auxdata(bool _rgb, bool _depth, bool _timestamps) {
-    configuration.auxData.want_auxdata_rgb = _rgb;
-    configuration.auxData.want_auxdata_depth = _depth;
-    configuration.auxData.want_image_timestamps = _timestamps;
-}
 
 bool RS2BaseCapture::config_reload(const char *configFilename) {
     _unload_cameras();
@@ -114,15 +109,6 @@ bool RS2BaseCapture::config_reload(const char *configFilename) {
     return true;
 }
 
-bool RS2BaseCapture::_check_cameras_connected() {
-    for (RS2CameraConfig& cd : configuration.all_camera_configs) {
-        if (!cd.connected && !cd.disabled) {
-            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is not connected");
-            return false;
-        }
-    }
-    return true;
-}
 
 std::string RS2BaseCapture::config_get() {
     bool match_only = false;
@@ -141,6 +127,111 @@ std::string RS2BaseCapture::config_get() {
         match_only = true;
     }
     return configuration.to_string();
+}
+
+
+bool RS2BaseCapture::pointcloud_available(bool wait)
+{
+    if (!is_valid()) {
+        // xxxjack should we log a warning here?
+        return false;
+    }
+
+    _request_new_pointcloud();
+
+    std::this_thread::yield();
+    std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+
+    auto duration = std::chrono::seconds(wait?1:0);
+    mergedPC_is_fresh_cv.wait_for(mylock, duration, [this]{
+        return mergedPC_is_fresh;
+    });
+
+    return mergedPC_is_fresh;
+}
+
+// API function that triggers the capture and returns the merged pointcloud and timestamp
+cwipc* RS2BaseCapture::get_pointcloud() {
+    if (!is_valid()) {
+        // xxxjack should we log a warning here?
+        return nullptr;
+    }
+
+    _request_new_pointcloud();
+
+    // Wait for a fresh mergedPC to become available.
+    // Note we keep the return value while holding the lock, so we can start the next grab/process/merge cycle before returning.
+    cwipc *rv;
+
+    {
+        std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+
+        mergedPC_is_fresh_cv.wait(mylock, [this] {
+            return mergedPC_is_fresh;
+        });
+
+        mergedPC_is_fresh = false;
+        rv = mergedPC;
+    }
+
+    _request_new_pointcloud();
+    return rv;
+}
+
+float RS2BaseCapture::get_pointSize() {
+    if (!is_valid()) {
+        // xxxjack should we log a warning here?
+        return 0;
+    }
+
+    float rv = 99999;
+    for (auto cam : cameras) {
+        if (cam->pointSize < rv) {
+            rv = cam->pointSize;
+        }
+    }
+
+    if (rv > 9999) {
+        rv = 0;
+    }
+
+    return rv;
+}
+
+bool RS2BaseCapture::map2d3d(int tile, int x_2d, int y_2d, int d_2d, float *out3d)
+{
+    for(auto cam : cameras) {
+        if (tile == (1 << cam->camera_index)) {
+            return cam->map2d3d(x_2d, y_2d, d_2d, out3d);
+        }
+    }
+    return false;
+}
+
+bool RS2BaseCapture::mapcolordepth(int tile, int u, int v, int *out2d)
+{
+    for(auto cam : cameras) {
+        if (tile == (1 << cam->camera_index)) {
+            return cam->mapcolordepth(u, v, out2d);
+        }
+    }
+    return false;
+}
+
+void RS2BaseCapture::request_auxdata(bool _rgb, bool _depth, bool _timestamps) {
+    configuration.auxData.want_auxdata_rgb = _rgb;
+    configuration.auxData.want_auxdata_depth = _depth;
+    configuration.auxData.want_image_timestamps = _timestamps;
+}
+
+bool RS2BaseCapture::_check_cameras_connected() {
+    for (RS2CameraConfig& cd : configuration.all_camera_configs) {
+        if (!cd.connected && !cd.disabled) {
+            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is not connected");
+            return false;
+        }
+    }
+    return true;
 }
 
 void RS2BaseCapture::_refresh_camera_hardware_parameters() {
@@ -343,7 +434,7 @@ void RS2BaseCapture::_find_camera_positions() {
 bool RS2BaseCapture::_apply_config(const char* configFilename) {
     // Clear out old configuration
     RS2CaptureConfig newConfiguration;
-    newConfiguration.auxData = configuration.auxData;
+    newConfiguration.auxData = configuration.auxData; // preserve auxdata requests
     configuration = newConfiguration;
 
     //
@@ -358,7 +449,7 @@ bool RS2BaseCapture::_apply_config(const char* configFilename) {
 
     if (strcmp(configFilename, "auto") == 0) {
         // Special case 1: string "auto" means auto-configure all realsense cameras.
-        return _apply_default_config();
+        return _apply_auto_config();
     }
 
     if (configFilename[0] == '{') {
@@ -375,7 +466,7 @@ bool RS2BaseCapture::_apply_config(const char* configFilename) {
     return false;
 }
 
-bool RS2BaseCapture::_apply_default_config() {
+bool RS2BaseCapture::_apply_auto_config() {
     // Determine how many realsense cameras (not platform cameras like webcams) are connected
     const std::string platform_camera_name = "Platform Camera";
     rs2::device_list devs = capturer_context.query_devices();
@@ -498,94 +589,6 @@ void RS2BaseCapture::_unload_cameras() {
     float deltaT = (stopTime - starttime) / 1000.0;
     if (configuration.debug) std::cerr << "cwipc_realsense2: ran for " << deltaT << " seconds, produced " << numberOfPCsProduced << " pointclouds at " << numberOfPCsProduced / deltaT << " fps." << std::endl;
 #endif
-}
-
-// API function that triggers the capture and returns the merged pointcloud and timestamp
-cwipc* RS2BaseCapture::get_pointcloud() {
-    if (!is_valid()) {
-        // xxxjack should we log a warning here?
-        return nullptr;
-    }
-
-    _request_new_pointcloud();
-
-    // Wait for a fresh mergedPC to become available.
-    // Note we keep the return value while holding the lock, so we can start the next grab/process/merge cycle before returning.
-    cwipc *rv;
-
-    {
-        std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-
-        mergedPC_is_fresh_cv.wait(mylock, [this] {
-            return mergedPC_is_fresh;
-        });
-
-        mergedPC_is_fresh = false;
-        rv = mergedPC;
-    }
-
-    _request_new_pointcloud();
-    return rv;
-}
-
-float RS2BaseCapture::get_pointSize() {
-    if (!is_valid()) {
-        // xxxjack should we log a warning here?
-        return 0;
-    }
-
-    float rv = 99999;
-    for (auto cam : cameras) {
-        if (cam->pointSize < rv) {
-            rv = cam->pointSize;
-        }
-    }
-
-    if (rv > 9999) {
-        rv = 0;
-    }
-
-    return rv;
-}
-
-bool RS2BaseCapture::map2d3d(int tile, int x_2d, int y_2d, int d_2d, float *out3d)
-{
-    for(auto cam : cameras) {
-        if (tile == (1 << cam->camera_index)) {
-            return cam->map2d3d(x_2d, y_2d, d_2d, out3d);
-        }
-    }
-    return false;
-}
-
-bool RS2BaseCapture::mapcolordepth(int tile, int u, int v, int *out2d)
-{
-    for(auto cam : cameras) {
-        if (tile == (1 << cam->camera_index)) {
-            return cam->mapcolordepth(u, v, out2d);
-        }
-    }
-    return false;
-}
-
-bool RS2BaseCapture::pointcloud_available(bool wait)
-{
-    if (!is_valid()) {
-        // xxxjack should we log a warning here?
-        return false;
-    }
-
-    _request_new_pointcloud();
-
-    std::this_thread::yield();
-    std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-
-    auto duration = std::chrono::seconds(wait?1:0);
-    mergedPC_is_fresh_cv.wait_for(mylock, duration, [this]{
-        return mergedPC_is_fresh;
-    });
-
-    return mergedPC_is_fresh;
 }
 
 void RS2BaseCapture::_initial_camera_synchronization() {

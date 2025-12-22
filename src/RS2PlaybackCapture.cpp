@@ -41,6 +41,45 @@ RS2PlaybackCapture::eof() {
     return false; 
 }
 
+bool RS2PlaybackCapture::seek(uint64_t timestamp) {
+    if (earliest_recording_timestamp_seen == 0) {
+        std::cerr << "RS2PlaybackCapture: no timestamps seen yet, seek() may fail" << std::endl;
+    }
+    uint64_t delta = timestamp - earliest_recording_timestamp_seen;
+    // std::cerr << "xxxjack RS2PlaybackCapture: pausing cameras" << std::endl;
+    for (auto cam : cameras) {
+        RS2PlaybackCamera* pbcam = dynamic_cast<RS2PlaybackCamera*>(cam);
+        if (pbcam == nullptr) {
+            std::cerr << "RS2PlaybackCapture: Camera " << cam->serial << " is not a RS2PlaybackCamera" << std::endl;
+            return false;
+        }
+        pbcam->pause();
+    }
+    // std::cerr << "xxxjack RS2PlaybackCapture: seek to timestamp " << timestamp << " delta " << delta << std::endl;
+    for (auto cam : cameras) { //SUBORDINATE or STANDALONE
+        if (cam->seek(delta) != true) {
+            std::cerr << "RS2PlaybackCapture: Camera " << cam->serial << " failed to seek to delta-timestamp " << delta << std::endl;
+            return false;
+        }
+    }
+    // std::cerr << "xxxjack RS2PlaybackCapture: resuming cameras" << std::endl;
+    for (auto cam : cameras) {
+        RS2PlaybackCamera* pbcam = dynamic_cast<RS2PlaybackCamera*>(cam);
+        if (pbcam == nullptr) {
+            std::cerr << "RS2PlaybackCapture: Camera " << cam->serial << " is not a RS2PlaybackCamera" << std::endl;
+            return false;
+        }
+        pbcam->resume();
+    }
+    // std::cerr << "xxxjack RS2PlaybackCapture: seek done." << std::endl;
+
+#if 0
+    _initial_camera_synchronization();
+#endif
+
+    return true;
+} 
+
 bool RS2PlaybackCapture::_apply_config(const char* configFilename) {
     bool ok = RS2BaseCapture::_apply_config(configFilename);
     if (!ok) {
@@ -122,42 +161,4 @@ void RS2PlaybackCapture::_initial_camera_synchronization() {
     }
 }
 
-bool RS2PlaybackCapture::seek(uint64_t timestamp) {
-    if (earliest_recording_timestamp_seen == 0) {
-        std::cerr << "RS2PlaybackCapture: no timestamps seen yet, seek() may fail" << std::endl;
-    }
-    uint64_t delta = timestamp - earliest_recording_timestamp_seen;
-    // std::cerr << "xxxjack RS2PlaybackCapture: pausing cameras" << std::endl;
-    for (auto cam : cameras) {
-        RS2PlaybackCamera* pbcam = dynamic_cast<RS2PlaybackCamera*>(cam);
-        if (pbcam == nullptr) {
-            std::cerr << "RS2PlaybackCapture: Camera " << cam->serial << " is not a RS2PlaybackCamera" << std::endl;
-            return false;
-        }
-        pbcam->pause();
-    }
-    // std::cerr << "xxxjack RS2PlaybackCapture: seek to timestamp " << timestamp << " delta " << delta << std::endl;
-    for (auto cam : cameras) { //SUBORDINATE or STANDALONE
-        if (cam->seek(delta) != true) {
-            std::cerr << "RS2PlaybackCapture: Camera " << cam->serial << " failed to seek to delta-timestamp " << delta << std::endl;
-            return false;
-        }
-    }
-    // std::cerr << "xxxjack RS2PlaybackCapture: resuming cameras" << std::endl;
-    for (auto cam : cameras) {
-        RS2PlaybackCamera* pbcam = dynamic_cast<RS2PlaybackCamera*>(cam);
-        if (pbcam == nullptr) {
-            std::cerr << "RS2PlaybackCapture: Camera " << cam->serial << " is not a RS2PlaybackCamera" << std::endl;
-            return false;
-        }
-        pbcam->resume();
-    }
-    // std::cerr << "xxxjack RS2PlaybackCapture: seek done." << std::endl;
-
-#if 0
-    _initial_camera_synchronization();
-#endif
-
-    return true;
-} 
 

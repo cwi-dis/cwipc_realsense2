@@ -49,13 +49,13 @@ RS2Capture::count_devices() {
 }
 
 bool 
-RS2Capture::seek(uint64_t timestamp) {
-    return false;
+RS2Capture::eof() { 
+    return false; 
 }
 
 bool 
-RS2Capture::eof() { 
-    return false; 
+RS2Capture::seek(uint64_t timestamp) {
+    return false;
 }
 
 bool RS2Capture::_check_cameras_connected() {
@@ -228,7 +228,7 @@ bool RS2Capture::_apply_config(const char* configFilename) {
 
     if (strcmp(configFilename, "auto") == 0) {
         // Special case 1: string "auto" means auto-configure all realsense cameras.
-        return _apply_default_config();
+        return _apply_auto_config();
     }
 
     if (configFilename[0] == '{') {
@@ -245,7 +245,7 @@ bool RS2Capture::_apply_config(const char* configFilename) {
     return false;
 }
 
-bool RS2Capture::_apply_default_config() {
+bool RS2Capture::_apply_auto_config() {
     // Determine how many realsense cameras (not platform cameras like webcams) are connected
     const std::string platform_camera_name = "Platform Camera";
     rs2::device_list devs = capturer_context.query_devices();
