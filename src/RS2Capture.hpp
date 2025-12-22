@@ -3,10 +3,12 @@
 #pragma once
 
 #include "RS2BaseCapture.hpp"
+#include "RS2Camera.hpp"
+#include "RS2Config.hpp"
 
-class RS2Capture : public RS2BaseCapture {
+class RS2Capture : public RS2BaseCapture<class RS2Camera, class RS2CameraConfig> {
 public:
-    using RS2BaseCapture::RS2BaseCapture;
+    using RS2BaseCapture<class RS2Camera, class RS2CameraConfig>::RS2BaseCapture;
     virtual ~RS2Capture();
     static int count_devices();
     static RS2Capture* factory();
@@ -15,14 +17,11 @@ public:
     bool seek(uint64_t timestamp) override; 
 protected:
     RS2Capture();
-    virtual bool _create_cameras() override;
-    virtual void _setup_camera_sync() override;
-    virtual void _setup_camera_hardware_parameters() override;
-    virtual bool _check_cameras_connected() override;
-    virtual bool _apply_config(const char* configFilename) override;
-    virtual void _initial_camera_synchronization() override;
-private:
-    /// Helper for _apply_config: setup default configuration for all connected cameras.
-    bool _apply_auto_config();
+    virtual bool _create_cameras() override final;
+    virtual void _setup_camera_sync() override final;
+    virtual void _setup_camera_hardware_parameters() override final;
+    virtual bool _check_cameras_connected() override final;
+    virtual bool _apply_auto_config() override final;
+    virtual void _initial_camera_synchronization() override final;
 };
 #endif // cwipc_realsense_RS2Capture_hpp

@@ -25,7 +25,7 @@ static bool _rs2_versioncheck(char **errorMessage) {
     if ((version/100) == (RS2_API_VERSION/100)) {
         return true;
     }
-    cwipc_log(LOG_ERROR, "cwipc_realsense2", "Built against librealsense " + std::to_string(RS2_API_VERSION) + " but " + std::to_string(version) + " is installed.");
+    cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", "Built against librealsense " + std::to_string(RS2_API_VERSION) + " but " + std::to_string(version) + " is installed.");
     if (errorMessage) {
         static char errorBuf[80];
         snprintf(errorBuf, sizeof(errorBuf), "Built against librealsense %d but %d is installed.", RS2_API_VERSION, version);
@@ -42,7 +42,7 @@ static bool _api_versioncheck(char **errorMessage, uint64_t apiVersion) {
         if (errorMessage) {
             *errorMessage = msgbuf;
         }
-        cwipc_log(LOG_ERROR, "cwipc_realsense2", msgbuf + 18);
+        cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", msgbuf + 18);
         return false;
     }
     return true;
@@ -168,7 +168,7 @@ cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **
 
     delete rv;
 
-    cwipc_log(LOG_ERROR, "cwipc_realsense2", "unspecified error from playback constructor");
+    cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", "unspecified error from playback constructor");
     if (errorMessage && *errorMessage == NULL) {
         *errorMessage = (char *)"cwipc_realsense2_playback: unspecified error from constructor";
     }

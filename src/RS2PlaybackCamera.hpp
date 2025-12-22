@@ -12,7 +12,7 @@
 #include "RS2Config.hpp"
 #include "RS2Camera.hpp"
 
-class RS2PlaybackCamera : public RS2Camera {
+class RS2PlaybackCamera : public RS2BaseCamera {
 public:
     RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, std::string recording_filename);
     ~RS2PlaybackCamera();

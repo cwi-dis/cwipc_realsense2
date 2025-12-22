@@ -22,7 +22,7 @@
 #include "RS2Camera.hpp"
 
 RS2Capture::RS2Capture()
-: RS2BaseCapture("RS2Capture", "realsense")
+: RS2BaseCapture("cwipc_realsense2::RS2Capture", "realsense")
 {
 }
 
@@ -61,7 +61,7 @@ RS2Capture::seek(uint64_t timestamp) {
 bool RS2Capture::_check_cameras_connected() {
     for (RS2CameraConfig& cd : configuration.all_camera_configs) {
         if (!cd.connected && !cd.disabled) {
-            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is not connected");
+            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is not connected");
             return false;
         }
     }
@@ -152,7 +152,7 @@ void RS2Capture::_setup_camera_sync() {
     }
     int nonmaster_sync_mode = configuration.sync.sync_mode;
     if (nonmaster_sync_mode == 0) {
-        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Sync_master_serial set, but no sync mode requested");
+        cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Sync_master_serial set, but no sync mode requested");
         return;
     }
     bool use_external_sync = master_serial == "external";
@@ -170,7 +170,7 @@ void RS2Capture::_setup_camera_sync() {
                     sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 1);
                     master_found = true;
                     if (!is_first_camera) {
-                        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + master_serial + " is not the first camera found. This may influence sync");
+                        cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + master_serial + " is not the first camera found. This may influence sync");
                     }
                 } else {
                     sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, nonmaster_sync_mode);
@@ -180,7 +180,7 @@ void RS2Capture::_setup_camera_sync() {
         is_first_camera = false;
     }
     if (!master_found) {
-        cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera sync_master_serial=" + master_serial + " not found");
+        cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera sync_master_serial=" + master_serial + " not found");
     }
 #if 0
     bool master_set = false;
@@ -203,47 +203,13 @@ void RS2Capture::_setup_camera_sync() {
             }
 
             if (!foundSensorSupportingSync) {
-                cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) + " does not support inter-camera-sync");
+                cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) + " does not support inter-camera-sync");
             }
         }
     }
 #endif
 }
 
-bool RS2Capture::_apply_config(const char* configFilename) {
-    // Clear out old configuration
-    RS2CaptureConfig newConfiguration;
-    newConfiguration.auxData = configuration.auxData;
-    configuration = newConfiguration;
-
-    //
-    // Read the configuration. We do this only now because for historical reasons the configuration
-    // reader is also the code that checks whether the configuration file contents match the actual
-    // current hardware setup. To be fixed at some point.
-    //
-    if (configFilename == NULL || *configFilename == '\0') {
-        // Empty config filename: use default cameraconfig.json.
-        configFilename = "cameraconfig.json";
-    }
-
-    if (strcmp(configFilename, "auto") == 0) {
-        // Special case 1: string "auto" means auto-configure all realsense cameras.
-        return _apply_auto_config();
-    }
-
-    if (configFilename[0] == '{') {
-        // Special case 2: a string starting with { is considered a JSON literal
-        return configuration.from_string(configFilename, type);
-    }
-
-    // Otherwise we check the extension. It can be .json.
-    const char *extension = strrchr(configFilename, '.');
-    if (extension != nullptr && strcmp(extension, ".json") == 0) {
-        return configuration.from_file(configFilename, type);
-    }
-
-    return false;
-}
 
 bool RS2Capture::_apply_auto_config() {
     // Determine how many realsense cameras (not platform cameras like webcams) are connected
@@ -298,12 +264,12 @@ bool RS2Capture::_create_cameras()
         RS2CameraConfig* cd = get_camera_config(serial);
 
         if (cd == nullptr) {
-            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + serial + " is connected but not configured");
+            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + serial + " is connected but not configured");
             return false;
         }
 
         if (cd->type != "realsense") {
-            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + serial + " is type " + cd->type + " in stead of realsense");
+            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + serial + " is type " + cd->type + " in stead of realsense");
             return false;
         }
 

@@ -12,7 +12,7 @@
 
 #include "RS2Config.hpp"
 
-class RS2BaseCamera : CwipcBaseCamera {
+class RS2BaseCamera : public CwipcBaseCamera {
 public:
     RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index);
     virtual ~RS2BaseCamera();
@@ -50,7 +50,50 @@ public:
     virtual bool seek(uint64_t timestamp) = 0;
 protected:
     virtual void _prepare_for_starting_camera_pipeline(rs2::config& cfg) = 0;
-    virtual void _post_start(rs2::pipeline_profile& profile) = 0;
+    virtual void _post_start(rs2::pipeline_profile& profile) {
+        rs2::device dev = profile.get_device();
+
+        // Obtain actual serial number and fps. Most important for playback cameras, but also useful for
+        // live cameras (because the user program can obtain correct cameraconfig data with get_config()).
+        // Keep actual serial number, also in cameraconfig
+        serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        camera_config.serial = serial;
+        std::vector<rs2::sensor> sensors = dev.query_sensors();
+        int depth_fps = hardware.fps;
+        int depth_width = hardware.depth_width;
+        int depth_height = hardware.depth_height;
+        int color_fps = hardware.fps;
+        int color_width = hardware.color_width;
+        int color_height = hardware.color_height;
+        for(rs2::sensor sensor : sensors) {
+            std::vector<rs2::stream_profile> streams = sensor.get_active_streams();
+            for(rs2::stream_profile stream : streams) {
+                rs2::video_stream_profile vstream = stream.as<rs2::video_stream_profile>();
+
+                if (vstream.stream_type() == RS2_STREAM_DEPTH) {
+                    depth_fps = vstream.fps();
+                    depth_width = vstream.width();
+                    depth_height = vstream.height();
+                    depth_format = rs2_format_to_string(vstream.format());
+
+                }
+                if (stream.stream_type() == RS2_STREAM_COLOR) {
+                    color_fps = vstream.fps();
+                    color_width = vstream.width();
+                    color_height = vstream.height();
+                    color_format = rs2_format_to_string(vstream.format());
+                }
+            }
+        }
+        if (depth_fps != color_fps) {
+            std::cerr << "RS2Camera: Warning: depth_fps=" << depth_fps << " and color_fps=" << color_fps << std::endl;
+        }
+        hardware.fps = depth_fps;
+        hardware.depth_width = depth_width;
+        hardware.depth_height = depth_height;
+        hardware.color_width = color_width;
+        hardware.color_height = color_height;
+    }
 
     void _init_filters();
     void _apply_filters(rs2::frameset& frames);

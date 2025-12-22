@@ -19,7 +19,7 @@
 #include "RS2PlaybackCamera.hpp"
 
 RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, std::string _filename)
-:   RS2Camera(ctx, configuration, _camera_index),
+:   RS2BaseCamera(ctx, configuration, _camera_index),
     playback_filename(_filename),
     playback_realtime(configuration.playback_realtime),
     playback_loop(configuration.playback_loop)
@@ -59,12 +59,10 @@ void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
     if (camera_config.playback_inpoint_micros != 0) {
         uint64_t new_pos = ((uint64_t)1000) * camera_config.playback_inpoint_micros;
         uint64_t old_pos = playback.get_position();
-#ifdef CWIPC_DEBUG
-        if (debug) std::cerr << "RS2PlaybackCamera::_post_start: pos was " << old_pos << " seek to " << new_pos << std::endl;
-#endif
+        _log_debug("_post_start: pos was " + std::to_string(old_pos) + " seek to " + std::to_string(new_pos));
         playback.seek(std::chrono::nanoseconds(new_pos));
     }
-    RS2Camera::_post_start(profile);
+    RS2BaseCamera::_post_start(profile);
 }
 
 void RS2PlaybackCamera::post_start_all_cameras() {
@@ -73,6 +71,7 @@ void RS2PlaybackCamera::post_start_all_cameras() {
     rs2::playback playback = dev.as<rs2::playback>();
     playback.resume();
     if (debug) std::cerr << "RS2PlaybackCamera::_post_start_all_cameras: playback resumed at " << playback.get_position() << std::endl;
+    _log_debug("_post_start_all_cameras: playback resumed at " + std::to_string(playback.get_position()));
 }
 
 

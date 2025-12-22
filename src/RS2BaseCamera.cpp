@@ -90,7 +90,8 @@ inline bool isPointInRadius(cwipc_pcl_point& pt, float radius_filter) {
     return distance_2 < radius_filter * radius_filter; // radius^2 to avoid sqrt
 }
 
-RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index) :
+RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index)
+: CwipcBaseCamera("cwipc_realsense::RS2BaseCamera", "realsense2"),
   pointSize(0), 
 #if 0
   minx(0), minz(0), maxz(0),
@@ -112,10 +113,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
   debug(configuration.debug),
   prefer_color_timing(configuration.prefer_color_timing)
 {
-#ifdef CWIPC_DEBUG
-    if (debug) std::cout << "cwipc_realsense2: creating camera " << serial << std::endl;
-#endif
-
+    _log_debug("Creating camera with serial " + serial);
     if (configuration.record_to_directory != "") {
         record_to_file = configuration.record_to_directory + "/" + serial + ".bag";
     }
@@ -124,9 +122,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
 }
 
 RS2BaseCamera::~RS2BaseCamera() {
-#ifdef CWIPC_DEBUG
-    if (debug) std::cout << "cwipc_realsense2: destroying " << serial << std::endl;
-#endif
+    _log_debug("Destroying camera");
     assert(camera_stopped);
 }
 
@@ -239,7 +235,7 @@ uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
             if (debug) {
                 uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
                 uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
-                std::cerr << "wait_for_captured_frameset: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << " (previous)" << std::endl;
+                _log_debug("wait_for_captured_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp) + " (previous)");
             }
 #endif
             return previous_timestamp;
@@ -268,7 +264,7 @@ uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
     if (debug) {
         uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
-        std::cerr << "wait_for_captured_frameset: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+        _log_debug("wait_for_captured_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
     return resultant_timestamp;
@@ -280,15 +276,14 @@ void RS2BaseCamera::start_camera() {
     assert(!camera_pipeline_started);
     assert(camera_processing_thread == nullptr);
     rs2::config cfg;
-#ifdef CWIPC_DEBUG
-    if (debug) std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
-#endif
+    _log_debug("Starting camera pipeline for camera" );
     _prepare_for_starting_camera_pipeline(cfg);
     rs2::pipeline_profile profile = camera_pipeline.start(cfg);   // Start streaming with the configuration just set
     _post_start(profile);
     _computePointSize(profile);
     camera_pipeline_started = true;
 }
+
 
 void RS2BaseCamera::_computePointSize(rs2::pipeline_profile profile) {
     // Get the 3D distance between camera and (0,0,0) or use 1m if unreasonable
@@ -331,7 +326,7 @@ void RS2BaseCamera::pre_stop_camera() {
         rs2::device dev = profile.get_device();
         rs2::recorder recorder = dev.as<rs2::recorder>();
         if (!recorder) {
-            std::cerr << "RS2BaseCamera::post_start_all_cameras: uses_recorder but no recorder" << std::endl;
+            _log_error("pre_stop_camera: uses_recorder is true but no rs2::recorder");
         } else {
             recorder.pause();
         }
@@ -381,47 +376,20 @@ void RS2BaseCamera::_start_processing_thread() {
     _cwipc_setThreadName(camera_processing_thread, L"cwipc_realsense2::RS2BaseCamera::processing_thread");
 }
 
-#if 0
-
-int64_t RS2BaseCamera::_frameset_timedelta_preferred(rs2::frameset frames) {
-    if (preferred_timestamp == 0) return 0;
-    rs2::frame depth_frame = frames.get_depth_frame();
-    uint64_t frame_timestamp = (uint64_t)depth_frame.get_timestamp();
-    int64_t delta = preferred_timestamp - frame_timestamp;
-    int64_t frame_duration = (1000 / hardware.fps);
-    if (delta < -frame_duration) {
-        // frame_timestamp > preferred timestamp, so frame is more than one frametime in the future
-#ifdef CWIPC_DEBUG_SYNCext
-        std::cerr << "xxxjack cam=" << camera_index << ", preferred=" << preferred_timestamp <<", frame is " << (-delta) << " in the future" << std::endl;
-#endif
-        return delta;
-    } else if( delta > 1 /* ms */) {
-        // frame_timestamp > preferred_timestamp, so frame is in the past (by more than half a frame)
-#ifdef CWIPC_DEBUG_SYNCext
-        std::cerr << "xxxjack cam=" << camera_index << ", preferred=" << preferred_timestamp <<", frame is " << (delta) << " in the past" << std::endl;
-#endif
-        return delta;
-    }
-    return 0;
-}
-#endif
-
 rs2::frameset RS2BaseCamera::wait_for_frames() {
     rs2::frameset frames = camera_pipeline.wait_for_frames();
 #ifdef CWIPC_DEBUG_SYNC
     if (debug) {
         uint64_t depth_timestamp = frames.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = frames.get_color_frame().get_timestamp();
-        std::cerr << "wait_for_frames: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+        _log_debug("wait_for_frames: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
     return frames;
 }
 
 void RS2BaseCamera::_processing_thread_main() {
-#ifdef CWIPC_DEBUG_THREAD
-    if (debug) std::cerr << "frame processing: cam=" << camera_index << " thread started" << std::endl;
-#endif
+    _log_debug_thread("frame processing thread started");
 
     while(!camera_stopped) {
         // Wait for next frame to process. Allow aborting in case of stopped becoming false...
@@ -434,7 +402,7 @@ void RS2BaseCamera::_processing_thread_main() {
     if (debug) {
         uint64_t depth_timestamp = processing_frameset.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = processing_frameset.get_color_frame().get_timestamp();
-        std::cerr << "processing_thread: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+        _log_debug("processing_thread: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
 
@@ -449,39 +417,13 @@ void RS2BaseCamera::_processing_thread_main() {
         
         assert(depth);
         assert(color);
-#if xxxjack_dont_want
-        // This code is disabled, because here we get the size of the processed
-        // images, not the images as captured.
-        int color_width = color.get_width();
-        int color_height = color.get_height();
-        int depth_width = depth.get_width();
-        int depth_height = depth.get_height();
-
-        // compare width/height to what the frames have.
-        if(hardware.color_width != 0 && hardware.color_width != color_width) {
-            std::cerr << "RS2BaseCamera: color frame width " << color_width << ", expected " << hardware.color_width << std::endl;
-        }
-        if(hardware.color_height != 0 && hardware.color_height != color_height) {
-            std::cerr << "RS2BaseCamera: color frame height " << color_height << ", expected " << hardware.color_height << std::endl;
-        }
-        if(hardware.depth_width != 0 && hardware.depth_width != depth_width) {
-            std::cerr << "RS2BaseCamera: depth frame width " << depth_width << ", expected " << hardware.depth_width << std::endl;
-        }
-        if(hardware.depth_height != 0 && hardware.depth_height != depth_height) {
-            std::cerr << "RS2BaseCamera: depth frame height " << depth_height << ", expected " << hardware.depth_height << std::endl;
-        }
-        hardware.color_width = color_width;
-        hardware.color_height = color_height;
-        hardware.depth_width = depth_width;
-        hardware.depth_height = depth_height;
-#endif
 
         if (processing.depth_x_erosion > 0 || processing.depth_y_erosion > 0) {
             _erode_depth(depth, processing.depth_x_erosion, processing.depth_y_erosion);
         }
-#ifdef CWIPC_DEBUG
-        if (debug) std::cerr << "frame processing: cam=" << camera_index << ", depthseq=" << depth.get_frame_number() << ", colorseq=" << depth.get_frame_number() << std::endl;
-#endif
+        _log_debug(std::string("Processing frame:") +
+                   " depth: " + std::to_string(depth.get_width()) + "x" + std::to_string(depth.get_height()) +
+                   " color: " + std::to_string(color.get_width()) + "x" + std::to_string(color.get_height()));
 
         // Calculate new pointcloud, map to the color images and get vertices and color indices
         depth_to_pointcloud.map_to(color);
@@ -558,9 +500,7 @@ void RS2BaseCamera::_processing_thread_main() {
         }
 
         if (pcl_pointcloud->size() == 0) {
-#ifdef CWIPC_DEBUG
-          if (debug) std::cerr << "cwipc_realsense2: warning: captured empty pointcloud from camera " << camera_config.serial << std::endl;
-#endif
+            _log_trace("Captured empty pointcloud from camera");
           //continue;
         }
 
@@ -568,10 +508,7 @@ void RS2BaseCamera::_processing_thread_main() {
         processing_done = true;
         processing_done_cv.notify_one();
     }
-
-#ifdef CWIPC_DEBUG_THREAD
-    if (debug) std::cerr << "frame processing: cam=" << camera_index << " thread stopped" << std::endl;
-#endif
+    _log_debug_thread("frame processing thread stopped");
 }
 
 void RS2BaseCamera::_erode_depth(rs2::depth_frame depth_frame, int x_delta, int y_delta) {
@@ -633,7 +570,7 @@ void RS2BaseCamera::create_pc_from_frameset() {
     if (debug) {
         uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
-        std::cerr << "create_pc_from_frameset: cam=" << camera_index << ", dts=" << depth_timestamp << ", cts=" << color_timestamp << std::endl;
+        _log_debug("create_pc_from_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
     processing_frame_queue.enqueue(current_captured_frameset);
@@ -648,34 +585,8 @@ void RS2BaseCamera::wait_for_pc_created() {
 bool RS2BaseCamera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
 {
     float tmp3d[3] = {0, 0, 0};
-#if 0
-    float in2d[2] = {
-        (float)x_2d,
-        (float)y_2d
-    };
-    // Note by Jack: the 1000.0 is a magic value, somewhere it is stated that the D4xx cameras use 1mm as the
-    // depth unit. xxxjack it should use get_depth_scale().
-    float indepth = float(d_2d) / 1000.0;
-    
-#if 0
-    // Now get the intrinsics for the depth stream
-    rs2::pipeline_profile pipeline_profile = camera_pipeline.get_active_profile();
-    rs2::video_stream_profile stream_profile = (
-        filtering.map_color_to_depth != 0 ?
-        pipeline_profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>() :
-        pipeline_profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>()
-    );
-#else
-    rs2::video_stream_profile stream_profile = current_processed_frameset.get_depth_frame().get_profile().as<rs2::video_stream_profile>();
-    if (stream_profile == nullptr) {
-        std::cerr << "RS2BaseCamera: map2d3d: cannot get stream_profile for intrinsics" << std::endl;
-        return false;
-    }
-#endif
-    rs2_intrinsics intrinsics = stream_profile.get_intrinsics(); // Calibration data
-    rs2_deproject_pixel_to_point(tmp3d, &intrinsics, in2d, indepth);
-#else
-    // Different route. We look up the depth value.
+
+    // We look up the depth value.
     // First we need to get the four matrices.
     rs2::depth_frame depth_frame = current_processed_frameset.get_depth_frame();
     rs2::video_frame color_frame = current_processed_frameset.get_color_frame();
@@ -709,7 +620,6 @@ bool RS2BaseCamera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     // Now we can use uv_depth to find the correct depth value.
     uint16_t depth_i = depth_data[(int)xy_depth[1]*depth_intrinsics.width + (int)xy_depth[0]];
     rs2_deproject_pixel_to_point(tmp3d, &depth_intrinsics, xy_depth, depth_i / 1000.0);
-#endif
     transformPoint(out3d, tmp3d);
     return true;
 }

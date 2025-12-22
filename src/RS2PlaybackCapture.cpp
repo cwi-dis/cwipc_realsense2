@@ -18,9 +18,8 @@
 #include "RS2PlaybackCapture.hpp"
 
 RS2PlaybackCapture::RS2PlaybackCapture()
-:   RS2BaseCapture()
+:   RS2BaseCapture<RS2PlaybackCamera, RS2CameraConfig>("cwipc_realsense2::RS2PlaybackCapture", "realsense_playback")
 {
-    type = "realsense_playback";
 }
 
 RS2PlaybackCapture::~RS2PlaybackCapture() {
@@ -107,15 +106,15 @@ bool RS2PlaybackCapture::_create_cameras() {
             cd.serial = cd.filename;
         }
         if (cd.filename == "" && cd.serial == "") {
-            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " has no filename nor serial");
+            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " has no filename nor serial");
             return false;
         }
         if (cd.type == "realsense"){
-            // cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is type realsense, override to realsense_playback");
+            // cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is type realsense, override to realsense_playback");
             cd.type = "realsense_playback";
         }
         if (cd.type != "realsense_playback") {
-            cwipc_log(LOG_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is type " + cd.type + " in stead of realsense_playback");
+            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "Camera " + cd.serial + " is type " + cd.type + " in stead of realsense_playback");
             return false;
         }
 
