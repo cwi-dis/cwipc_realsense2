@@ -115,7 +115,7 @@ public:
             bool ok = cam->getHardwareParameters(configuration.hardware, match_only);
             if (!ok) {
                 if (!match_only) {
-                    _log_warning("Could not get hardware parameters from first camera " + cam->get_serial());
+                    _log_warning("Could not get hardware parameters from first camera.");
                 } else {
                     _log_warning("Not all cameras have the same hardware parameters.");
                 }
@@ -498,7 +498,7 @@ protected:
             cwipc_pcl_pointcloud cam_cld = cam->access_current_pcl_pointcloud();
 
             if (cam_cld == 0) {
-                _log_warning("merge_camera_pointclouds: warning: camera pointcloud is null for camera " + cam->get_serial());
+                _log_warning("merge_camera_pointclouds: warning: camera pointcloud is null for one camera" );
                 continue;
             }
             nPoints += cam_cld->size();
