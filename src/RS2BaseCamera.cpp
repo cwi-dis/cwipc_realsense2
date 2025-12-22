@@ -181,6 +181,45 @@ void RS2BaseCamera::_init_filters() {
     }
 }
 
+void RS2BaseCamera::_apply_filters(rs2::frameset& processing_frameset) {
+    bool do_depth_filtering = filtering.do_decimation || filtering.do_threshold || filtering.do_spatial || filtering.do_temporal;
+    if (filtering.map_color_to_depth == 1) {
+        processing_frameset = processing_frameset.apply_filter(align_color_to_depth);
+    } else if (filtering.map_color_to_depth == 0) {
+        processing_frameset = processing_frameset.apply_filter(align_depth_to_color);
+    } else {
+        // map_color_to_depth == -1 means no mapping t all.
+    }
+    if (do_depth_filtering) {
+    
+        if (filtering.do_decimation) {
+            processing_frameset = processing_frameset.apply_filter(dec_filter);
+        }
+
+        if (filtering.do_threshold) {
+            processing_frameset = processing_frameset.apply_filter(threshold_filter);
+        }
+
+        if (filtering.do_spatial || filtering.do_temporal || filtering.do_hole_filling) {
+            processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
+
+            if (filtering.do_spatial) {
+                processing_frameset = processing_frameset.apply_filter(spatial_filter);
+            }
+
+            if (filtering.do_temporal) {
+                processing_frameset = processing_frameset.apply_filter(temporal_filter);
+            }
+            if (filtering.do_hole_filling) {
+                processing_frameset = processing_frameset.apply_filter(hole_filling_filter);
+            }
+
+            processing_frameset = processing_frameset.apply_filter(disparity_to_depth);
+        }
+
+    }
+}
+
 void RS2BaseCamera::_init_current_pointcloud(int size) {
     if (current_pointcloud == nullptr) {
         current_pointcloud = new_cwipc_pcl_pointcloud();
@@ -244,7 +283,7 @@ void RS2BaseCamera::start_camera() {
 #ifdef CWIPC_DEBUG
     if (debug) std::cerr << "cwipc_realsense2: starting camera " << serial << ": " << camera_width << "x" << camera_height << "@" << camera_fps << std::endl;
 #endif
-    _pre_start(cfg);
+    _prepare_for_starting_camera_pipeline(cfg);
     rs2::pipeline_profile profile = camera_pipeline.start(cfg);   // Start streaming with the configuration just set
     _post_start(profile);
     _computePointSize(profile);
@@ -401,42 +440,8 @@ void RS2BaseCamera::_processing_thread_main() {
 
         std::lock_guard<std::mutex> lock(processing_mutex);
 
-        bool do_depth_filtering = filtering.do_decimation || filtering.do_threshold || filtering.do_spatial || filtering.do_temporal;
-        if (filtering.map_color_to_depth == 1) {
-            processing_frameset = processing_frameset.apply_filter(align_color_to_depth);
-        } else if (filtering.map_color_to_depth == 0) {
-            processing_frameset = processing_frameset.apply_filter(align_depth_to_color);
-        } else {
-            // map_color_to_depth == -1 means no mapping t all.
-        }
-        if (do_depth_filtering) {
-          
-            if (filtering.do_decimation) {
-                processing_frameset = processing_frameset.apply_filter(dec_filter);
-            }
+        _apply_filters(processing_frameset);
 
-            if (filtering.do_threshold) {
-                processing_frameset = processing_frameset.apply_filter(threshold_filter);
-            }
-
-            if (filtering.do_spatial || filtering.do_temporal || filtering.do_hole_filling) {
-                processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
-
-                if (filtering.do_spatial) {
-                    processing_frameset = processing_frameset.apply_filter(spatial_filter);
-                }
-
-                if (filtering.do_temporal) {
-                    processing_frameset = processing_frameset.apply_filter(temporal_filter);
-                }
-                if (filtering.do_hole_filling) {
-                    processing_frameset = processing_frameset.apply_filter(hole_filling_filter);
-                }
-
-                processing_frameset = processing_frameset.apply_filter(disparity_to_depth);
-            }
-
-        }
         current_processed_frameset = processing_frameset;
 
         rs2::depth_frame depth = processing_frameset.get_depth_frame();

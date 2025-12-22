@@ -49,10 +49,11 @@ public:
     /// Seek. Fails for cameras, overriden for playback cameras.
     virtual bool seek(uint64_t timestamp) = 0;
 protected:
-    virtual void _pre_start(rs2::config& cfg) = 0;
+    virtual void _prepare_for_starting_camera_pipeline(rs2::config& cfg) = 0;
     virtual void _post_start(rs2::pipeline_profile& profile) = 0;
 
     void _init_filters();
+    void _apply_filters(rs2::frameset& frames);
 
     virtual rs2::frameset wait_for_frames();
 

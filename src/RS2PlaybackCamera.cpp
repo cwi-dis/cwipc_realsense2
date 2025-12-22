@@ -44,7 +44,7 @@ void RS2PlaybackCamera::resume() {
     playback.set_real_time(playback_realtime);
 }
 
-void RS2PlaybackCamera::_pre_start(rs2::config &cfg) {
+void RS2PlaybackCamera::_prepare_for_starting_camera_pipeline(rs2::config &cfg) {
     cfg.enable_device_from_file(playback_filename, playback_loop);
 }
 
