@@ -105,7 +105,6 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
   auxData(configuration.auxData),
   current_pointcloud(nullptr),
   processing_frame_queue(1),
-  capturer_context(_ctx),
   camera_pipeline(_ctx),
   camera_pipeline_started(false),
   align_color_to_depth(RS2_STREAM_DEPTH),

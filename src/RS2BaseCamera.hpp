@@ -91,7 +91,6 @@ protected:
 
     std::thread *camera_processing_thread;
     
-    rs2::context capturer_context;
     rs2::pipeline camera_pipeline;
     
     rs2::frame_queue processing_frame_queue;
