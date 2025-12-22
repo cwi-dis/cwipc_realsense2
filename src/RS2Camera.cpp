@@ -24,7 +24,7 @@ void RS2Camera::_prepare_for_starting_camera_pipeline(rs2::config &cfg) {
     cfg.enable_device(serial);
     uses_recorder = record_to_file != "";
     if (uses_recorder) {
-        std::cerr << "RS2Camera::_pre_start: recording to " << record_to_file << std::endl;
+        _log_trace("enabling recorder to file " + record_to_file);
         cfg.enable_record_to_file(record_to_file);
     }
     cfg.enable_stream(RS2_STREAM_COLOR, hardware.color_width, hardware.color_height, RS2_FORMAT_RGB8, hardware.fps);
@@ -37,7 +37,7 @@ void RS2Camera::_post_start(rs2::pipeline_profile& profile) {
     if (uses_recorder) {
         rs2::recorder recorder = dev.as<rs2::recorder>();
         if (!recorder) {
-            std::cerr << "RS2Camera::_post_start: uses_recorder but no recorder" << std::endl;
+            _log_error("_post_start: uses_recorder but no rs2::recorder");
         } else {
             recorder.pause();
         }
@@ -53,7 +53,7 @@ void RS2Camera::post_start_all_cameras() {
         rs2::device dev = profile.get_device();
         rs2::recorder recorder = dev.as<rs2::recorder>();
         if (!recorder) {
-            std::cerr << "RS2Camera::post_start_all_cameras: uses_recorder but no recorder" << std::endl;
+            _log_error("post_start_all_cameras: uses_recorder but no rs2::recorder");
         } else {
             recorder.resume();
         }

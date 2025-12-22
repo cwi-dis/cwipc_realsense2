@@ -225,10 +225,7 @@ bool RS2Capture::_apply_auto_config() {
         if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) {
             continue;
         }
-
-#ifdef CWIPC_DEBUG
-        if (configuration.debug) std::cerr << "cwipc_realsense2: looking at camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-#endif
+        _log_debug("_apply_auto_config: Examining camera " + std::string(dev.get_info(RS2_CAMERA_INFO_NAME)));
 
         // Found a realsense camera. Create a default data entry for it.
         RS2CameraConfig cd;
@@ -253,10 +250,7 @@ bool RS2Capture::_create_cameras()
         if (dev.get_info(RS2_CAMERA_INFO_NAME) == platform_camera_name) {
             continue;
         }
-
-#ifdef CWIPC_DEBUG
-        if (configuration.debug) std::cerr << "cwipc_realsense2: opening camera " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-#endif
+        _log_debug("_create_cameras: Opening camera " + std::string(dev.get_info(RS2_CAMERA_INFO_NAME)));
 
         // Found a realsense camera. Create a default data entry for it.
         std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));

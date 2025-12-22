@@ -86,7 +86,7 @@ protected:
             }
         }
         if (depth_fps != color_fps) {
-            std::cerr << "RS2Camera: Warning: depth_fps=" << depth_fps << " and color_fps=" << color_fps << std::endl;
+            _log_warning("Depth and color fps differ: depth " + std::to_string(depth_fps) + " color " + std::to_string(color_fps) + ". Using depth fps.");
         }
         hardware.fps = depth_fps;
         hardware.depth_width = depth_width;
