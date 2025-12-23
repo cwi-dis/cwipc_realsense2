@@ -13,7 +13,6 @@
 
 #include "RS2Config.hpp"
 
-class RS2Camera;
 
 /** Base class for capturers that use the librealsense API. 
  * 
@@ -41,7 +40,7 @@ public:
         return cameras.size() > 0; 
     }
 
-    virtual bool config_reload(const char *configFilename) override final {
+    virtual bool config_reload_and_start_capturing(const char *configFilename) override final {
         _unload_cameras();
 
         if (!_apply_config(configFilename)) {
@@ -59,7 +58,7 @@ public:
         //
         // Set sync mode, if needed
         //
-        _setup_camera_sync();
+        _setup_inter_camera_sync();
 
         // Now we have all the configuration information. Open the cameras.
         if (!_create_cameras()) {
@@ -71,31 +70,9 @@ public:
             return false;
         }
 
-        _find_camera_positions();
+        _init_camera_positions();
+        _start_cameras();
 
-        //
-        // start the cameras
-        //
-        try {
-            for (auto cam: cameras) {
-                cam->start_camera();
-            }
-        } catch(const rs2::error& e) {
-            _log_error("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
-            throw;
-        }
-
-        //
-        // start the per-camera capture threads
-        //
-        for (auto cam: cameras) {
-            cam->start_capturer();
-        }
-        
-        for (auto cam: cameras) {
-            cam->post_start_all_cameras();
-        }
-    
         //
         // start our run thread (which will drive the capturers and merge the pointclouds)
         //
@@ -236,9 +213,9 @@ protected:
     /// Create the per-camera capturers.
     virtual bool _create_cameras() = 0;
     /// Setup camera synchronization (if needed).
-    virtual void _setup_camera_sync() = 0;
+    virtual bool _setup_inter_camera_sync() = 0;
     /// Setup camera hardware parameters (white balance, etc).
-    virtual void _setup_camera_hardware_parameters() = 0;
+    virtual bool _setup_camera_hardware_parameters() = 0;
     /// Check that all cameras are connected.
     virtual bool _check_cameras_connected() = 0;
     
@@ -335,6 +312,7 @@ protected:
         _log_warning("Unknown camera " + serial);
         return nullptr;
     }
+
     void _control_thread_main()  {
         if (configuration.debug) _log_debug("cwipc_realsense2: processing thread started");
         _initial_camera_synchronization();
@@ -417,10 +395,14 @@ protected:
         if (configuration.debug) _log_debug_thread("cwipc_realsense2: processing thread exiting");
     }
 
+    /// Anything that needs to be done to get the camera streams synchronized after opening.
+    /// (Realsense Playback seeks all streams to the same timecode, the earliest one present
+    /// in each stream)
     virtual void _initial_camera_synchronization() {
     }
 
-    void _find_camera_positions()  {
+    // xxxjack ridiculous way of finding camera position. Do it in CameraConfig.
+    void _init_camera_positions()  {
         // find camerapositions
         for (int i = 0; i < configuration.all_camera_configs.size(); i++) {
             cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
@@ -437,6 +419,35 @@ protected:
             configuration.all_camera_configs[i].cameraposition.x = pnt.x;
             configuration.all_camera_configs[i].cameraposition.y = pnt.y;
             configuration.all_camera_configs[i].cameraposition.z = pnt.z;
+        }
+    }
+
+    virtual void _start_cameras() final {
+        bool start_error = false;
+        for (auto cam: cameras) {
+            if (!cam->pre_start_all_cameras()) {
+                start_error = true;
+            }
+        }
+        try {
+            for (auto cam: cameras) {
+                if (!cam->start_camera()) {
+                    start_error = true;
+                }
+            }
+        } catch(const rs2::error& e) {
+            _log_error("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
+            throw;
+        }
+        //
+        // start the per-camera capture threads
+        //
+        for (auto cam: cameras) {
+            cam->start_camera_streaming();
+        }
+        
+        for (auto cam: cameras) {
+            cam->post_start_all_cameras();
         }
     }
 

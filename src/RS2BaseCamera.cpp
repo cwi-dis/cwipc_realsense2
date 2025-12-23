@@ -205,7 +205,7 @@ uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
 }
 
 // Configure and initialize caputuring of one camera
-void RS2BaseCamera::start_camera() {
+bool RS2BaseCamera::start_camera() {
     assert(camera_stopped);
     assert(!camera_pipeline_started);
     assert(camera_processing_thread == nullptr);
@@ -216,6 +216,7 @@ void RS2BaseCamera::start_camera() {
     _post_start(profile);
     _computePointSize(profile);
     camera_pipeline_started = true;
+    return true;
 }
 
 
@@ -298,7 +299,7 @@ void RS2BaseCamera::stop_camera() {
     processing_done_cv.notify_one();
 }
 
-void RS2BaseCamera::start_capturer() {
+void RS2BaseCamera::start_camera_streaming() {
     assert(camera_stopped);
     camera_stopped = false;
 

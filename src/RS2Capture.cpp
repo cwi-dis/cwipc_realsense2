@@ -69,7 +69,7 @@ bool RS2Capture::_check_cameras_connected() {
 }
 
 
-void RS2Capture::_setup_camera_hardware_parameters() {
+bool RS2Capture::_setup_camera_hardware_parameters() {
     rs2::device_list devs = capturer_context.query_devices();
     for (auto dev : devs) {
         auto allSensors = dev.query_sensors();
@@ -134,12 +134,11 @@ void RS2Capture::_setup_camera_hardware_parameters() {
         if (depth_sensor.supports(RS2_OPTION_LASER_POWER) && configuration.hardware.laser_power >= 0) {
             depth_sensor.set_option(RS2_OPTION_LASER_POWER, configuration.hardware.laser_power);
         }
-
-    
     }
+    return true;
 }
 
-void RS2Capture::_setup_camera_sync() {
+bool RS2Capture::_setup_inter_camera_sync() {
     std::string master_serial = configuration.sync.sync_master_serial;
     if (master_serial == "") {
         // Disable sync
@@ -148,12 +147,12 @@ void RS2Capture::_setup_camera_sync() {
                 sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 0);
            }
         }
-        return;
+        return true;
     }
     int nonmaster_sync_mode = configuration.sync.sync_mode;
     if (nonmaster_sync_mode == 0) {
         _log_warning("Sync_master_serial set, but no sync mode requested");
-        return;
+        return false;
     }
     bool use_external_sync = master_serial == "external";
     bool master_found = use_external_sync;
@@ -181,7 +180,9 @@ void RS2Capture::_setup_camera_sync() {
     }
     if (!master_found) {
         _log_warning("Sync master camera with serial " + master_serial + " not found");
+        return false;
     }
+    return true;
 }
 
 
