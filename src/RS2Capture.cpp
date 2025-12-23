@@ -69,7 +69,7 @@ bool RS2Capture::_check_cameras_connected() {
 }
 
 
-bool RS2Capture::_setup_camera_hardware_parameters() {
+bool RS2Capture::_init_hardware_for_all_cameras() {
     rs2::device_list devs = capturer_context.query_devices();
     for (auto dev : devs) {
         auto allSensors = dev.query_sensors();

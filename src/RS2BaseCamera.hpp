@@ -14,16 +14,18 @@
 
 class RS2BaseCamera : public CwipcBaseCamera {
 public:
+    // The public API is for use by the Capturer
     RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index);
     virtual ~RS2BaseCamera();
     /// Step 1 in starting: tell the camera we are going to start. Called for all cameras.
-    virtual bool pre_start_all_cameras() final { return true; };
+    virtual bool pre_start_all_cameras() final;
     /// Step 2 in starting: starts the camera. Called for all cameras. 
     virtual bool start_camera() final;
     /// Step 3 in starting: starts the capturer. Called after all cameras have been started.
     virtual void start_camera_streaming();
     /// Step 4, called after all capturers have been started.
     virtual void post_start_all_cameras() = 0;
+
     /// Prepare for stopping the cameras. May do something like stopping the recording.
     virtual void pre_stop_camera() final;
     /// Completely stops camera and capturer, releases all resources. Can be re-started with start_camera, etc.
@@ -51,7 +53,22 @@ public:
     /// Seek. Fails for cameras, overriden for playback cameras.
     virtual bool seek(uint64_t timestamp) = 0;
 protected:
-    virtual void _prepare_for_starting_camera_pipeline(rs2::config& cfg) = 0;
+    // internal API that is "shared" with other implementations (realsense, kinect)
+    virtual bool _init_hardware_for_this_camera() override final { 
+        // In the librealsense API hardware initialization is done globally,
+        // in RS2Capture::_init_hardware_for_all_cameras
+        return true; 
+    }
+    virtual bool _init_filters() override final;
+    virtual void _apply_filters(rs2::frameset& frames);
+
+    virtual bool _init_tracker() override final {
+        // librealsense does not provide body tracking.
+        return true;
+    }
+    virtual void _prepare_config_for_starting_camera(rs2::config& cfg) = 0;
+protected:
+    // xxxjack from here to be determined
     virtual void _post_start(rs2::pipeline_profile& profile) {
         rs2::device dev = profile.get_device();
 
@@ -97,8 +114,7 @@ protected:
         hardware.color_height = color_height;
     }
 
-    void _init_filters();
-    void _apply_filters(rs2::frameset& frames);
+
 
     virtual rs2::frameset wait_for_frames();
 
@@ -133,7 +149,7 @@ protected:
     bool uses_recorder = false;
     
     bool camera_stopped;
-    bool camera_pipeline_started;
+    bool camera_started;
 
     std::thread *camera_processing_thread;
     

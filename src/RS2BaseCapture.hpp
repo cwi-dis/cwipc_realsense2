@@ -53,7 +53,7 @@ public:
         }
 
         // Set various camera hardware parameters (white balance and such)
-        _setup_camera_hardware_parameters();
+        _init_hardware_for_all_cameras();
 
         //
         // Set sync mode, if needed
@@ -215,7 +215,7 @@ protected:
     /// Setup camera synchronization (if needed).
     virtual bool _setup_inter_camera_sync() = 0;
     /// Setup camera hardware parameters (white balance, etc).
-    virtual bool _setup_camera_hardware_parameters() = 0;
+    virtual bool _init_hardware_for_all_cameras() = 0;
     /// Check that all cameras are connected.
     virtual bool _check_cameras_connected() = 0;
     

@@ -20,7 +20,7 @@ bool RS2Camera::seek(uint64_t timestamp) {
     return false;
 }
 
-void RS2Camera::_prepare_for_starting_camera_pipeline(rs2::config &cfg) {
+void RS2Camera::_prepare_config_for_starting_camera(rs2::config &cfg) {
     cfg.enable_device(serial);
     uses_recorder = record_to_file != "";
     if (uses_recorder) {

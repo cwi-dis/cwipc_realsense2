@@ -22,7 +22,7 @@ public:
     virtual void pause();
     virtual void resume();
 protected:
-    virtual void _prepare_for_starting_camera_pipeline(rs2::config &cfg) override;
+    virtual void _prepare_config_for_starting_camera(rs2::config &cfg) override;
     virtual void _post_start(rs2::pipeline_profile& profile) override;
 private:
     uint64_t previous_color_timestamp = 0;

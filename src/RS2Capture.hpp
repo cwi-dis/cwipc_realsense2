@@ -19,7 +19,7 @@ protected:
     RS2Capture();
     virtual bool _create_cameras() override final;
     virtual bool _setup_inter_camera_sync() override final;
-    virtual bool _setup_camera_hardware_parameters() override final;
+    virtual bool _init_hardware_for_all_cameras() override final;
     virtual bool _check_cameras_connected() override final;
     virtual bool _apply_auto_config() override final;
     virtual void _initial_camera_synchronization() override final;

@@ -41,7 +41,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
   current_pointcloud(nullptr),
   processing_frame_queue(1),
   camera_pipeline(_ctx),
-  camera_pipeline_started(false),
+  camera_started(false),
   align_color_to_depth(RS2_STREAM_DEPTH),
   align_depth_to_color(RS2_STREAM_COLOR),
   debug(configuration.debug),
@@ -52,12 +52,21 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
         record_to_file = configuration.record_to_directory + "/" + serial + ".bag";
     }
 
-    _init_filters();
 }
 
 RS2BaseCamera::~RS2BaseCamera() {
     _log_debug("Destroying camera");
     assert(camera_stopped);
+}
+
+bool RS2BaseCamera::pre_start_all_cameras() {
+    if (!_init_filters()) {
+        return false;
+    }
+    if (!_init_hardware_for_this_camera()) {
+        return false;
+    }
+    return true;
 }
 
 bool RS2BaseCamera::getHardwareParameters(RS2CameraHardwareConfig& output, bool match) {
@@ -83,7 +92,7 @@ bool RS2BaseCamera::getHardwareParameters(RS2CameraHardwareConfig& output, bool 
     return output.fps != 0;
 }
 
-void RS2BaseCamera::_init_filters() {
+bool RS2BaseCamera::_init_filters() {
     if (filtering.do_decimation) {
         dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.decimation_magnitude);
     }
@@ -109,6 +118,7 @@ void RS2BaseCamera::_init_filters() {
     if (filtering.do_hole_filling) {
         hole_filling_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.hole_filling_mode);
     }
+    return true;
 }
 
 void RS2BaseCamera::_apply_filters(rs2::frameset& processing_frameset) {
@@ -207,15 +217,15 @@ uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
 // Configure and initialize caputuring of one camera
 bool RS2BaseCamera::start_camera() {
     assert(camera_stopped);
-    assert(!camera_pipeline_started);
+    assert(!camera_started);
     assert(camera_processing_thread == nullptr);
     rs2::config cfg;
     _log_debug("Starting camera pipeline for camera" );
-    _prepare_for_starting_camera_pipeline(cfg);
+    _prepare_config_for_starting_camera(cfg);
     rs2::pipeline_profile profile = camera_pipeline.start(cfg);   // Start streaming with the configuration just set
     _post_start(profile);
     _computePointSize(profile);
-    camera_pipeline_started = true;
+    camera_started = true;
     return true;
 }
 
@@ -290,11 +300,11 @@ void RS2BaseCamera::stop_camera() {
     camera_processing_thread = nullptr;
 
     // stop the pipeline.
-    if (camera_pipeline_started) {
+    if (camera_started) {
         camera_pipeline.stop();
     }
 
-    camera_pipeline_started = false;
+    camera_started = false;
     processing_done = true;
     processing_done_cv.notify_one();
 }
@@ -308,7 +318,7 @@ void RS2BaseCamera::start_camera_streaming() {
 
 void RS2BaseCamera::_start_processing_thread() {
     camera_processing_thread = new std::thread(&RS2BaseCamera::_processing_thread_main, this);
-    _cwipc_setThreadName(camera_processing_thread, L"cwipc_realsense2::RS2BaseCamera::processing_thread");
+    _cwipc_setThreadName(camera_processing_thread, L"cwipc_realsense2::RS2BaseCamera::camera_processing_thread");
 }
 
 rs2::frameset RS2BaseCamera::wait_for_frames() {
@@ -337,7 +347,7 @@ void RS2BaseCamera::_processing_thread_main() {
     if (debug) {
         uint64_t depth_timestamp = processing_frameset.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = processing_frameset.get_color_frame().get_timestamp();
-        _log_debug("processing_thread: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
+        _log_debug("camera_processing_thread: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
 

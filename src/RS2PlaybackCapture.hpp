@@ -23,7 +23,7 @@ protected:
     RS2PlaybackCapture();   
     virtual bool _create_cameras() override final;
     virtual bool _setup_inter_camera_sync() override final { return true; };
-    virtual bool _setup_camera_hardware_parameters() override final { return true; };
+    virtual bool _init_hardware_for_all_cameras() override final { return true; };
     virtual bool _check_cameras_connected() override final { return true;};
     virtual bool _apply_config(const char* configFilename) override final;
     virtual bool _apply_auto_config() override final { return false; };

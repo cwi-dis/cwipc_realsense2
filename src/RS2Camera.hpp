@@ -11,7 +11,7 @@ public:
     virtual void post_start_all_cameras() override;
     virtual bool seek(uint64_t timestamp) override;
 protected:
-    virtual void _prepare_for_starting_camera_pipeline(rs2::config &cfg) override;
-    virtual void _post_start(rs2::pipeline_profile& profile) override;
+    virtual void _prepare_config_for_starting_camera(rs2::config &cfg) override final;
+    virtual void _post_start(rs2::pipeline_profile& profile) override final;
 };
 #endif // cwipc_realsense_RS2Camera_hpp
