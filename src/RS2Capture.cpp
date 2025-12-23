@@ -203,6 +203,7 @@ bool RS2Capture::_apply_auto_config() {
 
         // Found a realsense camera. Create a default data entry for it.
         RS2CameraConfig cd;
+        cd.type = "realsense";
         cd.serial = std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
         pcl::shared_ptr<Eigen::Affine3d> default_trafo(new Eigen::Affine3d());
         default_trafo->setIdentity();
