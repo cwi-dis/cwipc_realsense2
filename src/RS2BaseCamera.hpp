@@ -30,7 +30,10 @@ public:
     virtual void pre_stop_camera() override final;
     /// Completely stops camera and capturer, releases all resources. Can be re-started with start_camera, etc.
     virtual void stop_camera()  override final;
-    // xxxjack do we want is_sync_master()?
+    /// Return true if this camera is the sync master.
+    virtual bool is_sync_master() override final {
+        return camera_sync_is_master;
+    }
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
     /// Returns timestamp of depth frame, or zero if none available.
@@ -147,7 +150,7 @@ protected:
     RS2CaptureAuxdataConfig& auxData;
     std::string record_to_file;
     bool uses_recorder = false;
-    
+    bool camera_sync_is_master;
     bool camera_stopped;
     bool camera_started;
 

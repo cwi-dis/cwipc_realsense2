@@ -32,6 +32,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
 #endif
   camera_index(_camera_index),
   serial(configuration.all_camera_configs[_camera_index].serial),
+  camera_sync_is_master(configuration.sync.sync_master_serial == serial),
   camera_stopped(true),
   camera_config(configuration.all_camera_configs[_camera_index]),
   filtering(configuration.filtering),
