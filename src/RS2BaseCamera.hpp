@@ -18,18 +18,18 @@ public:
     RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index);
     virtual ~RS2BaseCamera();
     /// Step 1 in starting: tell the camera we are going to start. Called for all cameras.
-    virtual bool pre_start_all_cameras() final;
+    virtual bool pre_start_all_cameras() override final;
     /// Step 2 in starting: starts the camera. Called for all cameras. 
-    virtual bool start_camera() final;
+    virtual bool start_camera() override final;
     /// Step 3 in starting: starts the capturer. Called after all cameras have been started.
-    virtual void start_camera_streaming();
+    virtual void start_camera_streaming() override;
     /// Step 4, called after all capturers have been started.
-    virtual void post_start_all_cameras() = 0;
+    virtual void post_start_all_cameras() override = 0;
 
     /// Prepare for stopping the cameras. May do something like stopping the recording.
-    virtual void pre_stop_camera() final;
+    virtual void pre_stop_camera() override final;
     /// Completely stops camera and capturer, releases all resources. Can be re-started with start_camera, etc.
-    virtual void stop_camera() final;
+    virtual void stop_camera()  override final;
     // xxxjack do we want is_sync_master()?
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
