@@ -139,6 +139,7 @@ protected:
 
 public:
     float pointSize; ///< Needed by RS2Capture, computed once at camera start
+    bool end_of_stream_reached = false; //<! True when end of file reached on this camera stream
 
     int camera_index; ///< Needed by RS2Capture
     std::string serial; ///< Needed by RS2Capture

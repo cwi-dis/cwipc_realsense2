@@ -35,11 +35,6 @@ RS2PlaybackCapture::factory() {
     return new RS2PlaybackCapture(); 
 }
 
-bool 
-RS2PlaybackCapture::eof() {
-    return false; 
-}
-
 bool RS2PlaybackCapture::seek(uint64_t timestamp) {
     if (earliest_recording_timestamp_seen == 0) {
         _log_warning("seek: cannot seek before initial timestamp seen");

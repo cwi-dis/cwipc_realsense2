@@ -13,7 +13,6 @@ public:
     static int count_devices();
     static RS2Capture* factory();
 
-    bool eof() override;
     bool seek(uint64_t timestamp) override; 
 protected:
     RS2Capture();

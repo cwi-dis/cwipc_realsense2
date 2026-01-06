@@ -49,11 +49,6 @@ RS2Capture::count_devices() {
 }
 
 bool 
-RS2Capture::eof() { 
-    return false; 
-}
-
-bool 
 RS2Capture::seek(uint64_t timestamp) {
     return false;
 }

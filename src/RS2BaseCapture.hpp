@@ -201,7 +201,9 @@ public:
         }
         return false;
     }
-    virtual bool eof() override = 0;
+    virtual bool eof() override final {
+        return _eof;
+    };
     /// Seek to given timestamp (only implemented for playback capturers).
     virtual bool seek(uint64_t timestamp) override = 0;
    
@@ -310,15 +312,42 @@ protected:
         return nullptr;
     }
 
+    virtual bool _capture_all_cameras(uint64_t& timestamp) final {
+        uint64_t first_timestamp = 0;
+        for(auto cam : cameras) {
+            uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
+            if (first_timestamp == 0) {
+                first_timestamp = this_cam_timestamp;
+            }
+        }
+
+        // And get the best timestamp
+        if (configuration.new_timestamps) {
+            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        } else if (timestamp == 0) {
+            _log_warning("no timestamp obtained from cameras, using system time");
+            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        }
+        return true;
+    }
+
     void _control_thread_main()  {
-        if (configuration.debug) _log_debug("cwipc_realsense2: processing thread started");
+        if (configuration.debug) _log_debug("processing thread started");
         _initial_camera_synchronization();
         while(!stopped) {
             {
                 std::unique_lock<std::mutex> mylock(mergedPC_mutex);
                 mergedPC_want_new_cv.wait(mylock, [this]{
-                return mergedPC_want_new;
+                    return mergedPC_want_new;
                 });
+            }
+            //check EOF:
+            for (auto cam : cameras) {
+                if (cam->end_of_stream_reached) {
+                    _eof = true;
+                    stopped = true;
+                    break;
+                }
             }
 
             if (stopped) {
@@ -330,23 +359,15 @@ protected:
             // Step one: grab frames from all cameras. This should happen as close together in time as possible,
             // because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
             // camera.
-            uint64_t first_timestamp = 0;
-            for(auto cam : cameras) {
-                uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
-                if (first_timestamp == 0) {
-                    first_timestamp = this_cam_timestamp;
-                }
+            uint64_t timestamp = 0;
+            bool all_captures_ok = _capture_all_cameras(timestamp);
+
+            if (!all_captures_ok) {
+                std::this_thread::yield();
+                continue;
             }
 
-            // And get the best timestamp
-            uint64_t timestamp = first_timestamp;
-            if (configuration.new_timestamps) {
-                timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            } else if (timestamp == 0) {
-                _log_warning("RS2BaseCapture: warning: no timestamp obtained from cameras, using system time");
-                timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            }
-            if (configuration.debug) _log_debug("RS2BaseCapture: creating pc with ts=" + std::to_string(timestamp));
+            if (configuration.debug) _log_debug("creating pc with ts=" + std::to_string(timestamp));
             // step 2 : create pointcloud, and save rgb/depth frames if wanted
             if (mergedPC && mergedPC_is_fresh) {
                 mergedPC->free();
@@ -435,6 +456,11 @@ protected:
         } catch(const rs2::error& e) {
             _log_error("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
             throw;
+        }
+        if (start_error) {
+            _log_error("Not all cameras could be started");
+            _unload_cameras();
+            return;
         }
         //
         // start the per-camera capture threads
@@ -537,13 +563,19 @@ protected:
 
     std::vector<Type_our_camera*> cameras;    ///< The per-camera capturers
     bool stopped = false;
-    std::thread *control_thread = nullptr;
+    bool _eof = false;
+
     cwipc* mergedPC = nullptr;          ///< Merged pointcloud
     std::mutex mergedPC_mutex;          ///< Lock for all mergedPC-related dta structures
+    
     bool mergedPC_is_fresh = false;     ///< True if mergedPC contains a freshly-created pointcloud
     std::condition_variable mergedPC_is_fresh_cv;   ///< Condition variable for signalling freshly-created pointcloud
+    
     bool mergedPC_want_new = false;     ///< Set to true to request a new pointcloud
     std::condition_variable mergedPC_want_new_cv;   ///< Condition variable for signalling we want a new pointcloud
+
+    std::thread *control_thread = nullptr;
+    
 };
 
 #endif

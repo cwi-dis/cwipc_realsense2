@@ -17,7 +17,6 @@ public:
     virtual ~RS2PlaybackCapture();
     static int count_devices();
     static RS2PlaybackCapture* factory();
-    bool eof() override;
     bool seek(uint64_t timestamp) override; 
 protected:
     RS2PlaybackCapture();   
