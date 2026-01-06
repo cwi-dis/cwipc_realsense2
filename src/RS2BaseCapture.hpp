@@ -70,7 +70,6 @@ public:
             return false;
         }
 
-        _init_camera_positions();
         _start_cameras();
 
         //
@@ -419,26 +418,6 @@ protected:
     virtual void _initial_camera_synchronization() {
     }
 
-    // xxxjack ridiculous way of finding camera position. Do it in CameraConfig.
-    void _init_camera_positions()  {
-        // find camerapositions
-        for (int i = 0; i < configuration.all_camera_configs.size(); i++) {
-            cwipc_pcl_pointcloud pcptr(new_cwipc_pcl_pointcloud());
-            cwipc_pcl_point pt;
-
-            pt.x = 0;
-            pt.y = 0;
-            pt.z = 0;
-
-            pcptr->push_back(pt);
-            transformPointCloud(*pcptr, *pcptr, *configuration.all_camera_configs[i].trafo);
-            cwipc_pcl_point pnt = pcptr->points[0];
-
-            configuration.all_camera_configs[i].cameraposition.x = pnt.x;
-            configuration.all_camera_configs[i].cameraposition.y = pnt.y;
-            configuration.all_camera_configs[i].cameraposition.z = pnt.z;
-        }
-    }
 
     virtual void _start_cameras() final {
         bool start_error = false;
