@@ -16,18 +16,7 @@ void RS2CameraConfig::_from_json(const json& json_data) {
     RS2CameraConfig& config = *this;
     // version and type should already have been checked.
 
-    _CWIPC_CONFIG_JSON_GET(json_data, serial, config, serial);
-    _CWIPC_CONFIG_JSON_GET(json_data, disabled, config, disabled);
-    _CWIPC_CONFIG_JSON_GET(json_data, filename, config, filename);
     _CWIPC_CONFIG_JSON_GET(json_data, playback_inpoint_micros, config, playback_inpoint_micros);
-
-    if (json_data.contains("trafo")) {
-        for (int x=0; x<4; x++) {
-            for (int y=0; y<4; y++) {
-                (*config.trafo)(x,y) = json_data["trafo"][x][y];
-            }
-        }
-    }
 }
 
 void RS2CameraConfig::_to_json(json& json_data) {
@@ -117,6 +106,12 @@ void RS2CaptureConfig::_from_json(const json& json_data) {
         json camera_config_json = *it;
         RS2CameraConfig camera_config;
         camera_config._from_json(camera_config_json);
+        if (camera_config.disabled) {
+            // We completely ignore disabled cameras. Unfortunately this also means
+            // they will not show up in the saved configuration, and they will not occupy
+            // a bit in the tilemask.
+            continue; 
+        }
         config.all_camera_configs.push_back(camera_config);
         camera_index++;
     }

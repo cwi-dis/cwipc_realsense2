@@ -136,8 +136,8 @@ public:
     /// Returns the new point cloud. The caller is now the owner of this point cloud.
     cwipc* get_pointcloud() override final {
         if (!is_valid()) {
-            // xxxjack should we log a warning here?
-            return nullptr;
+            _log_warning("get_pointcloud: returning NULL, no cameras");
+          return nullptr;
         }
 
         _request_new_pointcloud();
@@ -204,8 +204,6 @@ public:
     virtual bool eof() override = 0;
     /// Seek to given timestamp (only implemented for playback capturers).
     virtual bool seek(uint64_t timestamp) override = 0;
-public:
-
    
 protected:
     /// Methods that are different for live vs playback capturers..
