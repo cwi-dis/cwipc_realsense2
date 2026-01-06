@@ -35,26 +35,6 @@ public:
         return camera_sync_is_master;
     }
 
-    /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
-    /// Returns timestamp of depth frame, or zero if none available.
-    uint64_t wait_for_captured_frameset(uint64_t minimum_timestamp);
-    /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
-    void create_pc_from_frameset();
-    /// Step 2a: Save auxdata from frameset into given cwipc object.
-    void save_frameset_auxdata(cwipc *pc);
-    /// Step 3: Wait for the point cloud processing.
-    void wait_for_pc_created();
-    /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
-    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pointcloud; }
-    
-    /// Implementation of mapping 2D color image coordinates to 3D coordinates.
-    bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d);
-    /// Implementation of mapping 2D color image coordinates to 2D depth image coordinates.
-    bool mapcolordepth(int x_c, int y_c, int *out2d);
-    /// Get camera hardware parameters, or check that they match what we got from another camera.
-    bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
-    /// Seek. Fails for cameras, overriden for playback cameras.
-    virtual bool seek(uint64_t timestamp) = 0;
 protected:
     // internal API that is "shared" with other implementations (realsense, kinect)
     virtual bool _init_hardware_for_this_camera() override final { 
@@ -70,8 +50,31 @@ protected:
         return true;
     }
     virtual void _prepare_config_for_starting_camera(rs2::config& cfg) = 0;
-protected:
+public:
     // xxxjack from here to be determined
+    /// Get camera hardware parameters, or check that they match what we got from another camera.
+    bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
+
+    /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
+    /// Returns timestamp of depth frame, or zero if none available.
+    uint64_t wait_for_captured_frameset(uint64_t minimum_timestamp);
+    /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
+    void create_pc_from_frameset();
+    /// Step 2a: Save auxdata from frameset into given cwipc object.
+    void save_frameset_auxdata(cwipc *pc);
+    /// Step 3: Wait for the point cloud processing.
+    void wait_for_pc_created();
+    /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
+    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pointcloud; }
+
+    /// Implementation of mapping 2D color image coordinates to 2D depth image coordinates.
+    bool mapcolordepth(int x_c, int y_c, int *out2d);
+    /// Implementation of mapping 2D color image coordinates to 3D coordinates.
+    bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d);
+protected:
+    
+    /// Seek. Fails for cameras, overriden for playback cameras.
+    virtual bool seek(uint64_t timestamp) = 0;
     virtual void _post_start(rs2::pipeline_profile& profile) {
         rs2::device dev = profile.get_device();
 
@@ -116,8 +119,6 @@ protected:
         hardware.color_width = color_width;
         hardware.color_height = color_height;
     }
-
-
 
     virtual rs2::frameset wait_for_frames();
 
