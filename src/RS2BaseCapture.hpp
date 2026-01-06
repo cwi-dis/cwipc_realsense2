@@ -102,6 +102,13 @@ public:
         return configuration.to_string();
     }
 
+    /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
+    virtual void request_auxiliary_data(bool rgb, bool depth, bool timestamps, bool skeleton) override final {
+        configuration.auxData.want_auxdata_rgb = rgb;
+        configuration.auxData.want_auxdata_depth = depth;
+        configuration.auxData.want_auxdata_timestamps = timestamps;
+    }
+
     //
     // This section has the public capturer-independent API used during normal runtime.
     //
@@ -197,15 +204,7 @@ public:
     virtual bool eof() override = 0;
     /// Seek to given timestamp (only implemented for playback capturers).
     virtual bool seek(uint64_t timestamp) override = 0;
-protected:
-    RS2BaseCapture();
 public:
-     /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
-    void request_auxdata(bool _rgb, bool _depth, bool _timestamps) {
-        configuration.auxData.want_auxdata_rgb = _rgb;
-        configuration.auxData.want_auxdata_depth = _depth;
-        configuration.auxData.want_image_timestamps = _timestamps;
-    }
 
    
 protected:

@@ -60,10 +60,11 @@ public:
 
     void request_auxiliary_data(const std::string& name) override {
         cwipc_tiledsource::request_auxiliary_data(name);
-        this->m_grabber->request_auxdata(
+        this->m_grabber->request_auxiliary_data(
             cwipc_tiledsource::auxiliary_data_requested("rgb"), 
             cwipc_tiledsource::auxiliary_data_requested("depth"), 
-            cwipc_tiledsource::auxiliary_data_requested("timestamps")
+            cwipc_tiledsource::auxiliary_data_requested("timestamps"),
+            false
         );
     }
 

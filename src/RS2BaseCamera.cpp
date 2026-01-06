@@ -67,6 +67,11 @@ bool RS2BaseCamera::pre_start_all_cameras() {
     if (!_init_hardware_for_this_camera()) {
         return false;
     }
+#if 0
+    if (!_init_tracker()) {
+        return false;
+    }
+#endif
     return true;
 }
 
@@ -609,7 +614,7 @@ bool RS2BaseCamera::mapcolordepth(int x_c, int y_c, int *out2d)
 
 void RS2BaseCamera::save_frameset_auxdata(cwipc *pc)
 {
-    if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb && !auxData.want_image_timestamps) return;
+    if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb && !auxData.want_auxdata_timestamps) return;
     std::unique_lock<std::mutex> lock(processing_mutex);
 
     auto aligned_frameset = current_processed_frameset;
@@ -617,7 +622,7 @@ void RS2BaseCamera::save_frameset_auxdata(cwipc *pc)
     rs2::video_frame color_image = aligned_frameset.get_color_frame();
     rs2::video_frame depth_image = aligned_frameset.get_depth_frame();
         
-    if (auxData.want_image_timestamps) {
+    if (auxData.want_auxdata_timestamps) {
         
         int64_t depth_framenum = depth_image.get_frame_number();
         int64_t depth_timestamp = depth_image.get_timestamp();
