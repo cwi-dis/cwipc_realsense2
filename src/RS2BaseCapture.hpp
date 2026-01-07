@@ -209,20 +209,58 @@ public:
     virtual bool seek(uint64_t timestamp) override = 0;
    
 protected:
-    /// Methods that are different for live vs playback capturers..
-    /// Create the per-camera capturers.
-    virtual bool _create_cameras() = 0;
-    /// Setup camera synchronization (if needed).
-    virtual bool _setup_inter_camera_sync() = 0;
-    /// Setup camera hardware parameters (white balance, etc).
-    virtual bool _init_hardware_for_all_cameras() = 0;
-    /// Check that all cameras are connected.
-    virtual bool _check_cameras_connected() = 0;
-    
-protected:
-    /// Methods that are not different for live vs playback capturers..
+    /// Load configuration from file or string.
+    virtual bool _apply_config(const char* configFilename) {
+        // Clear out old configuration
+        RS2CaptureConfig newConfiguration;
+        newConfiguration.auxData = configuration.auxData; // preserve auxdata requests
+        configuration = newConfiguration;
+
+        //
+        // Read the configuration. We do this only now because for historical reasons the configuration
+        // reader is also the code that checks whether the configuration file contents match the actual
+        // current hardware setup. To be fixed at some point.
+        //
+        if (configFilename == NULL || *configFilename == '\0') {
+            // Empty config filename: use default cameraconfig.json.
+            configFilename = "cameraconfig.json";
+        }
+
+        if (strcmp(configFilename, "auto") == 0) {
+            // Special case 1: string "auto" means auto-configure all realsense cameras.
+            return _apply_auto_config();
+        }
+
+        if (configFilename[0] == '{') {
+            // Special case 2: a string starting with { is considered a JSON literal
+            return configuration.from_string(configFilename, type);
+        }
+
+        // Otherwise we check the extension. It can be .json.
+        const char *extension = strrchr(configFilename, '.');
+        if (extension != nullptr && strcmp(extension, ".json") == 0) {
+            return configuration.from_file(configFilename, type);
+        }
+
+        return false;
+    }
+    /// Load default configuration based on hardware cameras connected.
+    virtual bool _apply_auto_config() = 0;
+    /// Get configuration for a single camera, by serial number.
+    Type_our_camera_config* get_camera_config(std::string serial) {
+        for (int i = 0; i < configuration.all_camera_configs.size(); i++) {
+            if (configuration.all_camera_configs[i].serial == serial) {
+                return &configuration.all_camera_configs[i];
+            }
+        }
+
+        _log_warning("Unknown camera " + serial);
+        return nullptr;
+    }
     /// Get hardware parameters into our configuration structure.
-    virtual void _refresh_camera_hardware_parameters() final {
+    /// Realsense needs this because various hardware opptions are shared among the cameras,
+    /// in our implementation. So we read them from the first camera and apply them to all.
+    void _refresh_camera_hardware_parameters()  {
         rs2::device_list devs = capturer_context.query_devices();
         rs2::device dev = *devs.begin();
         rs2::depth_sensor depth_sensor = dev.first<rs2::depth_sensor>();
@@ -256,9 +294,56 @@ protected:
         configuration.hardware.visual_preset = (int)depth_sensor.get_option(RS2_OPTION_VISUAL_PRESET);
 #endif
     }
+    
+    /// Setup camera synchronization (if needed).
+    virtual bool _setup_inter_camera_sync() override = 0;
+    /// xxxjack another one?
+    virtual void _initial_camera_synchronization() {
+    }
 
-    /// Unload all cameras and release all resources.
-    void _unload_cameras()  {
+    /// Create the per-camera capturers.
+    virtual bool _create_cameras() override = 0;
+    /// Setup camera hardware parameters (white balance, etc).
+    virtual bool _init_hardware_for_all_cameras() override = 0;
+    /// Check that all cameras are connected.
+    virtual bool _check_cameras_connected() override = 0;
+    /// Start all cameras.
+    virtual void _start_cameras() override final {
+        bool start_error = false;
+        for (auto cam: cameras) {
+            if (!cam->pre_start_all_cameras()) {
+                start_error = true;
+            }
+        }
+        try {
+            for (auto cam: cameras) {
+                if (!cam->start_camera()) {
+                    start_error = true;
+                }
+            }
+        } catch(const rs2::error& e) {
+            _log_error("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
+            throw;
+        }
+        if (start_error) {
+            _log_error("Not all cameras could be started");
+            _unload_cameras();
+            return;
+        }
+        //
+        // start the per-camera capture threads
+        //
+        for (auto cam: cameras) {
+            cam->start_camera_streaming();
+        }
+        
+        for (auto cam: cameras) {
+            cam->post_start_all_cameras();
+        }
+    }
+    
+    /// Stop and unload all cameras and release all resources.
+    virtual void _unload_cameras() override final {
 
         _stop_cameras();
 
@@ -269,8 +354,8 @@ protected:
         cameras.clear();
         _log_debug("deleted all cameras");
     }
-
-    void _stop_cameras() {
+    /// Stop all cameras.
+    virtual void _stop_cameras() override final {
         stopped = true;
         mergedPC_is_fresh = true;
         mergedPC_want_new = false;
@@ -296,17 +381,6 @@ protected:
 
     }
     
-    Type_our_camera_config* get_camera_config(std::string serial) {
-        for (int i = 0; i < configuration.all_camera_configs.size(); i++) {
-            if (configuration.all_camera_configs[i].serial == serial) {
-                return &configuration.all_camera_configs[i];
-            }
-        }
-
-        _log_warning("Unknown camera " + serial);
-        return nullptr;
-    }
-
     virtual bool _capture_all_cameras(uint64_t& timestamp) final {
         uint64_t first_timestamp = 0;
         for(auto cam : cameras) {
@@ -411,81 +485,8 @@ protected:
     /// Anything that needs to be done to get the camera streams synchronized after opening.
     /// (Realsense Playback seeks all streams to the same timecode, the earliest one present
     /// in each stream)
-    virtual void _initial_camera_synchronization() {
-    }
 
 
-    virtual void _start_cameras() final {
-        bool start_error = false;
-        for (auto cam: cameras) {
-            if (!cam->pre_start_all_cameras()) {
-                start_error = true;
-            }
-        }
-        try {
-            for (auto cam: cameras) {
-                if (!cam->start_camera()) {
-                    start_error = true;
-                }
-            }
-        } catch(const rs2::error& e) {
-            _log_error("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
-            throw;
-        }
-        if (start_error) {
-            _log_error("Not all cameras could be started");
-            _unload_cameras();
-            return;
-        }
-        //
-        // start the per-camera capture threads
-        //
-        for (auto cam: cameras) {
-            cam->start_camera_streaming();
-        }
-        
-        for (auto cam: cameras) {
-            cam->post_start_all_cameras();
-        }
-    }
-
-    /// Load configuration from file or string.
-    virtual bool _apply_config(const char* configFilename) {
-        // Clear out old configuration
-        RS2CaptureConfig newConfiguration;
-        newConfiguration.auxData = configuration.auxData; // preserve auxdata requests
-        configuration = newConfiguration;
-
-        //
-        // Read the configuration. We do this only now because for historical reasons the configuration
-        // reader is also the code that checks whether the configuration file contents match the actual
-        // current hardware setup. To be fixed at some point.
-        //
-        if (configFilename == NULL || *configFilename == '\0') {
-            // Empty config filename: use default cameraconfig.json.
-            configFilename = "cameraconfig.json";
-        }
-
-        if (strcmp(configFilename, "auto") == 0) {
-            // Special case 1: string "auto" means auto-configure all realsense cameras.
-            return _apply_auto_config();
-        }
-
-        if (configFilename[0] == '{') {
-            // Special case 2: a string starting with { is considered a JSON literal
-            return configuration.from_string(configFilename, type);
-        }
-
-        // Otherwise we check the extension. It can be .json.
-        const char *extension = strrchr(configFilename, '.');
-        if (extension != nullptr && strcmp(extension, ".json") == 0) {
-            return configuration.from_file(configFilename, type);
-        }
-
-        return false;
-    }
-    /// Load default configuration based on hardware cameras connected.
-    virtual bool _apply_auto_config() = 0;
 
 
     void _request_new_pointcloud() {
