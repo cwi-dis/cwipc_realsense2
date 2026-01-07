@@ -47,8 +47,8 @@ public:
             return false;
         }
 
-        auto camera_count = configuration.all_camera_configs.size();
-        if (camera_count == 0) {
+        auto camera_config_count = configuration.all_camera_configs.size();
+        if (camera_config_count == 0) {
             return false;
         }
 
@@ -61,6 +61,8 @@ public:
         _setup_inter_camera_sync();
 
         // Now we have all the configuration information. Open the cameras.
+        // This will _not_ include the disabled cameras, so after this we should
+        // look at cameras.size() instead of camera_config_count.
         if (!_create_cameras()) {
             _unload_cameras();
             return false;
