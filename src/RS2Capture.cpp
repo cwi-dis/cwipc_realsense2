@@ -55,7 +55,7 @@ RS2Capture::seek(uint64_t timestamp) {
 
 bool RS2Capture::_check_cameras_connected() {
     for (RS2CameraConfig& cd : configuration.all_camera_configs) {
-        if (!cd.connected) {
+        if (!cd.connected && !cd.disabled) {
             _log_warning("Camera with serial " + cd.serial + " is not connected");
             return false;
         }
