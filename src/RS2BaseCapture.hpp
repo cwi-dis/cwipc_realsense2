@@ -257,7 +257,31 @@ protected:
 
     /// Unload all cameras and release all resources.
     void _unload_cameras()  {
-        uint64_t stopTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        _stop_cameras();
+
+        // Delete all cameras
+        for (auto cam : cameras) {
+            delete cam;
+        }
+        cameras.clear();
+        _log_debug("deleted all cameras");
+    }
+
+    void _stop_cameras() {
+        stopped = true;
+        mergedPC_is_fresh = true;
+        mergedPC_want_new = false;
+        mergedPC_is_fresh_cv.notify_all();
+        mergedPC_want_new = true;
+        mergedPC_want_new_cv.notify_all();
+
+        if (control_thread && control_thread->joinable()) {
+            control_thread->join();
+        }
+
+        delete control_thread;
+        control_thread = nullptr;
 
         // Stop all cameras
         for (auto cam : cameras) {
@@ -266,40 +290,10 @@ protected:
         for (auto cam : cameras) {
             cam->stop_camera();
         }
+        _log_debug("stopped all cameras");
 
-        mergedPC_is_fresh = true;
-        mergedPC_want_new = false;
-        mergedPC_is_fresh_cv.notify_all();
-        mergedPC_want_new = true;
-        mergedPC_want_new_cv.notify_all();
-
-        if (!stopped) {
-            // Make the control thread stop. We set want_new to make it wake up (bit of a hack, really...)
-            stopped = true;
-            if (control_thread) {
-                control_thread->join();
-            }
-
-            delete control_thread;
-            control_thread = nullptr;
-        }
-        _log_debug("cwipc_realsense2: stopped all cameras");
-
-        // Delete all cameras (which will stop their threads as well)
-        for (auto cam : cameras) {
-            delete cam;
-        }
-
-        cameras.clear();
-    #ifdef CWIPC_DEBUG
-        if (configuration.debug) _log_debug("cwipc_realsense2: deleted all cameras");
-
-        float deltaT = (stopTime - starttime) / 1000.0;
-        if (configuration.debug) _log_debug("cwipc_realsense2: capture ran for " + std::to_string(deltaT) + " seconds");    
-    #endif
     }
-
-
+    
     Type_our_camera_config* get_camera_config(std::string serial) {
         for (int i = 0; i < configuration.all_camera_configs.size(); i++) {
             if (configuration.all_camera_configs[i].serial == serial) {
