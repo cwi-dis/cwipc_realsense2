@@ -32,11 +32,11 @@ public:
         _unload_cameras();
     }
 
-    int get_camera_count() override final { 
+    virtual int get_camera_count() override final { 
         return cameras.size(); 
     }
 
-    bool is_valid() override final {
+    virtual bool is_valid() override final {
         return cameras.size() > 0; 
     }
 
@@ -84,7 +84,7 @@ public:
         return true;
     }
 
-    std::string config_get() override final {
+    virtual std::string config_get() override final {
         bool match_only = false;
         // We get parameters like exposure here.
         // But framerate and width/height are gotten in the camera code.
