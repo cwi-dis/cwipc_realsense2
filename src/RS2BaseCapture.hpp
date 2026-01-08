@@ -393,9 +393,11 @@ protected:
         // And get the best timestamp
         if (configuration.new_timestamps) {
             timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        } else if (timestamp == 0) {
+        } else if (first_timestamp == 0) {
             _log_warning("no timestamp obtained from cameras, using system time");
             timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        } else {
+            timestamp = first_timestamp;
         }
         return true;
     }
