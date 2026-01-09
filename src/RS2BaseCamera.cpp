@@ -455,7 +455,7 @@ void RS2BaseCamera::_processing_thread_main() {
           //continue;
         }
 
-        // Notify wait_for_pc that we're done.
+        // Notify wait_for_pointcloud_processed that we're done.
         processing_done = true;
         processing_done_cv.notify_one();
     }
@@ -516,18 +516,18 @@ void RS2BaseCamera::transformPoint(float out[3], const float in[3]) {
     out[2] = (*camera_config.trafo)(2,0)*in[0] + (*camera_config.trafo)(2,1)*in[1] + (*camera_config.trafo)(2,2)*in[2] + (*camera_config.trafo)(2,3);
 }
 
-void RS2BaseCamera::create_pc_from_frameset() {
+void RS2BaseCamera::process_pointcloud_from_frameset() {
 #ifdef CWIPC_DEBUG_SYNC
     if (debug) {
         uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
-        _log_debug("create_pc_from_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
+        _log_debug("process_pointcloud_from_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
     processing_frame_queue.enqueue(current_captured_frameset);
 }
 
-void RS2BaseCamera::wait_for_pc_created() {
+void RS2BaseCamera::wait_for_pointcloud_processed() {
     std::unique_lock<std::mutex> lock(processing_mutex);
     processing_done_cv.wait(lock, [this]{ return processing_done; });
     processing_done = false;

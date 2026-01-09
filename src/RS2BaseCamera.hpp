@@ -59,11 +59,11 @@ public:
     /// Returns timestamp of depth frame, or zero if none available.
     uint64_t wait_for_captured_frameset(uint64_t minimum_timestamp);
     /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
-    void create_pc_from_frameset();
+    void process_pointcloud_from_frameset();
     /// Step 2a: Save auxdata from frameset into given cwipc object.
     void save_frameset_auxdata(cwipc *pc);
     /// Step 3: Wait for the point cloud processing.
-    void wait_for_pc_created();
+    void wait_for_pointcloud_processed();
     /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
     cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pointcloud; }
 

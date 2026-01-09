@@ -381,27 +381,6 @@ protected:
 
     }
     
-    virtual bool _capture_all_cameras(uint64_t& timestamp) final {
-        uint64_t first_timestamp = 0;
-        for(auto cam : cameras) {
-            uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
-            if (first_timestamp == 0) {
-                first_timestamp = this_cam_timestamp;
-            }
-        }
-
-        // And get the best timestamp
-        if (configuration.new_timestamps) {
-            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        } else if (first_timestamp == 0) {
-            _log_warning("no timestamp obtained from cameras, using system time");
-            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        } else {
-            timestamp = first_timestamp;
-        }
-        return true;
-    }
-
     void _control_thread_main()  {
         if (configuration.debug) _log_debug("processing thread started");
         _initial_camera_synchronization();
@@ -437,43 +416,58 @@ protected:
                 std::this_thread::yield();
                 continue;
             }
+            if (stopped) {
+                break;
+            }
+
+            // If we invent new timestamps, do it now.
+            if (configuration.new_timestamps) {
+                timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            }
 
             if (configuration.debug) _log_debug("creating pc with ts=" + std::to_string(timestamp));
             // step 2 : create pointcloud, and save rgb/depth frames if wanted
-            if (mergedPC && mergedPC_is_fresh) {
-                mergedPC->free();
-                mergedPC = nullptr;
-            }
 
             cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
-            mergedPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
+            cwipc* newPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
 
             for (auto cam : cameras) {
-                cam->save_frameset_auxdata(mergedPC);
+                cam->save_frameset_auxdata(newPC);
             }
-        
+            
+            if (stopped) break;
+
             // Step 3: start processing frames to pointclouds, for each camera
             for(auto cam : cameras) {
-                cam->create_pc_from_frameset();
+                cam->process_pointcloud_from_frameset();
             }
+
+            if (stopped) break;
 
             // Lock mergedPC already while we are waiting for the per-camera
             // processing threads. This so the main thread doesn't go off and do
             // useless things if it is calling available(true).
             std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+            if (mergedPC && mergedPC_is_fresh) {
+                mergedPC->free();
+                mergedPC = nullptr;
+            }
+
+            if (stopped) break;
+            mergedPC = newPC;
 
             // Step 4: wait for frame processing to complete.
             for(auto cam : cameras) {
-                cam->wait_for_pc_created();
+                cam->wait_for_pointcloud_processed();
             }
 
             // Step 5: merge views
-            merge_camera_pointclouds();
+            _merge_camera_pointclouds();
 
             if (mergedPC->access_pcl_pointcloud()->size() > 0) {
-                if (configuration.debug) _log_debug("cwipc_realsense2: merged pointcloud has " + std::to_string(mergedPC->access_pcl_pointcloud()->size()) + " points");
+                if (configuration.debug) _log_debug("merged pointcloud has " + std::to_string(mergedPC->access_pcl_pointcloud()->size()) + " points");
             } else {
-                if (configuration.debug) _log_debug("cwipc_realsense2: Warning: capturer got an empty pointcloud");
+                if (configuration.debug) _log_debug("merged pointcloud is empty");
             }
             // Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
             mergedPC_is_fresh = true;
@@ -481,7 +475,7 @@ protected:
             mergedPC_is_fresh_cv.notify_all();
         }
 
-        if (configuration.debug) _log_debug_thread("cwipc_realsense2: processing thread exiting");
+        if (configuration.debug) _log_debug_thread("processing thread exiting");
     }
 
     /// Anything that needs to be done to get the camera streams synchronized after opening.
@@ -489,6 +483,27 @@ protected:
     /// in each stream)
 
 
+
+    virtual bool _capture_all_cameras(uint64_t& timestamp) final {
+        uint64_t first_timestamp = 0;
+        for(auto cam : cameras) {
+            uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
+            if (first_timestamp == 0) {
+                first_timestamp = this_cam_timestamp;
+            }
+        }
+
+        // And get the best timestamp
+        if (configuration.new_timestamps) {
+            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        } else if (first_timestamp == 0) {
+            _log_warning("no timestamp obtained from cameras, using system time");
+            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        } else {
+            timestamp = first_timestamp;
+        }
+        return true;
+    }
 
 
     void _request_new_pointcloud() {
@@ -500,9 +515,9 @@ protected:
         }
     }
 
-    void merge_camera_pointclouds() {
+    void _merge_camera_pointclouds() {
         cwipc_pcl_pointcloud aligned_cld(mergedPC->access_pcl_pointcloud());
-
+        aligned_cld->clear();
         // Pre-allocate space in the merged pointcloud
         size_t nPoints = 0;
 
@@ -510,7 +525,7 @@ protected:
             cwipc_pcl_pointcloud cam_cld = cam->access_current_pcl_pointcloud();
 
             if (cam_cld == 0) {
-                _log_warning("merge_camera_pointclouds: warning: camera pointcloud is null for one camera" );
+                _log_warning("_merge_camera_pointclouds: camera pointcloud is null for some camera" );
                 continue;
             }
             nPoints += cam_cld->size();
@@ -527,6 +542,9 @@ protected:
             }
 
             *aligned_cld += *cam_cld;
+        }
+        if (aligned_cld->size() != nPoints) {
+            _log_error("Combined pointcloud has different number of points than expected");
         }
 
         // No need to merge aux_data: already inserted into mergedPC by each camera
