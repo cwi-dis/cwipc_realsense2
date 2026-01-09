@@ -210,7 +210,8 @@ public:
    
 protected:
     /// Load configuration from file or string.
-    virtual bool _apply_config(const char* configFilename) {
+    /// Note: not final, because some subclasses need to extend it.
+    virtual bool _apply_config(const char* configFilename) override {
         // Clear out old configuration
         RS2CaptureConfig newConfiguration;
         newConfiguration.auxData = configuration.auxData; // preserve auxdata requests
@@ -245,7 +246,7 @@ protected:
         return false;
     }
     /// Load default configuration based on hardware cameras connected.
-    virtual bool _apply_auto_config() = 0;
+    virtual bool _apply_auto_config() override = 0;
     /// Get configuration for a single camera, by serial number.
     Type_our_camera_config* get_camera_config(std::string serial) {
         for (int i = 0; i < configuration.all_camera_configs.size(); i++) {
@@ -298,7 +299,7 @@ protected:
     /// Setup camera synchronization (if needed).
     virtual bool _setup_inter_camera_sync() override = 0;
     /// xxxjack another one?
-    virtual void _initial_camera_synchronization() {
+    virtual void _initial_camera_synchronization() override {
     }
 
     /// Create the per-camera capturers.
