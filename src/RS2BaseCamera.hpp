@@ -45,7 +45,7 @@ protected:
     virtual bool _init_filters() override final;
     virtual void _apply_filters(rs2::frameset& frames);
 
-    virtual bool _init_tracker() override final {
+    virtual bool _init_skeleton_tracker() override final {
         // librealsense does not provide body tracking.
         return true;
     }
@@ -133,8 +133,7 @@ protected:
 
     void _init_current_pointcloud(int size);
     void _computePointSize(rs2::pipeline_profile profile);
-    void transformPoint(cwipc_pcl_point& out, const rs2::vertex& in);
-    void transformPoint(float *out, const float *in);
+    void _transform_point_cam_to_world(cwipc_pcl_point& pt);
     
 
 public:

@@ -68,7 +68,7 @@ bool RS2BaseCamera::pre_start_all_cameras() {
         return false;
     }
 #if 0
-    if (!_init_tracker()) {
+    if (!_init_skeleton_tracker()) {
         return false;
     }
 #endif
@@ -407,8 +407,8 @@ void RS2BaseCamera::_processing_thread_main() {
                     continue;
                 }
 
-                cwipc_pcl_point pt;
-                transformPoint(pt, vertices[i]);
+                cwipc_pcl_point pt(vertices[i].x, vertices[i].y, vertices[i].z);
+                _transform_point_cam_to_world(pt);
 
                 if (do_height_filtering && (pt.y < height_min || pt.y > height_max)) {
                     continue;
@@ -504,16 +504,13 @@ void RS2BaseCamera::_erode_depth(rs2::depth_frame depth_frame, int x_delta, int 
     free(z_values);
 }
 
-void RS2BaseCamera::transformPoint(cwipc_pcl_point& out, const rs2::vertex& in) {
-    out.x = (*camera_config.trafo)(0,0)*in.x + (*camera_config.trafo)(0,1)*in.y + (*camera_config.trafo)(0,2)*in.z + (*camera_config.trafo)(0,3);
-    out.y = (*camera_config.trafo)(1,0)*in.x + (*camera_config.trafo)(1,1)*in.y + (*camera_config.trafo)(1,2)*in.z + (*camera_config.trafo)(1,3);
-    out.z = (*camera_config.trafo)(2,0)*in.x + (*camera_config.trafo)(2,1)*in.y + (*camera_config.trafo)(2,2)*in.z + (*camera_config.trafo)(2,3);
-}
-
-void RS2BaseCamera::transformPoint(float out[3], const float in[3]) {
-    out[0] = (*camera_config.trafo)(0,0)*in[0] + (*camera_config.trafo)(0,1)*in[1] + (*camera_config.trafo)(0,2)*in[2] + (*camera_config.trafo)(0,3);
-    out[1] = (*camera_config.trafo)(1,0)*in[0] + (*camera_config.trafo)(1,1)*in[1] + (*camera_config.trafo)(1,2)*in[2] + (*camera_config.trafo)(1,3);
-    out[2] = (*camera_config.trafo)(2,0)*in[0] + (*camera_config.trafo)(2,1)*in[1] + (*camera_config.trafo)(2,2)*in[2] + (*camera_config.trafo)(2,3);
+void RS2BaseCamera::_transform_point_cam_to_world(cwipc_pcl_point& pt) {
+    float x = (*camera_config.trafo)(0,0)*pt.x + (*camera_config.trafo)(0,1)*pt.y + (*camera_config.trafo)(0,2)*pt.z + (*camera_config.trafo)(0,3);
+    float y = (*camera_config.trafo)(1,0)*pt.x + (*camera_config.trafo)(1,1)*pt.y + (*camera_config.trafo)(1,2)*pt.z + (*camera_config.trafo)(1,3);
+    float z = (*camera_config.trafo)(2,0)*pt.x + (*camera_config.trafo)(2,1)*pt.y + (*camera_config.trafo)(2,2)*pt.z + (*camera_config.trafo)(2,3);
+    pt.x = x;
+    pt.y = y;
+    pt.z = z;
 }
 
 void RS2BaseCamera::process_pointcloud_from_frameset() {
@@ -571,7 +568,11 @@ bool RS2BaseCamera::map2d3d(int x_2d, int y_2d, int d_2d, float *out3d)
     // Now we can use uv_depth to find the correct depth value.
     uint16_t depth_i = depth_data[(int)xy_depth[1]*depth_intrinsics.width + (int)xy_depth[0]];
     rs2_deproject_pixel_to_point(tmp3d, &depth_intrinsics, xy_depth, depth_i / 1000.0);
-    transformPoint(out3d, tmp3d);
+    cwipc_pcl_point pt = { tmp3d[0], tmp3d[1], tmp3d[2], 0, 0, 0, 0 };
+    _transform_point_cam_to_world(pt);
+    out3d[0] = pt.x;
+    out3d[1] = pt.y;
+    out3d[2] = pt.z;
     return true;
 }
 

@@ -204,8 +204,8 @@ bool RS2CaptureConfig::from_file(const char* filename, std::string typeWanted) {
         int version = 0;
         json_data.at("version").get_to(version);
 
-        if (version != 4 && version != 3) {
-            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + filename + " ignored, is not version 3 or 4");
+        if (version != 5 && version != 4 && version != 3) {
+            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + filename + " ignored, is not version 5, 4 or 3");
             return false;
         }
 
