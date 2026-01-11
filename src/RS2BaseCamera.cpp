@@ -25,11 +25,8 @@
 #include "RS2BaseCamera.hpp"
 
 RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index)
-: CwipcBaseCamera("cwipc_realsense::RS2BaseCamera", "realsense2"),
+: CwipcBaseCamera("cwipc_realsense::RS2BaseCamera: " + configuration.all_camera_configs[_camera_index].serial, "realsense2"),
   pointSize(0), 
-#if 0
-  minx(0), minz(0), maxz(0),
-#endif
   camera_index(_camera_index),
   serial(configuration.all_camera_configs[_camera_index].serial),
   camera_sync_is_master(configuration.sync.sync_master_serial == serial),
