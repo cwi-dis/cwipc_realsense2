@@ -72,27 +72,66 @@ bool RS2BaseCamera::pre_start_all_cameras() {
     return true;
 }
 
-bool RS2BaseCamera::getHardwareParameters(RS2CameraHardwareConfig& output, bool match) {
-    if (match) {
-        return 
-            output.fps == hardware.fps &&
+void RS2BaseCamera::get_camera_hardware_parameters(RS2CameraHardwareConfig& output) {
+    rs2::pipeline_profile profile = camera_pipeline.get_active_profile();
+    rs2::device dev = profile.get_device();
+        rs2::depth_sensor depth_sensor = dev.first<rs2::depth_sensor>();
+        rs2::color_sensor color_sensor = dev.first<rs2::color_sensor>();
 
-            output.color_height == hardware.color_height &&
-            output.color_width == hardware.color_width &&
-            output.color_exposure == hardware.color_exposure &&
-            output.color_gain == hardware.color_gain &&
-            output.backlight_compensation == hardware.backlight_compensation &&
-            output.whitebalance == hardware.whitebalance &&
+        // Some parameters are easiest to get from our config, as they won't
+        // change anyway
+        output.color_width = hardware.color_width;
+        output.color_height = hardware.color_height;
+        output.depth_width = hardware.depth_width;
+        output.depth_height = hardware.depth_height;
+        output.fps = hardware.fps;
 
-            output.depth_exposure == hardware.depth_exposure &&
-            output.depth_gain == hardware.depth_gain &&
-            output.depth_height == hardware.depth_height &&
-            output.depth_width == hardware.depth_width &&
-            output.visual_preset == hardware.visual_preset &&
-            output.laser_power == hardware.laser_power;
-    }
-    output = hardware;
-    return output.fps != 0;
+        bool auto_color_exposure = (bool)color_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        int color_exposure = (int)color_sensor.get_option(RS2_OPTION_EXPOSURE);
+        output.color_exposure = auto_color_exposure ? -color_exposure : color_exposure;  
+
+        int color_gain = (int)color_sensor.get_option(RS2_OPTION_GAIN);
+        output.color_gain = color_gain;
+        
+        bool auto_whitebalance = (bool)color_sensor.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+        int whitebalance = (int)color_sensor.get_option(RS2_OPTION_WHITE_BALANCE);
+        output.whitebalance = auto_whitebalance ? -whitebalance : whitebalance;  
+
+        output.backlight_compensation = (int)color_sensor.get_option(RS2_OPTION_BACKLIGHT_COMPENSATION);
+
+        bool auto_depth_exposure = (bool)depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        int depth_exposure = (int)depth_sensor.get_option(RS2_OPTION_EXPOSURE);
+        output.depth_exposure = auto_depth_exposure ? -depth_exposure : depth_exposure;
+
+        int depth_gain = (int)depth_sensor.get_option(RS2_OPTION_GAIN);
+        output.depth_gain = depth_gain;
+
+        output.laser_power = (int)depth_sensor.get_option(RS2_OPTION_LASER_POWER);
+
+#ifdef xxxjack_disabled
+        // It seems the visual preset is always returned as 0 (also seen in realsense-viewer)
+        // so we don't try to get the value.
+        output.visual_preset = (int)depth_sensor.get_option(RS2_OPTION_VISUAL_PRESET);
+#endif
+}
+
+bool RS2BaseCamera::match_camera_hardware_parameters(RS2CameraHardwareConfig& wanted) {
+    return 
+        wanted.fps == hardware.fps &&
+
+        wanted.color_height == hardware.color_height &&
+        wanted.color_width == hardware.color_width &&
+        wanted.color_exposure == hardware.color_exposure &&
+        wanted.color_gain == hardware.color_gain &&
+        wanted.backlight_compensation == hardware.backlight_compensation &&
+        wanted.whitebalance == hardware.whitebalance &&
+
+        wanted.depth_exposure == hardware.depth_exposure &&
+        wanted.depth_gain == hardware.depth_gain &&
+        wanted.depth_height == hardware.depth_height &&
+        wanted.depth_width == hardware.depth_width &&
+        wanted.visual_preset == hardware.visual_preset &&
+        wanted.laser_power == hardware.laser_power;
 }
 
 bool RS2BaseCamera::_init_filters() {

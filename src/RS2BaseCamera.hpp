@@ -35,6 +35,13 @@ public:
         return camera_sync_is_master;
     }
 
+    /// Get current camera hardware parameters.
+    /// xxxjack may have to become virtual, and only really do something
+    /// for real cameras. Or just return current settings in base class (here).
+    void get_camera_hardware_parameters(RS2CameraHardwareConfig& output);
+    /// Return true if current hardware parameters of this camera match input.
+    bool match_camera_hardware_parameters(RS2CameraHardwareConfig& input);
+
 protected:
     // internal API that is "shared" with other implementations (realsense, kinect)
     virtual bool _init_hardware_for_this_camera() override final { 
@@ -51,9 +58,6 @@ protected:
     }
     virtual void _prepare_config_for_starting_camera(rs2::config& cfg) = 0;
 public:
-    // xxxjack from here to be determined
-    /// Get camera hardware parameters, or check that they match what we got from another camera.
-    bool getHardwareParameters(RS2CameraHardwareConfig& output, bool match);
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
     /// Returns timestamp of depth frame, or zero if none available.
