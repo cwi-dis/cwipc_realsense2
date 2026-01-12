@@ -6,6 +6,8 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <iostream>
+#include <fstream>
 
 #include <librealsense2/rs.hpp>
 
@@ -340,8 +342,21 @@ protected:
         for (auto cam : cameras) {
             cam->stop_camera();
         }
+        _post_stop_all_cameras();
         _log_debug("stopped all cameras");
 
+    }
+
+    /// Create the cameraconfig file for the recording, if needed.
+    virtual void _post_stop_all_cameras() override final {
+        if (configuration.record_to_directory != "") {
+            std::string recording_config = configuration.to_string(true);
+            std::string filename = configuration.record_to_directory + "/" + "cameraconfig.json";
+            std::ofstream ofp;
+            ofp.open(filename);
+            ofp << recording_config << std::endl;
+            ofp.close();
+        }
     }
     
     void _control_thread_main()  {

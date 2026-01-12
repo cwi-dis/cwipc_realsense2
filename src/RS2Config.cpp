@@ -19,8 +19,11 @@ void RS2CameraConfig::_from_json(const json& json_data) {
     _CWIPC_CONFIG_JSON_GET(json_data, playback_inpoint_micros, config, playback_inpoint_micros);
 }
 
-void RS2CameraConfig::_to_json(json& json_data) {
-    CwipcBaseCameraConfig::_to_json(json_data);
+void RS2CameraConfig::_to_json(json& json_data, bool for_recording) {
+    CwipcBaseCameraConfig::_to_json(json_data, for_recording);
+    if (for_recording) {
+        json_data["type"] = "realsense_playback";
+    }
     RS2CameraConfig& config = *this;
     if (playback_inpoint_micros != 0) {
         _CWIPC_CONFIG_JSON_PUT(json_data, playback_inpoint_micros, config, playback_inpoint_micros);
@@ -111,15 +114,18 @@ void RS2CaptureConfig::_from_json(const json& json_data) {
     }
 }
 
-void RS2CaptureConfig::_to_json(json& json_data) {
-    CwipcBaseCaptureConfig::_to_json(json_data);
+void RS2CaptureConfig::_to_json(json& json_data, bool for_recording) {
+    CwipcBaseCaptureConfig::_to_json(json_data, for_recording);
+    if (for_recording) {
+        json_data["type"] = "realsense_playback";
+    }
     RS2CaptureConfig& config = *this;
     json cameras;
     int camera_index = 0;
 
     for (RS2CameraConfig camera_config : config.all_camera_configs) {
         json camera_config_json;
-        camera_config._to_json(camera_config_json);
+        camera_config._to_json(camera_config_json, for_recording);
 
         cameras[camera_index] = camera_config_json;
         camera_index++;
@@ -164,7 +170,11 @@ void RS2CaptureConfig::_to_json(json& json_data) {
     json_data["processing"] = processing_data;
 
     json system_data;
-    _CWIPC_CONFIG_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
+    if (for_recording) {
+        system_data["record_to_directory"] = "";
+    } else {
+        _CWIPC_CONFIG_JSON_PUT(system_data, record_to_directory, config, record_to_directory);
+    }
     _CWIPC_CONFIG_JSON_PUT(system_data, playback_realtime, config, playback_realtime);
     _CWIPC_CONFIG_JSON_PUT(system_data, new_timestamps, config, new_timestamps);
     _CWIPC_CONFIG_JSON_PUT(system_data, debug, config, debug);
@@ -257,9 +267,9 @@ bool RS2CaptureConfig::from_string(const char* jsonBuffer, std::string typeWante
     return true;
 }
 
-std::string RS2CaptureConfig::to_string() {
+std::string RS2CaptureConfig::to_string(bool for_recording) {
     json result;
-    _to_json(result);
+    _to_json(result, for_recording);
 
-    return result.dump();
+    return result.dump(2);
 }

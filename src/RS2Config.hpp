@@ -50,7 +50,7 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
     int playback_inpoint_micros = 0; // for realsense_playback: initial seek for this camera.
 
     void _from_json(const json& json_data) override;
-    void _to_json(json& json_data) override;
+    void _to_json(json& json_data, bool for_recording=false) override;
 };
 
 struct RS2CameraHardwareConfig {
@@ -114,12 +114,12 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     // per camera data
     std::vector<RS2CameraConfig> all_camera_configs;
 
-    std::string to_string() override;
+    std::string to_string(bool for_recording=false) override;
     bool from_string(const char* buffer, std::string typeWanted) override;
     bool from_file(const char* filename, std::string typeWanted) override;
 
     void _from_json(const json& json_data) override;
-    void _to_json(json& json_data) override;
+    void _to_json(json& json_data, bool for_recording=false) override;
 };
 
 #endif /* cwipc_realsense2_rs2config_h */
