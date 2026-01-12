@@ -58,7 +58,8 @@ protected:
     /// This may enable the recorder, it may enable the correct streams that we want. 
     virtual void _init_config_for_this_camera(rs2::config& cfg) = 0;
     virtual bool _init_filters() override final;
-    virtual void _apply_filters(rs2::frameset& frames);
+    virtual void _apply_filters_to_frameset(rs2::frameset& frames);
+    virtual void _apply_rs2_filters(rs2::frameset& frames);
 
     virtual bool _init_skeleton_tracker() override final {
         // librealsense does not provide body tracking.
@@ -68,20 +69,35 @@ public:
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
     /// Returns timestamp of depth frame, or zero if none available.
+    /// This ensures protected attribute current_captured_frameset is valid.
     uint64_t wait_for_captured_frameset(uint64_t minimum_timestamp);
-    /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
+    /// Step 2: Forward the current_captured_frameset to the processing thread to turn it into a point cloud.
     void process_pointcloud_from_frameset();
-    /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
-    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pointcloud; }
-    /// Step 2a: Save auxdata from frameset into given cwipc object.
-    void save_frameset_auxdata(cwipc *pc);
     /// Step 3: Wait for the point cloud processing.
+    /// After this, current_pcl_pointcloud and current_processed_frameset will be valid.
     void wait_for_pointcloud_processed();
+    /// Step 4: borrow a pointer to the point cloud just created, as a PCL point cloud.
+    /// The capturer will use this to populate the resultant cwipc point cloud with points
+    /// from all cameras.
+    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pcl_pointcloud; }
+    /// Step 5: Save auxdata from frameset into given cwipc object.
+    void save_frameset_auxdata(cwipc *pc);
 protected:
+    // realsense doesn't need _start_capture_thread() and
+    // _capture_thread_main: the library handles this.
+    void _start_capture_thread() {}
+    void _capture_thread_main() {}
+    void _start_processing_thread();
+    void _processing_thread_main();
     
+    cwipc_pcl_pointcloud _generate_point_cloud(rs2::depth_frame depth, rs2::video_frame color);
     /// Seek. Fails for cameras, overriden for playback cameras.
     virtual bool seek(uint64_t timestamp) = 0;
-    virtual void _post_start(rs2::pipeline_profile& profile) {
+    /// Called after this camera has started. Obtains actual hardware parameters and
+    /// stores those in the configuration structures.
+    /// Camera extends it to ensure recordings are as synchroniszed as possible.
+    /// PlaybackCamera extends it to ensure playback is as synchronized as possible.
+    virtual void _post_start_this_camera(rs2::pipeline_profile& profile) {
         rs2::device dev = profile.get_device();
 
         // Obtain actual serial number and fps. Most important for playback cameras, but also useful for
@@ -128,18 +144,8 @@ protected:
 
     virtual rs2::frameset _wait_for_frames_from_pipeline();
 
-    // realsense doesn't need _start_capture_thread() and
-    // _capture_thread_main: the library handles this.
-    void _start_processing_thread();
-    void _processing_thread_main();
-    
-#if 0
-    int64_t _frameset_timedelta_preferred(rs2::frameset frames);
-#endif
-
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 
-    void _init_current_pointcloud(int size);
     void _computePointSize(rs2::pipeline_profile profile);
     void _transform_point_cam_to_world(cwipc_pcl_point& pt);
     
@@ -173,23 +179,23 @@ protected:
     bool processing_done;
     
     rs2::frameset previous_captured_frameset;
-    rs2::frameset current_captured_frameset;
-    rs2::frameset current_processed_frameset;
-    cwipc_pcl_pointcloud current_pointcloud;
+    rs2::frameset current_captured_frameset;    //< Output of capturer, input to processing
+    rs2::frameset current_processed_frameset;   //< Output of processing
+    cwipc_pcl_pointcloud current_pcl_pointcloud;    //< Output of processing
 
     // for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
-    rs2::align align_color_to_depth;                 // Align depth and color data
-    rs2::align align_depth_to_color;                   // Align depth and color data
-    rs2::decimation_filter dec_filter;                        // Decimation - reduces depth frame density
+    rs2::align rs2filter_align_color_to_depth;                 // Align depth and color data
+    rs2::align rs2filter_align_depth_to_color;                   // Align depth and color data
+    rs2::decimation_filter rs2filter_decimation;                        // Decimation - reduces depth frame density
     // rs2::hdr_merge not supported yet.
     // rs2::sequence_id_filter not supported yet
-    rs2::threshold_filter threshold_filter;                   // Thresholding: minimum and maximum distance
-    rs2::disparity_transform depth_to_disparity = rs2::disparity_transform(true);
-    rs2::spatial_filter spatial_filter;                          // Spatial    - edge-preserving spatial smoothing
-    rs2::temporal_filter temporal_filter;                         // Temporal   - reduces temporal noise
-    rs2::hole_filling_filter hole_filling_filter;
-    rs2::disparity_transform disparity_to_depth = rs2::disparity_transform(false);
-    rs2::pointcloud depth_to_pointcloud;     // The pointcloud constructor
+    rs2::threshold_filter rs2filter_threshold;                   // Thresholding: minimum and maximum distance
+    rs2::disparity_transform rs2filter_depth_to_disparity = rs2::disparity_transform(true);
+    rs2::spatial_filter rs2filter_spatial;                          // Spatial    - edge-preserving spatial smoothing
+    rs2::temporal_filter rs2filter_temporal;                         // Temporal   - reduces temporal noise
+    rs2::hole_filling_filter rs2filter_hole_filling;
+    rs2::disparity_transform rs2filter_disparity_to_depth = rs2::disparity_transform(false);
+    rs2::pointcloud rs2filter_depth_to_pointcloud;     // The pointcloud constructor
 
     bool debug = false;
     bool prefer_color_timing = true;    // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.

@@ -36,12 +36,12 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
   processing(configuration.processing),
   hardware(configuration.hardware),
   auxData(configuration.auxData),
-  current_pointcloud(nullptr),
+  current_pcl_pointcloud(nullptr),
   processing_frame_queue(1),
   camera_pipeline(_ctx),
   camera_started(false),
-  align_color_to_depth(RS2_STREAM_DEPTH),
-  align_depth_to_color(RS2_STREAM_COLOR),
+  rs2filter_align_color_to_depth(RS2_STREAM_DEPTH),
+  rs2filter_align_depth_to_color(RS2_STREAM_COLOR),
   debug(configuration.debug),
   prefer_color_timing(configuration.prefer_color_timing)
 {
@@ -136,80 +136,81 @@ bool RS2BaseCamera::match_camera_hardware_parameters(RS2CameraHardwareConfig& wa
 
 bool RS2BaseCamera::_init_filters() {
     if (filtering.do_decimation) {
-        dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.decimation_magnitude);
+        rs2filter_decimation.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.decimation_magnitude);
     }
 
     if (filtering.do_threshold) {
-        threshold_filter.set_option(RS2_OPTION_MIN_DISTANCE, filtering.threshold_min_distance);
-        threshold_filter.set_option(RS2_OPTION_MAX_DISTANCE, filtering.threshold_max_distance);
+        rs2filter_threshold.set_option(RS2_OPTION_MIN_DISTANCE, filtering.threshold_min_distance);
+        rs2filter_threshold.set_option(RS2_OPTION_MAX_DISTANCE, filtering.threshold_max_distance);
     }
 
     if (filtering.do_spatial) {
-        spatial_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.spatial_magnitude);
-        spatial_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.spatial_smooth_alpha);
-        spatial_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.spatial_smooth_delta);
-        spatial_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.spatial_holes_fill);
+        rs2filter_spatial.set_option(RS2_OPTION_FILTER_MAGNITUDE, filtering.spatial_magnitude);
+        rs2filter_spatial.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.spatial_smooth_alpha);
+        rs2filter_spatial.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.spatial_smooth_delta);
+        rs2filter_spatial.set_option(RS2_OPTION_HOLES_FILL, filtering.spatial_holes_fill);
     }
 
     if (filtering.do_temporal) {
-        temporal_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.temporal_smooth_alpha);
-        temporal_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.temporal_smooth_delta);
+        rs2filter_temporal.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filtering.temporal_smooth_alpha);
+        rs2filter_temporal.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filtering.temporal_smooth_delta);
         // Note by Jack: the following is correct. The temporal persistency is set with the HOLES_FILL parameter...
-        temporal_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.temporal_persistency);
+        rs2filter_temporal.set_option(RS2_OPTION_HOLES_FILL, filtering.temporal_persistency);
     }
     if (filtering.do_hole_filling) {
-        hole_filling_filter.set_option(RS2_OPTION_HOLES_FILL, filtering.hole_filling_mode);
+        rs2filter_hole_filling.set_option(RS2_OPTION_HOLES_FILL, filtering.hole_filling_mode);
     }
     return true;
 }
 
-void RS2BaseCamera::_apply_filters(rs2::frameset& processing_frameset) {
-    bool do_depth_filtering = filtering.do_decimation || filtering.do_threshold || filtering.do_spatial || filtering.do_temporal;
+void RS2BaseCamera::_apply_filters_to_frameset(rs2::frameset& processing_frameset) {
+    // First we apply the filters implemented by librealsense.
+    _apply_rs2_filters(processing_frameset);
+    // Apply mapping between color and depth.
     if (filtering.map_color_to_depth == 1) {
-        processing_frameset = processing_frameset.apply_filter(align_color_to_depth);
+        processing_frameset = rs2filter_align_color_to_depth.process(processing_frameset);
     } else if (filtering.map_color_to_depth == 0) {
-        processing_frameset = processing_frameset.apply_filter(align_depth_to_color);
+        processing_frameset = rs2filter_align_depth_to_color.process(processing_frameset);
     } else {
         // map_color_to_depth == -1 means no mapping t all.
     }
-    if (do_depth_filtering) {
+}
+
+void RS2BaseCamera::_apply_rs2_filters(rs2::frameset& processing_frameset) {
+    // Let's first see which filtering we want to do that is implemented in librealsense.
+    // Some filters operate on the disparity, so we have to convert between depth and disparity:
+    bool do_rs2_disparity = filtering.do_spatial || filtering.do_temporal || filtering.do_hole_filling;
+    // Some more filters operate on depth:
+    bool do_rs2_depth = do_rs2_disparity || filtering.do_decimation || filtering.do_threshold;;
+    if (do_rs2_depth) {
     
         if (filtering.do_decimation) {
-            processing_frameset = processing_frameset.apply_filter(dec_filter);
+            processing_frameset = rs2filter_decimation.process(processing_frameset);
         }
 
         if (filtering.do_threshold) {
-            processing_frameset = processing_frameset.apply_filter(threshold_filter);
+            processing_frameset = rs2filter_threshold.process(processing_frameset);
         }
 
-        if (filtering.do_spatial || filtering.do_temporal || filtering.do_hole_filling) {
-            processing_frameset = processing_frameset.apply_filter(depth_to_disparity);
+        if (do_rs2_disparity) {
+            processing_frameset = rs2filter_depth_to_disparity.process(processing_frameset);
 
             if (filtering.do_spatial) {
-                processing_frameset = processing_frameset.apply_filter(spatial_filter);
+                processing_frameset = rs2filter_spatial.process(processing_frameset);
             }
 
             if (filtering.do_temporal) {
-                processing_frameset = processing_frameset.apply_filter(temporal_filter);
+                processing_frameset = rs2filter_temporal.process(processing_frameset);
             }
             if (filtering.do_hole_filling) {
-                processing_frameset = processing_frameset.apply_filter(hole_filling_filter);
+                processing_frameset = rs2filter_hole_filling.process(processing_frameset);
             }
 
-            processing_frameset = processing_frameset.apply_filter(disparity_to_depth);
+            processing_frameset = rs2filter_disparity_to_depth.process(processing_frameset);
         }
-
     }
 }
 
-void RS2BaseCamera::_init_current_pointcloud(int size) {
-    if (current_pointcloud == nullptr) {
-        current_pointcloud = new_cwipc_pcl_pointcloud();
-    }
-
-    current_pointcloud->clear();
-    current_pointcloud->reserve(size);
-}
 
 uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
     if (camera_stopped) return 0;
@@ -266,7 +267,7 @@ bool RS2BaseCamera::start_camera() {
     _log_debug("Starting camera pipeline for camera" );
     _init_config_for_this_camera(cfg);
     rs2::pipeline_profile profile = camera_pipeline.start(cfg);   // Start streaming with the configuration just set
-    _post_start(profile);
+    _post_start_this_camera(profile);
     _computePointSize(profile);
     camera_started = true;
     return true;
@@ -355,7 +356,7 @@ void RS2BaseCamera::stop_camera() {
 void RS2BaseCamera::start_camera_streaming() {
     assert(camera_stopped);
     camera_stopped = false;
-
+    _start_capture_thread();
     _start_processing_thread();
 }
 
@@ -377,13 +378,14 @@ rs2::frameset RS2BaseCamera::_wait_for_frames_from_pipeline() {
 }
 
 void RS2BaseCamera::_processing_thread_main() {
-    _log_debug_thread("frame processing thread started");
+    _log_debug_thread("frame processing thread started for camera " + serial);
 
     while(!camera_stopped) {
         // Wait for next frame to process. Allow aborting in case of stopped becoming false...
         rs2::frameset processing_frameset;
         bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset, 1000);
         if (!ok) {
+            _log_warning("processing thread dequeue timeout");
             continue;
         }
 #ifdef CWIPC_DEBUG_SYNC
@@ -393,10 +395,13 @@ void RS2BaseCamera::_processing_thread_main() {
         _log_debug("camera_processing_thread: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
+        _log_debug_thread("processing thread got frameset for camera " + serial);
 
         std::lock_guard<std::mutex> lock(processing_mutex);
 
-        _apply_filters(processing_frameset);
+        // xxxjack-here-I-am
+
+        _apply_filters_to_frameset(processing_frameset);
 
         current_processed_frameset = processing_frameset;
 
@@ -414,84 +419,13 @@ void RS2BaseCamera::_processing_thread_main() {
                    " color: " + std::to_string(color.get_width()) + "x" + std::to_string(color.get_height()));
 
         // Calculate new pointcloud, map to the color images and get vertices and color indices
-        depth_to_pointcloud.map_to(color);
-        rs2::points points = depth_to_pointcloud.calculate(depth);
-        const rs2::vertex* vertices = points.get_vertices();
-        const rs2::texture_coordinate* texture_coordinates = points.get_texture_coordinates();
+        cwipc_pcl_pointcloud pcl_pointcloud = _generate_point_cloud(depth, color);
 
-        // Get some constants used later to map colors and such from rs2 to pcl pointclouds.
-        const int texture_width = color.get_width();
-        const int texture_height = color.get_height();
-        const int texture_x_step = color.get_bytes_per_pixel();
-        const int texture_y_step = color.get_stride_in_bytes();
-        const unsigned char *texture_data = (unsigned char*)color.get_data();
-        const uint8_t camera_label = (uint8_t)1 << camera_index;
-
-        // Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
-        _init_current_pointcloud((int)points.size());
-        cwipc_pcl_pointcloud pcl_pointcloud = current_pointcloud;
-
-        {
-            // Make PointCloud
-            float height_min = processing.height_min;
-            float height_max = processing.height_max;
-            bool do_height_filtering = height_min < height_max;
-            bool do_greenscreen_removal = processing.greenscreen_removal;
-            bool do_radius_filtering = processing.radius_filter > 0;
-            for (int i = 0; i < points.size(); i++) {
-                // Skip points with z=0 (they don't exist)
-                if (vertices[i].z == 0) {
-                    continue;
-                }
-
-                cwipc_pcl_point pt(vertices[i].x, vertices[i].y, vertices[i].z);
-                _transform_point_cam_to_world(pt);
-
-                if (do_height_filtering && (pt.y < height_min || pt.y > height_max)) {
-                    continue;
-                }
-                if (do_radius_filtering && !isPointInRadius(pt, processing.radius_filter)) {
-                    continue;
-                }
-                float u = texture_coordinates[i].u;
-                float v = texture_coordinates[i].v;
-
-                int texture_x = int(0.5 + u*texture_width);
-                int texture_y = int(0.5 + v*texture_height);
-
-                // Unsure whether this ever happens: out-of-bounds u/v points are skipped
-                if (texture_x <= 0 || texture_x >= texture_width-1) {
-                    continue;
-                }
-
-                if (texture_y <= 0 || texture_y >= texture_height-1) {
-                    continue;
-                }
-
-                int idx = texture_x * texture_x_step + texture_y * texture_y_step;
-                pt.r = texture_data[idx];
-                pt.g = texture_data[idx + 1];
-                pt.b = texture_data[idx + 2];
-
-                // Unexpectedly, this does happen: 100% black points don't actually exist.
-                if (pt.r == 0 && pt.g == 0 && pt.b == 0) {
-                    continue;
-                }
-
-                pt.a = camera_label;
-
-                if (!do_greenscreen_removal || isNotGreen(&pt)) {
-                    // chromakey removal
-                    pcl_pointcloud->push_back(pt);
-                }
-            }
-        }
 
         if (pcl_pointcloud->size() == 0) {
             _log_trace("Captured empty pointcloud from camera");
-          //continue;
         }
-
+        current_pcl_pointcloud = pcl_pointcloud;
         // Notify wait_for_pointcloud_processed that we're done.
         processing_done = true;
         processing_done_cv.notify_one();
@@ -499,6 +433,82 @@ void RS2BaseCamera::_processing_thread_main() {
     _log_debug_thread("frame processing thread stopped");
 }
 
+cwipc_pcl_pointcloud RS2BaseCamera::_generate_point_cloud(rs2::depth_frame depth, rs2::video_frame color) {
+    rs2filter_depth_to_pointcloud.map_to(color);
+    rs2::points points = rs2filter_depth_to_pointcloud.calculate(depth);
+    const rs2::vertex* vertices = points.get_vertices();
+    const rs2::texture_coordinate* texture_coordinates = points.get_texture_coordinates();
+
+    // Get some constants used later to map colors and such from rs2 to pcl pointclouds.
+    const int texture_width = color.get_width();
+    const int texture_height = color.get_height();
+    const int texture_x_step = color.get_bytes_per_pixel();
+    const int texture_y_step = color.get_stride_in_bytes();
+    const unsigned char *texture_data = (unsigned char*)color.get_data();
+    const uint8_t camera_label = (uint8_t)1 << camera_index;
+
+    // Clear the previous pointcloud and pre-allocate space in the pointcloud (so we don't realloc)
+    cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
+    pcl_pointcloud->clear();
+    pcl_pointcloud->reserve(points.size());
+
+    // Make PointCloud
+    float height_min = processing.height_min;
+    float height_max = processing.height_max;
+    bool do_height_filtering = height_min < height_max;
+    bool do_greenscreen_removal = processing.greenscreen_removal;
+    bool do_radius_filtering = processing.radius_filter > 0;
+    for (int i = 0; i < points.size(); i++) {
+        // Skip points with z=0 (they don't exist)
+        if (vertices[i].z == 0) {
+            continue;
+        }
+
+        cwipc_pcl_point pt(vertices[i].x, vertices[i].y, vertices[i].z);
+        _transform_point_cam_to_world(pt);
+
+        if (do_height_filtering && (pt.y < height_min || pt.y > height_max)) {
+            continue;
+        }
+        if (do_radius_filtering && !isPointInRadius(pt, processing.radius_filter)) {
+            continue;
+        }
+        float u = texture_coordinates[i].u;
+        float v = texture_coordinates[i].v;
+
+        int texture_x = int(0.5 + u*texture_width);
+        int texture_y = int(0.5 + v*texture_height);
+
+        // Unsure whether this ever happens: out-of-bounds u/v points are skipped
+        if (texture_x <= 0 || texture_x >= texture_width-1) {
+            continue;
+        }
+
+        if (texture_y <= 0 || texture_y >= texture_height-1) {
+            continue;
+        }
+
+        int idx = texture_x * texture_x_step + texture_y * texture_y_step;
+        pt.r = texture_data[idx];
+        pt.g = texture_data[idx + 1];
+        pt.b = texture_data[idx + 2];
+
+        // Unexpectedly, this does happen: 100% black points don't actually exist.
+        if (pt.r == 0 && pt.g == 0 && pt.b == 0) {
+            continue;
+        }
+
+        pt.a = camera_label;
+
+        if (!do_greenscreen_removal || isNotGreen(&pt)) {
+            // chromakey removal
+            pcl_pointcloud->push_back(pt);
+        }
+    }
+    return pcl_pointcloud;
+}
+
+// Erosion. Note that Kinect implementation has a better one, based on OpenCV.
 void RS2BaseCamera::_erode_depth(rs2::depth_frame depth_frame, int x_delta, int y_delta) {
     uint16_t *depth_values = (uint16_t *)depth_frame.get_data();
     assert(depth_frame.get_bytes_per_pixel() == 2);

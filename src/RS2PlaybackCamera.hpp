@@ -23,7 +23,7 @@ public:
     virtual void resume();
 protected:
     virtual void _init_config_for_this_camera(rs2::config &cfg) override;
-    virtual void _post_start(rs2::pipeline_profile& profile) override;
+    virtual void _post_start_this_camera(rs2::pipeline_profile& profile) override;
 private:
     uint64_t previous_color_timestamp = 0;
     std::string playback_filename;

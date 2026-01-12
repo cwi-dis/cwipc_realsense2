@@ -48,7 +48,7 @@ void RS2PlaybackCamera::_init_config_for_this_camera(rs2::config &cfg) {
     cfg.enable_device_from_file(playback_filename, playback_loop);
 }
 
-void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
+void RS2PlaybackCamera::_post_start_this_camera(rs2::pipeline_profile& profile) {
     rs2::device dev = profile.get_device();
     rs2::playback playback = dev.as<rs2::playback>();
 
@@ -59,10 +59,10 @@ void RS2PlaybackCamera::_post_start(rs2::pipeline_profile& profile) {
     if (camera_config.playback_inpoint_micros != 0) {
         uint64_t new_pos = ((uint64_t)1000) * camera_config.playback_inpoint_micros;
         uint64_t old_pos = playback.get_position();
-        _log_debug("_post_start: pos was " + std::to_string(old_pos) + " seek to " + std::to_string(new_pos));
+        _log_debug("_post_start_this_camera: pos was " + std::to_string(old_pos) + " seek to " + std::to_string(new_pos));
         playback.seek(std::chrono::nanoseconds(new_pos));
     }
-    RS2BaseCamera::_post_start(profile);
+    RS2BaseCamera::_post_start_this_camera(profile);
 }
 
 void RS2PlaybackCamera::post_start_all_cameras() {

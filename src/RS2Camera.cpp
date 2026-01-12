@@ -31,18 +31,18 @@ void RS2Camera::_init_config_for_this_camera(rs2::config &cfg) {
     cfg.enable_stream(RS2_STREAM_DEPTH, hardware.depth_width, hardware.depth_height, RS2_FORMAT_Z16, hardware.fps);
 }
 
-void RS2Camera::_post_start(rs2::pipeline_profile& profile) {
+void RS2Camera::_post_start_this_camera(rs2::pipeline_profile& profile) {
     rs2::device dev = profile.get_device();
     // First pause the recorder, if there is one.
     if (uses_recorder) {
         rs2::recorder recorder = dev.as<rs2::recorder>();
         if (!recorder) {
-            _log_error("_post_start: uses_recorder but no rs2::recorder");
+            _log_error("_post_start_this_camera: uses_recorder but no rs2::recorder");
         } else {
             recorder.pause();
         }
     }
-    RS2BaseCamera::_post_start(profile);
+    RS2BaseCamera::_post_start_this_camera(profile);
 }
 
 
