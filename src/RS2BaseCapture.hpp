@@ -466,6 +466,10 @@ protected:
         uint64_t first_timestamp = 0;
         for(auto cam : cameras) {
             uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
+            if (this_cam_timestamp == 0) {
+                _log_warning("no frameset captured from camera");
+                return false;
+            }
             if (first_timestamp == 0) {
                 first_timestamp = this_cam_timestamp;
             }
@@ -473,9 +477,6 @@ protected:
 
         // And get the best timestamp
         if (configuration.new_timestamps) {
-            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        } else if (first_timestamp == 0) {
-            _log_warning("no timestamp obtained from cameras, using system time");
             timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         } else {
             timestamp = first_timestamp;

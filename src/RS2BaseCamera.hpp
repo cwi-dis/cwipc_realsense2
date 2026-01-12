@@ -54,6 +54,9 @@ protected:
         // in RS2Capture::_init_hardware_for_all_cameras
         return true; 
     }
+    /// Realsense-specific: Prepare the rs2::config structure.
+    /// This may enable the recorder, it may enable the correct streams that we want. 
+    virtual void _init_config_for_this_camera(rs2::config& cfg) = 0;
     virtual bool _init_filters() override final;
     virtual void _apply_filters(rs2::frameset& frames);
 
@@ -61,9 +64,6 @@ protected:
         // librealsense does not provide body tracking.
         return true;
     }
-    /// Realsense-specific: Prepare the rs2::config structure.
-    /// This may enable the recorder, it may enable the correct streams that we want. 
-    virtual void _init_config_for_this_camera(rs2::config& cfg) = 0;
 public:
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
@@ -126,8 +126,10 @@ protected:
         hardware.color_height = color_height;
     }
 
-    virtual rs2::frameset wait_for_frames();
+    virtual rs2::frameset _wait_for_frames_from_pipeline();
 
+    // realsense doesn't need _start_capture_thread() and
+    // _capture_thread_main: the library handles this.
     void _start_processing_thread();
     void _processing_thread_main();
     
@@ -164,8 +166,8 @@ protected:
     std::thread *camera_processing_thread;
     
     rs2::pipeline camera_pipeline;
-    
-    rs2::frame_queue processing_frame_queue;
+    // Realsense doesn't need captured_frame_queue, the library handles this.
+    rs2::frame_queue processing_frame_queue;  //<! Synchronized frames, waiting for processing thread
     std::mutex processing_mutex;
     std::condition_variable processing_done_cv;
     bool processing_done;

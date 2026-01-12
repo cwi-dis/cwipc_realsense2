@@ -212,6 +212,7 @@ void RS2BaseCamera::_init_current_pointcloud(int size) {
 }
 
 uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
+    if (camera_stopped) return 0;
     uint64_t resultant_timestamp = 0;
     if (minimum_timestamp > 0 && previous_captured_frameset) {
         uint64_t previous_timestamp = previous_captured_frameset.get_depth_frame().get_timestamp();
@@ -232,15 +233,15 @@ uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
             previous_captured_frameset = current_captured_frameset;
         } else {
             // First frame. So fill previous_captured_frameset.
-            previous_captured_frameset = wait_for_frames();
+            previous_captured_frameset = _wait_for_frames_from_pipeline();
         }
-        current_captured_frameset = wait_for_frames();
+        current_captured_frameset = _wait_for_frames_from_pipeline();
         // We now have both a previous and a current captured frameset.
         if(prefer_color_timing) {
             // If they both have the same depth timestamp we capture another one.
             if (current_captured_frameset.get_depth_frame().get_timestamp() == previous_captured_frameset.get_depth_frame().get_timestamp()) {
                 previous_captured_frameset = current_captured_frameset;
-                current_captured_frameset = wait_for_frames();
+                current_captured_frameset = _wait_for_frames_from_pipeline();
             }
         }
         rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
@@ -363,7 +364,7 @@ void RS2BaseCamera::_start_processing_thread() {
     _cwipc_setThreadName(camera_processing_thread, L"cwipc_realsense2::RS2BaseCamera::camera_processing_thread");
 }
 
-rs2::frameset RS2BaseCamera::wait_for_frames() {
+rs2::frameset RS2BaseCamera::_wait_for_frames_from_pipeline() {
     rs2::frameset frames = camera_pipeline.wait_for_frames();
 #ifdef CWIPC_DEBUG_SYNC
     if (debug) {
