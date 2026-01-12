@@ -263,7 +263,7 @@ bool RS2BaseCamera::start_camera() {
     assert(camera_processing_thread == nullptr);
     rs2::config cfg;
     _log_debug("Starting camera pipeline for camera" );
-    _prepare_config_for_starting_camera(cfg);
+    _init_config_for_this_camera(cfg);
     rs2::pipeline_profile profile = camera_pipeline.start(cfg);   // Start streaming with the configuration just set
     _post_start(profile);
     _computePointSize(profile);

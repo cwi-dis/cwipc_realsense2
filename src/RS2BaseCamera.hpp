@@ -35,6 +35,11 @@ public:
         return camera_sync_is_master;
     }
 
+    /// Implementation of mapping 2D color image coordinates to 2D depth image coordinates.
+    virtual bool mapcolordepth(int x_c, int y_c, int *out2d) override final;
+    /// Implementation of mapping 2D color image coordinates to 3D coordinates.
+    virtual bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d) override final;
+
     /// Get current camera hardware parameters.
     /// xxxjack may have to become virtual, and only really do something
     /// for real cameras. Or just return current settings in base class (here).
@@ -56,7 +61,9 @@ protected:
         // librealsense does not provide body tracking.
         return true;
     }
-    virtual void _prepare_config_for_starting_camera(rs2::config& cfg) = 0;
+    /// Realsense-specific: Prepare the rs2::config structure.
+    /// This may enable the recorder, it may enable the correct streams that we want. 
+    virtual void _init_config_for_this_camera(rs2::config& cfg) = 0;
 public:
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
@@ -64,17 +71,12 @@ public:
     uint64_t wait_for_captured_frameset(uint64_t minimum_timestamp);
     /// Step 2: Forward the frameset to the processing thread to turn it into a point cloud.
     void process_pointcloud_from_frameset();
+    /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
+    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pointcloud; }
     /// Step 2a: Save auxdata from frameset into given cwipc object.
     void save_frameset_auxdata(cwipc *pc);
     /// Step 3: Wait for the point cloud processing.
     void wait_for_pointcloud_processed();
-    /// Step 3a: borrow a pointer to the point cloud just created, as a PCL point cloud.
-    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pointcloud; }
-
-    /// Implementation of mapping 2D color image coordinates to 2D depth image coordinates.
-    bool mapcolordepth(int x_c, int y_c, int *out2d);
-    /// Implementation of mapping 2D color image coordinates to 3D coordinates.
-    bool map2d3d(int x_2d, int y_2d, int d_2d, float* out3d);
 protected:
     
     /// Seek. Fails for cameras, overriden for playback cameras.

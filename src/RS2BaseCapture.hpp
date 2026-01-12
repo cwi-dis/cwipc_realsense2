@@ -184,7 +184,7 @@ public:
     }
 
     /// Return 3D point for a given camera, given RGB image 2D coordinates.
-    bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d) override final {
+    virtual bool map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d) override final {
         for(auto cam : cameras) {
             if (tile == (1 << cam->camera_index)) {
                 return cam->map2d3d(x_2d, y_2d, d_2d, out3d);
@@ -194,7 +194,7 @@ public:
     }
 
     /// Return 2D point in depth image coordinates given 2D point in color image coordinates.
-    bool mapcolordepth(int tile, int u, int v, int* out2d) override final {
+    virtual bool mapcolordepth(int tile, int u, int v, int* out2d) override final {
         for(auto cam : cameras) {
             if (tile == (1 << cam->camera_index)) {
                 return cam->mapcolordepth(u, v, out2d);
