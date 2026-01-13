@@ -47,24 +47,6 @@ public:
     /// Return true if current hardware parameters of this camera match input.
     bool match_camera_hardware_parameters(RS2CameraHardwareConfig& input);
 
-protected:
-    // internal API that is "shared" with other implementations (realsense, kinect)
-    virtual bool _init_hardware_for_this_camera() override final { 
-        // In the librealsense API hardware initialization is done globally,
-        // in RS2Capture::_init_hardware_for_all_cameras
-        return true; 
-    }
-    /// Realsense-specific: Prepare the rs2::config structure.
-    /// This may enable the recorder, it may enable the correct streams that we want. 
-    virtual void _init_config_for_this_camera(rs2::config& cfg) = 0;
-    virtual bool _init_filters() override final;
-    virtual void _apply_filters_to_frameset(rs2::frameset& frames);
-    virtual void _apply_rs2_filters(rs2::frameset& frames);
-
-    virtual bool _init_skeleton_tracker() override final {
-        // librealsense does not provide body tracking.
-        return true;
-    }
 public:
 
     /// Step 1 in capturing: wait for a valid frameset. Any image processing will have been done. 
@@ -83,13 +65,29 @@ public:
     /// Step 5: Save auxdata from frameset into given cwipc object.
     void save_frameset_auxdata(cwipc *pc);
 protected:
-    // realsense doesn't need _start_capture_thread() and
-    // _capture_thread_main: the library handles this.
+    // internal API that is "shared" with other implementations (realsense, kinect)
+    virtual bool _init_hardware_for_this_camera() override final { 
+        // In the librealsense API hardware initialization is done globally,
+        // in RS2Capture::_init_hardware_for_all_cameras
+        return true; 
+    }
+    /// Realsense-specific: Prepare the rs2::config structure.
+    /// This may enable the recorder, it may enable the correct streams that we want. 
+    virtual void _init_config_for_this_camera(rs2::config& cfg) = 0;
+    virtual bool _init_filters() override final;
+    virtual bool _init_skeleton_tracker() override final {
+        // librealsense does not provide body tracking.
+        return false;
+    }
+    virtual void _apply_filters_to_frameset(rs2::frameset& frames);
+    virtual void _apply_rs2_filters(rs2::frameset& frames);
     void _start_capture_thread() {}
     void _capture_thread_main() {}
     void _start_processing_thread();
     void _processing_thread_main();
-    
+
+protected:
+    /// Create a cwipc_pcl_pointcloud from depth and color frame.
     cwipc_pcl_pointcloud _generate_point_cloud(rs2::depth_frame depth, rs2::video_frame color);
     /// Seek. Fails for cameras, overriden for playback cameras.
     virtual bool seek(uint64_t timestamp) = 0;
@@ -97,56 +95,18 @@ protected:
     /// stores those in the configuration structures.
     /// Camera extends it to ensure recordings are as synchroniszed as possible.
     /// PlaybackCamera extends it to ensure playback is as synchronized as possible.
-    virtual void _post_start_this_camera(rs2::pipeline_profile& profile) {
-        rs2::device dev = profile.get_device();
-
-        // Obtain actual serial number and fps. Most important for playback cameras, but also useful for
-        // live cameras (because the user program can obtain correct cameraconfig data with get_config()).
-        // Keep actual serial number, also in cameraconfig
-        serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-        camera_config.serial = serial;
-        std::vector<rs2::sensor> sensors = dev.query_sensors();
-        int depth_fps = hardware.fps;
-        int depth_width = hardware.depth_width;
-        int depth_height = hardware.depth_height;
-        int color_fps = hardware.fps;
-        int color_width = hardware.color_width;
-        int color_height = hardware.color_height;
-        for(rs2::sensor sensor : sensors) {
-            std::vector<rs2::stream_profile> streams = sensor.get_active_streams();
-            for(rs2::stream_profile stream : streams) {
-                rs2::video_stream_profile vstream = stream.as<rs2::video_stream_profile>();
-
-                if (vstream.stream_type() == RS2_STREAM_DEPTH) {
-                    depth_fps = vstream.fps();
-                    depth_width = vstream.width();
-                    depth_height = vstream.height();
-                    depth_format = rs2_format_to_string(vstream.format());
-
-                }
-                if (stream.stream_type() == RS2_STREAM_COLOR) {
-                    color_fps = vstream.fps();
-                    color_width = vstream.width();
-                    color_height = vstream.height();
-                    color_format = rs2_format_to_string(vstream.format());
-                }
-            }
-        }
-        if (depth_fps != color_fps) {
-            _log_warning("Depth and color fps differ: depth " + std::to_string(depth_fps) + " color " + std::to_string(color_fps) + ". Using depth fps.");
-        }
-        hardware.fps = depth_fps;
-        hardware.depth_width = depth_width;
-        hardware.depth_height = depth_height;
-        hardware.color_width = color_width;
-        hardware.color_height = color_height;
-    }
-
+    virtual void _post_start_this_camera(rs2::pipeline_profile& profile);
+    /// Small wrapper around librealsense method, to print debug information
     virtual rs2::frameset _wait_for_frames_from_pipeline();
 
+    /// Erosion. Note that Kinect implementation has a better one, based on OpenCV.
     void _erode_depth(rs2::depth_frame, int x_delta, int y_delta);
 
+    /// Compute reasonable pointsize, by looking at the distance between adjacent
+    /// depth-image points at (3d-world) location (0, 0, 0)
     void _computePointSize(rs2::pipeline_profile profile);
+    
+    /// Transform a 3D point in camera-origin coordinates to world coordinates.
     void _transform_point_cam_to_world(cwipc_pcl_point& pt);
     
 
