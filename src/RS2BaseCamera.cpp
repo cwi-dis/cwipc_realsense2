@@ -517,7 +517,9 @@ void RS2BaseCamera::_processing_thread_main() {
     _log_debug_thread("frame processing thread started for camera " + serial);
 
     while(!camera_stopped) {
-        // Wait for next frame to process. Allow aborting in case of stopped becoming false...
+            //
+            // Get the frameset we need to turn into a point cloud
+            ///
         rs2::frameset processing_frameset;
         bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset, 1000);
         if (!ok) {
@@ -534,9 +536,11 @@ void RS2BaseCamera::_processing_thread_main() {
         _log_debug_thread("processing thread got frameset for camera " + serial);
 
         std::lock_guard<std::mutex> lock(processing_mutex);
-
-        // xxxjack-here-I-am
-
+        //
+        // For realsense, we apply most filters to the frameset.
+        // Do that first. Keep the current_processed_frameset, which
+        // may be used later for mapping coordinates.
+        //
         _apply_filters_to_frameset(processing_frameset);
 
         current_processed_frameset = processing_frameset;
@@ -546,7 +550,9 @@ void RS2BaseCamera::_processing_thread_main() {
         
         assert(depth);
         assert(color);
-
+        //
+        // Do processing on depth image.
+        //
         if (processing.depth_x_erosion > 0 || processing.depth_y_erosion > 0) {
             _erode_depth(depth, processing.depth_x_erosion, processing.depth_y_erosion);
         }
@@ -554,17 +560,25 @@ void RS2BaseCamera::_processing_thread_main() {
                    " depth: " + std::to_string(depth.get_width()) + "x" + std::to_string(depth.get_height()) +
                    " color: " + std::to_string(color.get_width()) + "x" + std::to_string(color.get_height()));
 
-        // Calculate new pointcloud, map to the color images and get vertices and color indices
-        cwipc_pcl_pointcloud pcl_pointcloud = _generate_point_cloud(depth, color);
+        //
+        // generate point cloud.
+        //
+        cwipc_pcl_pointcloud new_pointcloud = _generate_point_cloud(depth, color);
 
-
-        if (pcl_pointcloud->size() == 0) {
-            _log_trace("Captured empty pointcloud from camera");
+        if (new_pointcloud != nullptr) {
+            if (new_pointcloud->size() == 0) {
+                _log_trace("Captured empty pointcloud from camera");
+            }
+            current_pcl_pointcloud = new_pointcloud;
+            //
+            // Notify wait_for_pointcloud_processed that we're done.
+            //
+            processing_done = true;
+            processing_done_cv.notify_one();
         }
-        current_pcl_pointcloud = pcl_pointcloud;
-        // Notify wait_for_pointcloud_processed that we're done.
-        processing_done = true;
-        processing_done_cv.notify_one();
+        //
+        // No cleanup of resources needed, librealsense takes care of that.
+        //
     }
     _log_debug_thread("frame processing thread stopped");
 }
