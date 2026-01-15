@@ -155,7 +155,9 @@ protected:
     rs2::temporal_filter rs2filter_temporal;                         // Temporal   - reduces temporal noise
     rs2::hole_filling_filter rs2filter_hole_filling;
     rs2::disparity_transform rs2filter_disparity_to_depth = rs2::disparity_transform(false);
+#ifdef cwipc_global_pointcloud_filter
     rs2::pointcloud rs2filter_depth_to_pointcloud;     // The pointcloud constructor
+#endif
 
     bool debug = false;
     bool prefer_color_timing = true;    // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.

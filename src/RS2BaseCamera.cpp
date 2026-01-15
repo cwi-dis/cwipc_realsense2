@@ -584,6 +584,9 @@ void RS2BaseCamera::_processing_thread_main() {
 }
 
 cwipc_pcl_pointcloud RS2BaseCamera::_generate_point_cloud(rs2::depth_frame depth, rs2::video_frame color) {
+#ifndef cwipc_global_pointcloud_filter
+    rs2::pointcloud rs2filter_depth_to_pointcloud;
+#endif
     rs2filter_depth_to_pointcloud.map_to(color);
     rs2::points points = rs2filter_depth_to_pointcloud.calculate(depth);
     const rs2::vertex* vertices = points.get_vertices();
