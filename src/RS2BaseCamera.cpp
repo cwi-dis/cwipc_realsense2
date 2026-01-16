@@ -5,7 +5,8 @@
 //
 #include <cstdlib>
 
-// Define to get (a little) debug prints
+// Define to get debug prints. Mustr also be enabled through
+// debug flag in cameraconfig.
 #undef CWIPC_DEBUG
 #undef CWIPC_DEBUG_THREAD
 #define CWIPC_DEBUG_SYNC
@@ -45,7 +46,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
   debug(configuration.debug),
   prefer_color_timing(configuration.prefer_color_timing)
 {
-    _log_debug("Creating camera with serial " + serial);
+    if (debug) _log_debug("Creating camera");
     if (configuration.record_to_directory != "") {
         record_to_file = configuration.record_to_directory + "/" + serial + ".bag";
     }
@@ -53,7 +54,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
 }
 
 RS2BaseCamera::~RS2BaseCamera() {
-    _log_debug("Destroying camera");
+    if (debug) _log_debug("Destroying camera");
     assert(camera_stopped);
 }
 
@@ -78,7 +79,7 @@ bool RS2BaseCamera::start_camera() {
     assert(!camera_started);
     assert(camera_processing_thread == nullptr);
     rs2::config cfg;
-    _log_debug("Starting camera pipeline for camera" );
+    if (debug) _log_debug("Starting pipeline");
     _init_config_for_this_camera(cfg);
     rs2::pipeline_profile profile = camera_pipeline.start(cfg);   // Start streaming with the configuration just set
     _post_start_this_camera(profile);
@@ -105,11 +106,13 @@ void RS2BaseCamera::pre_stop_camera() {
             recorder.pause();
         }
     }
+    if (debug) _log_debug("pre-stop camera");
+    camera_stopped = true;
 }
 
 void RS2BaseCamera::stop_camera() {
     // Tell the grabber and processor thread that we want to stop.
-    assert(!camera_stopped);
+    if (debug) _log_debug("stop camera");
     camera_stopped = true;
 
     // Clear out the queues so we don't get into a deadlock
@@ -136,6 +139,7 @@ void RS2BaseCamera::stop_camera() {
     camera_started = false;
     processing_done = true;
     processing_done_cv.notify_one();
+    if (debug) _log_debug("camera stopped");
 }
 
 bool RS2BaseCamera::mapcolordepth(int x_c, int y_c, int *out2d)
@@ -294,7 +298,7 @@ uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
             if (debug) {
                 uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
                 uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
-                _log_debug("wait_for_captured_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp) + " (previous)");
+                if (debug) _log_debug("wait_for_captured_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp) + " (previous)");
             }
 #endif
             return previous_timestamp;
@@ -323,7 +327,7 @@ uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
     if (debug) {
         uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
-        _log_debug("wait_for_captured_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
+        if (debug) _log_debug("wait_for_captured_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
     return resultant_timestamp;
@@ -334,7 +338,7 @@ void RS2BaseCamera::process_pointcloud_from_frameset() {
     if (debug) {
         uint64_t depth_timestamp = current_captured_frameset.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = current_captured_frameset.get_color_frame().get_timestamp();
-        _log_debug("process_pointcloud_from_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
+        if (debug) _log_debug("process_pointcloud_from_frameset: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
     processing_frame_queue.enqueue(current_captured_frameset);
@@ -514,7 +518,7 @@ void RS2BaseCamera::_start_processing_thread() {
 }
 
 void RS2BaseCamera::_processing_thread_main() {
-    _log_debug_thread("frame processing thread started for camera " + serial);
+    if (debug) _log_debug_thread("frame processing thread started");
 
     while(!camera_stopped) {
             //
@@ -523,17 +527,17 @@ void RS2BaseCamera::_processing_thread_main() {
         rs2::frameset processing_frameset;
         bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset, 1000);
         if (!ok) {
-            _log_warning("processing thread dequeue timeout");
+            if (!camera_stopped) _log_warning("processing thread dequeue timeout");
             continue;
         }
 #ifdef CWIPC_DEBUG_SYNC
     if (debug) {
         uint64_t depth_timestamp = processing_frameset.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = processing_frameset.get_color_frame().get_timestamp();
-        _log_debug("camera_processing_thread: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
+        if (debug) _log_debug("camera_processing_thread: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
-        _log_debug_thread("processing thread got frameset for camera " + serial);
+        if (debug) _log_debug_thread("processing thread got frameset");
 
         std::lock_guard<std::mutex> lock(processing_mutex);
         //
@@ -556,7 +560,7 @@ void RS2BaseCamera::_processing_thread_main() {
         if (processing.depth_x_erosion > 0 || processing.depth_y_erosion > 0) {
             _erode_depth(depth, processing.depth_x_erosion, processing.depth_y_erosion);
         }
-        _log_debug(std::string("Processing frame:") +
+        if (debug) _log_debug(std::string("Processing frame:") +
                    " depth: " + std::to_string(depth.get_width()) + "x" + std::to_string(depth.get_height()) +
                    " color: " + std::to_string(color.get_width()) + "x" + std::to_string(color.get_height()));
 
@@ -580,7 +584,7 @@ void RS2BaseCamera::_processing_thread_main() {
         // No cleanup of resources needed, librealsense takes care of that.
         //
     }
-    _log_debug_thread("frame processing thread stopped");
+    if (debug) _log_debug_thread("frame processing thread stopped");
 }
 
 cwipc_pcl_pointcloud RS2BaseCamera::_generate_point_cloud(rs2::depth_frame depth, rs2::video_frame color) {
@@ -712,7 +716,7 @@ rs2::frameset RS2BaseCamera::_wait_for_frames_from_pipeline() {
     if (debug) {
         uint64_t depth_timestamp = frames.get_depth_frame().get_timestamp();
         uint64_t color_timestamp = frames.get_color_frame().get_timestamp();
-        _log_debug("wait_for_frames: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
+        if (debug) _log_debug("wait_for_frames: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
     }
 #endif
     return frames;

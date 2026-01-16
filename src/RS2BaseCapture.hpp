@@ -317,10 +317,21 @@ protected:
             delete cam;
         }
         cameras.clear();
-        _log_debug("deleted all cameras");
+        if (configuration.debug) _log_debug("deleted all cameras");
     }
     /// Stop all cameras.
     virtual void _stop_cameras() override final {
+        if (configuration.debug) _log_debug("pre-stopping all cameras");
+        for (auto cam : cameras) {
+            cam->pre_stop_camera();
+        }
+        if (configuration.debug) _log_debug("stopping all cameras");
+
+        // Stop all cameras
+        for (auto cam : cameras) {
+            cam->stop_camera();
+        }
+        if (configuration.debug) _log_debug_thread("stopping control thread");
         stopped = true;
         mergedPC_is_fresh = true;
         mergedPC_want_new = false;
@@ -328,22 +339,16 @@ protected:
         mergedPC_want_new = true;
         mergedPC_want_new_cv.notify_all();
 
+
         if (control_thread && control_thread->joinable()) {
             control_thread->join();
         }
 
         delete control_thread;
         control_thread = nullptr;
-
-        // Stop all cameras
-        for (auto cam : cameras) {
-            cam->pre_stop_camera();
-        }
-        for (auto cam : cameras) {
-            cam->stop_camera();
-        }
+        if (configuration.debug) _log_debug_thread("stopped control thread");
         _post_stop_all_cameras();
-        _log_debug("stopped all cameras");
+        if (configuration.debug) _log_debug("post-stopped");
 
     }
 
@@ -360,7 +365,7 @@ protected:
     }
     
     void _control_thread_main()  {
-        if (configuration.debug) _log_debug("processing thread started");
+        if (configuration.debug) _log_debug_thread("control thread started");
         _initial_camera_synchronization();
         while(!stopped) {
             {
@@ -453,7 +458,7 @@ protected:
             mergedPC_is_fresh_cv.notify_all();
         }
 
-        if (configuration.debug) _log_debug_thread("processing thread exiting");
+        if (configuration.debug) _log_debug_thread("control thread exiting");
     }
 
     /// Anything that needs to be done to get the camera streams synchronized after opening.

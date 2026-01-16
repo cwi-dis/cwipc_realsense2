@@ -70,7 +70,7 @@ void RS2PlaybackCamera::post_start_all_cameras() {
     rs2::device dev = prof.get_device();
     rs2::playback playback = dev.as<rs2::playback>();
     playback.resume();
-    _log_debug("_post_start_all_cameras: playback resumed at " + std::to_string(playback.get_position()));
+    if (debug) _log_debug("_post_start_all_cameras: playback resumed at " + std::to_string(playback.get_position()));
 }
 
 
