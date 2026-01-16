@@ -140,6 +140,7 @@ protected:
     
     rs2::frameset previous_captured_frameset;
     rs2::frameset current_captured_frameset;    //< Output of capturer, input to processing
+    bool waiting_for_capture = false;           //< Boolean to stop issuing warning messages while paused.
     rs2::frameset current_processed_frameset;   //< Output of processing
     cwipc_pcl_pointcloud current_pcl_pointcloud;    //< Output of processing
 

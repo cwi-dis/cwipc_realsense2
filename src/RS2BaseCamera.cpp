@@ -527,9 +527,10 @@ void RS2BaseCamera::_processing_thread_main() {
         rs2::frameset processing_frameset;
         bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset, 1000);
         if (!ok) {
-            if (!camera_stopped) _log_warning("processing thread dequeue timeout");
+            if (waiting_for_capture) _log_warning("processing thread dequeue timeout");
             continue;
         }
+        waiting_for_capture = false;
 #ifdef CWIPC_DEBUG_SYNC
     if (debug) {
         uint64_t depth_timestamp = processing_frameset.get_depth_frame().get_timestamp();
@@ -711,6 +712,7 @@ void RS2BaseCamera::_post_start_this_camera(rs2::pipeline_profile& profile) {
 }
 
 rs2::frameset RS2BaseCamera::_wait_for_frames_from_pipeline() {
+    waiting_for_capture = true;
     rs2::frameset frames = camera_pipeline.wait_for_frames();
 #ifdef CWIPC_DEBUG_SYNC
     if (debug) {
