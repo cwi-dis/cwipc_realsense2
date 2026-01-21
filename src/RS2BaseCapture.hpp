@@ -273,27 +273,28 @@ protected:
     /// Check that all cameras are connected.
     virtual bool _check_cameras_connected() override = 0;
     /// Start all cameras.
-    virtual void _start_cameras() override final {
+    virtual bool _start_cameras() override final {
         bool start_error = false;
         for (auto cam: cameras) {
             if (!cam->pre_start_all_cameras()) {
                 start_error = true;
             }
         }
-        try {
-            for (auto cam: cameras) {
-                if (!cam->start_camera()) {
-                    start_error = true;
+        if (!start_error) {
+            try {
+                for (auto cam: cameras) {
+                    if (!cam->start_camera()) {
+                        start_error = true;
+                    }
                 }
+            } catch(const rs2::error& e) {
+                _log_error("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
+                start_error = true;
             }
-        } catch(const rs2::error& e) {
-            _log_error("Exception while starting camera: " + e.get_failed_function() + ": " + e.what());
-            throw;
         }
         if (start_error) {
             _log_error("Not all cameras could be started");
-            _unload_cameras();
-            return;
+            return false;
         }
         //
         // start the per-camera capture threads
@@ -305,6 +306,7 @@ protected:
         for (auto cam: cameras) {
             cam->post_start_all_cameras();
         }
+        return true;
     }
     
     /// Stop and unload all cameras and release all resources.
