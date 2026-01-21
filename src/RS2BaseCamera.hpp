@@ -73,7 +73,7 @@ protected:
     }
     /// Realsense-specific: Prepare the rs2::config structure.
     /// This may enable the recorder, it may enable the correct streams that we want. 
-    virtual void _init_config_for_this_camera(rs2::config& cfg) = 0;
+    virtual void _init_pipeline_for_this_camera(rs2::config& cfg) = 0;
     virtual bool _init_filters() override final;
     virtual bool _init_skeleton_tracker() override final {
         // librealsense does not provide body tracking.
