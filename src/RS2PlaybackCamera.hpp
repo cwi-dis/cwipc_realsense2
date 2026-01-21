@@ -17,8 +17,9 @@ public:
     RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, std::string recording_filename);
     ~RS2PlaybackCamera();
 
-    virtual void post_start_all_cameras() override;
-    virtual bool seek(uint64_t timestamp) override;
+    virtual void post_start_all_cameras() override final;
+    virtual bool seek(uint64_t timestamp) override final;
+    virtual bool eof() override final { return playback_eof; }
     virtual void pause();
     virtual void resume();
 protected:
@@ -29,5 +30,6 @@ private:
     std::string playback_filename;
     bool playback_realtime = false;
     bool playback_loop = true;
+    bool playback_eof = false;
 };
 #endif // cwipc_realsense_RS2PlaybackCamera_hpp

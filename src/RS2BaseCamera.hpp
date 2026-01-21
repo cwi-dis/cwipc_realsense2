@@ -34,6 +34,10 @@ public:
     virtual bool is_sync_master() override final {
         return camera_sync_is_master;
     }
+    /// Seek. Fails for cameras, overriden for playback cameras.
+    virtual bool seek(uint64_t timestamp) override = 0;
+    /// Are we at end-of-file? Always false for cameras.
+    virtual bool eof() override = 0;
 
     /// Implementation of mapping 2D color image coordinates to 2D depth image coordinates.
     virtual bool mapcolordepth(int x_c, int y_c, int *out2d) override final;
@@ -89,8 +93,6 @@ protected:
 protected:
     /// Create a cwipc_pcl_pointcloud from depth and color frame.
     cwipc_pcl_pointcloud _generate_point_cloud(rs2::depth_frame depth, rs2::video_frame color);
-    /// Seek. Fails for cameras, overriden for playback cameras.
-    virtual bool seek(uint64_t timestamp) = 0;
     /// Called after this camera has started. Obtains actual hardware parameters and
     /// stores those in the configuration structures.
     /// Camera extends it to ensure recordings are as synchroniszed as possible.

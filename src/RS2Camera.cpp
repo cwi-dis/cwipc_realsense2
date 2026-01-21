@@ -16,10 +16,6 @@
 
 #include "RS2Camera.hpp"
 
-bool RS2Camera::seek(uint64_t timestamp) {
-    return false;
-}
-
 void RS2Camera::_init_pipeline_for_this_camera(rs2::config &cfg) {
     cfg.enable_device(serial);
     uses_recorder = record_to_file != "";

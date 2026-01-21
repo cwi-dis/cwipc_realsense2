@@ -8,8 +8,9 @@ class RS2Camera : public RS2BaseCamera {
 public:
     using RS2BaseCamera::RS2BaseCamera;
     
-    virtual void post_start_all_cameras() override;
-    virtual bool seek(uint64_t timestamp) override;
+    virtual void post_start_all_cameras() override final;
+    virtual bool seek(uint64_t timestamp) override final { return false; }
+    virtual bool eof() override final { return false;}
 protected:
     virtual void _init_pipeline_for_this_camera(rs2::config &cfg) override final;
     virtual void _post_start_this_camera(rs2::pipeline_profile& profile) override final;
