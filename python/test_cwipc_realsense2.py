@@ -5,26 +5,6 @@ import os
 import sys
 import tempfile
 
-if 0:
-    # This code can be used to debug the C++ code in XCode:
-    # - build for XCode with cmake
-    # - build the cwipc_util project
-    # - Fix the pathname for the dylib
-    # - run `python3 test_cwipc_util`
-    # - Attach to python in the XCode debugger
-    # - press return to python3.
-    import _cwipc_realsense2
-    _cwipc_realsense2.cwipc_realsense2_dll_load('C:/Users/vrtogether/src/VRtogether/cwipc_realsense2/build/bin/RelWithDebInfo/cwipc_realsense2.dll')
-    print('Type return after attaching in XCode debugger (pid=%d) - ' % os.getpid())
-    sys.stdin.readline()
-
-#
-# Windows search path is horrible. Work around it for testing with an environment variable
-#
-if 'CWIPC_TEST_DLL' in os.environ:
-    filename = os.environ['CWIPC_TEST_DLL']
-    dllobj = _cwipc_realsense2.cwipc_realsense2_dll_load(filename)
-
 #
 # Find directories for test inputs and outputs
 #
@@ -32,9 +12,6 @@ _thisdir=os.path.dirname(os.path.join(os.getcwd(), __file__))
 _topdir=os.path.dirname(_thisdir)
 TEST_FIXTURES_DIR=os.path.join(_topdir, "tests", "fixtures")
 TEST_FIXTURES_PLAYBACK_CONFIG=os.path.join(TEST_FIXTURES_DIR, "input", "realsense2_recording", "cameraconfig.json")
-TEST_OUTPUT_DIR=os.path.join(TEST_FIXTURES_DIR, "output")
-if not os.access(TEST_OUTPUT_DIR, os.W_OK):
-    TEST_OUTPUT_DIR=tempfile.mkdtemp('cwipc_realsense2_test')  # type: ignore
 
 class TestApi(unittest.TestCase):
     
