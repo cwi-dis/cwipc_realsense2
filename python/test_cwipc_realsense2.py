@@ -95,6 +95,8 @@ class TestApi(unittest.TestCase):
         """Test that we can grab a realsense2 image from the playback grabber"""
         grabber = None
         pc = None
+        if not os.path.exists(TEST_FIXTURES_PLAYBACK_CONFIG):
+            self.skipTest(f'Playback config file {TEST_FIXTURES_PLAYBACK_CONFIG} not found')
         try:
             grabber = _cwipc_realsense2.cwipc_realsense2_playback(TEST_FIXTURES_PLAYBACK_CONFIG)
             self.assertFalse(grabber.eof())
@@ -126,3 +128,5 @@ class TestApi(unittest.TestCase):
         p1 = points[halfway].x, points[halfway].y, points[halfway].z, points[halfway].r, points[halfway].g, points[halfway].b
         self.assertNotEqual(p0, p1)
         
+if __name__ == '__main__':
+    unittest.main()
