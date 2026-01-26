@@ -1,12 +1,6 @@
-//
-//  utils.cpp
-//
-//  Created by Fons Kuijk on 12-12-18.
-//
 #if defined(WIN32) || defined(_WIN32)
 #define _CWIPC_REALSENSE2_EXPORT __declspec(dllexport)
 #endif
-#define _CWIPC_CONFIG_IMPLEMENTATION
 #include "RS2Config.hpp"
 
 #include <fstream>
@@ -206,7 +200,7 @@ bool RS2CaptureConfig::from_file(const char* filename, std::string typeWanted) {
         std::ifstream f(filename);
 
         if (!f.is_open()) {
-            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + filename + " not found");
+            cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", std::string("CameraConfig ") + filename + " not found");
             return false;
         }
         json_data = json::parse(f);
@@ -215,7 +209,7 @@ bool RS2CaptureConfig::from_file(const char* filename, std::string typeWanted) {
         json_data.at("version").get_to(version);
 
         if (version != 5 && version != 4 && version != 3) {
-            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + filename + " ignored, is not version 5, 4 or 3");
+            cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", std::string("CameraConfig ") + filename + " ignored, is not version 5, 4 or 3");
             return false;
         }
 
@@ -223,13 +217,13 @@ bool RS2CaptureConfig::from_file(const char* filename, std::string typeWanted) {
         json_data.at("type").get_to(type);
 
         if (type != typeWanted) {
-            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + filename + " ignored, is not " + typeWanted + " but " + type);
+            cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", std::string("CameraConfig ") + filename + " ignored, is not " + typeWanted + " but " + type);
             return false;
         }
 
         _from_json(json_data);
     } catch (const std::exception& e) {
-        cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + filename + ": exception " + e.what() );
+        cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", std::string("CameraConfig ") + filename + ": exception " + e.what() );
         return false;
     }
 
@@ -246,7 +240,7 @@ bool RS2CaptureConfig::from_string(const char* jsonBuffer, std::string typeWante
         json_data.at("version").get_to(version);
 
         if (version != 3) {
-            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + "(inline buffer) " + "ignored, is not version 3");
+            cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", std::string("CameraConfig ") + "(inline buffer) " + " is not version 3");
             return false;
         }
 
@@ -254,13 +248,13 @@ bool RS2CaptureConfig::from_string(const char* jsonBuffer, std::string typeWante
         json_data.at("type").get_to(type);
 
         if (type != typeWanted) {
-            cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + "(inline buffer) " + "ignored: type=" + type + " but expected " + type);
+            cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", std::string("CameraConfig ") + "(inline buffer) " + " type=" + type + " but expected " + typeWanted);
             return false;
         }
 
         _from_json(json_data);
     } catch (const std::exception& e) {
-        cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", std::string("CameraConfig ") + "(inline buffer) " + ": exception " + e.what() );
+        cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", std::string("CameraConfig ") + "(inline buffer) " + ": exception " + e.what() );
         return false;
     }
 

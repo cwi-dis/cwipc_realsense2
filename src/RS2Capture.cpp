@@ -207,7 +207,10 @@ bool RS2Capture::_apply_auto_config() {
         cd.cameraposition = { 0, 0, 0 };
         configuration.all_camera_configs.push_back(cd);
     }
-
+    if (configuration.all_camera_configs.size() == 0) {
+        _log_error("no cameras found during auto-configuration");
+        return false;
+    }   
     return true;
 
 }

@@ -135,17 +135,19 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
         return NULL;
     }
 
+    cwipc_log_set_errorbuf(errorMessage);
     cwipc_source_realsense2_impl *rv = new cwipc_source_realsense2_impl(configFilename);
 
     // If the grabber found cameras everything is fine
     if (rv && rv->is_valid()) {
+        cwipc_log_set_errorbuf(nullptr);
         return rv;
     }
 
     delete rv;
-
+    cwipc_log_set_errorbuf(nullptr);
     if (errorMessage && *errorMessage == NULL) {
-        *errorMessage = (char *)"cwipc_realsense2: no realsense cameras found";
+        *errorMessage = (char *)"cwipc_realsense2: unspecified error";
     }
 
     return NULL;
@@ -159,19 +161,19 @@ cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **
     if (!_rs2_versioncheck(errorMessage)) {
         return NULL;
     }
-
+    cwipc_log_set_errorbuf(errorMessage);
     cwipc_source_realsense2_playback_impl *rv = new cwipc_source_realsense2_playback_impl(configFilename);
 
     // If the grabber found cameras everything is fine
     if (rv && rv->is_valid()) {
+        cwipc_log_set_errorbuf(nullptr);
         return rv;
     }
 
     delete rv;
-
-    cwipc_log(CWIPC_LOG_LEVEL_ERROR, "cwipc_realsense2", "unspecified error from playback constructor");
+    cwipc_log_set_errorbuf(nullptr);
     if (errorMessage && *errorMessage == NULL) {
-        *errorMessage = (char *)"cwipc_realsense2_playback: unspecified error from constructor";
+        *errorMessage = (char *)"cwipc_realsense2_playback: unspecified error";
     }
 
     return NULL;
