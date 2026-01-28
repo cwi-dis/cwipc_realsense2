@@ -12,33 +12,25 @@
 
 int main(int argc, char** argv) {
     //char *message = NULL;
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " count directory [configfile]" << std::endl;
-        std::cerr << "Creates COUNT pointclouds from a realsense2 camera and stores the PLY files in the given DIRECTORY" << std::endl;
+    if (argc != 4) {
+        std::cerr << "Usage: " << argv[0] << " count directory configfile" << std::endl;
+        std::cerr << "Capture COUNT pointclouds from a realsense2 playback cameraconfig.json file and stores the PLY files in the given DIRECTORY" << std::endl;
         std::cerr << "If directory is - then drop the pointclouds on the floor" << std::endl;
 
         return 2;
     }
 
+    char *configFile = argv[3];
     int count = atoi(argv[1]);
     char filename[500];
     char *error = NULL;
 
     cwipc_tiledsource *generator;
-    char *configFile = NULL;
 
-    if (argc == 4) {
-        configFile = argv[3];
-    }
-
-    generator = cwipc_realsense2(configFile, &error, CWIPC_API_VERSION);
+    generator = cwipc_realsense2_playback(configFile, &error, CWIPC_API_VERSION);
 
     if (generator == NULL) {
-        std::cerr << argv[0] << ": creating realsense2 grabber failed: " << error << std::endl;
-
-        if (getenv("CWIPC_REALSENSE2_TESTING") != NULL) {
-            return 0; // No failure while running tests, so we can at least test linking, etc.
-        }
+        std::cerr << argv[0] << ": creating realsense2_playback grabber failed: " << error << std::endl;
 
         return 1;
     }
@@ -52,14 +44,6 @@ int main(int argc, char** argv) {
     generator->request_auxiliary_data("depth");
 #endif
 
-#ifdef DEBUG_CONFIG
-    size_t configSize = generator->get_config(nullptr, 0);
-    char* configBuf = (char*)malloc(configSize + 1);
-    memset(configBuf, 0, configSize + 1);
-    generator->get_config(configBuf, configSize);
-
-    std::cerr << "cameraconfig as json:\n=================\n" << configBuf << "\n======================\n";
-#endif
 
     cwipc_tileinfo tif;
     generator->get_tileinfo(0, &tif);
@@ -73,12 +57,10 @@ int main(int argc, char** argv) {
         cwipc *pc = NULL;
 
         while(1) {
-            pc = generator->get();
-
-            if (pc == NULL) {
-                error = (char *)"grabber returned NULL";
-                ok = -1;
-                break;
+            for(int i=0; i<10; i++) {
+                pc = generator->get();
+                if (pc != NULL) break;
+                std::cerr << "Dropping NULL point cloud" << std::endl;
             }
 
             if (pc->count() > 0) {
@@ -112,6 +94,14 @@ int main(int argc, char** argv) {
 #endif
         pc->free();
     }
+#ifdef DEBUG_CONFIG
+    size_t configSize = generator->get_config(nullptr, 0);
+    char* configBuf = (char*)malloc(configSize + 1);
+    memset(configBuf, 0, configSize + 1);
+    generator->get_config(configBuf, configSize);
+
+    std::cerr << "cameraconfig as json:\n=================\n" << configBuf << "\n======================\n";
+#endif
 
     generator->free();
 

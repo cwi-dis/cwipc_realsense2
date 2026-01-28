@@ -241,6 +241,8 @@ protected:
         const char *extension = strrchr(configFilename, '.');
         if (extension != nullptr && strcmp(extension, ".json") == 0) {
             return configuration.from_file(configFilename, type);
+        } else {
+            _log_error("Unknown configuration file type: '" + std::string(configFilename) + "'");
         }
 
         return false;
