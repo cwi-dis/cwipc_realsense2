@@ -5,7 +5,6 @@
 
 #include "cwipc_util/api_pcl.h"
 #include "cwipc_util/api.h"
-#include "cwipc_util/vectors.h"
 #include "cwipc_realsense2/api.h"
 
 #include "RS2Config.hpp"

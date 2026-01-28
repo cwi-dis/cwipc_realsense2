@@ -8,7 +8,7 @@
 
 #include <librealsense2/rs.hpp>
 
-#include "cwipc_util/capturers.hpp"
+#include "cwipc_util/internal/capturers.hpp"
 
 #include "RS2Config.hpp"
 
