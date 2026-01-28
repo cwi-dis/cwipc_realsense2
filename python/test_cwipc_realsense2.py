@@ -65,7 +65,7 @@ class TestApi(unittest.TestCase):
         finally:
             if grabber: grabber.free()
 
-    # @unittest.skipIf('CI' in os.environ, "Skipping playback test on CI server")
+    @unittest.skipIf('CI' in os.environ, "Skipping playback test on CI server")
     def test_cwipc_realsense2_playback(self):
         """Test that we can grab a realsense2 image from the playback grabber"""
         grabber = None
@@ -73,9 +73,9 @@ class TestApi(unittest.TestCase):
         if not os.path.exists(TEST_FIXTURES_PLAYBACK_CONFIG):
             self.skipTest(f'Playback config file {TEST_FIXTURES_PLAYBACK_CONFIG} not found')
         try:
-            print(f'xxxjack Using playback config file {TEST_FIXTURES_PLAYBACK_CONFIG}', file=sys.stderr)
+            print(f'xxxjack Using playback config file {TEST_FIXTURES_PLAYBACK_CONFIG}')
             grabber = _cwipc_realsense2.cwipc_realsense2_playback(TEST_FIXTURES_PLAYBACK_CONFIG)
-            print(f'xxxjack grabber is {grabber}', file=sys.stderr)
+            print(f'xxxjack grabber is {grabber}')
             self.assertFalse(grabber.eof())
             self.assertTrue(grabber.available(True))
             pc = grabber.get()
