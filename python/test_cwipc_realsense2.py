@@ -16,12 +16,9 @@ TEST_FIXTURES_PLAYBACK_CONFIG=os.path.join(TEST_FIXTURES_DIR, "input", "realsens
 class TestApi(unittest.TestCase):
     
     def _open_grabber(self):
-        try:
-            grabber = _cwipc_realsense2.cwipc_realsense2("auto")
-        except cwipc.CwipcError as arg:
-            if 'no cameras found' in str(arg):
-                self.skipTest(str(arg))
-            raise
+        if not 'CWIPC_TEST_HAVE_REALSENSE2_HARDWARE' in os.environ:
+            self.skipTest('CWIPC_TEST_HAVE_REALSENSE2_HARDWARE not set in environment')
+        grabber = _cwipc_realsense2.cwipc_realsense2("auto")
         return grabber
         
     def test_cwipc_realsense2(self):
