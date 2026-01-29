@@ -48,6 +48,9 @@ public:
         if (!_apply_config(configFilename)) {
             return false;
         }
+        if (cwipc_log_get_level() >= CWIPC_LOG_LEVEL_DEBUG) {
+            configuration.debug = true;
+        }
 
         auto camera_config_count = configuration.all_camera_configs.size();
         if (camera_config_count == 0) {
