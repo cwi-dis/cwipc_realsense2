@@ -60,9 +60,8 @@ def cwipc_realsense2_dll_load(libname : Optional[str]=None):
     
     _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_realsense2.restype = cwipc_tiledsource_p
-    if hasattr(_cwipc_realsense2_dll_reference, 'cwipc_realsense2_playback'):
-        _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
-        _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.restype = cwipc_tiledsource_p
+    _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
+    _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.restype = cwipc_tiledsource_p
 
     return _cwipc_realsense2_dll_reference
 
