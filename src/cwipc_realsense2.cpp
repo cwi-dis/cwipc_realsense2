@@ -56,14 +56,6 @@ template<class GrabberClass, class CameraConfigClass=RS2CameraConfig>
 class cwipc_source_realsense2_impl_base : public cwipc_capturer_impl_base<GrabberClass, CameraConfigClass>  {
 public:
     using cwipc_capturer_impl_base<GrabberClass, CameraConfigClass>::cwipc_capturer_impl_base;
-
-    virtual bool start() override final {
-        return this->m_grabber->start();
-    }
-
-    virtual void stop() override final {
-        this->m_grabber->stop();
-    }
     
     virtual void request_auxiliary_data(const std::string& name) override final {
         cwipc_tiledsource::request_auxiliary_data(name);

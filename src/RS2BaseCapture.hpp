@@ -34,12 +34,12 @@ public:
         _unload_cameras();
     }
 
-    virtual bool start()  {
+    virtual bool start() override final {
         cwipc_log(CWIPC_LOG_LEVEL_WARNING, CLASSNAME, "start() not yet implemented (nor needed)");
         return false;return true;
     }
 
-    virtual void stop() {
+    virtual void stop() override final{
         cwipc_log(CWIPC_LOG_LEVEL_WARNING, CLASSNAME, "stop() not yet implemented (nor needed)");
     }   
 
