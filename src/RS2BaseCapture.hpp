@@ -36,7 +36,7 @@ public:
 
     virtual bool start() override final {
         cwipc_log(CWIPC_LOG_LEVEL_WARNING, CLASSNAME, "start() not yet implemented (nor needed)");
-        return false;return true;
+        return true;
     }
 
     virtual void stop() override final{
