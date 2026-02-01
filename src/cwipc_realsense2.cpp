@@ -138,7 +138,7 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
     cwipc_source_realsense2_impl *rv = new cwipc_source_realsense2_impl(configFilename);
 
     // If the grabber found cameras everything is fine
-    if (rv && rv->is_valid()) {
+    if (rv && rv->can_start()) {
         cwipc_log_set_errorbuf(nullptr);
         return rv;
     }
@@ -164,7 +164,7 @@ cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **
     cwipc_source_realsense2_playback_impl *rv = new cwipc_source_realsense2_playback_impl(configFilename);
 
     // If the grabber found cameras everything is fine
-    if (rv && rv->is_valid()) {
+    if (rv && rv->can_start()) {
         cwipc_log_set_errorbuf(nullptr);
         return rv;
     }

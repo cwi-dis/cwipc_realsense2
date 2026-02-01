@@ -34,9 +34,17 @@ public:
         _unload_cameras();
     }
 
+    virtual bool can_start() override final {
+        return _is_initialized;
+    }
+
+    virtual bool is_playing() override final {
+        return control_thread != nullptr; 
+    }
+
     virtual bool start() override final {
-        if (!is_valid()) {
-            _log_error("start() called but not valid()");
+        if (!can_start()) {
+            _log_error("start() called but not initialized");
             return false;
         }
         auto camera_config_count = configuration.all_camera_configs.size();
@@ -84,10 +92,6 @@ public:
         return cameras.size(); 
     }
 
-    virtual bool is_valid() override final {
-        return cameras.size() > 0; 
-    }
-
     virtual bool config_reload(const char *configFilename) override final {
         if (control_thread != nullptr) {
             _log_error("config_reload: cannot reload configuration while capturer is running");
@@ -95,11 +99,13 @@ public:
         }
 
         if (!_apply_config(configFilename)) {
+            _is_initialized = false;
             return false;
         }
         if (cwipc_log_get_level() >= CWIPC_LOG_LEVEL_DEBUG) {
             configuration.debug = true;
         }
+        _is_initialized = true;
         return true;
     }
 
@@ -133,8 +139,8 @@ public:
 
     /// Returns true when a new point cloud is available.
     bool pointcloud_available(bool wait) override final {
-        if (!is_valid()) {
-            // xxxjack should we log a warning here?
+        if (!is_playing()) {
+            _log_warning("available() called but not playing");
             return false;
         }
 
@@ -153,8 +159,8 @@ public:
 
     /// Returns the new point cloud. The caller is now the owner of this point cloud.
     cwipc* get_pointcloud() override final {
-        if (!is_valid()) {
-            _log_warning("get_pointcloud: returning NULL, no cameras");
+        if (!is_playing()) {
+            _log_error("get_pointcloud: not playing");
           return nullptr;
         }
 
@@ -181,7 +187,7 @@ public:
 
     /// Returns a reasonable point size for the current capturer.
     float get_pointSize() override final  {
-        if (!is_valid()) {
+        if (!is_playing()) {
             // xxxjack should we log a warning here?
             return 0;
         }
@@ -564,6 +570,7 @@ protected:
     rs2::context capturer_context;
 
     std::vector<Type_our_camera*> cameras;    ///< The per-camera capturers
+    bool _is_initialized = false;
     bool stopped = false;
     bool _eof = false;
 
