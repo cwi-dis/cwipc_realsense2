@@ -31,7 +31,7 @@ extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16;   //!< Constant: 16-bi
  * similar to the `cwipc_synthetic()` source.
  */
 
-_CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion);
+_CWIPC_REALSENSE2_EXPORT cwipc_activesource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion);
 
 /** \brief Capture pointclouds from realsense2 recordings (.bag files).
  * \param configFilename An option string with the filename of the camera-recording configuration file.
@@ -44,7 +44,7 @@ _CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2(const char *configF
  * to the file used for each camera (plus the usual transformation matrices and other parameters).
  */
 
-_CWIPC_REALSENSE2_EXPORT cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **errorMessage, uint64_t apiVersion);
+_CWIPC_REALSENSE2_EXPORT cwipc_activesource* cwipc_realsense2_playback(const char *configFilename, char **errorMessage, uint64_t apiVersion);
 #ifdef __cplusplus
 };
 #endif

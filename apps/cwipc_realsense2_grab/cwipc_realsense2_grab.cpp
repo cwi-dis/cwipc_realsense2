@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     char filename[500];
     char *error = NULL;
 
-    cwipc_tiledsource *generator;
+    cwipc_activesource *generator;
     char *configFile = NULL;
 
     if (argc == 4) {

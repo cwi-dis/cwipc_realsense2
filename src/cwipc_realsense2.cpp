@@ -58,11 +58,11 @@ public:
     using cwipc_capturer_impl_base<GrabberClass, CameraConfigClass>::cwipc_capturer_impl_base;
     
     virtual void request_auxiliary_data(const std::string& name) override final {
-        cwipc_tiledsource::request_auxiliary_data(name);
+        cwipc_activesource::request_auxiliary_data(name);
         this->m_grabber->request_auxiliary_data(
-            cwipc_tiledsource::auxiliary_data_requested("rgb"), 
-            cwipc_tiledsource::auxiliary_data_requested("depth"), 
-            cwipc_tiledsource::auxiliary_data_requested("timestamps"),
+            cwipc_activesource::auxiliary_data_requested("rgb"), 
+            cwipc_activesource::auxiliary_data_requested("depth"), 
+            cwipc_activesource::auxiliary_data_requested("timestamps"),
             false
         );
     }
@@ -125,7 +125,7 @@ public:
 // C-compatible entry points
 //
 
-cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
+cwipc_activesource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
     if (!_api_versioncheck(errorMessage, apiVersion)) {
         return NULL;
     }
@@ -153,7 +153,7 @@ cwipc_tiledsource* cwipc_realsense2(const char *configFilename, char **errorMess
 }
 
 
-cwipc_tiledsource* cwipc_realsense2_playback(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
+cwipc_activesource* cwipc_realsense2_playback(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
     if (!_api_versioncheck(errorMessage, apiVersion)) {
         return NULL;
     }
