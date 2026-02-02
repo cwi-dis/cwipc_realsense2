@@ -7,7 +7,7 @@
 #include "cwipc_util/api.h"
 #include "cwipc_realsense2/api.h"
 
-#undef DEBUG_AUXDATA
+#undef DEBUG_METADATA
 #undef DEBUG_CONFIG
 
 int main(int argc, char** argv) {
@@ -35,9 +35,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-#ifdef DEBUG_AUXDATA
-    generator->request_auxiliary_data("rgb");
-    generator->request_auxiliary_data("depth");
+#ifdef DEBUG_METADATA
+    generator->request_metadata("rgb");
+    generator->request_metadata("depth");
 #endif
 
 #ifdef DEBUG_CONFIG
@@ -81,20 +81,20 @@ int main(int argc, char** argv) {
             }
         }
 
-#ifdef DEBUG_AUXDATA
-        cwipc_auxiliary_data* ap = pc->access_auxiliary_data();
+#ifdef DEBUG_METADATA
+        cwipc_metadata* ap = pc->access_metadata();
 
         if (ap == nullptr) {
-            std::cerr << argv[0] << ": access_auxiliary_data: returned null pointer" << std::endl;
+            std::cerr << argv[0] << ": access_metadata: returned null pointer" << std::endl;
         } else {
-            std::cerr << argv[0] << ": auxdata: " << ap->count() << " items:" << std::endl;
+            std::cerr << argv[0] << ": metadata: " << ap->count() << " items:" << std::endl;
 
             for (int i=0; i<ap->count(); i++) {
                 const char *name = ap->name(i).c_str();
                 const char *description = ap->description(i).c_str();
                 size_t size = ap->size(i);
                 void *pointer = ap->pointer(i);
-                std::cerr << argv[0] << ": auxdata: item " << i << " name=" << name << ", size=" << (int)size << ", description=" << description << ", pointer=0x" << std::hex << (uint64_t)pointer << std::endl;
+                std::cerr << argv[0] << ": metadata: item " << i << " name=" << name << ", size=" << (int)size << ", description=" << description << ", pointer=0x" << std::hex << (uint64_t)pointer << std::endl;
             }
         }
 #endif

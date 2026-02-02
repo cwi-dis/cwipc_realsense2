@@ -11,7 +11,7 @@
 #undef CWIPC_DEBUG_THREAD
 #define CWIPC_DEBUG_SYNC
 
-// Only for RGB and Depth auxdata: we have the option of mapping depth to color or color to depth.
+// Only for RGB and Depth metadata: we have the option of mapping depth to color or color to depth.
 #define MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
 
 // This is the dll source, so define external symbols as dllexport on windows.
@@ -36,7 +36,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
   filtering(configuration.filtering),
   processing(configuration.processing),
   hardware(configuration.hardware),
-  auxData(configuration.auxData),
+  metadata(configuration.metadata),
   current_pcl_pointcloud(nullptr),
   processing_frame_queue(1),
   camera_pipeline(_ctx),
@@ -350,9 +350,9 @@ void RS2BaseCamera::wait_for_pointcloud_processed() {
     processing_done = false;
 }
 
-void RS2BaseCamera::save_frameset_auxdata(cwipc *pc)
+void RS2BaseCamera::save_frameset_metadata(cwipc *pc)
 {
-    if (!auxData.want_auxdata_depth && !auxData.want_auxdata_rgb && !auxData.want_auxdata_timestamps) return;
+    if (!metadata.want_depth && !metadata.want_rgb && !metadata.want_metadata_timestamps) return;
     std::unique_lock<std::mutex> lock(processing_mutex);
 
     auto aligned_frameset = current_processed_frameset;
@@ -360,7 +360,7 @@ void RS2BaseCamera::save_frameset_auxdata(cwipc *pc)
     rs2::video_frame color_image = aligned_frameset.get_color_frame();
     rs2::video_frame depth_image = aligned_frameset.get_depth_frame();
         
-    if (auxData.want_auxdata_timestamps) {
+    if (metadata.want_metadata_timestamps) {
         
         int64_t depth_framenum = depth_image.get_frame_number();
         int64_t depth_timestamp = depth_image.get_timestamp();
@@ -381,11 +381,11 @@ void RS2BaseCamera::save_frameset_auxdata(cwipc *pc)
         if (playback) {
             timestamp_data += ",filetime_ns=" + std::to_string(playback.get_position());
         }
-        cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
+        cwipc_metadata *ap = pc->access_metadata();
         std::string name = "timestamps." + serial;
         ap->_add(name, timestamp_data, nullptr, 0, ::free);
     }
-    if (auxData.want_auxdata_rgb) {
+    if (metadata.want_rgb) {
         std::string name = "rgb." + serial;
         //const void* pointer = color.get_data();
         const size_t size = color_image.get_data_size();
@@ -405,12 +405,12 @@ void RS2BaseCamera::save_frameset_auxdata(cwipc *pc)
 
         if (pointer) {
             memcpy(pointer, color_image.get_data(), size);
-            cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
+            cwipc_metadata *ap = pc->access_metadata();
             ap->_add(name, description, pointer, size, ::free);
         }
     }
 
-    if (auxData.want_auxdata_depth) {
+    if (metadata.want_depth) {
         std::string name = "depth." + serial;
         const size_t size = depth_image.get_data_size();
         int width = depth_image.get_width();
@@ -429,7 +429,7 @@ void RS2BaseCamera::save_frameset_auxdata(cwipc *pc)
 
         if (pointer) {
             memcpy(pointer, depth_image.get_data(), size);
-            cwipc_auxiliary_data *ap = pc->access_auxiliary_data();
+            cwipc_metadata *ap = pc->access_metadata();
             ap->_add(name, description, pointer, size, ::free);
         }
     }

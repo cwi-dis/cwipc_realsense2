@@ -127,10 +127,10 @@ public:
     }
 
     /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
-    virtual void request_auxiliary_data(bool rgb, bool depth, bool timestamps, bool skeleton) override final {
-        configuration.auxData.want_auxdata_rgb = rgb;
-        configuration.auxData.want_auxdata_depth = depth;
-        configuration.auxData.want_auxdata_timestamps = timestamps;
+    virtual void request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton) override final {
+        configuration.metadata.want_rgb = rgb;
+        configuration.metadata.want_depth = depth;
+        configuration.metadata.want_metadata_timestamps = timestamps;
     }
 
     //
@@ -237,7 +237,7 @@ protected:
     virtual bool _apply_config(const char* configFilename) override {
         // Clear out old configuration
         RS2CaptureConfig newConfiguration;
-        newConfiguration.auxData = configuration.auxData; // preserve auxdata requests
+        newConfiguration.metadata = configuration.metadata; // preserve metadata requests
         configuration = newConfiguration;
 
         //
@@ -443,7 +443,7 @@ protected:
             cwipc* newPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
 
             for (auto cam : cameras) {
-                cam->save_frameset_auxdata(newPC);
+                cam->save_frameset_metadata(newPC);
             }
             
             if (stopped) break;
@@ -559,7 +559,7 @@ protected:
             _log_error("Combined pointcloud has different number of points than expected");
         }
 
-        // No need to merge aux_data: already inserted into mergedPC by each camera
+        // No need to merge metadata: already inserted into mergedPC by each camera
     }    
 public:
     /// Current configuration. Has to be public because cwipc_realsense2 needs access to all sorts of internals

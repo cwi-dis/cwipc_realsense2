@@ -66,8 +66,8 @@ public:
     /// The capturer will use this to populate the resultant cwipc point cloud with points
     /// from all cameras.
     cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pcl_pointcloud; }
-    /// Step 5: Save auxdata from frameset into given cwipc object.
-    void save_frameset_auxdata(cwipc *pc);
+    /// Step 5: Save metadata from frameset into given cwipc object.
+    void save_frameset_metadata(cwipc *pc);
 protected:
     // internal API that is "shared" with other implementations (realsense, kinect)
     virtual bool _init_hardware_for_this_camera() override final { 
@@ -124,7 +124,7 @@ protected:
     RS2CaptureProcessingConfig& processing;
     RS2CameraProcessingParameters& filtering;
     RS2CameraHardwareConfig& hardware;
-    RS2CaptureAuxdataConfig& auxData;
+    RS2CaptureMetadataConfig& metadata;
     std::string record_to_file;
     bool uses_recorder = false;
     bool camera_sync_is_master;

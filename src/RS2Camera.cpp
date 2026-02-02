@@ -3,7 +3,7 @@
 #undef CWIPC_DEBUG_THREAD
 #define CWIPC_DEBUG_SYNC
 
-// Only for RGB and Depth auxdata: we have the option of mapping depth to color or color to depth.
+// Only for RGB and Depth metadata: we have the option of mapping depth to color or color to depth.
 #define MAP_DEPTH_IMAGE_TO_COLOR_IMAGE
 
 // This is the dll source, so define external symbols as dllexport on windows.
