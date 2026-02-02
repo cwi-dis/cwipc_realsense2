@@ -8,7 +8,7 @@
 #include "cwipc_realsense2/api.h"
 
 #undef DEBUG_AUXDATA
-#define DEBUG_CONFIG
+#undef DEBUG_CONFIG
 
 int main(int argc, char** argv) {
     //char *message = NULL;
@@ -39,10 +39,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (error) {
-        std::cerr << argv[0] << ": warning while creating realsense2 grabber: " << error << std::endl;
-    }
-
 #ifdef DEBUG_AUXDATA
     generator->request_auxiliary_data("rgb");
     generator->request_auxiliary_data("depth");
@@ -58,35 +54,31 @@ int main(int argc, char** argv) {
 #endif
 
     cwipc_tileinfo tif;
-    generator->get_tileinfo(0, &tif);
-    generator->get_tileinfo(1, &tif);
-    generator->get_tileinfo(2, &tif);
-    generator->get_tileinfo(3, &tif);
-    generator->get_tileinfo(4, &tif);
-    int ok = 0;
-
-    while (count-- > 0 && ok == 0) {
+    bool ok = generator->get_tileinfo(0, &tif);
+    if (!ok) {
+        std::cerr << argv[0] << ": get_tileinfo(0) failed" << std::endl;
+        return 1;
+    }
+    generator->start();
+    while (count-- > 0) {
         cwipc *pc = NULL;
-
-        while(1) {
+        pc = generator->get();
+        if (pc == NULL) {
+            std::cerr << argv[0] << ": get() returned NULL. Try again." << std::endl;
             pc = generator->get();
-
             if (pc == NULL) {
-                error = (char *)"grabber returned NULL";
-                ok = -1;
+                std::cerr << argv[0] << ": get() returned NULL on second attempt" << std::endl;
+                ok = false;
                 break;
             }
-
-            if (pc->count() > 0) {
-                break;
-            }
-
-            std::cerr << argv[0] << ": warning: empty pointcloud, grabbing again" << std::endl;
         }
-
         if (strcmp(argv[2], "-") != 0) {
             snprintf(filename, sizeof(filename), "%s/pointcloud-%" PRIu64 ".ply", argv[2], pc->timestamp());
-            ok = cwipc_write(filename, pc, &error);
+            ok = cwipc_write(filename, pc, &error) == 0;
+            if (!ok) {
+                std::cerr << argv[0] << ": Error writing pointcloud to " << filename << ": " << error << std::endl;
+                break;
+            }
         }
 
 #ifdef DEBUG_AUXDATA
@@ -102,17 +94,18 @@ int main(int argc, char** argv) {
                 const char *description = ap->description(i).c_str();
                 size_t size = ap->size(i);
                 void *pointer = ap->pointer(i);
-                std::cerr << argv[0] << "auxdata: item " << i << " name=" << name << ", size=" << (int)size << ", description=" << description << ", pointer=0x" << std::hex << (uint64_t)pointer << std::endl;
+                std::cerr << argv[0] << ": auxdata: item " << i << " name=" << name << ", size=" << (int)size << ", description=" << description << ", pointer=0x" << std::hex << (uint64_t)pointer << std::endl;
             }
         }
 #endif
         pc->free();
     }
 
+
     generator->free();
 
-    if (ok < 0) {
-        std::cerr << "Error: " << error << std::endl;
+    if (!ok) {
+        std::cerr << argv[0] << ": Error during test." << std::endl;
         return 1;
     }
 

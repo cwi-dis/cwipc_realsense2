@@ -19,6 +19,7 @@ class TestApi(unittest.TestCase):
         if not 'CWIPC_TEST_HAVE_REALSENSE2_HARDWARE' in os.environ:
             self.skipTest('CWIPC_TEST_HAVE_REALSENSE2_HARDWARE not set in environment')
         grabber = _cwipc_realsense2.cwipc_realsense2("auto")
+        grabber.start()
         return grabber
         
     def test_cwipc_realsense2(self):
@@ -73,9 +74,8 @@ class TestApi(unittest.TestCase):
         if not os.path.exists(TEST_FIXTURES_PLAYBACK_CONFIG):
             self.skipTest(f'Playback config file {TEST_FIXTURES_PLAYBACK_CONFIG} not found')
         try:
-            print(f'xxxjack Using playback config file {TEST_FIXTURES_PLAYBACK_CONFIG}')
             grabber = _cwipc_realsense2.cwipc_realsense2_playback(TEST_FIXTURES_PLAYBACK_CONFIG)
-            print(f'xxxjack grabber is {grabber}')
+            grabber.start()
             self.assertFalse(grabber.eof())
             self.assertTrue(grabber.available(True))
             pc = grabber.get()
