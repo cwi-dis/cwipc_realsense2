@@ -68,6 +68,10 @@ int main(int argc, char** argv) {
                 break;
             }
         }
+        if (pc->count() == 0) {
+            std::cerr << argv[0] << ": get() returned pointcloud with zero points" << std::endl;
+            continue;
+        }   
         if (strcmp(argv[2], "-") != 0) {
             snprintf(filename, sizeof(filename), "%s/pointcloud-%" PRIu64 ".ply", argv[2], pc->timestamp());
             ok = cwipc_write(filename, pc, &error) == 0;
