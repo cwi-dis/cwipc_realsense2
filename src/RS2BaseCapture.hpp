@@ -158,7 +158,7 @@ public:
     }
 
     /// Returns the new point cloud. The caller is now the owner of this point cloud.
-    cwipc* get_pointcloud() override final {
+    cwipc_pointcloud* get_pointcloud() override final {
         if (!is_playing()) {
             _log_error("get_pointcloud: not playing");
           return nullptr;
@@ -168,7 +168,7 @@ public:
 
         // Wait for a fresh mergedPC to become available.
         // Note we keep the return value while holding the lock, so we can start the next grab/process/merge cycle before returning.
-        cwipc *rv;
+        cwipc_pointcloud *rv;
 
         {
             std::unique_lock<std::mutex> mylock(mergedPC_mutex);
@@ -439,7 +439,7 @@ protected:
             // step 2 : create pointcloud, and save rgb/depth frames if wanted
 
             cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
-            cwipc* newPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
+            cwipc_pointcloud* newPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
 
             for (auto cam : cameras) {
                 cam->save_frameset_metadata(newPC);
@@ -574,7 +574,7 @@ protected:
     bool stopped = false;
     bool _eof = false;
 
-    cwipc* mergedPC = nullptr;          ///< Merged pointcloud
+    cwipc_pointcloud* mergedPC = nullptr;          ///< Merged pointcloud
     std::mutex mergedPC_mutex;          ///< Lock for all mergedPC-related dta structures
     
     bool mergedPC_is_fresh = false;     ///< True if mergedPC contains a freshly-created pointcloud

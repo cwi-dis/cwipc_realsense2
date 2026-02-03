@@ -67,7 +67,7 @@ public:
     /// from all cameras.
     cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pcl_pointcloud; }
     /// Step 5: Save metadata from frameset into given cwipc object.
-    void save_frameset_metadata(cwipc *pc);
+    void save_frameset_metadata(cwipc_pointcloud *pc);
 protected:
     // internal API that is "shared" with other implementations (realsense, kinect)
     virtual bool _init_hardware_for_this_camera() override final { 
