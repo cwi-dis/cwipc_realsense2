@@ -15,7 +15,7 @@
 class RS2BaseCamera : public CwipcBaseCamera {
 public:
     // The public API is for use by the Capturer
-    RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index);
+    RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig& metadata, int _camera_index);
     virtual ~RS2BaseCamera();
     /// Step 1 in starting: tell the camera we are going to start. Called for all cameras.
     virtual bool pre_start_all_cameras() override final;

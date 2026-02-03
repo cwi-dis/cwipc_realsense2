@@ -89,7 +89,7 @@ struct RS2CaptureSyncConfig {
 struct RS2CaptureMetadataConfig {
     bool want_rgb = false;
     bool want_depth = false;
-    bool want_metadata_timestamps = false;
+    bool want_timestamps = false;
 };
 
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {
@@ -103,7 +103,6 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     RS2CaptureSyncConfig sync;
 
     // special features
-    RS2CaptureMetadataConfig metadata;
     std::string record_to_directory = ""; // If non-empty all camera streams will be recorded to this directory.
     bool playback_realtime = false; // If true try to playback in realtime (possibly dropping a lot of frames)
     bool new_timestamps = false; // If true new timestamps are generated (otherwise original timestamps from capture time)

@@ -246,7 +246,7 @@ bool RS2Capture::_create_cameras()
         if (cd->disabled) {
             // xxxnacho do we need to close the device, like the kinect case?
         } else {
-            auto cam = new RS2Camera(capturer_context, configuration, camera_index);
+            auto cam = new RS2Camera(capturer_context, configuration, metadata, camera_index);
             cameras.push_back(cam);
             cd->connected = true;
         }

@@ -25,7 +25,7 @@
 #include "RS2Config.hpp"
 #include "RS2BaseCamera.hpp"
 
-RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, int _camera_index)
+RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig& _metadata, int _camera_index)
 : CwipcBaseCamera("cwipc_realsense::RS2BaseCamera: " + configuration.all_camera_configs[_camera_index].serial, "realsense2"),
   pointSize(0), 
   camera_index(_camera_index),
@@ -36,7 +36,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
   filtering(configuration.filtering),
   processing(configuration.processing),
   hardware(configuration.hardware),
-  metadata(configuration.metadata),
+  metadata(_metadata),
   current_pcl_pointcloud(nullptr),
   processing_frame_queue(1),
   camera_pipeline(_ctx),
@@ -352,7 +352,7 @@ void RS2BaseCamera::wait_for_pointcloud_processed() {
 
 void RS2BaseCamera::save_frameset_metadata(cwipc *pc)
 {
-    if (!metadata.want_depth && !metadata.want_rgb && !metadata.want_metadata_timestamps) return;
+    if (!metadata.want_depth && !metadata.want_rgb && !metadata.want_timestamps) return;
     std::unique_lock<std::mutex> lock(processing_mutex);
 
     auto aligned_frameset = current_processed_frameset;
@@ -360,7 +360,7 @@ void RS2BaseCamera::save_frameset_metadata(cwipc *pc)
     rs2::video_frame color_image = aligned_frameset.get_color_frame();
     rs2::video_frame depth_image = aligned_frameset.get_depth_frame();
         
-    if (metadata.want_metadata_timestamps) {
+    if (metadata.want_timestamps) {
         
         int64_t depth_framenum = depth_image.get_frame_number();
         int64_t depth_timestamp = depth_image.get_timestamp();

@@ -128,9 +128,9 @@ public:
 
     /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
     virtual void request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton) override final {
-        configuration.metadata.want_rgb = rgb;
-        configuration.metadata.want_depth = depth;
-        configuration.metadata.want_metadata_timestamps = timestamps;
+        metadata.want_rgb = rgb;
+        metadata.want_depth = depth;
+        metadata.want_timestamps = timestamps;
     }
 
     //
@@ -237,7 +237,6 @@ protected:
     virtual bool _apply_config(const char* configFilename) override {
         // Clear out old configuration
         RS2CaptureConfig newConfiguration;
-        newConfiguration.metadata = configuration.metadata; // preserve metadata requests
         configuration = newConfiguration;
 
         //
@@ -565,6 +564,7 @@ public:
     /// Current configuration. Has to be public because cwipc_realsense2 needs access to all sorts of internals
     /// of it, but it would be better if this access was readonly...
     RS2CaptureConfig configuration;
+    RS2CaptureMetadataConfig metadata;
     
 protected:
     rs2::context capturer_context;

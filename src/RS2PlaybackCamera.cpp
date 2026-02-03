@@ -18,8 +18,8 @@
 
 #include "RS2PlaybackCamera.hpp"
 
-RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, std::string _filename)
-:   RS2BaseCamera(ctx, configuration, _camera_index),
+RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig& metadata, int _camera_index, std::string _filename)
+:   RS2BaseCamera(ctx, configuration, metadata, _camera_index),
     playback_filename(_filename),
     playback_realtime(configuration.playback_realtime),
     playback_loop(configuration.playback_loop)

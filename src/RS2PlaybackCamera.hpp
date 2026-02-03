@@ -14,7 +14,7 @@
 
 class RS2PlaybackCamera : public RS2BaseCamera {
 public:
-    RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, int _camera_index, std::string recording_filename);
+    RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig& metadata, int _camera_index, std::string recording_filename);
     ~RS2PlaybackCamera();
 
     virtual void post_start_all_cameras() override final;

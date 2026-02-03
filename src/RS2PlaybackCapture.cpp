@@ -120,7 +120,7 @@ bool RS2PlaybackCapture::_create_cameras() {
             if (base_directory != "") {
                 recording_filename = base_directory + recording_filename;
             }
-            auto cam = new RS2PlaybackCamera(capturer_context, configuration, camera_index, recording_filename);
+            auto cam = new RS2PlaybackCamera(capturer_context, configuration, metadata, camera_index, recording_filename);
             cameras.push_back(cam);
             cd.connected = true;
         }
