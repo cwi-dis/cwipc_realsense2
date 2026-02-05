@@ -32,6 +32,10 @@ public:
     using CwipcBaseCapture::CwipcBaseCapture;
     virtual ~RS2BaseCapture()  {
         _unload_cameras();
+        if(mergedPC) {
+            mergedPC->free();
+            mergedPC = nullptr;
+        }
     }
 
     virtual bool can_start() override final {
@@ -445,14 +449,20 @@ protected:
                 cam->save_frameset_metadata(newPC);
             }
             
-            if (stopped) break;
+            if (stopped) {
+                newPC->free();
+                break;
+            }
 
             // Step 3: start processing frames to pointclouds, for each camera
             for(auto cam : cameras) {
                 cam->process_pointcloud_from_frameset();
             }
 
-            if (stopped) break;
+            if (stopped) {
+                newPC->free();
+                break;
+            }
 
             // Lock mergedPC already while we are waiting for the per-camera
             // processing threads. This so the main thread doesn't go off and do
@@ -462,10 +472,10 @@ protected:
                 mergedPC->free();
                 mergedPC = nullptr;
             }
-
-            if (stopped) break;
             mergedPC = newPC;
-
+            
+            if (stopped) break;
+            
             // Step 4: wait for frame processing to complete.
             for(auto cam : cameras) {
                 cam->wait_for_pointcloud_processed();
