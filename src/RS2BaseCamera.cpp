@@ -130,9 +130,9 @@ void RS2BaseCamera::stop_camera() {
 
     delete camera_processing_thread;
     camera_processing_thread = nullptr;
-
     // stop the pipeline.
     if (camera_started) {
+        if (debug) _log_debug("stop pipeline");
         camera_pipeline.stop();
     }
 
@@ -585,6 +585,13 @@ void RS2BaseCamera::_processing_thread_main() {
         // No cleanup of resources needed, librealsense takes care of that.
         //
     }
+    // stop the pipeline.
+    if (camera_started) {
+        if (debug) _log_debug("frame processing thread stop pipeline");
+        camera_pipeline.stop();
+        camera_started = false;
+    }
+
     if (debug) _log_debug_thread("frame processing thread stopped");
 }
 
