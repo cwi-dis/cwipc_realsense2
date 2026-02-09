@@ -14,6 +14,10 @@ TEST_FIXTURES_DIR=os.path.join(_topdir, "tests", "fixtures")
 TEST_FIXTURES_PLAYBACK_CONFIG=os.path.join(TEST_FIXTURES_DIR, "input", "realsense2_recording", "cameraconfig.json")
 
 class TestApi(unittest.TestCase):
+        
+    def test_0_check_module_realsense2(self):
+        ok = cwipc.cwipc_check_module('realsense2')
+        self.assertTrue(ok)
     
     def _open_grabber(self):
         if not 'CWIPC_TEST_HAVE_REALSENSE2_HARDWARE' in os.environ:

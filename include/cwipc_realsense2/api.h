@@ -20,6 +20,13 @@ extern "C" {
 extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_RGB8;  //!< Constant: 24-bit RGB pixels
 extern _CWIPC_REALSENSE2_EXPORT int CWIPC_RS2_FORMAT_Z16;   //!< Constant: 16-bit Depth pixels
 
+/** \brief
+ * Returns version string for realsense2 capturer module.
+ * As a side effect this checks that dependencies have been installed correctly, and it will install the
+ * capturer for use with the auto-capturer.
+ */
+_CWIPC_REALSENSE2_EXPORT const char *cwipc_get_version_realsense2();
+
 /** \brief Capture pointclouds from realsense2 cameras.
  * \param configFilename An option string with the filename of the camera configuration file.
  * \param errorMessage An optional pointer to a string where any error message will be stored.

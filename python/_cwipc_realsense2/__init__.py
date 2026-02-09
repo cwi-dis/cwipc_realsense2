@@ -10,6 +10,7 @@ from cwipc.util import _cwipc_dll_search_path_collection
 __all__ = [
     "RS2_FORMAT_RGB8",
     "RS2_FORMAT_Z16",
+    "cwipc_get_version_module",
     "cwipc_realsense2",
     "cwipc_realsense2_playback",
     "cwipc_realsense2_dll_load"
@@ -58,6 +59,8 @@ def cwipc_realsense2_dll_load(libname : Optional[str]=None):
         if not _cwipc_realsense2_dll_reference:
             raise RuntimeError(f'Dynamic library {libname} cannot be loaded')
     
+    _cwipc_realsense2_dll_reference.cwipc_get_version_realsense2.argtypes = []
+    _cwipc_realsense2_dll_reference.cwipc_get_version_realsense2.restype = ctypes.c_char_p
     _cwipc_realsense2_dll_reference.cwipc_realsense2.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
     _cwipc_realsense2_dll_reference.cwipc_realsense2.restype = cwipc_activesource_p
     _cwipc_realsense2_dll_reference.cwipc_realsense2_playback.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_ulong]
@@ -70,7 +73,12 @@ def RS2_FORMAT_RGB8():
     
 def RS2_FORMAT_Z16():
     return ctypes.c_int.in_dll(cwipc_realsense2_dll_load(), "CWIPC_RS2_FORMAT_Z16")
-  
+
+def cwipc_get_version_module() -> str:
+    c_version = cwipc_realsense2_dll_load().cwipc_get_version_realsense2()
+    version = c_version.decode('utf8')
+    return version
+
 def cwipc_realsense2(conffile : Optional[str]=None) -> cwipc_activesource_wrapper:
     """Returns a cwipc_source object that grabs from a realsense2 camera and returns cwipc object on every get() call."""
     errorString = ctypes.c_char_p()

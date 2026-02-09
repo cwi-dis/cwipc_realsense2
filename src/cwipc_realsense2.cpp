@@ -13,6 +13,8 @@
 #include "RS2PlaybackCapture.hpp"
 #include "RS2PlaybackCamera.hpp"
 #include <string>
+#define stringify(x) _stringify(x)
+#define _stringify(x) #x
 
 // Global variables (constants, really)
 
@@ -124,6 +126,15 @@ public:
 //
 // C-compatible entry points
 //
+
+
+const char *cwipc_get_version_realsense2() {
+#ifdef CWIPC_VERSION
+    return stringify(CWIPC_VERSION);
+#else
+    return "unknown";
+#endif
+}
 
 cwipc_activesource* cwipc_realsense2(const char *configFilename, char **errorMessage, uint64_t apiVersion) {
     if (!_api_versioncheck(errorMessage, apiVersion)) {
