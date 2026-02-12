@@ -82,6 +82,7 @@ public:
         // start our run thread (which will drive the capturers and merge the pointclouds)
         //
         stopped = false;
+        stopping = false;
         control_thread = new std::thread(&RS2BaseCapture::_control_thread_main, this);
         _cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2BaseCapture::control_thread");
 
@@ -357,6 +358,7 @@ protected:
     /// Stop all cameras.
     virtual void _stop_cameras() override final {
         if (configuration.debug) _log_debug("pre-stopping all cameras");
+        stopping = true;
         for (auto cam : cameras) {
             cam->pre_stop_camera();
         }
@@ -402,7 +404,7 @@ protected:
     void _control_thread_main()  {
         if (configuration.debug) _log_debug_thread("control thread started");
         _initial_camera_synchronization();
-        while(!stopped) {
+        while(!stopped && !stopping) {
             {
                 std::unique_lock<std::mutex> mylock(mergedPC_mutex);
                 mergedPC_want_new_cv.wait(mylock, [this]{
@@ -585,6 +587,7 @@ protected:
 
     std::vector<Type_our_camera*> cameras;    ///< The per-camera capturers
     bool _is_initialized = false;
+    bool stopping = false;
     bool stopped = false;
     bool _eof = false;
 
