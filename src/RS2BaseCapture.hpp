@@ -114,7 +114,11 @@ public:
     }
 
     virtual std::string config_get() override final {
-        // We get the hardware parameters from the first camera.
+        if (cameras.size() == 0) {
+            _log_error("Must start() before getting config");
+            return "";
+        }
+                // We get the hardware parameters from the first camera.
         RS2CameraHardwareConfig curHardwareConfig;
         cameras[0]->get_camera_hardware_parameters(curHardwareConfig);
         configuration.hardware = curHardwareConfig;

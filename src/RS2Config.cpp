@@ -106,6 +106,9 @@ void RS2CaptureConfig::_from_json(const json& json_data) {
         config.all_camera_configs.push_back(camera_config);
         camera_index++;
     }
+    if (camera_index == 0) {
+        cwipc_log(CWIPC_LOG_LEVEL_WARNING, "cwipc_realsense2", "No cameras in configuration");
+    }
 }
 
 void RS2CaptureConfig::_to_json(json& json_data, bool for_recording) {
