@@ -70,6 +70,7 @@ int main(int argc, char** argv) {
         }
         if (pc->count() == 0) {
             std::cerr << argv[0] << ": get() returned pointcloud with zero points" << std::endl;
+            pc->free();
             continue;
         }   
         if (strcmp(argv[2], "-") != 0) {
