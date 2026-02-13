@@ -85,6 +85,7 @@ bool RS2BaseCamera::start_camera() {
     _post_start_this_camera(profile);
     _computePointSize(profile);
     camera_started = true;
+    end_of_stream_reached = false;
     return true;
 }
 
@@ -312,15 +313,30 @@ uint64_t RS2BaseCamera::wait_for_captured_frameset(uint64_t minimum_timestamp) {
             previous_captured_frameset = _wait_for_frames_from_pipeline();
         }
         current_captured_frameset = _wait_for_frames_from_pipeline();
+        if (end_of_stream_reached) {
+            return resultant_timestamp;
+        }
+        rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
+        if (depth_frame.get() == nullptr) {
+            _log_warning("wait_for_captured_frameset: no depth frame in frameset");
+            return resultant_timestamp;
+        }
         // We now have both a previous and a current captured frameset.
         if(prefer_color_timing) {
             // If they both have the same depth timestamp we capture another one.
-            if (current_captured_frameset.get_depth_frame().get_timestamp() == previous_captured_frameset.get_depth_frame().get_timestamp()) {
+            if (depth_frame.get_timestamp() == previous_captured_frameset.get_depth_frame().get_timestamp()) {
                 previous_captured_frameset = current_captured_frameset;
                 current_captured_frameset = _wait_for_frames_from_pipeline();
+                if (end_of_stream_reached) {
+                    return resultant_timestamp;
+                }
+                depth_frame = current_captured_frameset.get_depth_frame();
+                if (depth_frame.get() == nullptr) {
+                    _log_warning("wait_for_captured_frameset: no depth frame in frameset");
+                    return resultant_timestamp;
+                }
             }
         }
-        rs2::depth_frame depth_frame = current_captured_frameset.get_depth_frame();
         resultant_timestamp = (uint64_t)depth_frame.get_timestamp();
     } while(resultant_timestamp < minimum_timestamp);
 #ifdef CWIPC_DEBUG_SYNC
@@ -525,7 +541,8 @@ void RS2BaseCamera::_processing_thread_main() {
             // Get the frameset we need to turn into a point cloud
             ///
         rs2::frameset processing_frameset;
-        bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset, 1000);
+        bool ok = processing_frame_queue.try_wait_for_frame(&processing_frameset, frame_timeout_ms);
+        if (end_of_stream_reached) break;
         if (!ok) {
             if (waiting_for_capture) _log_warning("processing thread dequeue timeout");
             continue;
@@ -720,14 +737,23 @@ void RS2BaseCamera::_post_start_this_camera(rs2::pipeline_profile& profile) {
 
 rs2::frameset RS2BaseCamera::_wait_for_frames_from_pipeline() {
     waiting_for_capture = true;
-    rs2::frameset frames = camera_pipeline.wait_for_frames();
+    rs2::frameset frames;
+    try {
+        frames = camera_pipeline.wait_for_frames(frame_timeout_ms);
 #ifdef CWIPC_DEBUG_SYNC
-    if (debug) {
-        uint64_t depth_timestamp = frames.get_depth_frame().get_timestamp();
-        uint64_t color_timestamp = frames.get_color_frame().get_timestamp();
-        if (debug) _log_debug("wait_for_frames: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
-    }
+        if (debug) {
+            uint64_t depth_timestamp = frames.get_depth_frame().get_timestamp();
+            uint64_t color_timestamp = frames.get_color_frame().get_timestamp();
+            if (debug) _log_debug("wait_for_frames: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
+        }
 #endif
+    } catch(const rs2::error &e) {
+        std::string what(e.what());
+        if (what.find("Frame didn't arrive within") == std::string::npos) {
+            _log_error("wait_for_frames: rs2::error " + what);
+        }
+        end_of_stream_reached = true;
+    }
     return frames;
 }
 

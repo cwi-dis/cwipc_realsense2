@@ -113,6 +113,7 @@ protected:
     
 
 public:
+    const int frame_timeout_ms = 1000;
     float pointSize; ///< Needed by RS2Capture, computed once at camera start
     bool end_of_stream_reached = false; //<! True when end of file reached on this camera stream
 

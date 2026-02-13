@@ -106,7 +106,7 @@ struct RS2CaptureConfig : CwipcBaseCaptureConfig {
     std::string record_to_directory = ""; // If non-empty all camera streams will be recorded to this directory.
     bool playback_realtime = false; // If true try to playback in realtime (possibly dropping a lot of frames)
     bool new_timestamps = false; // If true new timestamps are generated (otherwise original timestamps from capture time)
-    bool playback_loop = true; // Set to true to loop the recording automatically.
+    bool playback_loop = false; // Set to true to loop the recording automatically.
     bool debug = false; // If true and if the relevant preprocessor symbol is defined print debug output to stdout.
     bool prefer_color_timing = true; // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.
 
