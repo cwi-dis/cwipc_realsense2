@@ -54,7 +54,7 @@ struct RS2CameraConfig : CwipcBaseCameraConfig {
 };
 
 struct RS2CameraHardwareConfig {
-    // Limited documentation on the filters can be found at https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md
+    // Limited documentation on the filters can be found at https://github.com/realsenseai/librealsense/blob/master/doc/post-processing-filters.md
 
     int color_width = 0;
     int color_height = 0;
