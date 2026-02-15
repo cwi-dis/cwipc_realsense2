@@ -51,6 +51,10 @@ public:
             _log_error("start() called but not initialized");
             return false;
         }
+        if (is_playing()) {
+            _log_warning("start() called but already started");
+            return false;
+        }
         auto camera_config_count = configuration.all_camera_configs.size();
         if (camera_config_count == 0) {
             return false;
