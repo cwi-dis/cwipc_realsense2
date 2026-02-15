@@ -549,11 +549,11 @@ void RS2BaseCamera::_processing_thread_main() {
         }
         waiting_for_capture = false;
 #ifdef CWIPC_DEBUG_SYNC
-    if (debug) {
-        uint64_t depth_timestamp = processing_frameset.get_depth_frame().get_timestamp();
-        uint64_t color_timestamp = processing_frameset.get_color_frame().get_timestamp();
-        if (debug) _log_debug("camera_processing_thread: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
-    }
+        if (debug) {
+            uint64_t depth_timestamp = processing_frameset.get_depth_frame().get_timestamp();
+            uint64_t color_timestamp = processing_frameset.get_color_frame().get_timestamp();
+            if (debug) _log_debug("camera_processing_thread: dts=" + std::to_string(depth_timestamp) + ", cts=" + std::to_string(color_timestamp));
+        }
 #endif
         if (debug) _log_debug_thread("processing thread got frameset");
 

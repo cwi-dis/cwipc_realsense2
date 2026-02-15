@@ -511,6 +511,8 @@ protected:
 
 
     virtual bool _capture_all_cameras(uint64_t& timestamp) final {
+        // xxxjack does not take master into account
+        // xxxjack different from kinect
         uint64_t first_timestamp = 0;
         for(auto cam : cameras) {
             uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
