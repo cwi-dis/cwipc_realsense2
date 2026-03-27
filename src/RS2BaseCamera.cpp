@@ -41,6 +41,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration
   processing_frame_queue(1),
   camera_pipeline(_ctx),
   camera_started(false),
+  camera_processing_thread(nullptr),
   rs2filter_align_color_to_depth(RS2_STREAM_DEPTH),
   rs2filter_align_depth_to_color(RS2_STREAM_COLOR),
   debug(configuration.debug),
