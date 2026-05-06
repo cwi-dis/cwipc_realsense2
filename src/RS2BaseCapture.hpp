@@ -2,18 +2,16 @@
 #define cwipc_realsense_RS2BaseCapture_hpp
 #pragma once
 
-
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <iostream>
-#include <fstream>
+#include "cwipc_util/internal/capturers.hpp"
+#include "RS2Config.hpp"
 
 #include <librealsense2/rs.hpp>
 
-#include "cwipc_util/internal/capturers.hpp"
-
-#include "RS2Config.hpp"
+#include <condition_variable>
+#include <iostream>
+#include <fstream>
+#include <mutex>
+#include <thread>
 
 
 /** Base class for capturers that use the librealsense API. 
@@ -118,15 +116,19 @@ public:
         return true;
     }
 
-    virtual std::string config_get() override final {
+    virtual std::string config_get() const override final {
         if (cameras.size() == 0) {
             _log_error("Must start() before getting config");
             return "";
         }
-                // We get the hardware parameters from the first camera.
+
+        // We get the hardware parameters from the first camera.
         RS2CameraHardwareConfig curHardwareConfig;
         cameras[0]->get_camera_hardware_parameters(curHardwareConfig);
-        configuration.hardware = curHardwareConfig;
+
+        // Create a copy of the configuration and put the hardware config from the first camera in
+        RS2CaptureConfig new_configuration = configuration;
+        new_configuration.hardware = curHardwareConfig;
 #if 0
         for(auto cam : cameras) {
             bool ok = cam->match_camera_hardware_parameters(curHardwareConfig);
@@ -136,7 +138,16 @@ public:
             match_only = true;
         }
 #endif
-        return configuration.to_string();
+        return new_configuration.to_string();
+    }
+
+    /// Get a specific camera configuration.
+    virtual CwipcBaseCameraConfig const* get_camera_config(size_t index) const {
+        CwipcBaseCameraConfig const* ret{ nullptr };
+        if (index < configuration.all_camera_configs.size()) {
+            ret = &configuration.all_camera_configs.at(index);
+        }
+        return ret;
     }
 
     /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
@@ -583,13 +594,12 @@ protected:
 
         // No need to merge metadata: already inserted into mergedPC by each camera
     }    
-public:
-    /// Current configuration. Has to be public because cwipc_realsense2 needs access to all sorts of internals
-    /// of it, but it would be better if this access was readonly...
+
+protected:
+    /// Current configuration.
     RS2CaptureConfig configuration;
     RS2CaptureMetadataConfig metadata;
     
-protected:
     rs2::context capturer_context;
 
     std::vector<Type_our_camera*> cameras;    ///< The per-camera capturers

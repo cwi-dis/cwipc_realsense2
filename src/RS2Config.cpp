@@ -13,12 +13,12 @@ void RS2CameraConfig::_from_json(const json& json_data) {
     _CWIPC_CONFIG_JSON_GET(json_data, playback_inpoint_micros, config, playback_inpoint_micros);
 }
 
-void RS2CameraConfig::_to_json(json& json_data, bool for_recording) {
+void RS2CameraConfig::_to_json(json& json_data, bool for_recording) const {
     CwipcBaseCameraConfig::_to_json(json_data, for_recording);
     if (for_recording) {
         json_data["type"] = "realsense_playback";
     }
-    RS2CameraConfig& config = *this;
+    RS2CameraConfig const& config = *this;
     if (playback_inpoint_micros != 0) {
         _CWIPC_CONFIG_JSON_PUT(json_data, playback_inpoint_micros, config, playback_inpoint_micros);
     }
@@ -111,12 +111,12 @@ void RS2CaptureConfig::_from_json(const json& json_data) {
     }
 }
 
-void RS2CaptureConfig::_to_json(json& json_data, bool for_recording) {
+void RS2CaptureConfig::_to_json(json& json_data, bool for_recording) const {
     CwipcBaseCaptureConfig::_to_json(json_data, for_recording);
     if (for_recording) {
         json_data["type"] = "realsense_playback";
     }
-    RS2CaptureConfig& config = *this;
+    RS2CaptureConfig const& config = *this;
     json cameras;
     int camera_index = 0;
 
@@ -264,7 +264,7 @@ bool RS2CaptureConfig::from_string(const char* jsonBuffer, std::string typeWante
     return true;
 }
 
-std::string RS2CaptureConfig::to_string(bool for_recording) {
+std::string RS2CaptureConfig::to_string(bool for_recording) const {
     json result;
     _to_json(result, for_recording);
 
