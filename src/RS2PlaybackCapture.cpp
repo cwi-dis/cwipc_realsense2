@@ -17,6 +17,10 @@
 
 #include "RS2PlaybackCapture.hpp"
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Public interface
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 RS2PlaybackCapture::RS2PlaybackCapture()
     : RS2BaseCapture("cwipc_realsense2::RS2PlaybackCapture", "realsense_playback")
 {
@@ -25,13 +29,11 @@ RS2PlaybackCapture::RS2PlaybackCapture()
 RS2PlaybackCapture::~RS2PlaybackCapture() {
 }
 
-int
-RS2PlaybackCapture::count_devices() { 
+int RS2PlaybackCapture::count_devices() { 
     return 0; 
 }
 
-RS2PlaybackCapture*
-RS2PlaybackCapture::factory() { 
+RS2PlaybackCapture* RS2PlaybackCapture::factory() { 
     return new RS2PlaybackCapture(); 
 }
 
@@ -70,6 +72,10 @@ bool RS2PlaybackCapture::seek(uint64_t timestamp) {
     return true;
 } 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Private methods
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 bool RS2PlaybackCapture::_apply_config(const char* configFilename) {
     bool ok = RS2BaseCapture::_apply_config(configFilename);
     if (!ok) {
@@ -89,6 +95,9 @@ bool RS2PlaybackCapture::_apply_config(const char* configFilename) {
     return true;
 }
 
+bool RS2PlaybackCapture::_apply_auto_config() {
+    return false; 
+}
 
 bool RS2PlaybackCapture::_create_cameras() {
     for (RS2CameraConfig& cd : configuration.all_camera_configs) {
@@ -129,6 +138,17 @@ bool RS2PlaybackCapture::_create_cameras() {
     return true;
 }
 
+bool RS2PlaybackCapture::_setup_inter_camera_sync() { 
+    return true; 
+}
+
+bool RS2PlaybackCapture::_init_hardware_for_all_cameras() { 
+    return true; 
+}
+
+bool RS2PlaybackCapture::_check_cameras_connected() { 
+    return true; 
+}
 
 void RS2PlaybackCapture::_initial_camera_synchronization() {
     uint64_t newest_first_timestamp = 0;
@@ -147,5 +167,3 @@ void RS2PlaybackCapture::_initial_camera_synchronization() {
         uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(newest_first_timestamp);
     }
 }
-
-

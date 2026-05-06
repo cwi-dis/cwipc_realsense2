@@ -249,10 +249,11 @@ bool RS2BaseCapture::_apply_config(const char* configFilename) {
     }
 
     // Otherwise we check the extension. It can be .json.
-    const char *extension = strrchr(configFilename, '.');
+    const char* extension = strrchr(configFilename, '.');
     if (extension != nullptr && strcmp(extension, ".json") == 0) {
         return configuration.from_file(configFilename, type);
-    } else {
+    }
+    else {
         _log_error("Unknown configuration file type: '" + std::string(configFilename) + "'");
     }
 

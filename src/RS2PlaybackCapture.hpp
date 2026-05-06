@@ -20,16 +20,16 @@ public:
     
     virtual bool seek(uint64_t timestamp) override; 
 
-protected:
+private:
     RS2PlaybackCapture();   
-    virtual bool _create_cameras() override final;
-    virtual bool _setup_inter_camera_sync() override final { return true; };
-    virtual bool _init_hardware_for_all_cameras() override final { return true; };
-    virtual bool _check_cameras_connected() override final { return true;};
     virtual bool _apply_config(const char* configFilename) override final;
-    virtual bool _apply_auto_config() override final { return false; };
-
+    virtual bool _apply_auto_config() override final;
+    virtual bool _create_cameras() override final;
+    virtual bool _setup_inter_camera_sync() override final;
+    virtual bool _init_hardware_for_all_cameras() override final;
+    virtual bool _check_cameras_connected() override final;
     virtual void _initial_camera_synchronization() override final;
+
 private:
     std::string base_directory = "";
     uint64_t earliest_recording_timestamp_seen = 0;
