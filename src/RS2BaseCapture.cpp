@@ -185,8 +185,8 @@ float RS2BaseCapture::get_pointSize() {
 
     float rv = 99999;
     for (auto const& cam : _cameras) {
-        if (cam->pointSize < rv) {
-            rv = cam->pointSize;
+        if (cam->get_pointSize() < rv) {
+            rv = cam->get_pointSize();
         }
     }
 
@@ -199,7 +199,7 @@ float RS2BaseCapture::get_pointSize() {
 
 bool RS2BaseCapture::map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d) {
     for(auto const& cam : _cameras) {
-        if (tile == (1 << cam->camera_index)) {
+        if (tile == (1 << cam->get_camera_index())) {
             return cam->map2d3d(x_2d, y_2d, d_2d, out3d);
         }
     }
@@ -208,7 +208,7 @@ bool RS2BaseCapture::map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3
 
 bool RS2BaseCapture::mapcolordepth(int tile, int u, int v, int* out2d) {
     for(auto const& cam : _cameras) {
-        if (tile == (1 << cam->camera_index)) {
+        if (tile == (1 << cam->get_camera_index())) {
             return cam->mapcolordepth(u, v, out2d);
         }
     }
@@ -386,7 +386,7 @@ void RS2BaseCapture::_control_thread_main() {
         }
         //check EOF:
         for (auto cam : _cameras) {
-            if (cam->end_of_stream_reached) {
+            if (cam->is_end_of_stream_reached()) {
                 _eof = true;
                 _stopped = true;
                 break;
@@ -483,9 +483,9 @@ bool RS2BaseCapture::_capture_all_cameras(uint64_t& timestamp) {
     uint64_t first_timestamp = 0;
     for(auto cam : _cameras) {
         uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
-        if (cam->end_of_stream_reached) return false;
+        if (cam->is_end_of_stream_reached()) return false;
         if (this_cam_timestamp == 0) {
-            _log_warning("no frameset captured from camera " + cam->serial);
+            _log_warning("no frameset captured from camera " + cam->get_serial());
             return false;
         }
         if (first_timestamp == 0) {

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <thread>
+#include <memory>
 #include <mutex>
 #include <condition_variable>
 
@@ -15,7 +16,7 @@
 class RS2BaseCamera : public CwipcBaseCamera {
 public:
     // The public API is for use by the Capturer
-    RS2BaseCamera(rs2::context& _ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig& metadata, int _camera_index);
+    RS2BaseCamera(rs2::context& ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig& metadata, int camera_index);
     virtual ~RS2BaseCamera();
     /// Step 1 in starting: tell the camera we are going to start. Called for all cameras.
     virtual bool pre_start_all_cameras() override final;
@@ -32,7 +33,7 @@ public:
     virtual void stop_camera()  override final;
     /// Return true if this camera is the sync master.
     virtual bool is_sync_master() override final {
-        return camera_sync_is_master;
+        return _camera_sync_is_master;
     }
     /// Seek. Fails for cameras, overriden for playback cameras.
     virtual bool seek(uint64_t timestamp) override = 0;
@@ -65,9 +66,17 @@ public:
     /// Step 4: borrow a pointer to the point cloud just created, as a PCL point cloud.
     /// The capturer will use this to populate the resultant cwipc point cloud with points
     /// from all cameras.
-    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return current_pcl_pointcloud; }
+    cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return _current_pcl_pointcloud; }
     /// Step 5: Save metadata from frameset into given cwipc object.
     void save_frameset_metadata(cwipc_pointcloud *pc);
+
+public:
+    // int get_frame_timeout_ms() const { return _frame_timeout_ms; }
+    float get_pointSize() const { return _pointSize; } ///< Needed by RS2Capture, computed once at camera start
+    bool is_end_of_stream_reached() const { return _end_of_stream_reached; }
+    int get_camera_index() const { return _camera_index; } ///< Needed by RS2Capture
+    std::string get_serial() const { return _serial; } ///< Needed by RS2Capture
+
 protected:
     // internal API that is "shared" with other implementations (realsense, kinect)
     virtual bool _init_hardware_for_this_camera() override final { 
@@ -112,61 +121,62 @@ protected:
     void _transform_point_cam_to_world(cwipc_pcl_point& pt);
     
 
-public:
-    const int frame_timeout_ms = 1000;
-    float pointSize; ///< Needed by RS2Capture, computed once at camera start
-    bool end_of_stream_reached = false; //<! True when end of file reached on this camera stream
+protected:
+    const int _frame_timeout_ms = 1000;
+    float _pointSize; ///< Needed by RS2Capture, computed once at camera start
+    bool _end_of_stream_reached = false; //<! True when end of file reached on this camera stream
 
-    int camera_index; ///< Needed by RS2Capture
-    std::string serial; ///< Needed by RS2Capture
+    int _camera_index; ///< Needed by RS2Capture
+    std::string _serial; ///< Needed by RS2Capture
 
 protected:
-    RS2CameraConfig& camera_config;
-    RS2CaptureProcessingConfig& processing;
-    RS2CameraProcessingParameters& filtering;
-    RS2CameraHardwareConfig& hardware;
-    RS2CaptureMetadataConfig& metadata;
-    std::string record_to_file;
-    bool uses_recorder = false;
-    bool camera_sync_is_master;
-    bool camera_stopped;
-    bool camera_started;
+    RS2CameraConfig& _camera_config;
+    RS2CaptureProcessingConfig& _processing;
+    RS2CameraProcessingParameters& _filtering;
+    RS2CameraHardwareConfig& _hardware;
+    RS2CaptureMetadataConfig& _metadata;
 
-    std::thread *camera_processing_thread;
+    std::string _record_to_file;
+    bool _uses_recorder = false;
+    bool _camera_sync_is_master;
+    bool _camera_stopped;
+    bool _camera_started;
+
+    std::unique_ptr<std::thread> _camera_processing_thread;
     
-    rs2::pipeline camera_pipeline;
+    rs2::pipeline _camera_pipeline;
     // Realsense doesn't need captured_frame_queue, the library handles this.
-    rs2::frame_queue processing_frame_queue;  //<! Synchronized frames, waiting for processing thread
-    std::mutex processing_mutex;
-    std::condition_variable processing_done_cv;
-    bool processing_done;
+    rs2::frame_queue _processing_frame_queue;  //<! Synchronized frames, waiting for processing thread
+    std::mutex _processing_mutex;
+    std::condition_variable _processing_done_cv;
+    bool _processing_done;
     
-    rs2::frameset previous_captured_frameset;
-    rs2::frameset current_captured_frameset;    //< Output of capturer, input to processing
-    bool waiting_for_capture = false;           //< Boolean to stop issuing warning messages while paused.
-    rs2::frameset current_processed_frameset;   //< Output of processing
-    cwipc_pcl_pointcloud current_pcl_pointcloud;    //< Output of processing
+    rs2::frameset _previous_captured_frameset;
+    rs2::frameset _current_captured_frameset;    //< Output of capturer, input to processing
+    bool _waiting_for_capture = false;           //< Boolean to stop issuing warning messages while paused.
+    rs2::frameset _current_processed_frameset;   //< Output of processing
+    cwipc_pcl_pointcloud _current_pcl_pointcloud;    //< Output of processing
 
     // for an explanation of filtering see librealsense/doc/post-processing-filters.md and code in librealsense/src/proc
-    rs2::align rs2filter_align_color_to_depth;                 // Align depth and color data
-    rs2::align rs2filter_align_depth_to_color;                   // Align depth and color data
-    rs2::decimation_filter rs2filter_decimation;                        // Decimation - reduces depth frame density
+    rs2::align _rs2filter_align_color_to_depth;                 // Align depth and color data
+    rs2::align _rs2filter_align_depth_to_color;                   // Align depth and color data
+    rs2::decimation_filter _rs2filter_decimation;                        // Decimation - reduces depth frame density
     // rs2::hdr_merge not supported yet.
     // rs2::sequence_id_filter not supported yet
-    rs2::threshold_filter rs2filter_threshold;                   // Thresholding: minimum and maximum distance
-    rs2::disparity_transform rs2filter_depth_to_disparity = rs2::disparity_transform(true);
-    rs2::spatial_filter rs2filter_spatial;                          // Spatial    - edge-preserving spatial smoothing
-    rs2::temporal_filter rs2filter_temporal;                         // Temporal   - reduces temporal noise
-    rs2::hole_filling_filter rs2filter_hole_filling;
-    rs2::disparity_transform rs2filter_disparity_to_depth = rs2::disparity_transform(false);
+    rs2::threshold_filter _rs2filter_threshold;                   // Thresholding: minimum and maximum distance
+    rs2::disparity_transform _rs2filter_depth_to_disparity = rs2::disparity_transform(true);
+    rs2::spatial_filter _rs2filter_spatial;                          // Spatial    - edge-preserving spatial smoothing
+    rs2::temporal_filter _rs2filter_temporal;                         // Temporal   - reduces temporal noise
+    rs2::hole_filling_filter _rs2filter_hole_filling;
+    rs2::disparity_transform _rs2filter_disparity_to_depth = rs2::disparity_transform(false);
 #ifdef cwipc_global_pointcloud_filter
-    rs2::pointcloud rs2filter_depth_to_pointcloud;     // The pointcloud constructor
+    rs2::pointcloud _rs2filter_depth_to_pointcloud;     // The pointcloud constructor
 #endif
 
-    bool debug = false;
-    bool prefer_color_timing = true;    // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.
-    const char *depth_format = "unknown";
-    const char *color_format = "unknown";
+    bool _debug = false;
+    bool _prefer_color_timing = true;    // If we get a second frame with the same depth timestamp (but newer color frame) we skip the old one.
+    const char* _depth_format = "unknown";
+    const char* _color_format = "unknown";
 };
 
 #endif

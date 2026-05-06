@@ -45,21 +45,21 @@ bool RS2PlaybackCapture::seek(uint64_t timestamp) {
     for (auto cam : _cameras) {
         RS2PlaybackCamera* pbcam = dynamic_cast<RS2PlaybackCamera*>(cam);
         if (pbcam == nullptr) {
-            _log_error("seek: Camera " + cam->serial + " is not a RS2PlaybackCamera");
+            _log_error("seek: Camera " + cam->get_serial() + " is not a RS2PlaybackCamera");
             return false;
         }
         pbcam->pause();
     }
     for (auto cam : _cameras) { //SUBORDINATE or STANDALONE
         if (cam->seek(delta) != true) {
-            _log_error("seek: seek failed for camera " + cam->serial);
+            _log_error("seek: seek failed for camera " + cam->get_serial());
             return false;
         }
     }
     for (auto cam : _cameras) {
         RS2PlaybackCamera* pbcam = dynamic_cast<RS2PlaybackCamera*>(cam);
         if (pbcam == nullptr) {
-            _log_error("seek: Camera " + cam->serial + " is not a RS2PlaybackCamera");
+            _log_error("seek: Camera " + cam->get_serial() + " is not a RS2PlaybackCamera");
             return false;
         }
         pbcam->resume();
