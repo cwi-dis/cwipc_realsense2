@@ -20,9 +20,9 @@
 
 RS2PlaybackCamera::RS2PlaybackCamera(rs2::context& ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig& metadata, int _camera_index, std::string _filename)
 :   RS2BaseCamera(ctx, configuration, metadata, _camera_index),
-    playback_filename(_filename),
-    playback_realtime(configuration.playback_realtime),
-    playback_loop(configuration.playback_loop)
+    _playback_filename(_filename),
+    _playback_realtime(configuration.playback_realtime),
+    _playback_loop(configuration.playback_loop)
 {
 
 }
@@ -41,11 +41,11 @@ void RS2PlaybackCamera::resume() {
     rs2::device dev = camera_pipeline.get_active_profile().get_device();
     rs2::playback playback = dev.as<rs2::playback>();
     playback.resume();
-    playback.set_real_time(playback_realtime);
+    playback.set_real_time(_playback_realtime);
 }
 
 void RS2PlaybackCamera::_init_pipeline_for_this_camera(rs2::config &cfg) {
-    cfg.enable_device_from_file(playback_filename, playback_loop);
+    cfg.enable_device_from_file(_playback_filename, _playback_loop);
 }
 
 void RS2PlaybackCamera::_post_start_this_camera(rs2::pipeline_profile& profile) {
@@ -53,7 +53,7 @@ void RS2PlaybackCamera::_post_start_this_camera(rs2::pipeline_profile& profile) 
     rs2::playback playback = dev.as<rs2::playback>();
 
     playback.pause();
-    playback.set_real_time(playback_realtime);
+    playback.set_real_time(_playback_realtime);
     
     // Seek device, if needed
     if (camera_config.playback_inpoint_micros != 0) {

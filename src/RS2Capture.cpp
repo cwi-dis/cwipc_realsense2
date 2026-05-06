@@ -65,7 +65,7 @@ bool RS2Capture::seek(uint64_t timestamp) {
 bool RS2Capture::_apply_auto_config() {
     // Determine how many realsense cameras (not platform cameras like webcams) are connected
     const std::string platform_camera_name = "Platform Camera";
-    rs2::device_list devs = capturer_context.query_devices();
+    rs2::device_list devs = _capturer_context.query_devices();
 
     //
     // Enumerate over all connected cameras, create their default RS2CameraData structures
@@ -86,9 +86,9 @@ bool RS2Capture::_apply_auto_config() {
         default_trafo->setIdentity();
         cd.trafo = default_trafo;
         cd.cameraposition = { 0, 0, 0 };
-        configuration.all_camera_configs.push_back(cd);
+        _configuration.all_camera_configs.push_back(cd);
     }
-    if (configuration.all_camera_configs.size() == 0) {
+    if (_configuration.all_camera_configs.size() == 0) {
         _log_error("no cameras found during auto-configuration");
         return false;
     }
@@ -96,9 +96,8 @@ bool RS2Capture::_apply_auto_config() {
 
 }
 
-bool RS2Capture::_create_cameras()
-{
-    rs2::device_list devs = capturer_context.query_devices();
+bool RS2Capture::_create_cameras() {
+    rs2::device_list devs = _capturer_context.query_devices();
     const std::string platform_camera_name = "Platform Camera";
 
     for (auto dev : devs) {
@@ -122,14 +121,14 @@ bool RS2Capture::_create_cameras()
             return false;
         }
 
-        int camera_index = (int)cameras.size();
+        int camera_index = (int)_cameras.size();
 
         if (cd->disabled) {
             // xxxnacho do we need to close the device, like the kinect case?
         }
         else {
-            auto cam = new RS2Camera(capturer_context, configuration, metadata, camera_index);
-            cameras.push_back(cam);
+            auto cam = new RS2Camera(_capturer_context, _configuration, _metadata, camera_index);
+            _cameras.push_back(cam);
             _set_camera_connected(serial, true);
         }
     }
@@ -138,17 +137,17 @@ bool RS2Capture::_create_cameras()
 }
 
 bool RS2Capture::_setup_inter_camera_sync() {
-    std::string master_serial = configuration.sync.sync_master_serial;
+    std::string master_serial = _configuration.sync.sync_master_serial;
     if (master_serial == "") {
         // Disable sync
-        for(auto sensor : capturer_context.query_all_sensors()) {
+        for(auto sensor : _capturer_context.query_all_sensors()) {
            if (sensor.supports(RS2_OPTION_INTER_CAM_SYNC_MODE)) {
                 sensor.set_option(RS2_OPTION_INTER_CAM_SYNC_MODE, 0);
            }
         }
         return true;
     }
-    int nonmaster_sync_mode = configuration.sync.sync_mode;
+    int nonmaster_sync_mode = _configuration.sync.sync_mode;
     if (nonmaster_sync_mode == 0) {
         _log_warning("Sync_master_serial set, but no sync mode requested");
         return false;
@@ -156,7 +155,7 @@ bool RS2Capture::_setup_inter_camera_sync() {
     bool use_external_sync = master_serial == "external";
     bool master_found = use_external_sync;
 
-    rs2::device_list devs = capturer_context.query_devices();
+    rs2::device_list devs = _capturer_context.query_devices();
     bool is_first_camera = true;
     for (auto dev : devs) {
         std::string serial(std::string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
@@ -185,7 +184,7 @@ bool RS2Capture::_setup_inter_camera_sync() {
 }
 
 bool RS2Capture::_init_hardware_for_all_cameras() {
-    rs2::device_list devs = capturer_context.query_devices();
+    rs2::device_list devs = _capturer_context.query_devices();
     for (auto dev : devs) {
         auto allSensors = dev.query_sensors();
         auto depth_sensor = dev.first<rs2::depth_sensor>();
@@ -195,32 +194,32 @@ bool RS2Capture::_init_hardware_for_all_cameras() {
         if (depth_sensor.supports(RS2_OPTION_VISUAL_PRESET)) {
             depth_sensor.set_option(
                 RS2_OPTION_VISUAL_PRESET,
-                (float)configuration.hardware.visual_preset
+                (float)_configuration.hardware.visual_preset
             );
         }
         // Options for color sensor
-        if (configuration.hardware.color_gain >= 0) {
+        if (_configuration.hardware.color_gain >= 0) {
             assert(color_sensor.supports(RS2_OPTION_GAIN));
-            color_sensor.set_option(RS2_OPTION_GAIN, configuration.hardware.color_gain);
+            color_sensor.set_option(RS2_OPTION_GAIN, _configuration.hardware.color_gain);
         }
-        if (configuration.hardware.color_exposure >= 0) {
+        if (_configuration.hardware.color_exposure >= 0) {
             assert(color_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
             color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
             assert(color_sensor.supports(RS2_OPTION_EXPOSURE));
-            color_sensor.set_option(RS2_OPTION_EXPOSURE, configuration.hardware.color_exposure);
+            color_sensor.set_option(RS2_OPTION_EXPOSURE, _configuration.hardware.color_exposure);
         }
         else {
             if (color_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
                 color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
             }
         }
-        if (configuration.hardware.whitebalance >= 0) {
+        if (_configuration.hardware.whitebalance >= 0) {
             if (color_sensor.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) {
                 color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 0);
             }
 
             if (color_sensor.supports(RS2_OPTION_WHITE_BALANCE)) {
-                color_sensor.set_option(RS2_OPTION_WHITE_BALANCE, configuration.hardware.whitebalance);
+                color_sensor.set_option(RS2_OPTION_WHITE_BALANCE, _configuration.hardware.whitebalance);
             }
         }
         else {
@@ -228,36 +227,36 @@ bool RS2Capture::_init_hardware_for_all_cameras() {
                 color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 1);
             }
         }
-        if (configuration.hardware.backlight_compensation >= 0) {
+        if (_configuration.hardware.backlight_compensation >= 0) {
             if (color_sensor.supports(RS2_OPTION_BACKLIGHT_COMPENSATION)) {
-                color_sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, configuration.hardware.backlight_compensation);
+                color_sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, _configuration.hardware.backlight_compensation);
             }
         }
         // Options for depth sensor
-        if (configuration.hardware.depth_gain >= 0) {
+        if (_configuration.hardware.depth_gain >= 0) {
             assert(depth_sensor.supports(RS2_OPTION_GAIN));
-            depth_sensor.set_option(RS2_OPTION_GAIN, configuration.hardware.depth_gain);
+            depth_sensor.set_option(RS2_OPTION_GAIN, _configuration.hardware.depth_gain);
         }
-        if (configuration.hardware.depth_exposure >= 0) {
+        if (_configuration.hardware.depth_exposure >= 0) {
             assert(depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
             depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
             assert(depth_sensor.supports(RS2_OPTION_EXPOSURE));
-            depth_sensor.set_option(RS2_OPTION_EXPOSURE, configuration.hardware.depth_exposure);
+            depth_sensor.set_option(RS2_OPTION_EXPOSURE, _configuration.hardware.depth_exposure);
         }
         else {
             if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
                 depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
             }
         }
-        if (depth_sensor.supports(RS2_OPTION_LASER_POWER) && configuration.hardware.laser_power >= 0) {
-            depth_sensor.set_option(RS2_OPTION_LASER_POWER, configuration.hardware.laser_power);
+        if (depth_sensor.supports(RS2_OPTION_LASER_POWER) && _configuration.hardware.laser_power >= 0) {
+            depth_sensor.set_option(RS2_OPTION_LASER_POWER, _configuration.hardware.laser_power);
         }
     }
     return true;
 }
 
 bool RS2Capture::_check_cameras_connected() {
-    for (RS2CameraConfig& cd : configuration.all_camera_configs) {
+    for (RS2CameraConfig& cd : _configuration.all_camera_configs) {
         if (!cd.connected && !cd.disabled) {
             _log_warning("Camera with serial " + cd.serial + " is not connected");
             return false;

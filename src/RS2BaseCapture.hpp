@@ -11,6 +11,7 @@
 #include <condition_variable>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -107,27 +108,27 @@ protected:
     void _merge_camera_pointclouds();
 
 protected:
-    RS2CaptureConfig configuration;                 ///< Current configuration.
-    RS2CaptureMetadataConfig metadata;              ///< The meta-data configuration.
+    RS2CaptureConfig _configuration;                 ///< Current configuration.
+    RS2CaptureMetadataConfig _metadata;              ///< The meta-data configuration.
     
-    rs2::context capturer_context;
+    rs2::context _capturer_context;
 
-    std::vector<RS2BaseCamera*> cameras;            ///< The per-camera capturers
+    std::vector<RS2BaseCamera*> _cameras;            ///< The per-camera capturers
     bool _is_initialized = false;
-    bool stopping = false;
-    bool stopped = false;
+    bool _stopping = false;
+    bool _stopped = false;
     bool _eof = false;
 
-    cwipc_pointcloud* mergedPC = nullptr;           ///< Merged pointcloud
-    std::mutex mergedPC_mutex;                      ///< Lock for all mergedPC-related dta structures
+    cwipc_pointcloud* _mergedPC = nullptr;           ///< Merged pointcloud
+    std::mutex _mergedPC_mutex;                      ///< Lock for all mergedPC-related dta structures
     
-    bool mergedPC_is_fresh = false;                 ///< True if mergedPC contains a freshly-created pointcloud
-    std::condition_variable mergedPC_is_fresh_cv;   ///< Condition variable for signalling freshly-created pointcloud
+    bool _mergedPC_is_fresh = false;                 ///< True if mergedPC contains a freshly-created pointcloud
+    std::condition_variable _mergedPC_is_fresh_cv;   ///< Condition variable for signalling freshly-created pointcloud
     
-    bool mergedPC_want_new = false;                 ///< Set to true to request a new pointcloud
-    std::condition_variable mergedPC_want_new_cv;   ///< Condition variable for signalling we want a new pointcloud
+    bool _mergedPC_want_new = false;                 ///< Set to true to request a new pointcloud
+    std::condition_variable _mergedPC_want_new_cv;   ///< Condition variable for signalling we want a new pointcloud
 
-    std::thread *control_thread = nullptr;
+    std::unique_ptr<std::thread> _control_thread;
     
 };
 

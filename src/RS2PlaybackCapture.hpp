@@ -31,7 +31,7 @@ private:
     virtual void _initial_camera_synchronization() override final;
 
 private:
-    std::string base_directory = "";
-    uint64_t earliest_recording_timestamp_seen = 0;
+    std::string _base_directory = "";
+    uint64_t _earliest_recording_timestamp_seen = 0;
 };
 #endif // cwipc_realsense_RS2PlaybackCapture_hpp

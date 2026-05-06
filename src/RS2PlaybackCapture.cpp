@@ -38,11 +38,11 @@ RS2PlaybackCapture* RS2PlaybackCapture::factory() {
 }
 
 bool RS2PlaybackCapture::seek(uint64_t timestamp) {
-    if (earliest_recording_timestamp_seen == 0) {
+    if (_earliest_recording_timestamp_seen == 0) {
         _log_warning("seek: cannot seek before initial timestamp seen");
     }
-    uint64_t delta = timestamp - earliest_recording_timestamp_seen;
-    for (auto cam : cameras) {
+    uint64_t delta = timestamp - _earliest_recording_timestamp_seen;
+    for (auto cam : _cameras) {
         RS2PlaybackCamera* pbcam = dynamic_cast<RS2PlaybackCamera*>(cam);
         if (pbcam == nullptr) {
             _log_error("seek: Camera " + cam->serial + " is not a RS2PlaybackCamera");
@@ -50,13 +50,13 @@ bool RS2PlaybackCapture::seek(uint64_t timestamp) {
         }
         pbcam->pause();
     }
-    for (auto cam : cameras) { //SUBORDINATE or STANDALONE
+    for (auto cam : _cameras) { //SUBORDINATE or STANDALONE
         if (cam->seek(delta) != true) {
             _log_error("seek: seek failed for camera " + cam->serial);
             return false;
         }
     }
-    for (auto cam : cameras) {
+    for (auto cam : _cameras) {
         RS2PlaybackCamera* pbcam = dynamic_cast<RS2PlaybackCamera*>(cam);
         if (pbcam == nullptr) {
             _log_error("seek: Camera " + cam->serial + " is not a RS2PlaybackCamera");
@@ -90,7 +90,7 @@ bool RS2PlaybackCapture::_apply_config(const char* configFilename) {
         // It appears the configFilename is a pathname. Get the directory component.
         std::string dirName(configFilename);
         int slashPos = dirName.find_last_of("/\\");
-        base_directory = dirName.substr(0, slashPos+1);
+        _base_directory = dirName.substr(0, slashPos+1);
     }
     return true;
 }
@@ -100,7 +100,7 @@ bool RS2PlaybackCapture::_apply_auto_config() {
 }
 
 bool RS2PlaybackCapture::_create_cameras() {
-    for (RS2CameraConfig& cd : configuration.all_camera_configs) {
+    for (RS2CameraConfig& cd : _configuration.all_camera_configs) {
         // Ensure we have a serial
         if (cd.serial == "") {
             cd.serial = cd.filename;
@@ -118,7 +118,7 @@ bool RS2PlaybackCapture::_create_cameras() {
             return false;
         }
 
-        int camera_index = (int)cameras.size();
+        int camera_index = (int)_cameras.size();
 
         if (cd.disabled) {
             // xxxnacho do we need to close the device, like the kinect case?
@@ -126,11 +126,11 @@ bool RS2PlaybackCapture::_create_cameras() {
         else {
             std::string recording_filename = cd.filename;
             if (recording_filename == "") recording_filename = cd.serial + ".bag";
-            if (base_directory != "") {
-                recording_filename = base_directory + recording_filename;
+            if (_base_directory != "") {
+                recording_filename = _base_directory + recording_filename;
             }
-            auto cam = new RS2PlaybackCamera(capturer_context, configuration, metadata, camera_index, recording_filename);
-            cameras.push_back(cam);
+            auto cam = new RS2PlaybackCamera(_capturer_context, _configuration, _metadata, camera_index, recording_filename);
+            _cameras.push_back(cam);
             cd.connected = true;
         }
 
@@ -153,17 +153,17 @@ bool RS2PlaybackCapture::_check_cameras_connected() {
 void RS2PlaybackCapture::_initial_camera_synchronization() {
     uint64_t newest_first_timestamp = 0;
     // Find the newest timestamp (the camera that started last)
-    for(auto cam : cameras) {
+    for(auto cam : _cameras) {
         uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(0);
-        if (earliest_recording_timestamp_seen == 0) {
-            earliest_recording_timestamp_seen = this_cam_timestamp;
+        if (_earliest_recording_timestamp_seen == 0) {
+            _earliest_recording_timestamp_seen = this_cam_timestamp;
         }
         if (this_cam_timestamp > newest_first_timestamp) {
             newest_first_timestamp = this_cam_timestamp;
         }
     }
     // Seek all cameras to that timestamp
-    for(auto cam : cameras) {
+    for(auto cam : _cameras) {
         uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(newest_first_timestamp);
     }
 }

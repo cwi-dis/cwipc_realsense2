@@ -5,10 +5,10 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 RS2BaseCapture::~RS2BaseCapture() {
-_unload_cameras();
-    if(mergedPC) {
-        mergedPC->free();
-        mergedPC = nullptr;
+    _unload_cameras();
+    if(_mergedPC) {
+        _mergedPC->free();
+        _mergedPC = nullptr;
     }
 }
 
@@ -17,7 +17,7 @@ bool RS2BaseCapture::can_start() {
 }
 
 bool RS2BaseCapture::is_playing() {
-    return control_thread != nullptr; 
+    return bool(_control_thread);
 }
 
 bool RS2BaseCapture::start() {
@@ -29,7 +29,7 @@ bool RS2BaseCapture::start() {
         _log_warning("start() called but already started");
         return false;
     }
-    auto camera_config_count = configuration.all_camera_configs.size();
+    auto camera_config_count = _configuration.all_camera_configs.size();
     if (camera_config_count == 0) {
         return false;
     }
@@ -59,10 +59,10 @@ bool RS2BaseCapture::start() {
     //
     // start our run thread (which will drive the capturers and merge the pointclouds)
     //
-    stopped = false;
-    stopping = false;
-    control_thread = new std::thread(&RS2BaseCapture::_control_thread_main, this);
-    _cwipc_setThreadName(control_thread, L"cwipc_realsense2::RS2BaseCapture::control_thread");
+    _stopped = false;
+    _stopping = false;
+    _control_thread = std::make_unique<std::thread>(&RS2BaseCapture::_control_thread_main, this);
+    _cwipc_setThreadName(_control_thread.get(), L"cwipc_realsense2::RS2BaseCapture::control_thread");
 
     return true;
 }
@@ -72,11 +72,11 @@ void RS2BaseCapture::stop() {
 }   
 
 int RS2BaseCapture::get_camera_count() {
-    return cameras.size(); 
+    return _cameras.size(); 
 }
 
 bool RS2BaseCapture::config_reload(const char *configFilename) {
-    if (control_thread != nullptr) {
+    if (_control_thread != nullptr) {
         _log_error("config_reload: cannot reload configuration while capturer is running");
         return false;
     }
@@ -86,24 +86,24 @@ bool RS2BaseCapture::config_reload(const char *configFilename) {
         return false;
     }
     if (cwipc_log_get_level() >= CWIPC_LOG_LEVEL_DEBUG) {
-        configuration.debug = true;
+        _configuration.debug = true;
     }
     _is_initialized = true;
     return true;
 }
 
 std::string RS2BaseCapture::config_get() const {
-    if (cameras.size() == 0) {
+    if (_cameras.size() == 0) {
         _log_error("Must start() before getting config");
         return "";
     }
 
     // We get the hardware parameters from the first camera.
     RS2CameraHardwareConfig curHardwareConfig;
-    cameras[0]->get_camera_hardware_parameters(curHardwareConfig);
+    _cameras[0]->get_camera_hardware_parameters(curHardwareConfig);
 
     // Create a copy of the configuration and put the hardware config from the first camera in
-    RS2CaptureConfig new_configuration = configuration;
+    RS2CaptureConfig new_configuration = _configuration;
     new_configuration.hardware = curHardwareConfig;
 #if 0
     for(auto cam : cameras) {
@@ -119,16 +119,16 @@ std::string RS2BaseCapture::config_get() const {
 
 CwipcBaseCameraConfig const* RS2BaseCapture::get_camera_config(size_t index) const {
     CwipcBaseCameraConfig const* ret{ nullptr };
-    if (index < configuration.all_camera_configs.size()) {
-        ret = &configuration.all_camera_configs.at(index);
+    if (index < _configuration.all_camera_configs.size()) {
+        ret = &_configuration.all_camera_configs.at(index);
     }
     return ret;
 }
 
 void RS2BaseCapture::request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton) {
-    metadata.want_rgb = rgb;
-    metadata.want_depth = depth;
-    metadata.want_timestamps = timestamps;
+    _metadata.want_rgb = rgb;
+    _metadata.want_depth = depth;
+    _metadata.want_timestamps = timestamps;
 }
 
 bool RS2BaseCapture::pointcloud_available(bool wait) {
@@ -140,14 +140,14 @@ bool RS2BaseCapture::pointcloud_available(bool wait) {
     _request_new_pointcloud();
 
     std::this_thread::yield();
-    std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+    std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
 
     auto duration = std::chrono::seconds(wait?1:0);
-    mergedPC_is_fresh_cv.wait_for(mylock, duration, [this]{
-        return mergedPC_is_fresh;
+    _mergedPC_is_fresh_cv.wait_for(mylock, duration, [this]{
+        return _mergedPC_is_fresh;
     });
 
-    return mergedPC_is_fresh;
+    return _mergedPC_is_fresh;
 }
 
 cwipc_pointcloud* RS2BaseCapture::get_pointcloud() {
@@ -163,14 +163,14 @@ cwipc_pointcloud* RS2BaseCapture::get_pointcloud() {
     cwipc_pointcloud *rv;
 
     {
-        std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+        std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
 
-        mergedPC_is_fresh_cv.wait(mylock, [this] {
-            return mergedPC_is_fresh;
+        _mergedPC_is_fresh_cv.wait(mylock, [this] {
+            return _mergedPC_is_fresh;
         });
 
-        mergedPC_is_fresh = false;
-        rv = mergedPC;
+        _mergedPC_is_fresh = false;
+        rv = _mergedPC;
     }
 
     _request_new_pointcloud();
@@ -184,7 +184,7 @@ float RS2BaseCapture::get_pointSize() {
     }
 
     float rv = 99999;
-    for (auto cam : cameras) {
+    for (auto const& cam : _cameras) {
         if (cam->pointSize < rv) {
             rv = cam->pointSize;
         }
@@ -198,7 +198,7 @@ float RS2BaseCapture::get_pointSize() {
 }
 
 bool RS2BaseCapture::map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3d) {
-    for(auto cam : cameras) {
+    for(auto const& cam : _cameras) {
         if (tile == (1 << cam->camera_index)) {
             return cam->map2d3d(x_2d, y_2d, d_2d, out3d);
         }
@@ -207,7 +207,7 @@ bool RS2BaseCapture::map2d3d(int tile, int x_2d, int y_2d, int d_2d, float* out3
 }
 
 bool RS2BaseCapture::mapcolordepth(int tile, int u, int v, int* out2d) {
-    for(auto cam : cameras) {
+    for(auto const& cam : _cameras) {
         if (tile == (1 << cam->camera_index)) {
             return cam->mapcolordepth(u, v, out2d);
         }
@@ -226,7 +226,7 @@ bool RS2BaseCapture::eof() {
 bool RS2BaseCapture::_apply_config(const char* configFilename) {
     // Clear out old configuration
     RS2CaptureConfig newConfiguration;
-    configuration = newConfiguration;
+    _configuration = newConfiguration;
 
     //
     // Read the configuration. We do this only now because for historical reasons the configuration
@@ -245,13 +245,13 @@ bool RS2BaseCapture::_apply_config(const char* configFilename) {
 
     if (configFilename[0] == '{') {
         // Special case 2: a string starting with { is considered a JSON literal
-        return configuration.from_string(configFilename, type);
+        return _configuration.from_string(configFilename, type);
     }
 
     // Otherwise we check the extension. It can be .json.
     const char* extension = strrchr(configFilename, '.');
     if (extension != nullptr && strcmp(extension, ".json") == 0) {
-        return configuration.from_file(configFilename, type);
+        return _configuration.from_file(configFilename, type);
     }
     else {
         _log_error("Unknown configuration file type: '" + std::string(configFilename) + "'");
@@ -261,9 +261,9 @@ bool RS2BaseCapture::_apply_config(const char* configFilename) {
 }
 
 RS2CameraConfig const* RS2BaseCapture::_get_camera_config(std::string serial) const {
-    for (int i = 0; i < configuration.all_camera_configs.size(); i++) {
-        if (configuration.all_camera_configs[i].serial == serial) {
-            return &configuration.all_camera_configs[i];
+    for (int i = 0; i < _configuration.all_camera_configs.size(); i++) {
+        if (_configuration.all_camera_configs[i].serial == serial) {
+            return &_configuration.all_camera_configs[i];
         }
     }
 
@@ -272,7 +272,7 @@ RS2CameraConfig const* RS2BaseCapture::_get_camera_config(std::string serial) co
 }
 
 void RS2BaseCapture::_set_camera_connected(const std::string& serial, bool connected) {
-    for (auto& camera_config: configuration.all_camera_configs) {
+    for (auto& camera_config: _configuration.all_camera_configs) {
         if (camera_config.serial == serial) {
             camera_config.connected = connected;
         }
@@ -286,14 +286,14 @@ void RS2BaseCapture::_initial_camera_synchronization()
 
 bool RS2BaseCapture::_start_cameras() {
     bool start_error = false;
-    for (auto cam: cameras) {
+    for (auto cam: _cameras) {
         if (!cam->pre_start_all_cameras()) {
             start_error = true;
         }
     }
     if (!start_error) {
         try {
-            for (auto cam: cameras) {
+            for (auto cam: _cameras) {
                 if (!cam->start_camera()) {
                     start_error = true;
                 }
@@ -310,11 +310,11 @@ bool RS2BaseCapture::_start_cameras() {
     //
     // start the per-camera capture threads
     //
-    for (auto cam: cameras) {
+    for (auto cam: _cameras) {
         cam->start_camera_streaming();
     }
         
-    for (auto cam: cameras) {
+    for (auto cam: _cameras) {
         cam->post_start_all_cameras();
     }
     return true;
@@ -325,50 +325,48 @@ void RS2BaseCapture::_unload_cameras() {
     _stop_cameras();
 
     // Delete all cameras
-    for (auto cam : cameras) {
+    for (auto cam : _cameras) {
         delete cam;
     }
-    cameras.clear();
-    if (configuration.debug) _log_debug("deleted all cameras");
+    _cameras.clear();
+    if (_configuration.debug) _log_debug("deleted all cameras");
 }
 
 void RS2BaseCapture::_stop_cameras() {
-    if (configuration.debug) _log_debug("pre-stopping all cameras");
-    stopping = true;
-    for (auto cam : cameras) {
+    if (_configuration.debug) _log_debug("pre-stopping all cameras");
+    _stopping = true;
+    for (auto cam : _cameras) {
         cam->pre_stop_camera();
     }
-    if (configuration.debug) _log_debug("stopping all cameras");
+    if (_configuration.debug) _log_debug("stopping all cameras");
 
     // Stop all cameras
-    for (auto cam : cameras) {
+    for (auto cam : _cameras) {
         cam->stop_camera();
     }
-    if (configuration.debug) _log_debug_thread("stopping control thread");
-    stopped = true;
-    mergedPC_is_fresh = true;
-    mergedPC_want_new = false;
-    mergedPC_is_fresh_cv.notify_all();
-    mergedPC_want_new = true;
-    mergedPC_want_new_cv.notify_all();
+    if (_configuration.debug) _log_debug_thread("stopping control thread");
+    _stopped = true;
+    _mergedPC_is_fresh = true;
+    _mergedPC_want_new = false;
+    _mergedPC_is_fresh_cv.notify_all();
+    _mergedPC_want_new = true;
+    _mergedPC_want_new_cv.notify_all();
 
 
-    if (control_thread && control_thread->joinable()) {
-        control_thread->join();
+    if (_control_thread && _control_thread->joinable()) {
+        _control_thread->join();
     }
 
-    delete control_thread;
-    control_thread = nullptr;
-    if (configuration.debug) _log_debug_thread("stopped control thread");
+    _control_thread.reset();
+    if (_configuration.debug) _log_debug_thread("stopped control thread");
     _post_stop_all_cameras();
-    if (configuration.debug) _log_debug("post-stopped");
-
+    if (_configuration.debug) _log_debug("post-stopped");
 }
 
 void RS2BaseCapture::_post_stop_all_cameras() {
-    if (configuration.record_to_directory != "") {
-        std::string recording_config = configuration.to_string(true);
-        std::string filename = configuration.record_to_directory + "/" + "cameraconfig.json";
+    if (_configuration.record_to_directory != "") {
+        std::string recording_config = _configuration.to_string(true);
+        std::string filename = _configuration.record_to_directory + "/" + "cameraconfig.json";
         std::ofstream ofp;
         ofp.open(filename);
         ofp << recording_config << std::endl;
@@ -377,25 +375,25 @@ void RS2BaseCapture::_post_stop_all_cameras() {
 }
     
 void RS2BaseCapture::_control_thread_main() {
-    if (configuration.debug) _log_debug_thread("control thread started");
+    if (_configuration.debug) _log_debug_thread("control thread started");
     _initial_camera_synchronization();
-    while(!stopped && !stopping) {
+    while(!_stopped && !_stopping) {
         {
-            std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-            mergedPC_want_new_cv.wait(mylock, [this]{
-                return mergedPC_want_new;
+            std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
+            _mergedPC_want_new_cv.wait(mylock, [this]{
+                return _mergedPC_want_new;
             });
         }
         //check EOF:
-        for (auto cam : cameras) {
+        for (auto cam : _cameras) {
             if (cam->end_of_stream_reached) {
                 _eof = true;
-                stopped = true;
+                _stopped = true;
                 break;
             }
         }
 
-        if (stopped) {
+        if (_stopped) {
             break;
         }
 
@@ -411,36 +409,36 @@ void RS2BaseCapture::_control_thread_main() {
             std::this_thread::yield();
             continue;
         }
-        if (stopped) {
+        if (_stopped) {
             break;
         }
 
         // If we invent new timestamps, do it now.
-        if (configuration.new_timestamps) {
+        if (_configuration.new_timestamps) {
             timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         }
 
-        if (configuration.debug) _log_debug("creating pc with ts=" + std::to_string(timestamp));
+        if (_configuration.debug) _log_debug("creating pc with ts=" + std::to_string(timestamp));
         // step 2 : create pointcloud, and save rgb/depth frames if wanted
 
         cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
         cwipc_pointcloud* newPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
 
-        for (auto cam : cameras) {
+        for (auto cam : _cameras) {
             cam->save_frameset_metadata(newPC);
         }
             
-        if (stopped) {
+        if (_stopped) {
             newPC->free();
             break;
         }
 
         // Step 3: start processing frames to pointclouds, for each camera
-        for(auto cam : cameras) {
+        for(auto cam : _cameras) {
             cam->process_pointcloud_from_frameset();
         }
 
-        if (stopped) {
+        if (_stopped) {
             newPC->free();
             break;
         }
@@ -448,42 +446,42 @@ void RS2BaseCapture::_control_thread_main() {
         // Lock mergedPC already while we are waiting for the per-camera
         // processing threads. This so the main thread doesn't go off and do
         // useless things if it is calling available(true).
-        std::unique_lock<std::mutex> mylock(mergedPC_mutex);
-        if (mergedPC && mergedPC_is_fresh) {
-            mergedPC->free();
-            mergedPC = nullptr;
+        std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
+        if (_mergedPC && _mergedPC_is_fresh) {
+            _mergedPC->free();
+            _mergedPC = nullptr;
         }
-        mergedPC = newPC;
+        _mergedPC = newPC;
             
-        if (stopped) break;
+        if (_stopped) break;
             
         // Step 4: wait for frame processing to complete.
-        for(auto cam : cameras) {
+        for(auto cam : _cameras) {
             cam->wait_for_pointcloud_processed();
         }
 
         // Step 5: merge views
         _merge_camera_pointclouds();
 
-        if (mergedPC->access_pcl_pointcloud()->size() > 0) {
-            if (configuration.debug) _log_debug("merged pointcloud has " + std::to_string(mergedPC->access_pcl_pointcloud()->size()) + " points");
+        if (_mergedPC->access_pcl_pointcloud()->size() > 0) {
+            if (_configuration.debug) _log_debug("merged pointcloud has " + std::to_string(_mergedPC->access_pcl_pointcloud()->size()) + " points");
         } else {
-            if (configuration.debug) _log_debug("merged pointcloud is empty");
+            if (_configuration.debug) _log_debug("merged pointcloud is empty");
         }
         // Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
-        mergedPC_is_fresh = true;
-        mergedPC_want_new = false;
-        mergedPC_is_fresh_cv.notify_all();
+        _mergedPC_is_fresh = true;
+        _mergedPC_want_new = false;
+        _mergedPC_is_fresh_cv.notify_all();
     }
 
-    if (configuration.debug) _log_debug_thread("control thread exiting");
+    if (_configuration.debug) _log_debug_thread("control thread exiting");
 }
 
 bool RS2BaseCapture::_capture_all_cameras(uint64_t& timestamp) {
     // xxxjack does not take master into account
     // xxxjack different from kinect
     uint64_t first_timestamp = 0;
-    for(auto cam : cameras) {
+    for(auto cam : _cameras) {
         uint64_t this_cam_timestamp = cam->wait_for_captured_frameset(first_timestamp);
         if (cam->end_of_stream_reached) return false;
         if (this_cam_timestamp == 0) {
@@ -496,7 +494,7 @@ bool RS2BaseCapture::_capture_all_cameras(uint64_t& timestamp) {
     }
 
     // And get the best timestamp
-    if (configuration.new_timestamps) {
+    if (_configuration.new_timestamps) {
         timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     } else {
         timestamp = first_timestamp;
@@ -506,21 +504,21 @@ bool RS2BaseCapture::_capture_all_cameras(uint64_t& timestamp) {
 
 
 void RS2BaseCapture::_request_new_pointcloud() {
-    std::unique_lock<std::mutex> mylock(mergedPC_mutex);
+    std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
 
-    if (!mergedPC_want_new && !mergedPC_is_fresh) {
-        mergedPC_want_new = true;
-        mergedPC_want_new_cv.notify_all();
+    if (!_mergedPC_want_new && !_mergedPC_is_fresh) {
+        _mergedPC_want_new = true;
+        _mergedPC_want_new_cv.notify_all();
     }
 }
 
 void RS2BaseCapture::_merge_camera_pointclouds() {
-    cwipc_pcl_pointcloud aligned_cld(mergedPC->access_pcl_pointcloud());
+    cwipc_pcl_pointcloud aligned_cld(_mergedPC->access_pcl_pointcloud());
     aligned_cld->clear();
     // Pre-allocate space in the merged pointcloud
     size_t nPoints = 0;
 
-    for (auto cam : cameras) {
+    for (auto cam : _cameras) {
         cwipc_pcl_pointcloud cam_cld = cam->access_current_pcl_pointcloud();
 
         if (cam_cld == 0) {
@@ -533,7 +531,7 @@ void RS2BaseCapture::_merge_camera_pointclouds() {
     aligned_cld->reserve(nPoints);
 
     // Now merge all pointclouds
-    for (auto cam : cameras) {
+    for (auto cam : _cameras) {
         cwipc_pcl_pointcloud cam_cld = cam->access_current_pcl_pointcloud();
 
         if (cam_cld == NULL) {
