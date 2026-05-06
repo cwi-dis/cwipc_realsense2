@@ -6,14 +6,14 @@
 #include "RS2Camera.hpp"
 #include "RS2Config.hpp"
 
-class RS2Capture : public RS2BaseCapture<class RS2Camera, class RS2CameraConfig> {
+class RS2Capture : public RS2BaseCapture {
 public:
-    using RS2BaseCapture<class RS2Camera, class RS2CameraConfig>::RS2BaseCapture;
     virtual ~RS2Capture();
     static int count_devices();
     static RS2Capture* factory();
 
     virtual bool seek(uint64_t timestamp) override; 
+
 protected:
     RS2Capture();
     virtual bool _create_cameras() override final;

@@ -18,7 +18,7 @@
 #include "RS2PlaybackCapture.hpp"
 
 RS2PlaybackCapture::RS2PlaybackCapture()
-:   RS2BaseCapture<RS2PlaybackCamera, RS2CameraConfig>("cwipc_realsense2::RS2PlaybackCapture", "realsense_playback")
+    : RS2BaseCapture("cwipc_realsense2::RS2PlaybackCapture", "realsense_playback")
 {
 }
 

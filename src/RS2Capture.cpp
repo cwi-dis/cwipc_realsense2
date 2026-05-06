@@ -22,7 +22,7 @@
 #include "RS2Camera.hpp"
 
 RS2Capture::RS2Capture()
-: RS2BaseCapture("cwipc_realsense2::RS2Capture", "realsense")
+    : RS2BaseCapture("cwipc_realsense2::RS2Capture", "realsense")
 {
 }
 
@@ -229,7 +229,7 @@ bool RS2Capture::_create_cameras()
         // Found a realsense camera. Create a default data entry for it.
         std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
         
-        RS2CameraConfig* cd = get_camera_config(serial);
+        RS2CameraConfig const* cd = _get_camera_config(serial);
 
         if (cd == nullptr) {
             _log_warning("Camera with serial " + serial + " is connected but not in configuration");
@@ -248,7 +248,7 @@ bool RS2Capture::_create_cameras()
         } else {
             auto cam = new RS2Camera(capturer_context, configuration, metadata, camera_index);
             cameras.push_back(cam);
-            cd->connected = true;
+            _set_camera_connected(serial, true);
         }
     }
 

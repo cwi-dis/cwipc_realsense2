@@ -11,6 +11,7 @@ add_library(cwipc_realsense2
 	SHARED 
 	cwipc_realsense2.cpp 
 	RS2BaseCamera.cpp
+	RS2BaseCapture.cpp
 	RS2Capture.cpp 
 	RS2Camera.cpp 
 	RS2PlaybackCapture.cpp 
