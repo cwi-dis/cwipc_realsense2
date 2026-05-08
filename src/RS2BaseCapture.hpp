@@ -36,6 +36,7 @@ public:
     virtual bool can_start() override final;
     virtual bool is_playing() override final;
     virtual bool config_reload(const char* configFilename) override final;
+    virtual bool config_reload_fast(const char* configFilename) override final;
     virtual bool start() override final;
     virtual void stop() override final;
     virtual std::string config_get() const override final;
