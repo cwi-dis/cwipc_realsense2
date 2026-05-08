@@ -118,8 +118,14 @@ bool RS2BaseCapture::config_reload_fast(const char* configFilename) {
     //
 
     if (success) {
-        // Copy over processing configuration (should be safe)
+        // Copy over processing (should be safe)
         _configuration.processing = new_configuration.processing;
+
+        // Copy over filtering configuration and re-initialize filters (might be NOT safe!)
+        _configuration.filtering = new_configuration.filtering;
+        for (auto& camera : _cameras) {
+            camera->reload_filters();
+        }
 
         // Copy over camera transforms (camera count must match!)
         if (_configuration.all_camera_configs.size() == new_configuration.all_camera_configs.size()) {

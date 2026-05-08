@@ -76,6 +76,7 @@ public:
     bool is_end_of_stream_reached() const { return _end_of_stream_reached; }
     int get_camera_index() const { return _camera_index; } ///< Needed by RS2Capture
     std::string get_serial() const { return _serial; } ///< Needed by RS2Capture
+    void reload_filters() { _init_filters(); } ///< Needed by RS2BaseCapture
 
 protected:
     // internal API that is "shared" with other implementations (realsense, kinect)
