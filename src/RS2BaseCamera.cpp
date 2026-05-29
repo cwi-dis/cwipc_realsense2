@@ -449,6 +449,26 @@ void RS2BaseCamera::save_frameset_metadata(cwipc_pointcloud *pc)
             ap->_add(name, description, pointer, size, ::free);
         }
     }
+
+    if (_metadata.want_camera_specs) {
+        rs2::pipeline_profile profile = _camera_pipeline.get_active_profile();
+        auto color_stream = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
+        rs2_intrinsics intrinsics = color_stream.get_intrinsics();
+
+        // Extract the required specs
+        RS2CameraMetadataCameraSpecs* specs = (RS2CameraMetadataCameraSpecs*)malloc(sizeof(RS2CameraMetadataCameraSpecs));
+        specs->focal_length_x = intrinsics.fx;
+        specs->focal_length_y = intrinsics.fy;
+        specs->principal_point_x = intrinsics.ppx;
+        specs->principal_point_y = intrinsics.ppy;
+        specs->color_image_width = intrinsics.width;
+        specs->color_image_height = intrinsics.height;
+
+        // Save the specs in the meta-data
+        const std::string name = "camera." + _serial;
+        cwipc_metadata* ap = pc->access_metadata();
+        ap->_add(name, "", (void*)specs, sizeof(RS2CameraMetadataCameraSpecs), ::free);
+    }
 }
 
 bool RS2BaseCamera::_init_filters() {

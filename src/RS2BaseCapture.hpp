@@ -41,7 +41,7 @@ public:
     virtual void stop() override final;
     virtual std::string config_get() const override final;
     virtual CwipcBaseCameraConfig const* get_camera_config(size_t index) const;
-    virtual void request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton) override final;
+    virtual void request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton, bool camera_specs) override final;
 
     bool pointcloud_available(bool wait) override final;
     cwipc_pointcloud* get_pointcloud() override final;

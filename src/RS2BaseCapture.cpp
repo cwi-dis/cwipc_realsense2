@@ -178,10 +178,11 @@ CwipcBaseCameraConfig const* RS2BaseCapture::get_camera_config(size_t index) con
     return ret;
 }
 
-void RS2BaseCapture::request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton) {
+void RS2BaseCapture::request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton, bool camera_specs) {
     _metadata.want_rgb = rgb;
     _metadata.want_depth = depth;
     _metadata.want_timestamps = timestamps;
+    _metadata.want_camera_specs = camera_specs;
 }
 
 bool RS2BaseCapture::pointcloud_available(bool wait) {
