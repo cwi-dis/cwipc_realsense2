@@ -103,6 +103,9 @@ struct RS2CameraMetadataCameraSpecs {
     // Color image size
     unsigned int color_image_width;
     unsigned int color_image_height;
+    // Default near and far plane
+    float near_plane;
+    float far_plane;
 };
 
 struct RS2CaptureConfig : CwipcBaseCaptureConfig {

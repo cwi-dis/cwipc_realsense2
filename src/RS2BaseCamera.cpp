@@ -463,6 +463,8 @@ void RS2BaseCamera::save_frameset_metadata(cwipc_pointcloud *pc)
         specs->principal_point_y = intrinsics.ppy;
         specs->color_image_width = intrinsics.width;
         specs->color_image_height = intrinsics.height;
+        specs->near_plane = 0.1f;
+        specs->far_plane = 10.0f;
 
         // Save the specs in the meta-data
         const std::string name = "camera." + _serial;
