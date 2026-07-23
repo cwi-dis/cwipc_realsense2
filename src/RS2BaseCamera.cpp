@@ -366,7 +366,7 @@ void RS2BaseCamera::wait_for_pointcloud_processed() {
     _processing_done = false;
 }
 
-void RS2BaseCamera::save_frameset_metadata(cwipc_pointcloud *pc)
+void RS2BaseCamera::save_frameset_metadata(const std::unique_ptr<cwipc_pointcloud>& pc)
 {
     if (!_metadata.want_depth && !_metadata.want_rgb && !_metadata.want_timestamps) return;
     std::unique_lock<std::mutex> lock(_processing_mutex);

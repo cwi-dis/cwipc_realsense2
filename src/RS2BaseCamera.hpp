@@ -68,7 +68,7 @@ public:
     /// from all cameras.
     cwipc_pcl_pointcloud access_current_pcl_pointcloud() { return _current_pcl_pointcloud; }
     /// Step 5: Save metadata from frameset into given cwipc object.
-    void save_frameset_metadata(cwipc_pointcloud *pc);
+    void save_frameset_metadata(const std::unique_ptr<cwipc_pointcloud>& pc);
 
 public:
     // int get_frame_timeout_ms() const { return _frame_timeout_ms; }

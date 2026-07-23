@@ -15,7 +15,6 @@
 #include <mutex>
 #include <thread>
 
-
 /** Base class for capturers that use the librealsense API. 
  * 
  * For librealsense actually most of the implementation is in this class,
@@ -89,14 +88,15 @@ protected:
     void _set_camera_connected(const std::string& serial, bool connected);
     /// Start all cameras.
     bool _start_cameras();
-    /// Stop and unload all cameras and release all resources.
-    void _unload_cameras();
     /// Stop all cameras.
     void _stop_cameras();
-    /// Create the cameraconfig file for the recording, if needed.
-    void _post_stop_all_cameras();
+    /// Stop and unload all cameras and release all resources.
+    void _unload_cameras();
+
     /// Control thread main
     void _control_thread_main();
+    /// Stop the control thread and wait for it to be joined
+    void _stop_control_thread();
 
     //
     // Anything that needs to be done to get the camera streams synchronized after opening.
@@ -120,8 +120,9 @@ protected:
     bool _stopped = false;
     bool _eof = false;
 
-    cwipc_pointcloud* _mergedPC = nullptr;           ///< Merged pointcloud
+    std::unique_ptr <cwipc_pointcloud> _mergedPC;    ///< Merged pointcloud
     std::mutex _mergedPC_mutex;                      ///< Lock for all mergedPC-related dta structures
+    std::mutex _safety_mutex;                        ///< Lock for all the control thread to protect the camera state while it is operating on it
     
     bool _mergedPC_is_fresh = false;                 ///< True if mergedPC contains a freshly-created pointcloud
     std::condition_variable _mergedPC_is_fresh_cv;   ///< Condition variable for signalling freshly-created pointcloud
@@ -130,7 +131,7 @@ protected:
     std::condition_variable _mergedPC_want_new_cv;   ///< Condition variable for signalling we want a new pointcloud
 
     std::unique_ptr<std::thread> _control_thread;
-    
+    bool _control_thread_running = false;
 };
 
 #endif

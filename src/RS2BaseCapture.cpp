@@ -5,10 +5,11 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 RS2BaseCapture::~RS2BaseCapture() {
+    _stop_control_thread();
     _unload_cameras();
-    if(_mergedPC) {
+    if (_mergedPC) {
         _mergedPC->free();
-        _mergedPC = nullptr;
+        _mergedPC.reset();
     }
 }
 
@@ -61,6 +62,7 @@ bool RS2BaseCapture::start() {
     //
     _stopped = false;
     _stopping = false;
+    _control_thread_running = true;
     _control_thread = std::make_unique<std::thread>(&RS2BaseCapture::_control_thread_main, this);
     _cwipc_setThreadName(_control_thread.get(), L"cwipc_realsense2::RS2BaseCapture::control_thread");
 
@@ -68,6 +70,7 @@ bool RS2BaseCapture::start() {
 }
 
 void RS2BaseCapture::stop() {
+    _stop_control_thread();
     _unload_cameras();
 }   
 
@@ -214,7 +217,7 @@ cwipc_pointcloud* RS2BaseCapture::get_pointcloud() {
 
     // Wait for a fresh mergedPC to become available.
     // Note we keep the return value while holding the lock, so we can start the next grab/process/merge cycle before returning.
-    cwipc_pointcloud *rv;
+    cwipc_pointcloud* rv{ nullptr };
 
     {
         std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
@@ -224,7 +227,7 @@ cwipc_pointcloud* RS2BaseCapture::get_pointcloud() {
         });
 
         _mergedPC_is_fresh = false;
-        rv = _mergedPC;
+        rv = _mergedPC.release();
     }
 
     _request_new_pointcloud();
@@ -375,160 +378,183 @@ bool RS2BaseCapture::_start_cameras() {
 }
     
 void RS2BaseCapture::_unload_cameras() {
+    {
+        // Get lock on the safety mutex (waits until the control thread is done with the most recent frame processing)
+        std::unique_lock<std::mutex> my_safety_lock(_safety_mutex);
 
-    _stop_cameras();
+        // Pre-stop all cameras
+        if (_configuration.debug) _log_debug("pre-stopping all cameras");
+        _stopping = true;
+        for (auto cam : _cameras) {
+            cam->pre_stop_camera();
+        }
+        if (_configuration.debug) _log_debug("stopping all cameras");
 
-    // Delete all cameras
-    for (auto cam : _cameras) {
-        delete cam;
-    }
-    _cameras.clear();
-    if (_configuration.debug) _log_debug("deleted all cameras");
-}
+        // Stopping all cameras
+        for (auto cam : _cameras) {
+            cam->stop_camera();
+        }
+        if (_configuration.debug) _log_debug_thread("stopping control thread");
+        _stopped = true;
 
-void RS2BaseCapture::_stop_cameras() {
-    if (_configuration.debug) _log_debug("pre-stopping all cameras");
-    _stopping = true;
-    for (auto cam : _cameras) {
-        cam->pre_stop_camera();
-    }
-    if (_configuration.debug) _log_debug("stopping all cameras");
+        // Post-stop all cameras
+        if (_configuration.record_to_directory != "") {
+            std::string recording_config = _configuration.to_string(true);
+            std::string filename = _configuration.record_to_directory + "/" + "cameraconfig.json";
+            std::ofstream ofp;
+            ofp.open(filename);
+            ofp << recording_config << std::endl;
+            ofp.close();
+        }
+        if (_configuration.debug) _log_debug("post-stopped");
 
-    // Stop all cameras
-    for (auto cam : _cameras) {
-        cam->stop_camera();
-    }
-    if (_configuration.debug) _log_debug_thread("stopping control thread");
-    _stopped = true;
-    _mergedPC_is_fresh = true;
-    _mergedPC_want_new = false;
-    _mergedPC_is_fresh_cv.notify_all();
-    _mergedPC_want_new = true;
-    _mergedPC_want_new_cv.notify_all();
-
-
-    if (_control_thread && _control_thread->joinable()) {
-        _control_thread->join();
-    }
-
-    _control_thread.reset();
-    if (_configuration.debug) _log_debug_thread("stopped control thread");
-    _post_stop_all_cameras();
-    if (_configuration.debug) _log_debug("post-stopped");
-}
-
-void RS2BaseCapture::_post_stop_all_cameras() {
-    if (_configuration.record_to_directory != "") {
-        std::string recording_config = _configuration.to_string(true);
-        std::string filename = _configuration.record_to_directory + "/" + "cameraconfig.json";
-        std::ofstream ofp;
-        ofp.open(filename);
-        ofp << recording_config << std::endl;
-        ofp.close();
+        // Delete all cameras
+        for (auto cam : _cameras) {
+            delete cam;
+        }
+        _cameras.clear();
+        if (_configuration.debug) _log_debug("deleted all cameras");
     }
 }
-    
+
 void RS2BaseCapture::_control_thread_main() {
     if (_configuration.debug) _log_debug_thread("control thread started");
     _initial_camera_synchronization();
-    while(!_stopped && !_stopping) {
+    while(!_stopped && !_stopping && _control_thread_running) {
+        // Wait until a new PC is requested or the thread should stop running
         {
             std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
             _mergedPC_want_new_cv.wait(mylock, [this]{
-                return _mergedPC_want_new;
+                return _mergedPC_want_new || !_control_thread_running;
             });
         }
-        //check EOF:
-        for (auto cam : _cameras) {
-            if (cam->is_end_of_stream_reached()) {
-                _eof = true;
-                _stopped = true;
+
+        if (!_control_thread_running) {
+            break;
+        }
+
+        {
+            // Get lock on the safety mutex (cameras cannot be stopped until this scope is done)
+            std::unique_lock<std::mutex> my_safety_lock(_safety_mutex);
+
+            //check EOF:
+            for (auto cam : _cameras) {
+                if (cam->is_end_of_stream_reached()) {
+                    _eof = true;
+                    _stopped = true;
+                    break;
+                }
+            }
+
+            if (_stopped) {
                 break;
             }
+
+            assert(cameras.size() > 0);
+
+            // Step one: grab frames from all cameras. This should happen as close together in time as possible,
+            // because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
+            // camera.
+            uint64_t timestamp = 0;
+            bool all_captures_ok = _capture_all_cameras(timestamp);
+
+            if (!all_captures_ok) {
+                std::this_thread::yield();
+                continue;
+            }
+            if (_stopped) {
+                break;
+            }
+
+            // If we invent new timestamps, do it now.
+            if (_configuration.new_timestamps) {
+                timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            }
+
+            if (_configuration.debug) _log_debug("creating pc with ts=" + std::to_string(timestamp));
+            // step 2 : create pointcloud, and save rgb/depth frames if wanted
+
+            cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
+            std::unique_ptr<cwipc_pointcloud> newPC(cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION));
+
+            for (auto cam : _cameras) {
+                cam->save_frameset_metadata(newPC);
+            }
+
+            if (_stopped) {
+                newPC->free();
+                newPC.reset();
+                break;
+            }
+
+            // Step 3: start processing frames to pointclouds, for each camera
+            for (auto cam : _cameras) {
+                cam->process_pointcloud_from_frameset();
+            }
+
+            if (_stopped) {
+                newPC->free();
+                newPC.reset();
+                break;
+            }
+
+            // Lock mergedPC already while we are waiting for the per-camera
+            // processing threads. This so the main thread doesn't go off and do
+            // useless things if it is calling available(true).
+            std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
+            if (_mergedPC && _mergedPC_is_fresh) {
+                _mergedPC->free();
+                _mergedPC.reset();
+            }
+            _mergedPC = std::move(newPC);
+
+            if (_stopped) break;
+
+            // Step 4: wait for frame processing to complete.
+            for (auto cam : _cameras) {
+                cam->wait_for_pointcloud_processed();
+            }
+
+            // Step 5: merge views
+            _merge_camera_pointclouds();
+
+            if (_mergedPC->access_pcl_pointcloud()->size() > 0) {
+                if (_configuration.debug) _log_debug("merged pointcloud has " + std::to_string(_mergedPC->access_pcl_pointcloud()->size()) + " points");
+            }
+            else {
+                if (_configuration.debug) _log_debug("merged pointcloud is empty");
+            }
+            // Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
+            _mergedPC_is_fresh = true;
+            _mergedPC_want_new = false;
+            _mergedPC_is_fresh_cv.notify_all();
         }
-
-        if (_stopped) {
-            break;
-        }
-
-        assert (cameras.size() > 0);
-
-        // Step one: grab frames from all cameras. This should happen as close together in time as possible,
-        // because that gives use he biggest chance we have the same frame (or at most off-by-one) for each
-        // camera.
-        uint64_t timestamp = 0;
-        bool all_captures_ok = _capture_all_cameras(timestamp);
-
-        if (!all_captures_ok) {
-            std::this_thread::yield();
-            continue;
-        }
-        if (_stopped) {
-            break;
-        }
-
-        // If we invent new timestamps, do it now.
-        if (_configuration.new_timestamps) {
-            timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        }
-
-        if (_configuration.debug) _log_debug("creating pc with ts=" + std::to_string(timestamp));
-        // step 2 : create pointcloud, and save rgb/depth frames if wanted
-
-        cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
-        cwipc_pointcloud* newPC = cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION);
-
-        for (auto cam : _cameras) {
-            cam->save_frameset_metadata(newPC);
-        }
-            
-        if (_stopped) {
-            newPC->free();
-            break;
-        }
-
-        // Step 3: start processing frames to pointclouds, for each camera
-        for(auto cam : _cameras) {
-            cam->process_pointcloud_from_frameset();
-        }
-
-        if (_stopped) {
-            newPC->free();
-            break;
-        }
-
-        // Lock mergedPC already while we are waiting for the per-camera
-        // processing threads. This so the main thread doesn't go off and do
-        // useless things if it is calling available(true).
-        std::unique_lock<std::mutex> mylock(_mergedPC_mutex);
-        if (_mergedPC && _mergedPC_is_fresh) {
-            _mergedPC->free();
-            _mergedPC = nullptr;
-        }
-        _mergedPC = newPC;
-            
-        if (_stopped) break;
-            
-        // Step 4: wait for frame processing to complete.
-        for(auto cam : _cameras) {
-            cam->wait_for_pointcloud_processed();
-        }
-
-        // Step 5: merge views
-        _merge_camera_pointclouds();
-
-        if (_mergedPC->access_pcl_pointcloud()->size() > 0) {
-            if (_configuration.debug) _log_debug("merged pointcloud has " + std::to_string(_mergedPC->access_pcl_pointcloud()->size()) + " points");
-        } else {
-            if (_configuration.debug) _log_debug("merged pointcloud is empty");
-        }
-        // Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
-        _mergedPC_is_fresh = true;
-        _mergedPC_want_new = false;
-        _mergedPC_is_fresh_cv.notify_all();
     }
 
     if (_configuration.debug) _log_debug_thread("control thread exiting");
+}
+
+void RS2BaseCapture::_stop_control_thread() {
+    if (_control_thread) {
+        // Set a flag to indicate to the control thread to stop running
+        _control_thread_running = false;
+
+        // Notify that a new PC is wanted to break out if the thread is in waiting mode
+        _mergedPC_is_fresh = true;
+        _mergedPC_want_new = false;
+        _mergedPC_is_fresh_cv.notify_all();
+        _mergedPC_want_new = true;
+        _mergedPC_want_new_cv.notify_all();
+
+        // Join the thread
+        if (_control_thread && _control_thread->joinable()) {
+            _control_thread->join();
+        }
+
+        // Delete the control thread
+        _control_thread.reset();
+        if (_configuration.debug) _log_debug_thread("stopped control thread");
+    }
 }
 
 bool RS2BaseCapture::_capture_all_cameras(uint64_t& timestamp) {
