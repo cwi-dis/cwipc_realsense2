@@ -145,13 +145,13 @@ public:
 
         if (success) {
             // Copy over processing configuration (should be safe)
-            _configuration.processing = new_configuration.processing;
+            configuration.processing = new_configuration.processing;
 
             // Copy over camera transforms (camera count must match!)
-            if (_configuration.all_camera_configs.size() == new_configuration.all_camera_configs.size()) {
+            if (configuration.all_camera_configs.size() == new_configuration.all_camera_configs.size()) {
                 for (size_t i = 0; i < new_configuration.all_camera_configs.size(); ++i) {
-                    _configuration.all_camera_configs[i].trafo = new_configuration.all_camera_configs[i].trafo;
-                    _configuration.all_camera_configs[i].cameraposition = new_configuration.all_camera_configs[i].cameraposition;
+                    configuration.all_camera_configs[i].trafo = new_configuration.all_camera_configs[i].trafo;
+                    configuration.all_camera_configs[i].cameraposition = new_configuration.all_camera_configs[i].cameraposition;
                 }
             }
             else {
@@ -170,7 +170,8 @@ public:
             _log_error("Must start() before getting config");
             return "";
         }
-                // We get the hardware parameters from the first camera.
+        
+        // We get the hardware parameters from the first camera.
         RS2CameraHardwareConfig curHardwareConfig;
         cameras[0]->get_camera_hardware_parameters(curHardwareConfig);
         configuration.hardware = curHardwareConfig;
@@ -187,10 +188,11 @@ public:
     }
 
     /// Tell the capturer that each point cloud should also include RGB and/or D images and/or RGB/D capture timestamps.
-    virtual void request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton) override final {
+    virtual void request_metadata(bool rgb, bool depth, bool timestamps, bool skeleton, bool camera_specs) override final {
         metadata.want_rgb = rgb;
         metadata.want_depth = depth;
         metadata.want_timestamps = timestamps;
+        metadata.want_camera_specs = camera_specs;
     }
 
     //
