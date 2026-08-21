@@ -1,4 +1,8 @@
-# cwipc_realsense2
+# WARNING. This repository is outdated.
+
+This `cwipc_realsense2` repository has been merged into the <https://github.com/cwi-dis/cwipc> repository as of August 2026.
+
+## cwipc_realsense2
 
 This project has software for capturing point clouds using RealSense cameras. The software turns RealSense depth- and colorframes into cwipc pointclouds.
 
